@@ -1,0 +1,1 @@
+drop table historical_prices

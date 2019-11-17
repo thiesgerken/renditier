@@ -1,0 +1,12 @@
+CREATE TABLE stock_infos (
+  isin CHAR(12) PRIMARY KEY,
+  wkn CHAR(6) NOT NULL,
+  title TEXT NOT NULL,
+  country TEXT NOT NULL,
+  fonds_type TEXT NOT NULL,
+  managing_company TEXT NOT NULL,
+  focus TEXT NOT NULL,
+  onvista_url TEXT NOT NULL,
+  last_historical_update TIMESTAMPTZ,
+  last_realtime_update TIMESTAMPTZ 
+)
