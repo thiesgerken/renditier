@@ -1,4 +1,13 @@
 table! {
+    accounts (id) {
+        id -> Int4,
+        owner_id -> Int4,
+        broker -> Text,
+        iban -> Text,
+    }
+}
+
+table! {
     historical_prices (date, onvista_record_id) {
         date -> Date,
         opening -> Float8,
@@ -14,7 +23,7 @@ table! {
     realtime_prices (date, onvista_record_id) {
         date -> Timestamptz,
         price -> Float8,
-        currency -> Nullable<Text>,
+        currency -> Text,
         onvista_record_id -> Int4,
     }
 }
@@ -45,9 +54,33 @@ table! {
     }
 }
 
+table! {
+    transactions (id) {
+        id -> Int4,
+        account_id -> Int4,
+        isin -> Bpchar,
+        date -> Timestamptz,
+        units -> Float8,
+        amount -> Money,
+        fees -> Money,
+        onvista_exchange_id -> Int4,
+    }
+}
+
+table! {
+    users (id) {
+        id -> Int4,
+        name -> Text,
+        full_name -> Text,
+    }
+}
+
 allow_tables_to_appear_in_same_query!(
+    accounts,
     historical_prices,
     realtime_prices,
     stock_exchanges,
     stock_infos,
+    transactions,
+    users,
 );

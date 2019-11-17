@@ -1,9 +1,7 @@
-use crate::schema::historical_prices;
-use crate::schema::realtime_prices;
-use crate::schema::stock_exchanges;
-use crate::schema::stock_infos;
+use crate::schema::*;
 
 use chrono::{DateTime, NaiveDate, Utc};
+use diesel::data_types::Cents;
 
 // grabbed periodically for relevant ISINs
 #[derive(Debug, Queryable, Insertable)]
@@ -50,4 +48,31 @@ pub struct RealtimePrice {
   pub price: f64,
   pub currency: String,
   pub onvista_record_id: i32, // ID specific to exchange+stock
+}
+
+#[derive(Debug, Queryable, Insertable)]
+pub struct User {
+  pub id: i32,
+  pub name: String,
+  pub full_name: String,
+}
+
+#[derive(Debug, Queryable, Insertable)]
+pub struct Account {
+  pub id: i32,
+  pub owner_id: i32,
+  pub broker: String,
+  pub iban: String,
+}
+
+#[derive(Debug, Queryable, Insertable)]
+pub struct Transaction {
+  pub id: i32,
+  pub account_id: i32,
+  pub isin: String,
+  pub date: DateTime<Utc>,
+  pub units: f64,
+  pub amount: Cents,
+  pub fees: Cents,
+  pub onvista_exchange_id: i32,
 }

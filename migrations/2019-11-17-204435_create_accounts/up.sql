@@ -1,0 +1,6 @@
+CREATE TABLE accounts (
+  id SERIAL PRIMARY KEY,
+  owner_id INTEGER NOT NULL,
+  broker TEXT NOT NULL,
+  iban TEXT NOT NULL
+)
