@@ -1,4 +1,4 @@
-use stocks::models::*;
+use crate::models::*;
 
 use chrono::{Date, Local, NaiveDate, TimeZone, Utc};
 use std::error::Error;
@@ -276,62 +276,63 @@ fn parse_realtime_row(s: &scraper::element_ref::ElementRef) -> Option<RealtimePr
     })
 }
 
-use diesel::prelude::*;
-use stocks::models::*;
-use stocks::*;
+// TODO
 
-fn main() {
-    use stocks::schema::stock_infos::dsl::*;
+// use diesel::prelude::*;
+// use stocks::*;
 
-    let connection = establish_connection();
-    run_migrations(&connection).expect("erorr running migrations");
+// fn main() {
+//     use stocks::schema::stock_infos::dsl::*;
 
-    let (info, exs) = get_info("IE00BK5BQT80").expect("error obtaining stock infos");
+//     let connection = establish_connection();
+//     run_migrations(&connection).expect("error running migrations");
 
-    // TODO: add infos for all interesting isins, i.e. those that appear in transactions and that aren't in the db yet
-    // TODO: should also be able to do it manually from the command line
-    // TODO: cleanup command should also be available that simply deletes all infos
+//     let (info, exs) = get_info("IE00BK5BQT80").expect("error obtaining stock infos");
 
-    println!(
-        "{:?}",
-        diesel::insert_into(stocks::schema::stock_infos::table)
-            .values(&info)
-            .on_conflict_do_nothing()
-            .execute(&connection)
-            .expect("error inserting info")
-    );
+//     // TODO: add infos for all interesting isins, i.e. those that appear in transactions and that aren't in the db yet
+//     // TODO: should also be able to do it manually from the command line
+//     // TODO: cleanup command should also be available that simply deletes all infos
 
-    println!(
-        "{:?}",
-        diesel::insert_into(stocks::schema::stock_exchanges::table)
-            .values(&exs)
-            .on_conflict_do_nothing()
-            .execute(&connection)
-            .expect("error inserting exchanges")
-    );
+//     println!(
+//         "{:?}",
+//         diesel::insert_into(stocks::schema::stock_infos::table)
+//             .values(&info)
+//             .on_conflict_do_nothing()
+//             .execute(&connection)
+//             .expect("error inserting info")
+//     );
 
-    // TODO: use last update
+//     println!(
+//         "{:?}",
+//         diesel::insert_into(stocks::schema::stock_exchanges::table)
+//             .values(&exs)
+//             .on_conflict_do_nothing()
+//             .execute(&connection)
+//             .expect("error inserting exchanges")
+//     );
 
-    let historical = get_data_historical(108344843, Local.ymd(2016, 1, 1))
-        .expect("error obtaining historical data");
-    println!(
-        "{:?}",
-        diesel::insert_into(stocks::schema::historical_prices::table)
-            .values(&historical)
-            .on_conflict_do_nothing()
-            .execute(&connection)
-            .expect("error inserting historical prices")
-    );
+//     // TODO: use last update
 
-    // TODO: use last update
+//     let historical = get_data_historical(108344843, Local.ymd(2016, 1, 1))
+//         .expect("error obtaining historical data");
+//     println!(
+//         "{:?}",
+//         diesel::insert_into(stocks::schema::historical_prices::table)
+//             .values(&historical)
+//             .on_conflict_do_nothing()
+//             .execute(&connection)
+//             .expect("error inserting historical prices")
+//     );
 
-    let realtime = get_data_realtime("IE00BK5BQT80").expect("error obtaining realtime data");
-    println!(
-        "{:?}",
-        diesel::insert_into(stocks::schema::realtime_prices::table)
-            .values(&realtime)
-            .on_conflict_do_nothing()
-            .execute(&connection)
-            .expect("error inserting realtime prices")
-    );
-}
+//     // TODO: use last update
+
+//     let realtime = get_data_realtime("IE00BK5BQT80").expect("error obtaining realtime data");
+//     println!(
+//         "{:?}",
+//         diesel::insert_into(stocks::schema::realtime_prices::table)
+//             .values(&realtime)
+//             .on_conflict_do_nothing()
+//             .execute(&connection)
+//             .expect("error inserting realtime prices")
+//     );
+// }

@@ -1,4 +1,5 @@
 pub mod models;
+pub mod onvista;
 pub mod schema;
 
 #[macro_use]
