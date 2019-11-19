@@ -11,14 +11,14 @@ pub fn initialize_settings(additional_file: Option<&str>) -> Result<Config, Conf
 
         //     settings.set_default("mqtt-host", "127.0.0.1")?;
 
-        settings.merge(config::File::with_name("./config").required(false))
-                .unwrap()
-                .merge(config::File::with_name("/etc/stockdb/config").required(false))
-                .unwrap();
-
         if let Some(p) = additional_file {
                 settings.merge(config::File::from(Path::new(p)).required(true))
                         .expect("unable to read config file");
+        } else {
+                settings.merge(config::File::with_name("./config").required(false))
+                        .unwrap()
+                        .merge(config::File::with_name("/etc/stockdb/config").required(false))
+                        .unwrap();
         }
 
         Ok(settings)
@@ -35,7 +35,7 @@ pub fn build(multiple: bool) -> App<'static, 'static> {
                 .short("c")
                 .long("config")
                 .value_name("file")
-                .help("also read configuration from this file (after considering config.yaml in '/etc/stockdb' and '.')"))
+                .help("read configuration from this file (instead of config.yaml in '/etc/stockdb' and '.')"))
         .arg(Arg::with_name("v")
                 .short("v")
                 .long("verbose")
