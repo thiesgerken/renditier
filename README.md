@@ -4,5 +4,20 @@
 
 * CI (docker? which environments?)
 * which exchanges to track for data? 
-* admin tool (user management, manually add stocks to watch, force update of stock infos, update realtime / historic data for known stocks, database cleanup)
-* sandbox: query data? 
+* clap: subcommands for better consistency and readability?
+* commands:
+  - add/remove/list users, stocks
+  - add/remove/list accounts, transactions
+  - add/remove stocks to watch (and flag them as force watched)
+  - database cleanup (remove unneeded (no transactions, not force watched) stocks, old realtime data, prune exchange data) 
+  - serve web interface 
+  - update realtime / historic data (call via systemd-timer)
+
+## Ideas 
+
+* set alerts for high drops / increases in values 
+* push notifications
+* daily/weekly summary (as push)
+* REST interface
+* web UI (deploy to stocks.thiesgerken.de)
+* analysis: IRR

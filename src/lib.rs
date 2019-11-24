@@ -10,21 +10,15 @@ extern crate diesel_migrations;
 
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use dotenv::dotenv;
-use std::env;
-
-pub fn establish_connection() -> PgConnection {
-  dotenv().ok();
-
-  let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-  PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
-}
+use std::error::Error;
 
 embed_migrations!();
 
-pub fn run_migrations(
-  connection: &PgConnection,
-) -> Result<(), diesel_migrations::RunMigrationsError> {
-  // embedded_migrations::run(&connection);
-  embedded_migrations::run_with_output(connection, &mut std::io::stdout())
+pub fn connect(database_url: &str) -> Result<PgConnection, Box<dyn Error>> {
+    let conn = PgConnection::establish(&database_url)?;
+
+    // embedded_migrations::run(&conn);
+    embedded_migrations::run_with_output(&conn, &mut std::io::stdout())?;
+
+    Ok(conn)
 }

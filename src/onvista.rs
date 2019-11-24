@@ -117,6 +117,7 @@ pub fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn
             managing_company: company,
             title: title,
             country: country_code,
+            persistent: false,
             last_historical_update: None,
             last_realtime_update: None,
         },

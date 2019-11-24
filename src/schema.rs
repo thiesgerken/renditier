@@ -48,6 +48,7 @@ table! {
         fonds_type -> Text,
         managing_company -> Text,
         focus -> Text,
+        persistent -> Bool,
         onvista_url -> Text,
         last_historical_update -> Nullable<Timestamptz>,
         last_realtime_update -> Nullable<Timestamptz>,
@@ -72,6 +73,8 @@ table! {
         id -> Int4,
         name -> Text,
         full_name -> Text,
+        password -> Text,
+        salt -> Text,
     }
 }
 

@@ -13,6 +13,7 @@ pub struct StockInfo {
   pub fonds_type: String,
   pub managing_company: String,
   pub focus: String,
+  pub persistent: bool,
   pub onvista_url: String,
   pub last_historical_update: Option<DateTime<Utc>>,
   pub last_realtime_update: Option<DateTime<Utc>>,
@@ -55,6 +56,8 @@ pub struct User {
   pub id: i32,
   pub name: String,
   pub full_name: String,
+  pub password: String,
+  pub salt: String,
 }
 
 #[derive(Debug, Queryable, Insertable)]
