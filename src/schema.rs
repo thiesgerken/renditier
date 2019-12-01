@@ -73,8 +73,7 @@ table! {
         id -> Int4,
         name -> Text,
         full_name -> Text,
-        password -> Text,
-        salt -> Text,
+        hash -> Text,
     }
 }
 

@@ -1,5 +1,4 @@
 use clap::{crate_authors, crate_name, crate_version, App, Arg, ArgGroup, Shell};
-use std::collections::HashMap;
 use std::io;
 
 use stocks::cli;

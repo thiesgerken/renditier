@@ -8,7 +8,6 @@ use stocks::models::*;
 use stocks::schema::stock_infos::dsl::*;
 use stocks::*;
 
-use clap::{crate_name, Shell};
 use diesel::prelude::*;
 
 fn main() {

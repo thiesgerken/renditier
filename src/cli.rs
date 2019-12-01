@@ -15,9 +15,9 @@ pub fn initialize_settings(additional_file: Option<&str>) -> Result<Config, Conf
                 settings.merge(config::File::from(Path::new(p)).required(true))
                         .expect("unable to read config file");
         } else {
-                settings.merge(config::File::with_name("./config").required(false))
+                settings.merge(config::File::with_name("/etc/stockdb/config").required(false))
                         .unwrap()
-                        .merge(config::File::with_name("/etc/stockdb/config").required(false))
+                        .merge(config::File::with_name("./config").required(false))
                         .unwrap();
         }
 
