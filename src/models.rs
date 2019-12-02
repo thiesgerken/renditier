@@ -59,6 +59,14 @@ pub struct User {
   pub hash: String,
 }
 
+#[derive(Debug, Insertable)]
+#[table_name = "users"]
+pub struct NewUser {
+  pub name: String,
+  pub full_name: String,
+  pub hash: String,
+}
+
 #[derive(Debug, Queryable, Insertable)]
 pub struct Account {
   pub id: i32,

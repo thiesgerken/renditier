@@ -19,6 +19,7 @@ clap = "2.33"
 config = "0.9"
 simplelog = "0.7"
 argonautica = "0.2"
+prettytable-rs = "0.8.0"
 
 [profile.release]
 panic = "abort"
