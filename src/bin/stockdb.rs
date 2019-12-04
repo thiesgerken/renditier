@@ -179,34 +179,106 @@ fn main() {
 
             table.printstd();
         } else {
-            panic!("unexpected flags for subcommand 'user'");
+            panic!("unexpected options for subcommand 'user'");
         }
     } else if let Some(ref sub_matches) = matches.subcommand_matches("stock") {
-        // if let Some(name) = sub_matches.value_of("add") {
-        //     // TODO: check if user exists, ask for real name and password (salt+hash it, save random salt)
-        //     unimplemented!();
-        // } else if let Some(name) = sub_matches.value_of("remove") {
-        //     // TODO: check if user exists, ask for confirmation and possibly delete the user, his accounts and transactions
-        //     unimplemented!();
-        // } else
-        if sub_matches.is_present("list") {
-            let results = stock_infos
-                // .filter(published.eq(true))
-                // .limit(5)
+        use stocks::schema::stock_infos::dsl::*;
+
+        if let Some(isin_) = sub_matches.value_of("add") {
+            let isin_ = isin_.to_uppercase();
+            assert!(isin_.len() == 12, "ISINs always have a length of 12");
+
+            let exists = stock_infos
+                .filter(isin.eq(&isin_))
+                .load::<StockInfo>(&connection)
+                .expect("Error loading stock infos")
+                .iter()
+                .next()
+                .is_some();
+
+            if exists {
+                println!(
+                    "ISIN {} is already on the watch list, setting as persistent.",
+                    isin_
+                );
+
+                let _ = diesel::update(stock_infos.filter(isin.eq(&isin_)))
+                    .set(persistent.eq(true))
+                    .get_result::<StockInfo>(&connection)
+                    .expect(&format!("Unable to find ISIN {}", &isin_));
+
+                info!("Set stock {:?} as persistent", &isin_);
+            } else {
+                // TODO grab infos and add (if grabbing successful)
+
+                // let u = NewUser {
+                //     name: uname.to_string(),
+                //     full_name: fname.to_string(),
+                //     hash: hash_password(password),
+                // };
+                // let u: User = diesel::insert_into(stocks::schema::users::table)
+                //     .values(&u)
+                //     .get_result(&connection)
+                //     .expect("Error saving new user");
+                // info!("Created user {:?}", u);
+            }
+        } else if let Some(isin_) = sub_matches.value_of("update") {
+            let isin_ = isin_.to_uppercase();
+            assert!(isin_.len() == 12, "ISINs always have a length of 12");
+
+        // TODO update information (after checking that isin is in db)
+
+        // let u = diesel::update(users.filter(name.eq(uname)))
+        //     .set((full_name.eq(fname), hash.eq(hash_password(password))))
+        //     .get_result::<User>(&connection)
+        //     .expect(&format!("Unable to find user {}", uname));
+
+        // info!("Updated user {:?}", u);
+        } else if let Some(isin_) = sub_matches.value_of("remove") {
+            let isin_ = isin_.to_uppercase();
+            assert!(isin_.len() == 12, "ISINs always have a length of 12");
+
+            // check if this stock even exists in the database
+            let _ = stock_infos
+                .filter(isin.eq(&isin_))
+                .load::<StockInfo>(&connection)
+                .expect("Error loading stock infos")
+                .iter()
+                .next()
+                .expect("Stock is not watched");
+
+            let mut confirmation = String::new();
+            println!(
+                "Do you really want to delete this stock info? (It might appear again automatically!) If so, enter '{}'",
+                &isin_
+            );
+            io::stdin().read_line(&mut confirmation).unwrap();
+            let confirmation = confirmation.trim_end(); // Remove the trailing newline
+            assert_eq!(confirmation, isin_, "Confirmation failed");
+
+            // TODO: also delete relevant prices
+
+            let cnt = diesel::delete(stock_infos.filter(isin.eq(&isin_)))
+                .execute(&connection)
+                .expect(&format!("Unable to delete stock {}", &isin_));
+
+            info!("deleted {} stock '{}'", cnt, isin_);
+        } else if sub_matches.is_present("list") {
+            let sis = stock_infos
                 .load::<StockInfo>(&connection)
                 .expect("Error loading stock infos");
 
-            println!("Displaying {} stock infos", results.len());
-            for stock in results {
-                println!("{}", stock.title);
-                println!("----------\n");
-                // println!("{}", post.body);
+            let mut table = Table::new();
+            table.add_row(row!["ISIN", "WKN"]);
+
+            for si in sis {
+                // TODO: show more details (and aggregated data)
+                table.add_row(row![si.isin, si.wkn]);
             }
 
-            // TODO: print list of stocks in database (id, name, wkn/isin, #prices, persistent), use https://crates.io/crates/prettytable-rs
-            unimplemented!();
+            table.printstd();
         } else {
-            panic!("unexpected flags for subcommand 'stock'");
+            panic!("unexpected options for subcommand 'stock'");
         }
     } else {
         cli::build(true)
