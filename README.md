@@ -4,9 +4,8 @@
 
 * CI (docker? which environments?)
 * which exchanges to track for data? 
-* clap: subcommands for better consistency and readability?
 * commands:
-  - add/remove/list users, stocks
+  - add/remove/list stocks
   - add/remove/list accounts, transactions
   - add/remove stocks to watch (and flag them as force watched)
   - database cleanup (remove unneeded (no transactions, not force watched) stocks, old realtime data, prune exchange data) 
