@@ -1,3 +1,5 @@
+pub mod user;
+
 use clap::{crate_authors, crate_name, crate_version, App, Arg, ArgGroup, SubCommand};
 use config::{Config, ConfigError};
 use std::path::Path;
@@ -6,30 +8,28 @@ use std::path::Path;
 /// files that are considered: basenames /etc/stockdb/config and ./config
 /// fails, if additional_file does not exist or cannot be read
 pub fn initialize_settings(additional_file: Option<&str>) -> Result<Config, ConfigError> {
-    // Gather all conf files from conf/ manually
-    let mut settings = Config::default();
+        // Gather all conf files from conf/ manually
+        let mut settings = Config::default();
 
-    settings.set_default("database", "postgres://localhost/stocks")?;
+        settings.set_default("database", "postgres://localhost/stocks")?;
 
-    if let Some(p) = additional_file {
-        settings
-            .merge(config::File::from(Path::new(p)).required(true))
-            .expect("unable to read config file");
-    } else {
-        settings
-            .merge(config::File::with_name("/etc/stockdb/config").required(false))
-            .unwrap()
-            .merge(config::File::with_name("./config").required(false))
-            .unwrap();
-    }
+        if let Some(p) = additional_file {
+                settings.merge(config::File::from(Path::new(p)).required(true))
+                        .expect("unable to read config file");
+        } else {
+                settings.merge(config::File::with_name("/etc/stockdb/config").required(false))
+                        .unwrap()
+                        .merge(config::File::with_name("./config").required(false))
+                        .unwrap();
+        }
 
-    Ok(settings)
+        Ok(settings)
 }
 
 /// build a clap::App interface
 /// multiple: -v can be used multiple times, but this seems to hinder generation of completions for zsh
 pub fn build(multiple: bool) -> App<'static, 'static> {
-    App::new(crate_name!())
+        App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
         .about("Stock database and analysis tool")
@@ -91,16 +91,16 @@ pub fn build(multiple: bool) -> App<'static, 'static> {
 
 /// parse the command line flags and add them as overrides to settings
 pub fn merge_settings<'a>(
-    opts: &clap::ArgMatches<'a>,
-    settings: &mut Config,
+        opts: &clap::ArgMatches<'a>,
+        settings: &mut Config,
 ) -> Result<(), ConfigError> {
-    let ov = vec!["database"];
+        let ov = vec!["database"];
 
-    for x in ov.iter() {
-        if let Some(y) = opts.value_of(x) {
-            settings.set(x, y)?;
+        for x in ov.iter() {
+                if let Some(y) = opts.value_of(x) {
+                        settings.set(x, y)?;
+                }
         }
-    }
 
-    Ok(())
+        Ok(())
 }
