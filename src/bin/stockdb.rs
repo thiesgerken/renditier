@@ -61,6 +61,8 @@ fn main() {
 
     // You can get the independent subcommand matches (which function exactly like App matches)
     if let Some(ref sub_matches) = matches.subcommand_matches("user") {
+        // cli::user::handle(&connection, sub_matches);
+
         use stocks::schema::users::dsl::*;
 
         if let Some(uname) = sub_matches.value_of("add") {
@@ -152,9 +154,9 @@ fn main() {
 
             let mut confirmation = String::new();
             println!(
-                "Do you really want to delete this user? If so, enter '{}'.\n Note that this will also delete relevant accounts and transactions!",
-                uname
-            );
+            "Do you really want to delete this user? If so, enter '{}'.\n Note that this will also delete relevant accounts and transactions!",
+            uname
+        );
             io::stdin().read_line(&mut confirmation).unwrap();
             let confirmation = confirmation.trim_end(); // Remove the trailing newline
             assert_eq!(confirmation, uname, "Confirmation failed");

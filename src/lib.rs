@@ -1,8 +1,3 @@
-pub mod cli;
-pub mod models;
-pub mod onvista;
-pub mod schema;
-
 #[macro_use]
 extern crate diesel;
 
@@ -19,6 +14,11 @@ use argonautica::{Hasher, Verifier};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use std::error::Error;
+
+pub mod cli;
+pub mod models;
+pub mod onvista;
+pub mod schema;
 
 embed_migrations!();
 

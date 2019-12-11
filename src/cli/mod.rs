@@ -1,4 +1,4 @@
-pub mod user;
+// pub mod user;
 
 use clap::{crate_authors, crate_name, crate_version, App, Arg, ArgGroup, SubCommand};
 use config::{Config, ConfigError};
