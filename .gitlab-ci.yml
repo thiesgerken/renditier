@@ -10,10 +10,11 @@ build:
     - cp target/x86_64-unknown-linux-gnu/release/stockdb .
     - strip -s stockdb
   before_script:
-    - export LANG=C.UTF-8
+    - export LANG=C.UTF-8    
+    - pacman -Syyuu --noconfirm
+    - rustup update
     - mkdir -p .cargo-registry ~/.cargo/registry
     - ln -s $(pwd)/.cargo-registry ~/.cargo/registry
-    - rustup update
   cache:
     paths:
       - target
