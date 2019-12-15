@@ -11,7 +11,6 @@ build:
     - strip -s stockdb
   before_script:
     - export LANG=C.UTF-8    
-    - pacman -Syyuu --noconfirm
     - rustup update
     - mkdir -p .cargo-registry ~/.cargo/registry
     - ln -s $(pwd)/.cargo-registry ~/.cargo/registry
@@ -27,9 +26,9 @@ build:
     - docker
   image: git.thiesgerken.de:5005/thies/stockdb
 
-# package-arch-aarch64:
+# package:
 #   dependencies: 
-#     - build-aarch64
+#     - build
 #   stage: package
 #   script:
 #     - chmod -R 777 arch # makepkg must not be run as root
