@@ -1,6 +1,6 @@
 CREATE TABLE transactions (
   id SERIAL PRIMARY KEY,
-  account_id INTEGER NOT NULL,
+  account_id INTEGER NOT NULL REFERENCES accounts(id),
   isin CHAR(12) NOT NULL, 
   date TIMESTAMPTZ NOT NULL,
   units DOUBLE PRECISION NOT NULL, 

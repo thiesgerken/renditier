@@ -1,19 +1,15 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use crate::hash_password;
+use crate::models::*;
 
-use std::collections::HashMap;
-use std::error::Error;
+use clap::ArgMatches;
+use diesel::prelude::*;
+use log::info;
+use prettytable::{cell, row, Table};
 use std::io;
 
-use crate::models::*;
-use crate::schema::users::dsl::*;
-use crate::schema::*;
-use clap::ArgMatches;
-
-use diesel::prelude::*;
-
-use prettytable::{Row, Table};
-
 pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
+  use crate::schema::users::dsl::*;
+
   if let Some(uname) = sub_matches.value_of("add") {
     // check if this username is taken
     assert!(
@@ -56,7 +52,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
       hash: hash_password(password),
     };
 
-    let u: User = diesel::insert_into(stocks::schema::users::table)
+    let u: User = diesel::insert_into(crate::schema::users::table)
       .values(&u)
       .get_result(connection)
       .expect("Error saving new user");
@@ -93,11 +89,11 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     info!("Updated user {:?}", u);
   } else if let Some(uname) = sub_matches.value_of("remove") {
     // check if this user even exists
-    users
+    let u = users
       .filter(name.eq(uname))
       .load::<User>(connection)
       .expect("Error loading users")
-      .iter()
+      .into_iter()
       .next()
       .expect("User does not exist");
 
@@ -110,8 +106,20 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     let confirmation = confirmation.trim_end(); // Remove the trailing newline
     assert_eq!(confirmation, uname, "Confirmation failed");
 
-    // TODO: also delete relevant accounts and transactions
+    // delete relevant accounts and transactions
+    let accs = Account::belonging_to(&u)
+      .get_results::<Account>(connection)
+      .expect("Couldn't obtain associated accounts");
 
+    diesel::delete(Transaction::belonging_to(&accs))
+      .execute(connection)
+      .expect("Unable to delete associated transactions");
+
+    diesel::delete(Account::belonging_to(&u))
+      .execute(connection)
+      .expect("Unable to delete associated accounts");
+
+    // delete user
     diesel::delete(users.filter(name.eq(uname)))
       .execute(connection)
       .expect(&format!("Unable to delete user {}", uname));
@@ -121,11 +129,33 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     let us = users.load::<User>(connection).expect("Error loading users");
 
     let mut table = Table::new();
-    table.add_row(row!["ID", "Name", "Full Name"]);
+    table.add_row(row![
+      "ID",
+      "Name",
+      "Full Name",
+      "# Accounts",
+      "# Transactions"
+    ]);
 
-    for u in us {
-      // TODO: show more details like number of transactions / accounts
-      table.add_row(row![u.id, u.name, u.full_name]);
+    let accs = Account::belonging_to(&us)
+      // .select(diesel::dsl::count(crate::schema::accounts::dsl::id))
+      .load::<Account>(connection)
+      .expect("Couldn't obtain accounts")
+      .grouped_by(&us);
+
+    for (u, acs) in us.iter().zip(accs) {
+      let transaction_count: i64 = Transaction::belonging_to(&acs)
+        .select(diesel::dsl::count(crate::schema::transactions::dsl::id))
+        .first(connection)
+        .expect("Couldn't obtain associated transactions");
+
+      table.add_row(row![
+        u.id,
+        u.name,
+        u.full_name,
+        acs.len(),
+        transaction_count
+      ]);
     }
 
     table.printstd();

@@ -5,6 +5,6 @@ CREATE TABLE historical_prices (
   high DOUBLE PRECISION NOT NULL,
   low DOUBLE PRECISION NOT NULL,
   volume INTEGER NOT NULL,
-  onvista_record_id INTEGER NOT NULL,
+  onvista_record_id INTEGER NOT NULL REFERENCES stock_exchanges(onvista_record_id),
   PRIMARY KEY (date, onvista_record_id)
 )

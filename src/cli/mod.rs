@@ -1,12 +1,14 @@
-// pub mod user;
+pub mod stock;
+pub mod user;
+pub mod data;
 
 use clap::{crate_authors, crate_name, crate_version, App, Arg, ArgGroup, SubCommand};
 use config::{Config, ConfigError};
 use std::path::Path;
 
-/// set default settings and load overrides from config files
-/// files that are considered: basenames /etc/stockdb/config and ./config
-/// fails, if additional_file does not exist or cannot be read
+// set default settings and load overrides from config files
+// files that are considered: basenames /etc/stockdb/config and ./config
+// fails, if additional_file does not exist or cannot be read
 pub fn initialize_settings(additional_file: Option<&str>) -> Result<Config, ConfigError> {
         // Gather all conf files from conf/ manually
         let mut settings = Config::default();
@@ -26,8 +28,8 @@ pub fn initialize_settings(additional_file: Option<&str>) -> Result<Config, Conf
         Ok(settings)
 }
 
-/// build a clap::App interface
-/// multiple: -v can be used multiple times, but this seems to hinder generation of completions for zsh
+// build a clap::App interface
+// multiple: -v can be used multiple times, but this seems to hinder generation of completions for zsh
 pub fn build(multiple: bool) -> App<'static, 'static> {
         App::new(crate_name!())
         .version(crate_version!())
@@ -79,17 +81,35 @@ pub fn build(multiple: bool) -> App<'static, 'static> {
                 .arg(Arg::with_name("remove")
                         .long("remove")
                         .value_name("isin")
-                        .help("remove stock from watchlist (might be re-added automatically)"))
+                        .help("remove stock from watchlist (might be re-added automatically!)"))
                 .arg(Arg::with_name("update")
                         .long("update")
                         .value_name("isin")
-                        .help("update stock infos"))         
+                        .help("set stock as persistent"))         
                 .group(ArgGroup::with_name("action")
                         .args(&["add", "update", "remove", "list"])
                         .required(true)))
+        .subcommand(SubCommand::with_name("data")
+                .about("Data Management")
+                .arg(Arg::with_name("clean")
+                        .long("clean") 
+                        .help("delete old realtime prices, keeping only the latest data"))      
+                .arg(Arg::with_name("fetch")
+                        .long("fetch")
+                        .help("update realtime and historic data for all stocks"))         
+                .group(ArgGroup::with_name("action")
+                        .args(&["cleanup", "fetch"])
+                        .required(true)))                
+        .subcommand(SubCommand::with_name("serve")
+                .about("Serve web interface")
+                .arg(Arg::with_name("port")
+                        .long("port")
+                        .short("p")
+                        .value_name("port")
+                        .help("customize listening port")))
 }
 
-/// parse the command line flags and add them as overrides to settings
+// parse the command line flags and add them as overrides to settings
 pub fn merge_settings<'a>(
         opts: &clap::ArgMatches<'a>,
         settings: &mut Config,

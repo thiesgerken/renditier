@@ -1,7 +1,7 @@
 table! {
     accounts (id) {
         id -> Int4,
-        owner_id -> Int4,
+        user_id -> Int4,
         broker -> Text,
         iban -> Text,
     }
@@ -76,6 +76,12 @@ table! {
         hash -> Text,
     }
 }
+
+joinable!(accounts -> users (user_id));
+joinable!(historical_prices -> stock_exchanges (onvista_record_id));
+joinable!(realtime_prices -> stock_exchanges (onvista_record_id));
+joinable!(stock_exchanges -> stock_infos (isin));
+joinable!(transactions -> accounts (account_id));
 
 allow_tables_to_appear_in_same_query!(
     accounts,

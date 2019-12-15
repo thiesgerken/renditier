@@ -1,0 +1,44 @@
+stages:
+  - build
+  # - package
+  # - deploy
+
+build:
+  stage: build
+  script:
+    - cargo build --target=x86_64-unknown-linux-gnu --release
+    - cp target/x86_64-unknown-linux-gnu/release/stockdb .
+    - strip -s stockdb
+  before_script:
+    - export LANG=C.UTF-8
+    - mkdir -p .cargo-registry
+    - ln -s $(pwd)/.cargo-registry ~/.cargo/registry
+    - rustup update
+  cache:
+    paths:
+      - target
+      - .cargo-registry
+  artifacts:
+    expire_in: 1 month
+    paths:
+      - stockdb
+  tags:
+    - docker
+  image: git.thiesgerken.de:5005/thies/stockdb
+
+# package-arch-aarch64:
+#   dependencies: 
+#     - build-aarch64
+#   stage: package
+#   script:
+#     - chmod -R 777 arch # makepkg must not be run as root
+#     - su nobody -s /usr/bin/bash -c "cd arch && ./package.sh"
+#     - mv arch/build/sainlogic-gateway-0.1.0-0-aarch64.pkg.tar.xz .
+#   artifacts:
+#     expire_in: 1 month
+#     paths:
+#       - sainlogic-gateway-0.1.0-0-aarch64.pkg.tar.xz
+#   tags:
+#     - docker
+#   image: git.thiesgerken.de:5005/sensors/sainlogic-gateway/arch-aarch64
+
