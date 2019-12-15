@@ -11,7 +11,7 @@ build:
     - strip -s stockdb
   before_script:
     - export LANG=C.UTF-8
-    - mkdir -p .cargo-registry
+    - mkdir -p .cargo-registry ~/.cargo/registry
     - ln -s $(pwd)/.cargo-registry ~/.cargo/registry
     - rustup update
   cache:
