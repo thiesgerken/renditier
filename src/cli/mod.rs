@@ -98,7 +98,7 @@ pub fn build(multiple: bool) -> App<'static, 'static> {
                         .long("fetch")
                         .help("update realtime and historic data for all stocks"))         
                 .group(ArgGroup::with_name("action")
-                        .args(&["cleanup", "fetch"])
+                        .args(&["clean", "fetch"])
                         .required(true)))                
         .subcommand(SubCommand::with_name("serve")
                 .about("Serve web interface")

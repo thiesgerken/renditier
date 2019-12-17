@@ -198,12 +198,12 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
 
     let mut table = Table::new();
     table.add_row(row![
-      "Title",
       "ISIN",
+      "Title",
       "WKN",
       "# Exchanges",
-      "# Historical",
-      "# Realtime"
+      "# Historical Prices",
+      "# Realtime Prices"
     ]);
 
     for si in sis {
@@ -268,10 +268,10 @@ fn add_stock_infos(connection: &PgConnection, si: StockInfo) -> Result<Row, Box<
     .first(connection)?;
 
   let hist_str = if num_hist == 0 {
-    "0".to_owned()
+    "   0".to_owned()
   } else {
     format!(
-      "{} from {:?} to {:?}",
+      "{:4}, from {:?}\n        to {:?}",
       num_hist,
       first_hist.unwrap(),
       last_hist.unwrap()
@@ -282,16 +282,16 @@ fn add_stock_infos(connection: &PgConnection, si: StockInfo) -> Result<Row, Box<
     "0".to_owned()
   } else {
     format!(
-      "{} from {:?} to {:?}",
-      num_hist,
+      "{:4}, from {:?}\n        to {:?}",
+      num_realtime,
       first_realtime.unwrap(),
       last_realtime.unwrap()
     )
   };
 
   Ok(row![
-    si.title,
     si.isin,
+    si.title,
     si.wkn,
     exs.len().to_string(),
     hist_str,

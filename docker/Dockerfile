@@ -1,8 +1,7 @@
 FROM archlinux/base
 RUN pacman -Syyuu --noconfirm
 RUN pacman -S base-devel --noconfirm
-RUN pacman -S postgresql-libs --noconfirm 
 
-# install rust
-RUN pacman -S rustup --noconfirm 
+# install rust and dependencies
+RUN pacman -S postgresql-libs clang rustup --noconfirm 
 RUN rustup default stable
