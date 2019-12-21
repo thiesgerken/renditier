@@ -89,7 +89,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     info!("Updated user {:?}", u);
   } else if let Some(uname) = sub_matches.value_of("remove") {
     // check if this user even exists
-    let u = users
+    users
       .filter(name.eq(uname))
       .load::<User>(connection)
       .expect("Error loading users")
@@ -106,18 +106,19 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     let confirmation = confirmation.trim_end(); // Remove the trailing newline
     assert_eq!(confirmation, uname, "Confirmation failed");
 
+    // not needed because of ON DELETE CASCADE pragmas in accounts and transaction tables
     // delete relevant accounts and transactions
-    let accs = Account::belonging_to(&u)
-      .get_results::<Account>(connection)
-      .expect("Couldn't obtain associated accounts");
+    // let accs = Account::belonging_to(&u)
+    //   .get_results::<Account>(connection)
+    //   .expect("Couldn't obtain associated accounts");
 
-    diesel::delete(Transaction::belonging_to(&accs))
-      .execute(connection)
-      .expect("Unable to delete associated transactions");
+    // diesel::delete(Transaction::belonging_to(&accs))
+    //   .execute(connection)
+    //   .expect("Unable to delete associated transactions");
 
-    diesel::delete(Account::belonging_to(&u))
-      .execute(connection)
-      .expect("Unable to delete associated accounts");
+    // diesel::delete(Account::belonging_to(&u))
+    //   .execute(connection)
+    //   .expect("Unable to delete associated accounts");
 
     // delete user
     diesel::delete(users.filter(name.eq(uname)))

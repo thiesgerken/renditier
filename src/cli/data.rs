@@ -42,8 +42,27 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     );
     fetch_historical(connection, &stocks_hist_update);
   } else if sub_matches.is_present("clean") {
-    unimplemented!("clean not done") // TODO
-                                     // TODO: delete all but the newest data point for each record id in realtime data
+    use crate::schema::realtime_prices::dsl::*;
+    let now = Utc::now();
+
+    let cnt = diesel::delete(
+      realtime_prices.filter(
+        crate::schema::realtime_prices::dsl::date
+          .lt(now.checked_sub_signed(Duration::weeks(1)).unwrap()),
+      ),
+    )
+    .execute(connection)
+    .expect("Unable to delete old realtime prices");
+
+    info!(
+      "found and deleted {} realtime prices older than 1 week",
+      cnt
+    );
+
+    let cnt = diesel::sql_query("DELETE FROM superfluous_stocks")
+      .execute(connection)
+      .expect("Unable to delete superfluous stocks");
+    info!("found and deleted {} superfluous stocks", cnt);
   } else {
     panic!("unexpected options for subcommand 'data'");
   }

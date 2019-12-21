@@ -1,6 +1,6 @@
 CREATE TABLE accounts (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id),
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   broker TEXT NOT NULL,
   iban TEXT NOT NULL
 )

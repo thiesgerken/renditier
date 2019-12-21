@@ -6,7 +6,6 @@
 * which exchanges to track for data? 
 * commands:
   - add/remove/list accounts, transactions
-  - database cleanup (remove unneeded (no transactions, not force watched) stocks, old realtime data) 
   - serve web interface 
   - call update realtime / historic data via systemd-timer and/or thread in `serve` function)
 
