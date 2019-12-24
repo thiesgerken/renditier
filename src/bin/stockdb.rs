@@ -50,6 +50,10 @@ fn main() {
         cli::user::handle(&connection, sub_matches);
     } else if let Some(ref sub_matches) = matches.subcommand_matches("stock") {
         cli::stock::handle(&connection, sub_matches);
+    } else if let Some(ref sub_matches) = matches.subcommand_matches("transaction") {
+        cli::transaction::handle(&connection, sub_matches);
+    } else if let Some(ref sub_matches) = matches.subcommand_matches("account") {
+        cli::account::handle(&connection, sub_matches);
     } else if let Some(ref sub_matches) = matches.subcommand_matches("data") {
         cli::data::handle(&connection, sub_matches);
     } else if let Some(ref _sub_matches) = matches.subcommand_matches("serve") {

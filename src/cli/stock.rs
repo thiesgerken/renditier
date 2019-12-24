@@ -1,20 +1,53 @@
+use crate::models::*;
+use crate::onvista;
+use crate::schema::historical_prices::dsl::*;
+use crate::schema::realtime_prices::dsl::*;
+use crate::schema::stock_exchanges::dsl::*;
+use crate::schema::stock_infos::dsl::*;
+
 use chrono::{DateTime, NaiveDate, Utc};
 use clap::ArgMatches;
+use clap::{App, Arg, ArgGroup, SubCommand};
 use diesel::prelude::*;
 use log::{error, info};
 use prettytable::{cell, row, Row, Table};
 use std::error::Error;
 use std::io;
 
-use crate::models::*;
-use crate::onvista;
+pub fn build() -> App<'static, 'static> {
+  SubCommand::with_name("stock")
+    .about("Stock Management")
+    .arg(
+      Arg::with_name("list")
+        .long("list")
+        .help("overview over collected stock data"),
+    )
+    .arg(
+      Arg::with_name("add")
+        .long("add")
+        .value_name("isin")
+        .help("add (persistent) stock"),
+    )
+    .arg(
+      Arg::with_name("remove")
+        .long("remove")
+        .value_name("isin")
+        .help("remove stock from watchlist (might be re-added automatically!)"),
+    )
+    .arg(
+      Arg::with_name("update")
+        .long("update")
+        .value_name("isin")
+        .help("set stock as persistent"),
+    )
+    .group(
+      ArgGroup::with_name("action")
+        .args(&["add", "update", "remove", "list"])
+        .required(true),
+    )
+}
 
 pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
-  use crate::schema::historical_prices::dsl::*;
-  use crate::schema::realtime_prices::dsl::*;
-  use crate::schema::stock_exchanges::dsl::*;
-  use crate::schema::stock_infos::dsl::*;
-
   if let Some(isin_) = sub_matches.value_of("add") {
     let isin_ = isin_.to_uppercase();
     assert!(isin_.len() == 12, "ISINs always have a length of 12");

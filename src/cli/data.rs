@@ -1,13 +1,34 @@
-use chrono::{Duration, Utc};
-use clap::ArgMatches;
-use diesel::prelude::*;
-use log::{debug, info};
-use std::iter::successors;
-
 use crate::models::*;
 use crate::onvista;
 use crate::schema::stock_exchanges::dsl::*;
 use crate::schema::stock_infos::dsl::*;
+
+use chrono::{Duration, Utc};
+use clap::ArgMatches;
+use clap::{App, Arg, ArgGroup, SubCommand};
+use diesel::prelude::*;
+use log::{debug, info};
+use std::iter::successors;
+
+pub fn build() -> App<'static, 'static> {
+  SubCommand::with_name("data")
+    .about("Data Management")
+    .arg(
+      Arg::with_name("clean")
+        .long("clean")
+        .help("delete old realtime prices, keeping only the latest data"),
+    )
+    .arg(
+      Arg::with_name("fetch")
+        .long("fetch")
+        .help("update realtime and historic data for all stocks"),
+    )
+    .group(
+      ArgGroup::with_name("action")
+        .args(&["clean", "fetch"])
+        .required(true),
+    )
+}
 
 pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
   if sub_matches.is_present("fetch") {

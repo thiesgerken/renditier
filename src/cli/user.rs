@@ -1,25 +1,52 @@
 use crate::hash_password;
 use crate::models::*;
+use crate::schema::users::dsl::*;
 
 use clap::ArgMatches;
+use clap::{App, Arg, ArgGroup, SubCommand};
 use diesel::prelude::*;
 use log::info;
 use prettytable::{cell, row, Table};
 use std::io;
 
-pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
-  use crate::schema::users::dsl::*;
+pub fn build() -> App<'static, 'static> {
+  SubCommand::with_name("user")
+    .about("User Management")
+    .arg(
+      Arg::with_name("add")
+        .long("add")
+        .value_name("name")
+        .help("add user"),
+    )
+    .arg(
+      Arg::with_name("remove")
+        .long("remove")
+        .value_name("name")
+        .help("remove user"),
+    )
+    .arg(
+      Arg::with_name("update")
+        .long("update")
+        .value_name("name")
+        .help("update user name and password"),
+    )
+    .arg(Arg::with_name("list").long("list").help("list users"))
+    .group(
+      ArgGroup::with_name("action")
+        .args(&["add", "update", "remove", "list"])
+        .required(true),
+    )
+}
 
+pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
   if let Some(uname) = sub_matches.value_of("add") {
     // check if this username is taken
     assert!(
       users
         .filter(name.eq(uname))
-        .load::<User>(connection)
+        .execute(connection)
         .expect("Error loading users")
-        .iter()
-        .next()
-        .is_none(),
+        == 0,
       "there is already a user with name '{}'!",
       uname
     );
@@ -89,13 +116,14 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     info!("Updated user {:?}", u);
   } else if let Some(uname) = sub_matches.value_of("remove") {
     // check if this user even exists
-    users
-      .filter(name.eq(uname))
-      .load::<User>(connection)
-      .expect("Error loading users")
-      .into_iter()
-      .next()
-      .expect("User does not exist");
+    assert!(
+      users
+        .filter(name.eq(uname))
+        .execute(connection)
+        .expect("Error loading users")
+        > 0,
+      "User does not exist"
+    );
 
     let mut confirmation = String::new();
     println!(

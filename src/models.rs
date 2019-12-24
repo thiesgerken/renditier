@@ -1,6 +1,5 @@
-// use crate::schema::*;
-
 use crate::schema::*;
+
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::data_types::Cents;
 
@@ -80,8 +79,16 @@ pub struct NewUser {
 pub struct Account {
   pub id: i32,
   pub user_id: i32,
-  pub broker: String,
-  pub iban: String,
+  pub name: String,
+  pub iban: Option<String>,
+}
+
+#[derive(Debug, Insertable)]
+#[table_name = "accounts"]
+pub struct NewAccount {
+  pub user_id: i32,
+  pub name: String,
+  pub iban: Option<String>,
 }
 
 #[derive(Debug, Queryable, Insertable, Associations, Identifiable)]
@@ -92,7 +99,19 @@ pub struct Transaction {
   pub isin: String,
   pub date: DateTime<Utc>,
   pub units: f64,
-  pub amount: Cents,
+  pub amount: Cents, // units*price, does not include fees.
   pub fees: Cents,
-  pub onvista_exchange_id: i32,
+  pub onvista_exchange_id: Option<i32>,
+}
+
+#[derive(Debug, Insertable)]
+#[table_name = "transactions"]
+pub struct NewTransaction {
+  pub account_id: i32,
+  pub isin: String,
+  pub date: DateTime<Utc>,
+  pub units: f64,
+  pub amount: Cents, // units*price, does not include fees.
+  pub fees: Cents,
+  pub onvista_exchange_id: Option<i32>,
 }

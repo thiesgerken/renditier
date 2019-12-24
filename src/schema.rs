@@ -2,8 +2,8 @@ table! {
     accounts (id) {
         id -> Int4,
         user_id -> Int4,
-        broker -> Text,
-        iban -> Text,
+        name -> Text,
+        iban -> Nullable<Text>,
     }
 }
 
@@ -64,7 +64,7 @@ table! {
         units -> Float8,
         amount -> Money,
         fees -> Money,
-        onvista_exchange_id -> Int4,
+        onvista_exchange_id -> Nullable<Int4>,
     }
 }
 

@@ -6,5 +6,5 @@ CREATE TABLE transactions (
   units DOUBLE PRECISION NOT NULL, 
   amount MONEY NOT NULL,
   fees MONEY NOT NULL,
-  onvista_exchange_id INTEGER NOT NULL
+  onvista_exchange_id INTEGER
 )
