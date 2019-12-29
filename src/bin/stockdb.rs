@@ -56,6 +56,8 @@ fn main() {
         cli::account::handle(&connection, sub_matches);
     } else if let Some(ref sub_matches) = matches.subcommand_matches("data") {
         cli::data::handle(&connection, sub_matches);
+    } else if let Some(ref sub_matches) = matches.subcommand_matches("import") {
+        cli::import::handle(&connection, sub_matches);
     } else if let Some(ref _sub_matches) = matches.subcommand_matches("serve") {
         unimplemented!("web UI not yet done!") // TODO web ui
     } else {

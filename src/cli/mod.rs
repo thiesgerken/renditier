@@ -3,6 +3,7 @@ pub mod user;
 pub mod data;
 pub mod transaction;
 pub mod account;
+pub mod import;
 
 use clap::{crate_authors, crate_name, crate_version, App, Arg, SubCommand};
 use config::{Config, ConfigError};
@@ -55,7 +56,8 @@ pub fn build(multiple: bool) -> App<'static, 'static> {
         .subcommand(account::build())
         .subcommand(transaction::build())
         .subcommand(stock::build())
-        .subcommand(data::build())                
+        .subcommand(data::build())      
+        .subcommand(import::build())                
         .subcommand(SubCommand::with_name("serve")
                 .about("Serve web interface")
                 .arg(Arg::with_name("port")

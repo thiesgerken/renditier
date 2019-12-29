@@ -1,10 +1,10 @@
 use crate::schema::*;
 
 use chrono::{DateTime, NaiveDate, Utc};
-use diesel::data_types::Cents;
+use serde::{Deserialize, Serialize};
 
 // grabbed periodically for relevant ISINs
-#[derive(Debug, Queryable, Insertable, Identifiable)]
+#[derive(Debug, Queryable, Insertable, Identifiable, Serialize, Deserialize)]
 #[primary_key("isin")]
 pub struct StockInfo {
   pub isin: String,
@@ -20,7 +20,7 @@ pub struct StockInfo {
   pub last_realtime_update: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Queryable, Insertable, Identifiable, Associations)]
+#[derive(Debug, Queryable, Insertable, Identifiable, Associations, Serialize, Deserialize)]
 #[primary_key("onvista_record_id")]
 #[belongs_to(StockInfo, foreign_key = "isin")]
 pub struct StockExchange {
@@ -33,7 +33,7 @@ pub struct StockExchange {
 }
 
 // grabbed periodically for watched ISINs
-#[derive(Debug, Queryable, Insertable, Identifiable, Associations)]
+#[derive(Debug, Queryable, Insertable, Identifiable, Associations, Serialize, Deserialize)]
 #[belongs_to(StockExchange, foreign_key = "onvista_record_id")]
 #[primary_key("date", "onvista_record_id")]
 pub struct HistoricalPrice {
@@ -48,7 +48,7 @@ pub struct HistoricalPrice {
 
 // grabbed periodically for watched ISINs; can be updated manually;
 // should do regular (or upon inserts) cleanups of these
-#[derive(Debug, Queryable, Insertable, Identifiable, Associations)]
+#[derive(Debug, Queryable, Insertable, Identifiable, Associations, Serialize, Deserialize)]
 #[belongs_to(StockExchange, foreign_key = "onvista_record_id")]
 #[primary_key("date", "onvista_record_id")]
 pub struct RealtimePrice {
@@ -58,7 +58,7 @@ pub struct RealtimePrice {
   pub onvista_record_id: i32, // ID specific to exchange+stock
 }
 
-#[derive(Debug, Queryable, Insertable, Identifiable)]
+#[derive(Debug, Queryable, Insertable, Identifiable, Serialize, Deserialize)]
 pub struct User {
   pub id: i32,
   pub name: String,
@@ -74,7 +74,7 @@ pub struct NewUser {
   pub hash: String,
 }
 
-#[derive(Debug, Queryable, Insertable, Associations, Identifiable)]
+#[derive(Debug, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize)]
 #[belongs_to(User, foreign_key = "user_id")]
 pub struct Account {
   pub id: i32,
@@ -91,7 +91,7 @@ pub struct NewAccount {
   pub iban: Option<String>,
 }
 
-#[derive(Debug, Queryable, Insertable, Associations, Identifiable)]
+#[derive(Debug, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize)]
 #[belongs_to(Account, foreign_key = "account_id")]
 pub struct Transaction {
   pub id: i32,
@@ -99,19 +99,19 @@ pub struct Transaction {
   pub isin: String,
   pub date: DateTime<Utc>,
   pub units: f64,
-  pub amount: Cents, // units*price, does not include fees.
-  pub fees: Cents,
+  pub amount: i64, // units*price in cents, does not include fees.
+  pub fees: i64,
   pub onvista_exchange_id: Option<i32>,
 }
 
-#[derive(Debug, Insertable)]
+#[derive(Debug, Insertable, Serialize, Deserialize)]
 #[table_name = "transactions"]
 pub struct NewTransaction {
   pub account_id: i32,
   pub isin: String,
   pub date: DateTime<Utc>,
   pub units: f64,
-  pub amount: Cents, // units*price, does not include fees.
-  pub fees: Cents,
+  pub amount: i64, // units*price in cents, does not include fees.
+  pub fees: i64,
   pub onvista_exchange_id: Option<i32>,
 }

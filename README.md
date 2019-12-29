@@ -7,15 +7,12 @@
 ### Web
 
 * web interface 
-* update realtime and historic data via systemd-timer (or thread in `serve`?) (every few minutes); check for missing stock infos as well (every few hours?)
+* update realtime and historic data (every few minutes) via systemd-timer (or thread in `serve`?); check for missing stock infos as well (every few hours?)
 * on transaction modification: check for missing stock infos
-
 
 ### CLI
 
 * json input/output for transactions, accounts, users (for automation and backups)
-* see if any stock infos need adding after transaction modifications 
-* see if any stock infos need adding in new command `stock --fetch`
 
 ## Ideas 
 

@@ -40,3 +40,40 @@ pub fn hash_password(pw: &str) -> String {
                 .hash()
                 .unwrap()
 }
+
+#[derive(QueryableByName, Debug)]
+struct StockDummy {
+        #[sql_type = "diesel::sql_types::Text"]
+        isin: String,
+}
+
+pub fn add_missing_stocks(connection: &PgConnection) {
+        use log::{error, info};
+
+        let isins = diesel::sql_query("SELECT isin FROM missing_stocks")
+                .load::<StockDummy>(connection)
+                .expect("Unable to find missing stocks")
+                .into_iter()
+                .map(|sd| sd.isin);
+
+        info!("Trying to obtain stock infos for {} stocks", isins.len());
+
+        for isin in isins {
+                match onvista::get_info(&isin) {
+                        Ok((si, exs)) => {
+                                diesel::insert_into(crate::schema::stock_infos::table)
+                                        .values(&si)
+                                        .execute(connection)
+                                        .expect("Error saving stock info");
+
+                                diesel::insert_into(crate::schema::stock_exchanges::table)
+                                        .values(&exs)
+                                        .execute(connection)
+                                        .expect("Error saving exchanges");
+
+                                info!("Added stock {} and {} exchanges", &isin, exs.len());
+                        }
+                        Err(e) => error!("Error obtaining stock infos for {}: {}", &isin, e),
+                }
+        }
+}

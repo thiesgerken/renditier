@@ -1,3 +1,4 @@
+use crate::add_missing_stocks;
 use crate::models::*;
 use crate::onvista;
 use crate::schema::historical_prices::dsl::*;
@@ -23,6 +24,11 @@ pub fn build() -> App<'static, 'static> {
         .help("overview over collected stock data"),
     )
     .arg(
+      Arg::with_name("fetch")
+        .long("fetch")
+        .help("try to fetch missing stocks"),
+    )
+    .arg(
       Arg::with_name("add")
         .long("add")
         .value_name("isin")
@@ -42,7 +48,7 @@ pub fn build() -> App<'static, 'static> {
     )
     .group(
       ArgGroup::with_name("action")
-        .args(&["add", "update", "remove", "list"])
+        .args(&["add", "update", "remove", "list", "fetch"])
         .required(true),
     )
 }
@@ -246,6 +252,8 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     }
 
     table.printstd();
+  } else if sub_matches.is_present("fetch") {
+    add_missing_stocks(connection);
   } else {
     panic!("unexpected options for subcommand 'stock'");
   }

@@ -62,8 +62,8 @@ table! {
         isin -> Bpchar,
         date -> Timestamptz,
         units -> Float8,
-        amount -> Money,
-        fees -> Money,
+        amount -> Int8,
+        fees -> Int8,
         onvista_exchange_id -> Nullable<Int4>,
     }
 }

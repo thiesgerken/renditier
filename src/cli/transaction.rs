@@ -4,7 +4,6 @@ use crate::schema::transactions::dsl::*;
 use chrono::{DateTime, Utc};
 use clap::ArgMatches;
 use clap::{App, Arg, ArgGroup, SubCommand};
-use diesel::data_types::Cents;
 use diesel::prelude::*;
 use log::info;
 use prettytable::{cell, row, Table};
@@ -83,14 +82,12 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
       "Please enter the total price (units*price, not including fees, negative value -> sale)"
     );
     io::stdin().read_line(&mut s_amount).unwrap();
-    let s_amount =
-      Cents((s_amount.parse::<f64>().expect("Could not parse price") * 100.0).round() as i64);
+    let s_amount = (s_amount.parse::<f64>().expect("Could not parse price") * 100.0).round() as i64;
 
     let mut s_fees = String::new();
     println!("Please enter the fees paid for this transaction");
     io::stdin().read_line(&mut s_fees).unwrap();
-    let s_fees =
-      Cents((s_fees.parse::<f64>().expect("Could not parse fees") * 100.0).round() as i64);
+    let s_fees = (s_fees.parse::<f64>().expect("Could not parse fees") * 100.0).round() as i64;
 
     let t = NewTransaction {
       account_id: s_aid,
@@ -171,8 +168,8 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
         t.date,
         t.isin,
         t.units,
-        format_money(t.amount),
-        format_money(t.fees),
+        format!("{:0.2}€", t.amount),
+        format!("{:0.2}€", t.fees),
         t.onvista_exchange_id
           .map(|i| i.to_string())
           .unwrap_or(String::new())
@@ -183,10 +180,4 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
   } else {
     panic!("unexpected options for subcommand 'transaction'");
   }
-}
-
-fn format_money(x: Cents) -> String {
-  let Cents(i) = x;
-
-  format!("{:0.2}€", i)
 }
