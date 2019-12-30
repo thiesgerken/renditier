@@ -59,7 +59,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     let mut s_isin = String::new();
     println!("Please enter the ISIN for the transaction");
     io::stdin().read_line(&mut s_isin).unwrap();
-    let s_isin = s_isin.to_uppercase();
+    let s_isin = s_isin.trim().to_uppercase();
     assert!(s_isin.len() == 12, "ISINs always have a length of 12!");
 
     let mut s_exchange = String::new();
@@ -89,6 +89,11 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     io::stdin().read_line(&mut s_fees).unwrap();
     let s_fees = (s_fees.parse::<f64>().expect("Could not parse fees") * 100.0).round() as i64;
 
+    let mut s_comments = String::new();
+    println!("Any comments on this transaction?");
+    io::stdin().read_line(&mut s_comments).unwrap();
+    s_comments = s_comments.trim().to_string();
+
     let t = NewTransaction {
       account_id: s_aid,
       isin: s_isin,
@@ -97,6 +102,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
       amount: s_amount,
       fees: s_fees,
       onvista_exchange_id: s_exchange,
+      comments: s_comments,
     };
 
     let t: Transaction = diesel::insert_into(crate::schema::transactions::table)
@@ -158,7 +164,8 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
       "Units",
       "Amount",
       "Fees",
-      "Exchange ID"
+      "Exchange ID",
+      "Comments"
     ]);
 
     for t in ts.iter() {
@@ -172,7 +179,8 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
         format!("{:0.2}€", t.fees),
         t.onvista_exchange_id
           .map(|i| i.to_string())
-          .unwrap_or(String::new())
+          .unwrap_or(String::new()),
+        t.comments
       ]);
     }
 

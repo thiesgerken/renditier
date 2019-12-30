@@ -2,6 +2,7 @@ pub mod cli;
 pub mod models;
 pub mod onvista;
 pub mod schema;
+pub mod serialization;
 
 #[macro_use]
 extern crate diesel;

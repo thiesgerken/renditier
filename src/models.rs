@@ -102,6 +102,7 @@ pub struct Transaction {
   pub amount: i64, // units*price in cents, does not include fees.
   pub fees: i64,
   pub onvista_exchange_id: Option<i32>,
+  pub comments: String,
 }
 
 #[derive(Debug, Insertable, Serialize, Deserialize)]
@@ -114,4 +115,5 @@ pub struct NewTransaction {
   pub amount: i64, // units*price in cents, does not include fees.
   pub fees: i64,
   pub onvista_exchange_id: Option<i32>,
+  pub comments: String,
 }
