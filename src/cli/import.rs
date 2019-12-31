@@ -1,11 +1,10 @@
-use crate::models::*;
 use crate::schema::*;
 use crate::serialization::*;
 
 use clap::ArgMatches;
 use clap::{App, Arg, SubCommand};
 use diesel::prelude::*;
-use log::{debug, info, warn};
+use log::{debug, warn};
 use serde_json;
 use std::io;
 
@@ -18,7 +17,9 @@ pub fn build() -> App<'static, 'static> {
         .help("import from moneydb json data"),
     )
     .arg(
-      Arg::with_name("clean").help("clean database contents before importing (use with caution!)"),
+      Arg::with_name("clean")
+        .long("clean")
+        .help("clean database contents before importing (use with caution!)"),
     )
 }
 
@@ -46,4 +47,6 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
 
     p.write_to(connection);
   }
+
+  warn!("you might want to run `stockdb -v stock --fetch && stockdb -v data --fetch`")
 }

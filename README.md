@@ -12,7 +12,7 @@
 
 ### CLI
 
-* json input/output for transactions, accounts, users (for automation and backups)
+* basic calculations?
 
 ## Ideas 
 

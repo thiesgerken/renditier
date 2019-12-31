@@ -111,8 +111,6 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
       .expect("Error saving new transaction");
 
     info!("Created transaction {:?}", t);
-
-  // TODO: check if stock isin is present in the database, otherwise try to add it
   } else if let Some(s_tid) = sub_matches.value_of("remove") {
     let s_tid: i32 = s_tid.parse().expect("Could not parse transaction id!");
 
@@ -158,12 +156,11 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
     let mut table = Table::new();
     table.add_row(row![
       "ID",
-      "Account ID",
+      "Acc ID",
       "Date",
       "ISIN",
       "Units",
-      "Amount",
-      "Fees",
+      "Total Price",
       "Exchange ID",
       "Comments"
     ]);
@@ -175,8 +172,16 @@ pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
         t.date,
         t.isin,
         t.units,
-        format!("{:0.2}€", t.amount),
-        format!("{:0.2}€", t.fees),
+        if t.fees != 0 {
+          format!(
+            "{:+8.2}€ {} {:5.2}€",
+            t.amount as f64 / 100.0,
+            if t.fees >= 0 { "+" } else { "-" },
+            (t.fees as f64 / 100.0).abs()
+          )
+        } else {
+          format!("{:+8.2}€", t.amount as f64 / 100.0)
+        },
         t.onvista_exchange_id
           .map(|i| i.to_string())
           .unwrap_or(String::new()),
