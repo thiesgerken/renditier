@@ -60,8 +60,9 @@ fn main() {
         cli::import::handle(&connection, sub_matches);
     } else if let Some(ref sub_matches) = matches.subcommand_matches("export") {
         cli::export::handle(&connection, sub_matches);
-    } else if let Some(ref _sub_matches) = matches.subcommand_matches("serve") {
-        unimplemented!("web UI not yet done!") // TODO web ui
+    } else if let Some(ref sub_matches) = matches.subcommand_matches("serve") {
+        std::mem::drop(connection);
+        cli::serve::handle(sub_matches);
     } else {
         cli::build(true)
             .print_long_help()

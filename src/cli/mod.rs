@@ -5,6 +5,7 @@ pub mod transaction;
 pub mod account;
 pub mod import;
 pub mod export;
+pub mod serve;
 
 use clap::{crate_authors, crate_name, crate_version, App, Arg, SubCommand};
 use config::{Config, ConfigError};
@@ -59,14 +60,8 @@ pub fn build(multiple: bool) -> App<'static, 'static> {
         .subcommand(stock::build())
         .subcommand(data::build())      
         .subcommand(import::build())     
-        .subcommand(export::build())                
-        .subcommand(SubCommand::with_name("serve")
-                .about("Serve web interface")
-                .arg(Arg::with_name("port")
-                        .long("port")
-                        .short("p")
-                        .value_name("port")
-                        .help("customize listening port")))
+        .subcommand(export::build())     
+        .subcommand(serve::build())                
 }
 
 // parse the command line flags and add them as overrides to settings

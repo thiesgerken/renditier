@@ -1,14 +1,23 @@
+#![feature(proc_macro_hygiene, decl_macro)]
+
 pub mod cli;
 pub mod models;
 pub mod onvista;
 pub mod schema;
 pub mod serialization;
+pub mod web;
 
 #[macro_use]
 extern crate diesel;
 
 #[macro_use]
 extern crate diesel_migrations;
+
+#[macro_use]
+extern crate rocket_contrib;
+
+#[macro_use]
+extern crate rocket;
 
 use argonautica::{Hasher, Verifier};
 use diesel::pg::PgConnection;
