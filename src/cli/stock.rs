@@ -16,327 +16,331 @@ use std::error::Error;
 use std::io;
 
 pub fn build() -> App<'static, 'static> {
-  SubCommand::with_name("stock")
-    .about("Stock Management")
-    .arg(
-      Arg::with_name("list")
-        .long("list")
-        .help("overview over collected stock data"),
-    )
-    .arg(
-      Arg::with_name("fetch")
-        .long("fetch")
-        .help("try to fetch missing stocks"),
-    )
-    .arg(
-      Arg::with_name("add")
-        .long("add")
-        .value_name("isin")
-        .help("add (persistent) stock"),
-    )
-    .arg(
-      Arg::with_name("remove")
-        .long("remove")
-        .value_name("isin")
-        .help("remove stock from watchlist (might be re-added automatically!)"),
-    )
-    .arg(
-      Arg::with_name("update")
-        .long("update")
-        .value_name("isin")
-        .help("set stock as persistent"),
-    )
-    .group(
-      ArgGroup::with_name("action")
-        .args(&["add", "update", "remove", "list", "fetch"])
-        .required(true),
-    )
+    SubCommand::with_name("stock")
+        .about("Stock Management")
+        .arg(
+            Arg::with_name("list")
+                .long("list")
+                .help("overview over collected stock data"),
+        )
+        .arg(
+            Arg::with_name("fetch")
+                .long("fetch")
+                .help("try to fetch missing stocks"),
+        )
+        .arg(
+            Arg::with_name("add")
+                .long("add")
+                .value_name("isin")
+                .help("add (persistent) stock"),
+        )
+        .arg(
+            Arg::with_name("remove")
+                .long("remove")
+                .value_name("isin")
+                .help("remove stock from watchlist (might be re-added automatically!)"),
+        )
+        .arg(
+            Arg::with_name("update")
+                .long("update")
+                .value_name("isin")
+                .help("set stock as persistent"),
+        )
+        .group(
+            ArgGroup::with_name("action")
+                .args(&["add", "update", "remove", "list", "fetch"])
+                .required(true),
+        )
 }
 
-pub fn handle(connection: &PgConnection, sub_matches: &&ArgMatches<'_>) {
-  if let Some(isin_) = sub_matches.value_of("add") {
-    let isin_ = isin_.to_uppercase();
-    assert!(isin_.len() == 12, "ISINs always have a length of 12");
+pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
+    if let Some(isin_) = sub_matches.value_of("add") {
+        let isin_ = isin_.to_uppercase();
+        assert!(isin_.len() == 12, "ISINs always have a length of 12");
 
-    let exists = stock_infos
-      .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
-      .load::<StockInfo>(connection)
-      .expect("Error loading stock infos")
-      .iter()
-      .next()
-      .is_some();
+        let exists = stock_infos
+            .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
+            .load::<StockInfo>(connection)
+            .expect("Error loading stock infos")
+            .iter()
+            .next()
+            .is_some();
 
-    if exists {
-      println!(
-        "ISIN {} is already on the watch list, setting as persistent.",
-        isin_
-      );
+        if exists {
+            println!(
+                "ISIN {} is already on the watch list, setting as persistent.",
+                isin_
+            );
 
-      diesel::update(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
-        .set(persistent.eq(true))
-        .get_result::<StockInfo>(connection)
-        .expect(&format!("Unable to find ISIN {}", &isin_));
+            diesel::update(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
+                .set(persistent.eq(true))
+                .get_result::<StockInfo>(connection)
+                .expect(&format!("Unable to find ISIN {}", &isin_));
 
-      info!("Set stock {:?} as persistent", &isin_);
-    } else {
-      match onvista::get_info(&isin_) {
-        Ok((si, exs)) => {
-          let si = StockInfo {
-            persistent: true,
-            ..si
-          };
+            info!("Set stock {:?} as persistent", &isin_);
+        } else {
+            match onvista::get_info(&isin_) {
+                Ok((si, exs)) => {
+                    let si = StockInfo {
+                        persistent: true,
+                        ..si
+                    };
 
-          diesel::insert_into(crate::schema::stock_infos::table)
-            .values(&si)
-            .execute(connection)
-            .expect("Error saving stock info");
+                    diesel::insert_into(crate::schema::stock_infos::table)
+                        .values(&si)
+                        .execute(connection)
+                        .expect("Error saving stock info");
 
-          diesel::insert_into(crate::schema::stock_exchanges::table)
-            .values(&exs)
-            .execute(connection)
-            .expect("Error saving exchanges");
+                    diesel::insert_into(crate::schema::stock_exchanges::table)
+                        .values(&exs)
+                        .execute(connection)
+                        .expect("Error saving exchanges");
 
-          info!("Added stock {} and {} exchanges", &isin_, exs.len());
+                    info!("Added stock {} and {} exchanges", &isin_, exs.len());
+                }
+                Err(e) => error!("Error obtaining stock infos: {}", e),
+            }
         }
-        Err(e) => error!("Error obtaining stock infos: {}", e),
-      }
-    }
-  } else if let Some(isin_) = sub_matches.value_of("update") {
-    let isin_ = isin_.to_uppercase();
-    assert!(isin_.len() == 12, "ISINs always have a length of 12");
+    } else if let Some(isin_) = sub_matches.value_of("update") {
+        let isin_ = isin_.to_uppercase();
+        assert!(isin_.len() == 12, "ISINs always have a length of 12");
 
-    let exists = stock_infos
-      .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
-      .load::<StockInfo>(connection)
-      .expect("Error loading stock infos")
-      .iter()
-      .next()
-      .is_some();
+        let exists = stock_infos
+            .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
+            .load::<StockInfo>(connection)
+            .expect("Error loading stock infos")
+            .iter()
+            .next()
+            .is_some();
 
-    assert!(exists, "Unknown ISINs!");
+        assert!(exists, "Unknown ISINs!");
 
-    match onvista::get_info(&isin_) {
-      Ok((si, exs)) => {
-        diesel::delete(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
-          .execute(connection)
-          .expect(&format!("Unable to delete old infos for {}", &isin_));
+        match onvista::get_info(&isin_) {
+            Ok((si, exs)) => {
+                diesel::delete(
+                    stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)),
+                )
+                .execute(connection)
+                .expect(&format!("Unable to delete old infos for {}", &isin_));
 
-        diesel::insert_into(crate::schema::stock_infos::table)
-          .values(&si)
-          .execute(connection)
-          .expect("Error saving new stock info");
+                diesel::insert_into(crate::schema::stock_infos::table)
+                    .values(&si)
+                    .execute(connection)
+                    .expect("Error saving new stock info");
 
-        let exs_old = stock_exchanges
-          .filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_))
-          .load::<StockExchange>(connection)
-          .expect("Error loading stock exchanges")
-          .into_iter()
-          .map(|e| e.onvista_record_id);
+                let exs_old = stock_exchanges
+                    .filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_))
+                    .load::<StockExchange>(connection)
+                    .expect("Error loading stock exchanges")
+                    .into_iter()
+                    .map(|e| e.onvista_record_id);
 
-        // find out which exchanges do not exist anymore
-        let deleted = exs_old
-          .filter(|e| exs.iter().any(|e_| e == &e_.onvista_record_id))
-          .collect::<Vec<_>>();
+                // find out which exchanges do not exist anymore
+                let deleted = exs_old
+                    .filter(|e| exs.iter().any(|e_| e == &e_.onvista_record_id))
+                    .collect::<Vec<_>>();
 
-        // .. and delete there price histories
-        diesel::delete(historical_prices.filter(
-          crate::schema::historical_prices::dsl::onvista_record_id.eq_any(deleted.clone()),
-        ))
-        .execute(connection)
-        .expect("Unable to delete price information of deleted exchanges");
+                // .. and delete there price histories
+                diesel::delete(
+                    historical_prices.filter(
+                        crate::schema::historical_prices::dsl::onvista_record_id
+                            .eq_any(deleted.clone()),
+                    ),
+                )
+                .execute(connection)
+                .expect("Unable to delete price information of deleted exchanges");
 
-        diesel::delete(
-          realtime_prices
-            .filter(crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(deleted.clone())),
-        )
-        .execute(connection)
-        .expect("Unable to delete price information of deleted exchanges");
+                diesel::delete(realtime_prices.filter(
+                    crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(deleted.clone()),
+                ))
+                .execute(connection)
+                .expect("Unable to delete price information of deleted exchanges");
 
-        // delete all exchange data
-        diesel::delete(
-          stock_exchanges.filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_)),
-        )
-        .execute(connection)
-        .expect("Unable to delete old exchange data");
+                // delete all exchange data
+                diesel::delete(
+                    stock_exchanges.filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_)),
+                )
+                .execute(connection)
+                .expect("Unable to delete old exchange data");
 
-        // and replace with the new data
-        diesel::insert_into(crate::schema::stock_exchanges::table)
-          .values(&exs)
-          .execute(connection)
-          .expect("Error saving new exchange data");
+                // and replace with the new data
+                diesel::insert_into(crate::schema::stock_exchanges::table)
+                    .values(&exs)
+                    .execute(connection)
+                    .expect("Error saving new exchange data");
 
-        info!(
-          "Updated stock {} and {} exchanges, deleted {} exchanges",
-          &isin_,
-          exs.len(),
-          deleted.len()
-        );
-      }
-      Err(e) => error!("Error obtaining stock infos: {}", e),
-    }
-  } else if let Some(isin_) = sub_matches.value_of("remove") {
-    let isin_ = isin_.to_uppercase();
-    assert!(isin_.len() == 12, "ISINs always have a length of 12");
+                info!(
+                    "Updated stock {} and {} exchanges, deleted {} exchanges",
+                    &isin_,
+                    exs.len(),
+                    deleted.len()
+                );
+            }
+            Err(e) => error!("Error obtaining stock infos: {}", e),
+        }
+    } else if let Some(isin_) = sub_matches.value_of("remove") {
+        let isin_ = isin_.to_uppercase();
+        assert!(isin_.len() == 12, "ISINs always have a length of 12");
 
-    // check if this stock even exists in the database
-    stock_infos
-      .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
-      .load::<StockInfo>(connection)
-      .expect("Error loading stock infos")
-      .iter()
-      .next()
-      .expect("Stock is not watched");
+        // check if this stock even exists in the database
+        stock_infos
+            .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
+            .load::<StockInfo>(connection)
+            .expect("Error loading stock infos")
+            .iter()
+            .next()
+            .expect("Stock is not watched");
 
-    let mut confirmation = String::new();
-    println!(
+        let mut confirmation = String::new();
+        println!(
         "Do you really want to delete this stock info? (It might appear again automatically!) If so, enter '{}'",
         &isin_
     );
-    io::stdin().read_line(&mut confirmation).unwrap();
-    let confirmation = confirmation.trim_end(); // Remove the trailing newline
-    assert_eq!(confirmation, isin_, "Confirmation failed");
+        io::stdin().read_line(&mut confirmation).unwrap();
+        let confirmation = confirmation.trim_end(); // Remove the trailing newline
+        assert_eq!(confirmation, isin_, "Confirmation failed");
 
-    // delete relevant prices and exchanges
-    // not needed because of ON DELETE CASCADE pragmas in *_prices and stock_exchanges tables
-    // let exs = stock_exchanges
-    //   .filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_))
-    //   .load::<StockExchange>(connection)
-    //   .expect("Error loading stock exchanges")
-    //   .into_iter()
-    //   .map(|e| e.onvista_record_id)
-    //   .collect::<Vec<_>>();
+        // delete relevant prices and exchanges
+        // not needed because of ON DELETE CASCADE pragmas in *_prices and stock_exchanges tables
+        // let exs = stock_exchanges
+        //   .filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_))
+        //   .load::<StockExchange>(connection)
+        //   .expect("Error loading stock exchanges")
+        //   .into_iter()
+        //   .map(|e| e.onvista_record_id)
+        //   .collect::<Vec<_>>();
 
-    // diesel::delete(
-    //   historical_prices
-    //     .filter(crate::schema::historical_prices::dsl::onvista_record_id.eq_any(exs.clone())),
-    // )
-    // .execute(connection)
-    // .expect("Unable to delete price information");
+        // diesel::delete(
+        //   historical_prices
+        //     .filter(crate::schema::historical_prices::dsl::onvista_record_id.eq_any(exs.clone())),
+        // )
+        // .execute(connection)
+        // .expect("Unable to delete price information");
 
-    // diesel::delete(
-    //   realtime_prices
-    //     .filter(crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(exs.clone())),
-    // )
-    // .execute(connection)
-    // .expect("Unable to delete price information");
+        // diesel::delete(
+        //   realtime_prices
+        //     .filter(crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(exs.clone())),
+        // )
+        // .execute(connection)
+        // .expect("Unable to delete price information");
 
-    // delete all exchange data
-    // diesel::delete(stock_exchanges.filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_)))
-    //   .execute(connection)
-    //   .expect("Unable to delete exchange data");
+        // delete all exchange data
+        // diesel::delete(stock_exchanges.filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_)))
+        //   .execute(connection)
+        //   .expect("Unable to delete exchange data");
 
-    // delete stock info
-    diesel::delete(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
-      .execute(connection)
-      .expect(&format!("Unable to delete stock {}", &isin_));
+        // delete stock info
+        diesel::delete(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
+            .execute(connection)
+            .expect(&format!("Unable to delete stock {}", &isin_));
 
-    info!("deleted stock '{}', its exchanges and price data", isin_);
-  } else if sub_matches.is_present("list") {
-    let sis = stock_infos
-      .load::<StockInfo>(connection)
-      .expect("Error loading stock infos");
+        info!("deleted stock '{}', its exchanges and price data", isin_);
+    } else if sub_matches.is_present("list") {
+        let sis = stock_infos
+            .load::<StockInfo>(connection)
+            .expect("Error loading stock infos");
 
-    let mut table = Table::new();
-    table.add_row(row![
-      "ISIN",
-      "Title",
-      "WKN",
-      "# Exchanges",
-      "# Historical Prices",
-      "# Realtime Prices"
-    ]);
+        let mut table = Table::new();
+        table.add_row(row![
+            "ISIN",
+            "Title",
+            "WKN",
+            "# Exchanges",
+            "# Historical Prices",
+            "# Realtime Prices"
+        ]);
 
-    for si in sis {
-      let row = add_stock_infos(connection, si).expect("could not load stock infos from db");
-      table.add_row(row);
+        for si in sis {
+            let row = add_stock_infos(connection, si).expect("could not load stock infos from db");
+            table.add_row(row);
+        }
+
+        table.printstd();
+    } else if sub_matches.is_present("fetch") {
+        add_missing_stocks(connection);
+    } else {
+        panic!("unexpected options for subcommand 'stock'");
     }
-
-    table.printstd();
-  } else if sub_matches.is_present("fetch") {
-    add_missing_stocks(connection);
-  } else {
-    panic!("unexpected options for subcommand 'stock'");
-  }
 }
 
 fn add_stock_infos(connection: &PgConnection, si: StockInfo) -> Result<Row, Box<dyn Error>> {
-  use crate::schema::historical_prices::dsl::*;
-  use crate::schema::realtime_prices::dsl::*;
-  use crate::schema::stock_exchanges::dsl::*;
+    use crate::schema::historical_prices::dsl::*;
+    use crate::schema::realtime_prices::dsl::*;
+    use crate::schema::stock_exchanges::dsl::*;
 
-  let exs = stock_exchanges
-    .filter(crate::schema::stock_exchanges::dsl::isin.eq(&si.isin))
-    .load::<StockExchange>(connection)?
-    .into_iter()
-    .map(|e| e.onvista_record_id)
-    .collect::<Vec<_>>();
+    let exs = stock_exchanges
+        .filter(crate::schema::stock_exchanges::dsl::isin.eq(&si.isin))
+        .load::<StockExchange>(connection)?
+        .into_iter()
+        .map(|e| e.onvista_record_id)
+        .collect::<Vec<_>>();
 
-  let num_hist: i64 = historical_prices
-    .select(diesel::dsl::count(
-      crate::schema::historical_prices::dsl::onvista_record_id,
-    ))
-    .filter(crate::schema::historical_prices::dsl::onvista_record_id.eq_any(exs.clone()))
-    .first(connection)?;
+    let num_hist: i64 = historical_prices
+        .select(diesel::dsl::count(
+            crate::schema::historical_prices::dsl::onvista_record_id,
+        ))
+        .filter(crate::schema::historical_prices::dsl::onvista_record_id.eq_any(exs.clone()))
+        .first(connection)?;
 
-  let first_hist: Option<NaiveDate> = historical_prices
-    .select(diesel::dsl::min(
-      crate::schema::historical_prices::dsl::date,
-    ))
-    .filter(crate::schema::historical_prices::dsl::onvista_record_id.eq_any(exs.clone()))
-    .first(connection)?;
+    let first_hist: Option<NaiveDate> = historical_prices
+        .select(diesel::dsl::min(
+            crate::schema::historical_prices::dsl::date,
+        ))
+        .filter(crate::schema::historical_prices::dsl::onvista_record_id.eq_any(exs.clone()))
+        .first(connection)?;
 
-  let last_hist: Option<NaiveDate> = historical_prices
-    .select(diesel::dsl::max(
-      crate::schema::historical_prices::dsl::date,
-    ))
-    .filter(crate::schema::historical_prices::dsl::onvista_record_id.eq_any(exs.clone()))
-    .first(connection)?;
+    let last_hist: Option<NaiveDate> = historical_prices
+        .select(diesel::dsl::max(
+            crate::schema::historical_prices::dsl::date,
+        ))
+        .filter(crate::schema::historical_prices::dsl::onvista_record_id.eq_any(exs.clone()))
+        .first(connection)?;
 
-  let num_realtime: i64 = realtime_prices
-    .select(diesel::dsl::count(
-      crate::schema::realtime_prices::dsl::onvista_record_id,
-    ))
-    .filter(crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(exs.clone()))
-    .first(connection)?;
+    let num_realtime: i64 = realtime_prices
+        .select(diesel::dsl::count(
+            crate::schema::realtime_prices::dsl::onvista_record_id,
+        ))
+        .filter(crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(exs.clone()))
+        .first(connection)?;
 
-  let first_realtime: Option<DateTime<Utc>> = realtime_prices
-    .select(diesel::dsl::min(crate::schema::realtime_prices::dsl::date))
-    .filter(crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(exs.clone()))
-    .first(connection)?;
+    let first_realtime: Option<DateTime<Utc>> = realtime_prices
+        .select(diesel::dsl::min(crate::schema::realtime_prices::dsl::date))
+        .filter(crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(exs.clone()))
+        .first(connection)?;
 
-  let last_realtime: Option<DateTime<Utc>> = realtime_prices
-    .select(diesel::dsl::max(crate::schema::realtime_prices::dsl::date))
-    .filter(crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(exs.clone()))
-    .first(connection)?;
+    let last_realtime: Option<DateTime<Utc>> = realtime_prices
+        .select(diesel::dsl::max(crate::schema::realtime_prices::dsl::date))
+        .filter(crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(exs.clone()))
+        .first(connection)?;
 
-  let hist_str = if num_hist == 0 {
-    "   0".to_owned()
-  } else {
-    format!(
-      "{:4}, from {:?}\n        to {:?}",
-      num_hist,
-      first_hist.unwrap(),
-      last_hist.unwrap()
-    )
-  };
+    let hist_str = if num_hist == 0 {
+        "   0".to_owned()
+    } else {
+        format!(
+            "{:4}, from {:?}\n        to {:?}",
+            num_hist,
+            first_hist.unwrap(),
+            last_hist.unwrap()
+        )
+    };
 
-  let realtime_str = if num_realtime == 0 {
-    "0".to_owned()
-  } else {
-    format!(
-      "{:4}, from {:?}\n        to {:?}",
-      num_realtime,
-      first_realtime.unwrap(),
-      last_realtime.unwrap()
-    )
-  };
+    let realtime_str = if num_realtime == 0 {
+        "0".to_owned()
+    } else {
+        format!(
+            "{:4}, from {:?}\n        to {:?}",
+            num_realtime,
+            first_realtime.unwrap(),
+            last_realtime.unwrap()
+        )
+    };
 
-  Ok(row![
-    si.isin,
-    si.title,
-    si.wkn,
-    exs.len().to_string(),
-    hist_str,
-    realtime_str
-  ])
+    Ok(row![
+        si.isin,
+        si.title,
+        si.wkn,
+        exs.len().to_string(),
+        hist_str,
+        realtime_str
+    ])
 }

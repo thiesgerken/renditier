@@ -46,21 +46,21 @@ fn main() {
     let database_url = settings.get_str("database").unwrap();
     let connection = connect(&database_url).expect("error connecting and migrating to db");
 
-    if let Some(ref sub_matches) = matches.subcommand_matches("user") {
+    if let Some(sub_matches) = matches.subcommand_matches("user") {
         cli::user::handle(&connection, sub_matches);
-    } else if let Some(ref sub_matches) = matches.subcommand_matches("stock") {
+    } else if let Some(sub_matches) = matches.subcommand_matches("stock") {
         cli::stock::handle(&connection, sub_matches);
-    } else if let Some(ref sub_matches) = matches.subcommand_matches("transaction") {
+    } else if let Some(sub_matches) = matches.subcommand_matches("transaction") {
         cli::transaction::handle(&connection, sub_matches);
-    } else if let Some(ref sub_matches) = matches.subcommand_matches("account") {
+    } else if let Some(sub_matches) = matches.subcommand_matches("account") {
         cli::account::handle(&connection, sub_matches);
-    } else if let Some(ref sub_matches) = matches.subcommand_matches("data") {
+    } else if let Some(sub_matches) = matches.subcommand_matches("data") {
         cli::data::handle(&connection, sub_matches);
-    } else if let Some(ref sub_matches) = matches.subcommand_matches("import") {
+    } else if let Some(sub_matches) = matches.subcommand_matches("import") {
         cli::import::handle(&connection, sub_matches);
-    } else if let Some(ref sub_matches) = matches.subcommand_matches("export") {
+    } else if let Some(sub_matches) = matches.subcommand_matches("export") {
         cli::export::handle(&connection, sub_matches);
-    } else if let Some(ref sub_matches) = matches.subcommand_matches("serve") {
+    } else if let Some(sub_matches) = matches.subcommand_matches("serve") {
         std::mem::drop(connection);
         cli::serve::handle(sub_matches);
     } else {

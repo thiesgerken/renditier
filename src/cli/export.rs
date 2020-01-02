@@ -6,13 +6,13 @@ use diesel::prelude::*;
 use serde_json;
 
 pub fn build() -> App<'static, 'static> {
-  SubCommand::with_name("export").about("exporting of data to stdout")
+    SubCommand::with_name("export").about("exporting of data to stdout")
 }
 
-pub fn handle(connection: &PgConnection, _sub_matches: &&ArgMatches<'_>) {
-  let p = NativeFormat::new(connection);
-  println!(
-    "{}",
-    serde_json::to_string(&p).expect("Could not serialize data")
-  );
+pub fn handle(connection: &PgConnection, _sub_matches: &ArgMatches<'_>) {
+    let p = NativeFormat::new(connection);
+    println!(
+        "{}",
+        serde_json::to_string(&p).expect("Could not serialize data")
+    );
 }

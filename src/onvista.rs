@@ -8,7 +8,7 @@ pub fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn
     let mut resp = reqwest::get(&format!("https://www.onvista.de/suche?{}", params))?;
 
     if !resp.status().is_success() {
-        Err("Data request unsuccessful")?;
+        return Err("Data request unsuccessful".into());
     }
 
     use scraper::{Html, Selector};
@@ -34,7 +34,7 @@ pub fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn
         .ok_or("error parsing type")?;
 
     if kind != "ETF" {
-        Err(format!("'{}' is not an ETF", needle))?;
+        return Err(format!("'{}' is not an ETF", needle).into());
     }
 
     let td_selector = Selector::parse(".very > tbody:nth-child(1) > tr > td").unwrap();
@@ -47,8 +47,7 @@ pub fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn
         .next()
         .ok_or("error parsing wkn")?
         .trim()
-        .to_uppercase()
-        .to_string();
+        .to_uppercase();
 
     let country_code = td_wkn_country
         .select(&Selector::parse("i").unwrap())
@@ -76,8 +75,7 @@ pub fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn
         .next()
         .ok_or("error parsing ISIN")?
         .trim()
-        .to_uppercase()
-        .to_string();
+        .to_uppercase();
 
     let td_focus = tds.next().ok_or("error parsing focus")?;
     let focus = td_focus
@@ -109,13 +107,13 @@ pub fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn
 
     Ok((
         StockInfo {
-            isin: isin,
-            wkn: wkn,
+            isin,
+            wkn,
             onvista_url: url,
-            fonds_type: fonds_type,
-            focus: focus,
+            fonds_type,
+            focus,
             managing_company: company,
-            title: title,
+            title,
             country: country_code,
             persistent: false,
             last_historical_update: None,
@@ -136,9 +134,9 @@ fn parse_exchange(isin: &str, s: &scraper::node::Element) -> Option<StockExchang
         isin: isin.to_string(),
         onvista_exchange_id: ex_id,
         onvista_record_id: record_id,
-        code: code,
-        quality: quality,
-        name: name,
+        code,
+        quality,
+        name,
     })
 }
 
@@ -151,7 +149,7 @@ pub fn get_data_historical(
     ?;
 
     if !resp.status().is_success() {
-        Err("Data request unsuccessful")?;
+        return Err("Data request unsuccessful".into());
     }
 
     let body = resp.text()?;
@@ -162,7 +160,7 @@ pub fn get_data_historical(
 
     let headers = rdr.headers()?;
     if headers != vec!["Datum", "Eröffnung", "Hoch", "Tief", "Schluss", "Volumen"] {
-        Err("Unexpected CSV headers")?;
+        return Err("Unexpected CSV headers".into());
     }
 
     Ok(rdr
@@ -177,7 +175,7 @@ fn parse_historical_row(
 ) -> Option<HistoricalPrice> {
     let record = s.ok()?;
 
-    let date_splits = record.get(0)?.split(".").collect::<Vec<_>>();
+    let date_splits = record.get(0)?.split('.').collect::<Vec<_>>();
     let date = NaiveDate::from_ymd(
         date_splits[2].parse().ok()?,
         date_splits[1].parse().ok()?,
@@ -211,13 +209,13 @@ fn parse_historical_row(
     let volume = record.get(5)?.parse().ok()?;
 
     Some(HistoricalPrice {
-        date: date,
-        opening: opening,
-        closing: closing,
-        high: high,
-        low: low,
-        volume: volume,
-        onvista_record_id: onvista_record_id,
+        date,
+        opening,
+        closing,
+        high,
+        low,
+        volume,
+        onvista_record_id,
     })
 }
 
@@ -228,7 +226,7 @@ pub fn get_data_realtime(isin: &str) -> Result<Vec<RealtimePrice>, Box<dyn Error
     ))?;
 
     if !resp.status().is_success() {
-        Err("Data request unsuccessful")?;
+        return Err("Data request unsuccessful".into());
     }
 
     use scraper::{Html, Selector};
@@ -271,7 +269,7 @@ fn parse_realtime_row(s: &scraper::element_ref::ElementRef) -> Option<RealtimePr
 
     Some(RealtimePrice {
         date: date.with_timezone(&Utc),
-        price: price,
+        price,
         currency: currency.to_string(),
         onvista_record_id: id, // ID specific to exchange+stock
     })

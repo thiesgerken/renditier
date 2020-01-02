@@ -1,13 +1,13 @@
-pub mod stock;
-pub mod user;
-pub mod data;
-pub mod transaction;
 pub mod account;
-pub mod import;
+pub mod data;
 pub mod export;
+pub mod import;
 pub mod serve;
+pub mod stock;
+pub mod transaction;
+pub mod user;
 
-use clap::{crate_authors, crate_name, crate_version, App, Arg, SubCommand};
+use clap::{crate_authors, crate_name, crate_version, App, Arg};
 use config::{Config, ConfigError};
 use std::path::Path;
 
@@ -58,10 +58,10 @@ pub fn build(multiple: bool) -> App<'static, 'static> {
         .subcommand(account::build())
         .subcommand(transaction::build())
         .subcommand(stock::build())
-        .subcommand(data::build())      
-        .subcommand(import::build())     
-        .subcommand(export::build())     
-        .subcommand(serve::build())                
+        .subcommand(data::build())
+        .subcommand(import::build())
+        .subcommand(export::build())
+        .subcommand(serve::build())
 }
 
 // parse the command line flags and add them as overrides to settings

@@ -2,7 +2,6 @@ use crate::web;
 
 use clap::ArgMatches;
 use clap::{App, SubCommand};
-use diesel::prelude::*;
 
 pub fn build() -> App<'static, 'static> {
   SubCommand::with_name("serve").about("serve web interface")
@@ -16,6 +15,6 @@ pub fn build() -> App<'static, 'static> {
   // )
 }
 
-pub fn handle(_sub_matches: &&ArgMatches<'_>) {
-  crate::web::handle();
+pub fn handle(_sub_matches: &ArgMatches<'_>) {
+  web::handle();
 }
