@@ -46,6 +46,7 @@ pub fn verify_password(pw: &str, hash: &str) -> bool {
 pub fn hash_password(pw: &str) -> String {
     Hasher::default()
         .opt_out_of_secret_key(true)
+        .configure_iterations(32)
         .with_password(pw)
         .hash()
         .unwrap()
