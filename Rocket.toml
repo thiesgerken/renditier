@@ -1,2 +1,0 @@
-[global.databases]
-stockdb = { url = "postgres://localhost/stocks" } # TODO: read from config instead

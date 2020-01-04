@@ -1,111 +1,43 @@
-use crate::models::*;
-use crate::schema::*;
-use crate::verify_password;
+pub mod user;
 
-use diesel::prelude::*;
-use log::{info, warn};
-use rocket::http::{Cookie, Cookies, Status};
-use rocket::request::{FromRequest, Outcome};
-use rocket::Request;
+use rocket::config::{Environment, LoggingLevel, Value};
 use rocket_contrib::databases::diesel;
-use rocket_contrib::json::Json;
-use serde::Serialize;
+use std::collections::HashMap;
 
-pub fn handle() {
-    // TODO: web interface
+pub struct Config {
+    pub port: u16,
+    pub address: String,
+    pub secret_key: Option<String>,
+    pub log_level: LoggingLevel,
+    pub database_url: String,
+}
 
-    rocket::ignite()
+pub fn handle(config: Config) {
+    let mut database_config = HashMap::new();
+    let mut databases = HashMap::new();
+
+    database_config.insert("url", Value::from(config.database_url));
+    databases.insert("stockdb", Value::from(database_config));
+
+    let mut rocket_config = rocket::config::Config::build(Environment::Production)
+        .extra("databases", databases)
+        .port(config.port)
+        .address(config.address)
+        .log_level(config.log_level);
+
+    if let Some(key) = config.secret_key {
+        rocket_config = rocket_config.secret_key(key);
+    }
+
+    let rocket_config = rocket_config
+        .finalize()
+        .expect("Cannot create web server config");
+
+    rocket::custom(rocket_config)
         .attach(DbConn::fairing())
-        .mount("/", routes![user_login, user_logout, user_info])
+        .mount("/", routes![user::login, user::logout, user::info])
         .launch();
 }
 
-struct UserId(i32);
-
-impl<'a, 'r> FromRequest<'a, 'r> for UserId {
-    type Error = ();
-
-    fn from_request(request: &'a Request<'r>) -> Outcome<Self, Self::Error> {
-        let id = request
-            .cookies()
-            .get_private("user_id")
-            .and_then(|c| c.value().parse().ok());
-
-        match id {
-            Some(id) => Outcome::Success(UserId(id)),
-            None => Outcome::Failure((Status::Unauthorized, ())),
-        }
-    }
-}
-
-#[database("stockdb")] // TODO: make configurable
-struct DbConn(diesel::PgConnection);
-
-#[derive(Serialize)]
-struct UserInfo {
-    id: i32,
-    name: String,
-    full_name: String,
-}
-
-impl UserInfo {
-    fn new(user: User) -> Self {
-        Self {
-            id: user.id,
-            name: user.name,
-            full_name: user.full_name,
-        }
-    }
-}
-
-#[get("/user/info")]
-fn user_info(uid: UserId, connection: DbConn) -> Option<Json<UserInfo>> {
-    users::table
-        .find(uid.0)
-        .first(&*connection)
-        .map(|u| Json(UserInfo::new(u)))
-        .ok()
-}
-
-#[get("/user/logout")]
-fn user_logout(mut cookies: Cookies) -> Status {
-    cookies.remove_private(Cookie::named("user_id"));
-    Status::Ok
-}
-
-#[get("/user/login?<username>&<password>")]
-fn user_login(
-    connection: DbConn,
-    mut cookies: Cookies,
-    username: String,
-    password: String,
-) -> Result<Json<UserInfo>, Status> {
-    use crate::schema::users::dsl::*;
-    let u: Result<User, _> = users.filter(name.eq(&username)).first(&*connection);
-
-    match u {
-        Ok(u) => {
-            if verify_password(&password, &u.hash) {
-                info!("Successful login with username '{}'", &username);
-                cookies.add_private(Cookie::new("user_id", u.id.to_string()));
-
-                Ok(Json(UserInfo::new(u)))
-            } else {
-                warn!(
-                    "Attempt to login with wrong password for user '{}'",
-                    &username
-                );
-
-                Err(Status::Unauthorized)
-            }
-        }
-        _ => {
-            warn!(
-                "Attempt to login with non-existing username '{}'",
-                &username
-            );
-
-            Err(Status::Unauthorized)
-        }
-    }
-}
+#[database("stockdb")]
+pub struct DbConn(diesel::PgConnection);

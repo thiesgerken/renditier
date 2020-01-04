@@ -1,26 +1,25 @@
-use log::{debug, info};
-use std::collections::HashMap;
-
+use stocks::cli::Config;
 use stocks::*;
+
+use log::{debug, info};
+use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode};
 
 fn main() {
     let matches = cli::build(true).get_matches();
 
     // initialize logging
     let level = match matches.occurrences_of("v") {
-        0 => simplelog::LevelFilter::Warn,
-        1 => simplelog::LevelFilter::Info,
-        2 => simplelog::LevelFilter::Debug,
-        _ => simplelog::LevelFilter::Trace,
+        0 => LevelFilter::Warn,
+        1 => LevelFilter::Info,
+        2 => LevelFilter::Debug,
+        _ => LevelFilter::Trace,
     };
 
     let mut log_config = simplelog::ConfigBuilder::new();
     log_config.set_time_format_str("");
 
-    if let Err(e) =
-        simplelog::TermLogger::init(level, log_config.build(), simplelog::TerminalMode::Mixed)
-    {
-        simplelog::SimpleLogger::init(level, log_config.build())
+    if let Err(e) = TermLogger::init(level, log_config.build(), TerminalMode::Mixed) {
+        SimpleLogger::init(level, log_config.build())
             .expect("TermLogger and SimpleLogger failed to init!?");
         info!(
             "Falling back to SimpleLogger because TermLogger init failed: {}",
@@ -35,16 +34,13 @@ fn main() {
     // parse overrides from CLI and modify settings
     cli::merge_settings(&matches, &mut settings).expect("unable to merge flags from CLI");
 
-    debug!(
-        "settings={:?}",
-        settings
-            .clone()
-            .try_into::<HashMap<String, String>>()
-            .unwrap()
-    );
+    let config = settings
+        .try_into::<Config>()
+        .expect("unable to parse settings into Config struct");
 
-    let database_url = settings.get_str("database").unwrap();
-    let connection = connect(&database_url).expect("error connecting and migrating to db");
+    debug!("config={:?}", &config);
+
+    let connection = connect(&config.database).expect("error connecting and migrating to db");
 
     if let Some(sub_matches) = matches.subcommand_matches("user") {
         cli::user::handle(&connection, sub_matches);
@@ -61,8 +57,8 @@ fn main() {
     } else if let Some(sub_matches) = matches.subcommand_matches("export") {
         cli::export::handle(&connection, sub_matches);
     } else if let Some(sub_matches) = matches.subcommand_matches("serve") {
-        std::mem::drop(connection);
-        cli::serve::handle(sub_matches);
+        std::mem::drop(connection); // `serve::handle` creates its own connection
+        cli::serve::handle(sub_matches, config.web, config.database, config.verbosity);
     } else {
         cli::build(true)
             .print_long_help()

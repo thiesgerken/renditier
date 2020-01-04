@@ -2,7 +2,7 @@
 
 ## TODO
 
-* build package (arch? ubuntu?) and put it in CI config
+* build package (arch? ubuntu?) and put it in CI config. include completions and default config
 
 ### Web
 
