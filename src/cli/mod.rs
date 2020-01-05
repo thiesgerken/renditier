@@ -23,7 +23,7 @@ pub fn build(multiple: bool) -> App<'static, 'static> {
                 .short("c")
                 .long("config")
                 .value_name("file")
-                .help("read configuration from this file (instead of config.yaml in '/etc/stockdb' and '.')"))
+                .help("read configuration from this file (instead of config.* in '/etc/stockdb' and stockdb.* in '.')"))
         .arg(Arg::with_name("v")
                 .short("v")
                 .long("verbose")
@@ -62,7 +62,7 @@ impl Default for Config {
 }
 
 // set default settings and load overrides from config files
-// files that are considered: basenames /etc/stockdb/config and ./config
+// files that are considered: basenames /etc/stockdb/config and ./stockdb
 // fails, if additional_file does not exist or cannot be read
 pub fn initialize_settings(additional_file: Option<&str>) -> Result<config::Config, ConfigError> {
         let default: Config = Default::default();
@@ -74,9 +74,12 @@ pub fn initialize_settings(additional_file: Option<&str>) -> Result<config::Conf
         } else {
                 settings.merge(config::File::with_name("/etc/stockdb/config").required(false))
                         .unwrap()
-                        .merge(config::File::with_name("./config").required(false))
+                        .merge(config::File::with_name("./stockdb").required(false))
                         .unwrap();
         }
+
+        // TODO: not working!
+        dbg!(&settings);
 
         Ok(settings)
 }

@@ -3,6 +3,7 @@ use crate::schema::*;
 use crate::web::user::UserId;
 use crate::web::DbConn;
 
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use rocket_contrib::databases::diesel;
 use rocket_contrib::json::Json;
@@ -10,14 +11,73 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Stock {
-  info: StockInfo,
+  isin: String,
+  wkn: String,
+  title: String,
+  country: String,
+  fonds_type: String,
+  managing_company: String,
+  focus: String,
+  persistent: bool,
+  onvista_url: String,
+  last_historical_update: Option<DateTime<Utc>>,
+  last_realtime_update: Option<DateTime<Utc>>,
   exchanges: Vec<Exchange>,
+}
+
+impl Stock {
+  fn new(s: StockInfo, exchanges: Vec<Exchange>) -> Self {
+    Self {
+      isin: s.isin,
+      wkn: s.wkn,
+      title: s.title,
+      country: s.country,
+      fonds_type: s.fonds_type,
+      managing_company: s.managing_company,
+      focus: s.focus,
+      persistent: s.persistent,
+      onvista_url: s.onvista_url,
+      last_historical_update: s.last_historical_update,
+      last_realtime_update: s.last_realtime_update,
+      exchanges,
+    }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Price {
+  date: DateTime<Utc>,
+  price: f64,
+  currency: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Exchange {
-  info: StockExchange,
-  current_price: Option<RealtimePrice>,
+  isin: String,
+  name: String,
+  code: String,
+  quality: String,
+  onvista_record_id: i32,   // ID specific to exchange+stock
+  onvista_exchange_id: i32, // ID specific to exchange only
+  current_price: Option<Price>,
+}
+
+impl Exchange {
+  fn new(current_price: Option<RealtimePrice>, e: StockExchange) -> Self {
+    Self {
+      isin: e.isin,
+      name: e.name,
+      code: e.code,
+      quality: e.quality,
+      onvista_record_id: e.onvista_record_id, // ID specific to exchange+stock
+      onvista_exchange_id: e.onvista_exchange_id, // ID specific to exchange only
+      current_price: current_price.map(|p| Price {
+        date: p.date,
+        price: p.price,
+        currency: p.currency,
+      }),
+    }
+  }
 }
 
 #[get("/stocks?<offset>&<count>")]
@@ -50,13 +110,15 @@ pub fn list(
 
   let mut es = exchanges
     .into_iter()
-    .map(|e| Exchange {
-      current_price: prices
-        .iter()
-        .filter(|p| p.onvista_record_id == e.onvista_record_id)
-        .next()
-        .map(|p| p.clone()),
-      info: e,
+    .map(|e| {
+      Exchange::new(
+        prices
+          .iter()
+          .filter(|p| p.onvista_record_id == e.onvista_record_id)
+          .next()
+          .map(|p| p.clone()),
+        e,
+      )
     })
     .peekable();
 
@@ -64,14 +126,11 @@ pub fn list(
 
   for s in infos.into_iter() {
     let mut s_es = Vec::with_capacity(8); // up to 5 exchanges are grabbed in cli/data.rs
-    while es.peek().map(|e| &e.info.isin) == Some(&s.isin) {
+    while es.peek().map(|e| &e.isin) == Some(&s.isin) {
       s_es.push(es.next().unwrap())
     }
 
-    x.push(Stock {
-      info: s,
-      exchanges: s_es,
-    });
+    x.push(Stock::new(s, s_es));
   }
 
   Some(Json(x))
@@ -101,18 +160,17 @@ pub fn get(_uid: UserId, connection: DbConn, isin: String) -> Option<Json<Stock>
 
   let es = exchanges
     .into_iter()
-    .map(|e| Exchange {
-      current_price: prices
-        .iter()
-        .filter(|p| p.onvista_record_id == e.onvista_record_id)
-        .next()
-        .map(|p| p.clone()),
-      info: e,
+    .map(|e| {
+      Exchange::new(
+        prices
+          .iter()
+          .filter(|p| p.onvista_record_id == e.onvista_record_id)
+          .next()
+          .map(|p| p.clone()),
+        e,
+      )
     })
     .collect();
 
-  Some(Json(Stock {
-    info,
-    exchanges: es,
-  }))
+  Some(Json(Stock::new(info, es)))
 }

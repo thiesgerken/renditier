@@ -9,10 +9,12 @@
 * web interface 
 * update realtime and historic data (every few minutes) via systemd-timer (or thread in `serve`?); check for missing stock infos as well (every few hours?)
 * on transaction modification: check for missing stock infos
+* charting data (subsampled historic data in simple form)
 
 ### CLI
 
 * basic calculations?
+* settings files are not working
 
 ## Ideas 
 

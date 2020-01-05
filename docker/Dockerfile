@@ -1,7 +1,4 @@
-FROM archlinux/base
-RUN pacman -Syyuu --noconfirm
-RUN pacman -S base-devel --noconfirm
+FROM archlinux/base 
 
-# install rust and dependencies
-RUN pacman -S postgresql-libs clang rustup --noconfirm 
-RUN rustup default stable
+RUN pacman -Syyuu --noconfirm && pacman -S base-devel --noconfirm && pacman -S postgresql-libs clang rustup --noconfirm 
+RUN rustup default nightly

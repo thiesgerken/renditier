@@ -1,4 +1,5 @@
 pub mod accounts;
+pub mod prices;
 pub mod stocks;
 pub mod transactions;
 pub mod user;
@@ -49,7 +50,8 @@ pub fn handle(config: Config) {
                 transactions::list,
                 transactions::get,
                 stocks::list,
-                stocks::get
+                stocks::get,
+                prices::list
             ],
         )
         .launch();
