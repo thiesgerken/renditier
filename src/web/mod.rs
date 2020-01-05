@@ -1,3 +1,5 @@
+pub mod account;
+pub mod transaction;
 pub mod user;
 
 use rocket::config::{Environment, LoggingLevel, Value};
@@ -35,7 +37,18 @@ pub fn handle(config: Config) {
 
     rocket::custom(rocket_config)
         .attach(DbConn::fairing())
-        .mount("/", routes![user::login, user::logout, user::info])
+        .mount(
+            "/api/",
+            routes![
+                user::login,
+                user::logout,
+                user::info,
+                account::list,
+                account::get,
+                transaction::list,
+                transaction::get
+            ],
+        )
         .launch();
 }
 

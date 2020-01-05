@@ -117,7 +117,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
                 }),
             ))
             .get_result::<Account>(connection)
-            .expect(&format!("Unable to update account {}", s_aid));
+            .unwrap_or_else(|_| panic!("Unable to update account {}", s_aid));
 
         info!("Updated account {:?}", a);
     } else if let Some(s_aid) = sub_matches.value_of("remove") {
@@ -128,7 +128,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             .expect("Error loading accounts")
             .into_iter()
             .next()
-            .expect(&format!("there is no account with id '{}'!", &s_aid));
+            .unwrap_or_else(|| panic!("there is no account with id '{}'!", &s_aid));
 
         let mut confirmation = String::new();
         println!(
@@ -147,7 +147,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         // delete account
         diesel::delete(accounts.find(&s_aid))
             .execute(connection)
-            .expect(&format!("Unable to delete account {}", &s_aid));
+            .unwrap_or_else(|_| panic!("Unable to delete account {}", &s_aid));
 
         info!("deleted account '{}'", s_aid);
     } else if sub_matches.is_present("list") {

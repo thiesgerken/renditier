@@ -92,12 +92,12 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
 fn fetch_realtime(connection: &PgConnection, stocks: &[&StockInfo]) {
     for s in stocks {
         let data = onvista::get_data_realtime(&s.isin)
-            .expect(&format!("Unable to obtain realtime data for {}", &s.isin));
+            .unwrap_or_else(|_| panic!("Unable to obtain realtime data for {}", &s.isin));
         let row_count = diesel::insert_into(crate::schema::realtime_prices::table)
             .values(&data)
             .on_conflict_do_nothing()
             .execute(connection)
-            .expect(&format!("Unable to write realtime data for {}", &s.isin));
+            .unwrap_or_else(|_| panic!("Unable to write realtime data for {}", &s.isin));
 
         info!(
             "inserted {} rows of realtime data (of {}) for {}",
@@ -110,10 +110,12 @@ fn fetch_realtime(connection: &PgConnection, stocks: &[&StockInfo]) {
         diesel::update(stock_infos.filter(crate::schema::stock_infos::isin.eq(&s.isin)))
             .set(crate::schema::stock_infos::last_realtime_update.eq(now))
             .execute(connection)
-            .expect(&format!(
-                "Unable to update last realtime update field for {}",
-                &s.isin
-            ));
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Unable to update last realtime update field for {}",
+                    &s.isin
+                )
+            });
     }
 }
 
@@ -130,7 +132,7 @@ fn fetch_historical(connection: &PgConnection, stocks: &[&StockInfo]) {
         for ex in exs.iter().filter(|&e| e.isin == s.isin).take(5) {
             let grab_dates = successors(
                 s.last_historical_update
-                    .unwrap_or(now.checked_sub_signed(Duration::weeks(15 * 52)).unwrap())
+                    .unwrap_or_else(|| now.checked_sub_signed(Duration::weeks(15 * 52)).unwrap())
                     .checked_sub_signed(Duration::weeks(2)),
                 |t| t.checked_add_signed(Duration::weeks(4 * 52)),
             )
@@ -146,16 +148,18 @@ fn fetch_historical(connection: &PgConnection, stocks: &[&StockInfo]) {
                     ex.onvista_record_id,
                     t.with_timezone(&chrono::Local).date(),
                 )
-                .expect(&format!(
-                    "data request for exchange {} from {} failed",
-                    ex.onvista_record_id, t
-                ));
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "data request for exchange {} from {} failed",
+                        ex.onvista_record_id, t
+                    )
+                });
 
                 let row_count = diesel::insert_into(crate::schema::historical_prices::table)
                     .values(&batch)
                     .on_conflict_do_nothing()
                     .execute(connection)
-                    .expect(&format!("Unable to write historical data for {}", &s.isin));
+                    .unwrap_or_else(|_| panic!("Unable to write historical data for {}", &s.isin));
 
                 info!(
                     "inserted {} rows of historical data (of {}) for {} @ {}",
@@ -170,10 +174,12 @@ fn fetch_historical(connection: &PgConnection, stocks: &[&StockInfo]) {
         diesel::update(stock_infos.filter(crate::schema::stock_infos::isin.eq(&s.isin)))
             .set(crate::schema::stock_infos::last_historical_update.eq(now))
             .execute(connection)
-            .expect(&format!(
-                "Unable to update last historical update field for {}",
-                &s.isin
-            ));
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Unable to update last historical update field for {}",
+                    &s.isin
+                )
+            });
     }
 }
 

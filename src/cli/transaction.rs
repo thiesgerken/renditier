@@ -78,9 +78,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         let s_units: f64 = s_units.parse().expect("Could not parse units");
 
         let mut s_amount = String::new();
-        println!(
-      "Please enter the total price (units*price, not including fees, negative value -> sale)"
-    );
+        println!("Please enter the total price (units*price, not including fees, negative value -> sale)");
         io::stdin().read_line(&mut s_amount).unwrap();
         let s_amount =
             (s_amount.parse::<f64>().expect("Could not parse price") * 100.0).round() as i64;
@@ -136,7 +134,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
 
         diesel::delete(transactions.find(&s_tid))
             .execute(connection)
-            .expect(&format!("Unable to delete transaction {}", &s_tid));
+            .unwrap_or_else(|_| panic!("Unable to delete transaction {}", &s_tid));
 
         info!("deleted transaction '{}'", s_tid);
     } else if sub_matches.is_present("list") {

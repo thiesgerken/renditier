@@ -111,7 +111,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         let u = diesel::update(users.filter(name.eq(uname)))
             .set((full_name.eq(fname), hash.eq(hash_password(password))))
             .get_result::<User>(connection)
-            .expect(&format!("Unable to find user {}", uname));
+            .unwrap_or_else(|_| panic!("Unable to find user {}", uname));
 
         info!("Updated user {:?}", u);
     } else if let Some(uname) = sub_matches.value_of("remove") {
@@ -151,7 +151,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         // delete user
         diesel::delete(users.filter(name.eq(uname)))
             .execute(connection)
-            .expect(&format!("Unable to delete user {}", uname));
+            .unwrap_or_else(|_| panic!("Unable to delete user {}", uname));
 
         info!("deleted user '{}'", uname);
     } else if sub_matches.is_present("list") {

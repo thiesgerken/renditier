@@ -11,6 +11,15 @@ use rocket::Request;
 use rocket_contrib::databases::diesel;
 use rocket_contrib::json::Json;
 use serde::Serialize;
+use std::ops::Deref;
+
+impl Deref for UserId {
+  type Target = i32;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
 
 pub struct UserId(i32);
 
@@ -50,7 +59,7 @@ impl UserInfo {
 #[get("/user/info")]
 pub fn info(uid: UserId, connection: DbConn) -> Option<Json<UserInfo>> {
   users::table
-    .find(uid.0)
+    .find(*uid)
     .first(&*connection)
     .map(|u| Json(UserInfo::new(u)))
     .ok()

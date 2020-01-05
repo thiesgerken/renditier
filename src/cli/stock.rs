@@ -75,7 +75,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             diesel::update(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
                 .set(persistent.eq(true))
                 .get_result::<StockInfo>(connection)
-                .expect(&format!("Unable to find ISIN {}", &isin_));
+                .unwrap_or_else(|_| panic!("Unable to find ISIN {}", &isin_));
 
             info!("Set stock {:?} as persistent", &isin_);
         } else {
@@ -121,7 +121,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
                     stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)),
                 )
                 .execute(connection)
-                .expect(&format!("Unable to delete old infos for {}", &isin_));
+                .unwrap_or_else(|_| panic!("Unable to delete old infos for {}", &isin_));
 
                 diesel::insert_into(crate::schema::stock_infos::table)
                     .values(&si)
@@ -232,7 +232,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         // delete stock info
         diesel::delete(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
             .execute(connection)
-            .expect(&format!("Unable to delete stock {}", &isin_));
+            .unwrap_or_else(|_| panic!("Unable to delete stock {}", &isin_));
 
         info!("deleted stock '{}', its exchanges and price data", isin_);
     } else if sub_matches.is_present("list") {
