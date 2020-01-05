@@ -1,19 +1,13 @@
 use crate::models::*;
 use crate::schema::*;
-use crate::verify_password;
 use crate::web::user::UserId;
 use crate::web::DbConn;
 
 use diesel::prelude::*;
-use log::{info, warn};
-use rocket::http::{Cookie, Cookies, Status};
-use rocket::request::{FromRequest, Outcome};
-use rocket::Request;
 use rocket_contrib::databases::diesel;
 use rocket_contrib::json::Json;
-use serde::Serialize;
 
-#[get("/account/list?<offset>&<count>")]
+#[get("/accounts?<offset>&<count>")]
 pub fn list(
   uid: UserId,
   connection: DbConn,
@@ -30,7 +24,7 @@ pub fn list(
     .ok()
 }
 
-#[get("/account/<id>")]
+#[get("/accounts/<id>")]
 pub fn get(uid: UserId, connection: DbConn, id: i32) -> Option<Json<Account>> {
   accounts::table
     .find(id)

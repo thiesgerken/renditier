@@ -1,19 +1,13 @@
 use crate::models::*;
 use crate::schema::*;
-use crate::verify_password;
 use crate::web::user::UserId;
 use crate::web::DbConn;
 
 use diesel::prelude::*;
-use log::{info, warn};
-use rocket::http::{Cookie, Cookies, Status};
-use rocket::request::{FromRequest, Outcome};
-use rocket::Request;
 use rocket_contrib::databases::diesel;
 use rocket_contrib::json::Json;
-use serde::Serialize;
 
-#[get("/transaction/list?<offset>&<count>")]
+#[get("/transactions?<offset>&<count>")]
 pub fn list(
   uid: UserId,
   connection: DbConn,
@@ -31,7 +25,7 @@ pub fn list(
     .ok()
 }
 
-#[get("/transaction/<id>")]
+#[get("/transactions/<id>")]
 pub fn get(uid: UserId, connection: DbConn, id: i32) -> Option<Json<Transaction>> {
   transactions::table
     .inner_join(accounts::table)

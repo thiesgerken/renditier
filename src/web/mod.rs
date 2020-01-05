@@ -1,5 +1,6 @@
-pub mod account;
-pub mod transaction;
+pub mod accounts;
+pub mod stocks;
+pub mod transactions;
 pub mod user;
 
 use rocket::config::{Environment, LoggingLevel, Value};
@@ -43,10 +44,12 @@ pub fn handle(config: Config) {
                 user::login,
                 user::logout,
                 user::info,
-                account::list,
-                account::get,
-                transaction::list,
-                transaction::get
+                accounts::list,
+                accounts::get,
+                transactions::list,
+                transactions::get,
+                stocks::list,
+                stocks::get
             ],
         )
         .launch();

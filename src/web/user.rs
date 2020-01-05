@@ -56,7 +56,7 @@ impl UserInfo {
   }
 }
 
-#[get("/user/info")]
+#[get("/user")]
 pub fn info(uid: UserId, connection: DbConn) -> Option<Json<UserInfo>> {
   users::table
     .find(*uid)
