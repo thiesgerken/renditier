@@ -8,7 +8,7 @@ use diesel::prelude::*;
 use rocket_contrib::databases::diesel;
 use rocket_contrib::json::Json;
 
-#[get("/stocks/historical_prices/<record>?<offset>&<count>&<from>&<to>")]
+#[get("/stocks/prices/historical/<record>?<offset>&<count>&<from>&<to>")]
 pub fn list(
   _uid: UserId,
   connection: DbConn,
