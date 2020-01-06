@@ -30,7 +30,8 @@ pub fn build() -> App<'static, 'static> {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Config {
+#[serde(default)]
+pub struct Config {    
   pub secret_key: Option<String>,
   pub port: i64,
   pub address: String

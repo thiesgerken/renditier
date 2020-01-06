@@ -44,10 +44,11 @@ pub fn build(multiple: bool) -> App<'static, 'static> {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(default)]
 pub struct Config {
-        pub database: String,
         #[serde(skip)]
         pub verbosity: i64,
+        pub database: String,
         pub web: serve::Config,
 }
 
@@ -65,8 +66,9 @@ impl Default for Config {
 // files that are considered: basenames /etc/stockdb/config and ./stockdb
 // fails, if additional_file does not exist or cannot be read
 pub fn initialize_settings(additional_file: Option<&str>) -> Result<config::Config, ConfigError> {
-        let default: Config = Default::default();
-        let mut settings = config::Config::try_from(&default)?;
+        // let default: Config = Default::default();
+        // let mut settings = config::Config::try_from(&default)?;
+        let mut settings = config::Config::new();
 
         if let Some(p) = additional_file {
                 settings.merge(config::File::from(Path::new(p)).required(true))
@@ -77,9 +79,6 @@ pub fn initialize_settings(additional_file: Option<&str>) -> Result<config::Conf
                         .merge(config::File::with_name("./stockdb").required(false))
                         .unwrap();
         }
-
-        // TODO: not working!
-        dbg!(&settings);
 
         Ok(settings)
 }

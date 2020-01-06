@@ -14,7 +14,6 @@
 ### CLI
 
 * basic calculations?
-* settings files are not working
 
 ## Ideas 
 
