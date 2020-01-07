@@ -109,7 +109,7 @@ pub struct Transaction {
   pub isin: String,
   pub date: DateTime<Utc>,
   pub units: f64,
-  pub amount: i64, // -units*price in cents, does not include fees, negative sign -> gave money away.
+  pub amount: i64, // -units*price in cents (or simply the amount in case of dividends); does not include fees; negative sign -> gave money away.
   pub fees: i64,   // sign should be negative
   pub onvista_exchange_id: Option<i32>,
   pub comments: String,
@@ -122,7 +122,7 @@ pub struct NewTransaction {
   pub isin: String,
   pub date: DateTime<Utc>,
   pub units: f64,
-  pub amount: i64, // units*price in cents, does not include fees.
+  pub amount: i64,
   pub fees: i64,
   pub onvista_exchange_id: Option<i32>,
   pub comments: String,
