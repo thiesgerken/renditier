@@ -20,7 +20,7 @@ pub fn list(
     .limit(count.unwrap_or(i64::max_value()))
     .offset(offset.unwrap_or(0))
     .load::<Account>(&*connection)
-    .map(|a| Json(a))
+    .map(Json)
     .ok()
 }
 
@@ -30,6 +30,6 @@ pub fn get(uid: UserId, connection: DbConn, id: i32) -> Option<Json<Account>> {
     .find(id)
     .filter(accounts::user_id.eq(*uid)) // return a 404 on other accounts
     .first(&*connection)
-    .map(|a| Json(a))
+    .map(Json)
     .ok()
 }

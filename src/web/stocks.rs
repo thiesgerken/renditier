@@ -114,9 +114,8 @@ pub fn list(
       Exchange::new(
         prices
           .iter()
-          .filter(|p| p.onvista_record_id == e.onvista_record_id)
-          .next()
-          .map(|p| p.clone()),
+          .find(|p| p.onvista_record_id == e.onvista_record_id)
+          .cloned(),
         e,
       )
     })
@@ -164,9 +163,8 @@ pub fn get(_uid: UserId, connection: DbConn, isin: String) -> Option<Json<Stock>
       Exchange::new(
         prices
           .iter()
-          .filter(|p| p.onvista_record_id == e.onvista_record_id)
-          .next()
-          .map(|p| p.clone()),
+          .find(|p| p.onvista_record_id == e.onvista_record_id)
+          .cloned(),
         e,
       )
     })

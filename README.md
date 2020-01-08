@@ -22,3 +22,4 @@
 * REST interface
 * web UI (deploy to stocks.thiesgerken.de)
 * analysis: IRR, performance in some time window (day, week, month, year, total)
+* plot price + units in portfolio in same axis

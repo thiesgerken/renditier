@@ -23,12 +23,12 @@ pub fn list(
 
   historical_prices::table
     .filter(historical_prices::onvista_record_id.eq(record))
-    .filter(historical_prices::date.le(to.unwrap_or(NaiveDate::from_ymd(2100, 1, 1))))
-    .filter(historical_prices::date.ge(from.unwrap_or(NaiveDate::from_ymd(1900, 1, 1))))
+    .filter(historical_prices::date.le(to.unwrap_or_else(|| NaiveDate::from_ymd(2100, 1, 1))))
+    .filter(historical_prices::date.ge(from.unwrap_or_else(|| NaiveDate::from_ymd(1900, 1, 1))))
     .order(historical_prices::date.asc())
     .limit(count.unwrap_or(i64::max_value()))
     .offset(offset.unwrap_or(0))
     .load::<HistoricalPrice>(&*connection)
-    .map(|a| Json(a))
+    .map(Json)
     .ok()
 }
