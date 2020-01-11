@@ -1,12 +1,10 @@
 use crate::analysis::*;
 use crate::models::*;
-use crate::schema::*;
 use crate::web::user::UserId;
 use crate::web::DbConn;
 
+use chrono::offset::TimeZone;
 use chrono::Utc;
-use diesel::prelude::*;
-use rocket_contrib::databases::diesel;
 use rocket_contrib::json::Json;
 
 #[get("/analysis/portfolio?<date>")]
@@ -15,7 +13,11 @@ pub fn compute_historic_portfolio(
   connection: DbConn,
   date: String, // DateTime<Utc> not possible
 ) -> Option<Json<Portfolio<HistoricalPrice>>> {
-  let date = date.parse().ok()?;
+  // let date = date.parse().ok()?;
+
+  let date = Utc
+    .datetime_from_str(&format!("{} 17:30:00", &date), "%Y-%m-%d %H:%M:%S")
+    .ok()?;
 
   compute_portfolio(&*connection, *uid, date).ok().map(Json)
 }

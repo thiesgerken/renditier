@@ -2,6 +2,7 @@
 
 pub mod analysis;
 pub mod cli;
+pub mod data;
 pub mod models;
 pub mod onvista;
 pub mod schema;
