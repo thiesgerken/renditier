@@ -343,7 +343,7 @@ fn irr(ts: &[(DateTime<Utc>, f64)]) -> Option<f64> {
       .fold(0.0, |acc, (t, y)| acc - t * y * (1.0 + x).powf(-t - 1.0))
   };
 
-  newton(&f, &df, 0.1, 25, 1e-2, 1e-4, -0.999)
+  newton(&f, &df, 0.1, 25, 1e-2, 1e-6, -0.999)
 }
 
 // newton method with projection of x to >= some lower bound (e.g. -0.999 for IRR)

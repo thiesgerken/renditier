@@ -21,6 +21,9 @@ extern crate rocket_contrib;
 #[macro_use]
 extern crate rocket;
 
+#[macro_use]
+extern crate rust_embed;
+
 use argonautica::{Hasher, Verifier};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;

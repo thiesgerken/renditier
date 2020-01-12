@@ -1,6 +1,7 @@
 pub mod accounts;
 pub mod analysis;
 pub mod prices;
+pub mod static_files;
 pub mod stocks;
 pub mod transactions;
 pub mod user;
@@ -57,6 +58,7 @@ pub fn handle(config: Config) {
                 analysis::compute_realtime_portfolio,
             ],
         )
+        .mount("/", routes![static_files::serve, static_files::index])
         .launch();
 }
 

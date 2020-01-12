@@ -1,4 +1,6 @@
 FROM ubuntu:bionic
 
-RUN apt-get update -y && apt-get dist-upgrade -y && apt-get install -y --no-install-recommends git gcc make curl pkg-config libpq5 libpq-dev ca-certificates
+RUN apt-get update -y && apt-get dist-upgrade -y && apt-get install -y --no-install-recommends ca-certificates git curl pkg-config gcc clang make libpq5 libpq-dev libc-dev libssl-dev
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly -y
+
+ENV PATH="/root/.cargo/bin:$PATH"
