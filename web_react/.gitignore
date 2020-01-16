@@ -1,0 +1,9 @@
+/node_modules
+/package-lock.json
+/.cache
+/src/report.html
+/dist
+/.yarn-cache
+yarn-error.log
+/src/semantic
+/build
