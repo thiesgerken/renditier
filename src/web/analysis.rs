@@ -1,4 +1,5 @@
-use crate::analysis::*;
+use crate::analysis::portfolio;
+use crate::analysis::portfolio::Portfolio;
 use crate::models::*;
 use crate::web::user::UserId;
 use crate::web::DbConn;
@@ -13,13 +14,11 @@ pub fn compute_historic_portfolio(
   connection: DbConn,
   date: String, // DateTime<Utc> not possible
 ) -> Option<Json<Portfolio<HistoricalPrice>>> {
-  // let date = date.parse().ok()?;
-
   let date = Utc
     .datetime_from_str(&format!("{} 17:30:00", &date), "%Y-%m-%d %H:%M:%S")
     .ok()?;
 
-  compute_portfolio(&*connection, *uid, date).ok().map(Json)
+  portfolio::compute(&*connection, *uid, date).ok().map(Json)
 }
 
 #[get("/analysis/portfolio")]
@@ -28,5 +27,5 @@ pub fn compute_realtime_portfolio(
   connection: DbConn,
 ) -> Option<Json<Portfolio<RealtimePrice>>> {
   let now = Utc::now();
-  compute_portfolio(&*connection, *uid, now).ok().map(Json)
+  portfolio::compute(&*connection, *uid, now).ok().map(Json)
 }
