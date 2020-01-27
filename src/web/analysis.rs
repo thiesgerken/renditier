@@ -1,3 +1,5 @@
+use crate::analysis::performance;
+use crate::analysis::performance::PortfolioPerformance;
 use crate::analysis::portfolio;
 use crate::analysis::portfolio::Portfolio;
 use crate::models::*;
@@ -28,4 +30,13 @@ pub fn compute_realtime_portfolio(
 ) -> Option<Json<Portfolio<RealtimePrice>>> {
   let now = Utc::now();
   portfolio::compute(&*connection, *uid, now).ok().map(Json)
+}
+
+#[get("/analysis/performance")]
+pub fn compute_performance(
+  uid: UserId,
+  connection: DbConn,
+) -> Option<Json<Vec<PortfolioPerformance>>> {
+  let now = Utc::now();
+  performance::compute(&*connection, *uid, now).ok().map(Json)
 }

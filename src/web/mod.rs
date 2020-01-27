@@ -56,6 +56,7 @@ pub fn handle(config: Config) {
                 prices::list,
                 analysis::compute_historic_portfolio,
                 analysis::compute_realtime_portfolio,
+                analysis::compute_performance
             ],
         )
         .mount("/", routes![static_files::serve, static_files::index])
