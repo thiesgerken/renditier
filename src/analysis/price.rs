@@ -92,8 +92,8 @@ impl Price for RealtimePrice {
       >,
     >;
 
-    let always_true =
-      Box::new(realtime_prices::onvista_record_id.eq(realtime_prices::onvista_record_id));
+    let always_false =
+      Box::new(realtime_prices::onvista_record_id.ne(realtime_prices::onvista_record_id));
     let fs: Box<
       dyn diesel::BoxableExpression<MyJoinOn, diesel::pg::Pg, SqlType = diesel::sql_types::Bool>,
     > = hard_lbs
@@ -104,7 +104,7 @@ impl Price for RealtimePrice {
           .le(date)
           .and(realtime_prices::date.ge(hard_lb))
       })
-      .fold(always_true, |accum, x| Box::new(accum.or(x)));
+      .fold(always_false, |accum, x| Box::new(accum.or(x)));
 
     let ps = realtime_prices::table
       .inner_join(
@@ -209,8 +209,8 @@ impl Price for HistoricalPrice {
       >,
     >;
 
-    let always_true =
-      Box::new(historical_prices::onvista_record_id.eq(historical_prices::onvista_record_id));
+    let always_false =
+      Box::new(historical_prices::onvista_record_id.ne(historical_prices::onvista_record_id));
     let fs: Box<
       dyn diesel::BoxableExpression<MyJoinOn, diesel::pg::Pg, SqlType = diesel::sql_types::Bool>,
     > = hard_lbs
@@ -221,7 +221,7 @@ impl Price for HistoricalPrice {
           .le(day)
           .and(historical_prices::date.ge(hard_lb))
       })
-      .fold(always_true, |accum, x| Box::new(accum.or(x)));
+      .fold(always_false, |accum, x| Box::new(accum.or(x)));
 
     let ps = historical_prices::table
       .inner_join(

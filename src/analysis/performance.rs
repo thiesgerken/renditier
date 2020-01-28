@@ -109,6 +109,8 @@ pub fn compute(
   isins.sort();
   let isins = isins;
 
+  // TODO: something goes wrong if realtime prices cannot be found (newton gets called anyway??)
+
   // find suitable price information
   let current_prices: PriceMap<RealtimePrice> =
     price::find(connection, &isins, date, 7 * 24, 7 * 24)?;
@@ -233,7 +235,7 @@ pub fn compute(
     isins.len(),
     dates.len()
   );
-  let prices = Price::find_multiple(connection, &isins, &utc_date_times, 7 * 24, 7 * 24)?;
+  let prices = Price::find_multiple(connection, &isins, &utc_date_times, 4 * 24, 4 * 24)?;
   let prices = dates.into_iter().zip(prices).collect();
 
   Ok(
@@ -389,7 +391,7 @@ fn compute_performance(
             p.start
               .as_ref()
               .map(|s| s.value)
-              .unwrap_or(Some(0.0))
+              .unwrap_or(Some(0.0)) // TODO: is this wrong?
               .map(|v| apv1 + v)
           }),
           ai + p.end.invested,
