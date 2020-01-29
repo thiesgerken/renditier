@@ -113,7 +113,7 @@ pub fn compute(
 
   // find suitable price information
   let current_prices: PriceMap<RealtimePrice> =
-    price::find(connection, &isins, date, 7 * 24, 7 * 24)?;
+    price::find(connection, &isins, date, 4 * 24, 4 * 24)?;
 
   // assemble dates for which we need to get HistoricalPrices
   let current_day = current_prices
@@ -387,13 +387,7 @@ fn compute_performance(
       .fold((0.0, Some(0.0), 0.0, Some(0.0)), |(api, apv, ai, av), p| {
         (
           api + p.start.as_ref().map(|s| s.invested).unwrap_or(0.0),
-          apv.and_then(|apv1| {
-            p.start
-              .as_ref()
-              .map(|s| s.value)
-              .unwrap_or(Some(0.0)) // TODO: is this wrong?
-              .map(|v| apv1 + v)
-          }),
+          apv.and_then(|apv1| p.start.as_ref().and_then(|s| s.value).map(|v| apv1 + v)),
           ai + p.end.invested,
           av.and_then(|av1| p.end.value.map(|v| av1 + v)),
         )

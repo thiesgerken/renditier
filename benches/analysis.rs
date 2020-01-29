@@ -8,23 +8,19 @@ use stocks::models::*;
 use stocks::*;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-  let level = LevelFilter::Info;
-
   let mut log_config = simplelog::ConfigBuilder::new();
   log_config.set_time_format_str("");
 
+  let level = LevelFilter::Info;
   TermLogger::init(level, log_config.build(), TerminalMode::Mixed)
     .ok()
     .or_else(|| SimpleLogger::init(level, log_config.build()).ok())
     .unwrap();
 
   let settings = cli::initialize_settings(Some("stockdb.toml")).unwrap();
-
   let config = settings.try_into::<Config>().unwrap();
-
-  debug!("config={:?}", &config);
-
   let connection = connect(&config.database).unwrap();
+  debug!("config={:?}", &config);
 
   c.bench_function("performance::compute", |b| {
     b.iter(|| performance::compute(&connection, black_box(4), Utc::now()))

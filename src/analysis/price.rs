@@ -5,6 +5,7 @@ use crate::schema::*;
 use chrono::offset::TimeZone;
 use chrono::{DateTime, Duration, Local, Utc};
 use diesel::prelude::*;
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
@@ -92,8 +93,7 @@ impl Price for RealtimePrice {
       >,
     >;
 
-    let always_false =
-      Box::new(realtime_prices::onvista_record_id.ne(realtime_prices::onvista_record_id));
+    let always_false = Box::new(realtime_prices::date.ne(realtime_prices::date));
     let fs: Box<
       dyn diesel::BoxableExpression<MyJoinOn, diesel::pg::Pg, SqlType = diesel::sql_types::Bool>,
     > = hard_lbs
@@ -106,6 +106,9 @@ impl Price for RealtimePrice {
       })
       .fold(always_false, |accum, x| Box::new(accum.or(x)));
 
+    use std::time::Instant;
+    let t_sql = Instant::now();
+
     let ps = realtime_prices::table
       .inner_join(
         stock_exchanges::table
@@ -115,6 +118,12 @@ impl Price for RealtimePrice {
       .filter(stock_exchanges::isin.eq_any(isins))
       .order(realtime_prices::date.desc())
       .load::<(RealtimePrice, StockExchange)>(connection)?;
+
+    debug!(
+      "load_multiple: loaded {} realtime prices in {} µs",
+      ps.len(),
+      t_sql.elapsed().as_micros()
+    );
 
     Ok(
       soft_lbs
@@ -209,8 +218,7 @@ impl Price for HistoricalPrice {
       >,
     >;
 
-    let always_false =
-      Box::new(historical_prices::onvista_record_id.ne(historical_prices::onvista_record_id));
+    let always_false = Box::new(historical_prices::date.ne(historical_prices::date));
     let fs: Box<
       dyn diesel::BoxableExpression<MyJoinOn, diesel::pg::Pg, SqlType = diesel::sql_types::Bool>,
     > = hard_lbs
@@ -223,6 +231,8 @@ impl Price for HistoricalPrice {
       })
       .fold(always_false, |accum, x| Box::new(accum.or(x)));
 
+    use std::time::Instant;
+    let t_sql = Instant::now();
     let ps = historical_prices::table
       .inner_join(
         stock_exchanges::table
@@ -232,6 +242,12 @@ impl Price for HistoricalPrice {
       .filter(stock_exchanges::isin.eq_any(isins))
       .order(historical_prices::date.desc())
       .load::<(HistoricalPrice, StockExchange)>(connection)?;
+
+    debug!(
+      "load_multiple: loaded {} historical prices in {} µs",
+      ps.len(),
+      t_sql.elapsed().as_micros()
+    );
 
     Ok(
       soft_lbs
