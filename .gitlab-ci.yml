@@ -9,13 +9,16 @@ build-web:
   cache:
     key: ${CI_JOB_NAME}
     paths:
-      - web/.cache
+      - .yarn-cache
       - web/src/semantic
   tags:
     - docker
   image: git.thiesgerken.de:5005/thies/stockdb/web
   script: 
     - cd web && yarn install && yarn run build && yarn run analyze
+  before-script:
+    - mkdir -p .yarn-registry
+    - ln -s $(pwd)/.yarn-cache ~/.yarn-cache
   artifacts:
     expire_in: 1 month
     paths:
@@ -33,7 +36,7 @@ build-web:
   before_script:
     - export LANG=C.UTF-8    
     - rustup update
-    - mkdir -p .cargo-registry
+    - mkdir -p .cargo-registry ~/.cargo
     - ln -s $(pwd)/.cargo-registry ~/.cargo/registry
     - cargo --version
   cache:
