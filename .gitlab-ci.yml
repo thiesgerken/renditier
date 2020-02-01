@@ -51,8 +51,8 @@ build-web:
     paths:
       - stockdb
       - config-dist.toml 
-      - bash_completions
-      - zsh_completions
+      - bash-completions
+      - zsh-completions
 
 build-server-arch:
   extends: .build-server
@@ -89,7 +89,8 @@ package-server-arch:
   dependencies: 
     - build-server-arch
   script:
-    - (cd package/arch && ./package.sh)
+    - chmod -R 777 package/arch # makepkg must not be run as root
+    - su nobody -s /usr/bin/bash -c "cd package/arch && ./package.sh"
     - mv package/arch/build/stockdb-0.1.0-0-x86_64.pkg.tar.xz .
   artifacts:
     expire_in: 1 month
