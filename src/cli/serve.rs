@@ -41,7 +41,7 @@ impl Default for Config {
   fn default() -> Self {
     Self {
       secret_key: None,
-      port: 8080,
+      port: 8383,
       address: "localhost".into()
     }
   }

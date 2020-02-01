@@ -22,8 +22,8 @@ cp ../../config-dist.toml build/stockdb/etc/stockdb/config-dist.toml
 mkdir -p build/stockdb/etc/systemd/system
 cp ../stockdb.service build/stockdb/etc/systemd/system/
 
-mkdir -p build/stockdb/lib/sysusers.d
-cp ../sysusers.d build/stockdb/lib/sysusers.d
+mkdir -p build/stockdb/usr/lib/sysusers.d
+cp ../sysusers.d build/stockdb/usr/lib/sysusers.d/stockdb
 
 mkdir -p build/stockdb/usr/share/zsh/vendor-completions
 cp ../../zsh-completions build/stockdb/usr/share/zsh/vendor-completions/_stockdb

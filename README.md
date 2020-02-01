@@ -20,3 +20,7 @@
 * REST interface
 * web UI (deploy to stocks.thiesgerken.de)
 * plot price + units in portfolio in same axis
+
+## Install
+
+* `openssl rand -base64 32` to obtain secret key
