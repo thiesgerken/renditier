@@ -29,13 +29,12 @@ build-web:
   dependencies: 
     - build-web
   script:
-    - cargo --version
     - cargo build --target=x86_64-unknown-linux-gnu --release
     - cp target/x86_64-unknown-linux-gnu/release/stockdb .
     - strip -s stockdb
     - target/x86_64-unknown-linux-gnu/release/generate --config > config-dist.toml
-    - target/x86_64-unknown-linux-gnu/release/generate --bash > bash_completions
-    - target/x86_64-unknown-linux-gnu/release/generate --zsh > zsh_completions
+    - target/x86_64-unknown-linux-gnu/release/generate --bash > bash-completions
+    - target/x86_64-unknown-linux-gnu/release/generate --zsh > zsh-completions
   before_script:
     - export LANG=C.UTF-8    
     - rustup update
@@ -75,7 +74,7 @@ package-server-ubuntu:
   dependencies: 
     - build-server-ubuntu
   script:
-    - cd package/ubuntu && ./package.sh
+    - (cd package/ubuntu && ./package.sh)
     - mv package/ubuntu/build/stockdb.deb .
   artifacts:
     expire_in: 1 month
@@ -90,7 +89,7 @@ package-server-arch:
   dependencies: 
     - build-server-arch
   script:
-    - cd package/arch && ./package.sh
+    - (cd package/arch && ./package.sh)
     - mv package/arch/build/stockdb-0.1.0-0-x86_64.pkg.tar.xz .
   artifacts:
     expire_in: 1 month
