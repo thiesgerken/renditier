@@ -2,5 +2,5 @@
     "version": "0.1",
     "language": "en",
     "dictionaries": [],
-    "words": ["chrono", "onvista", "subcommand", "isin", "LUSG", "stockdb", "postgres", "watchlist", "prettytable", "ISINs", "uname", "fname", "accs", "printstd", "basenames", "systemd", "thiesgerken", "iban", "Queryable", "Insertable", "TimestampTZ", "Bpchar", "Argonautica", "hasher", "peekable", "powf", "datetime", "dedup", "accum", "Datelike", "Boxable", "browserslist", "fomantic"]
+    "words": ["chrono", "onvista", "subcommand", "isin", "LUSG", "stockdb", "postgres", "watchlist", "prettytable", "ISINs", "uname", "fname", "accs", "printstd", "basenames", "systemd", "thiesgerken", "iban", "Queryable", "Insertable", "TimestampTZ", "Bpchar", "Argonautica", "hasher", "peekable", "powf", "datetime", "dedup", "accum", "Datelike", "Boxable", "browserslist", "fomantic", "openssl", "subsampled"]
 }

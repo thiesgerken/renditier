@@ -1,11 +1,12 @@
+use stockdb;
+use stockdb::analysis::{performance, portfolio};
+use stockdb::cli;
+use stockdb::models::*;
+
 use chrono::Utc;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use log::debug;
 use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode};
-use stocks::analysis::{performance, portfolio};
-use stocks::cli::Config;
-use stocks::models::*;
-use stocks::*;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
   let mut log_config = simplelog::ConfigBuilder::new();
@@ -18,8 +19,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     .unwrap();
 
   let settings = cli::initialize_settings(Some("stockdb.toml")).unwrap();
-  let config = settings.try_into::<Config>().unwrap();
-  let connection = connect(&config.database).unwrap();
+  let config = settings.try_into::<cli::Config>().unwrap();
+  let connection = stockdb::connect(&config.database).unwrap();
   debug!("config={:?}", &config);
 
   c.bench_function("performance::compute", |b| {
