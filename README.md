@@ -2,7 +2,8 @@
 
 ## TODO
 
-* build package (arch? ubuntu?) and put it in CI config. include completions and default config
+* install on thiesgerken.de and test deployment 
+* systemd timer for backups, also do them prior to updates
 
 ### Web
 
@@ -12,15 +13,10 @@
 * on transaction modification: check for missing stock infos, if any start an update as well
 * charting data (subsampled historic data in simple form)
 
-### CLI
-
-* basic calculations?
-
 ## Ideas 
 
 * set alerts for high drops / increases in values 
 * push notifications [weekly summary, daily on huge sudden changes]
 * REST interface
 * web UI (deploy to stocks.thiesgerken.de)
-* analysis: IRR, performance in some time window (day, week, month, year, total)
 * plot price + units in portfolio in same axis
