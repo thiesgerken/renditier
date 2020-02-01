@@ -116,12 +116,12 @@ package-server-arch:
     - build-tools
 
 deploy-thiesgerken-de:
-  extends: .deploy-server
+  extends: .deploy-thiesgerken-de
   only:
     - master
 
 deploy-thiesgerken-de-manual:
-  extends: .deploy-server
+  extends: .deploy-thiesgerken-de
   when: manual
   except:
     - master
