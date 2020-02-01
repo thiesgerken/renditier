@@ -1,8 +1,8 @@
 stages:
   - build-web
   - build-server
-  # - package
-  # - deploy
+  - package
+  - deploy
 
 build-web: 
   stage: build-web  
@@ -33,6 +33,9 @@ build-web:
     - cargo build --target=x86_64-unknown-linux-gnu --release
     - cp target/x86_64-unknown-linux-gnu/release/stockdb .
     - strip -s stockdb
+    - target/x86_64-unknown-linux-gnu/release/generate --config > config-dist.toml
+    - target/x86_64-unknown-linux-gnu/release/generate --bash > bash_completions
+    - target/x86_64-unknown-linux-gnu/release/generate --zsh > zsh_completions
   before_script:
     - export LANG=C.UTF-8    
     - rustup update
@@ -48,6 +51,9 @@ build-web:
     expire_in: 1 month
     paths:
       - stockdb
+      - config-dist.toml 
+      - bash_completions
+      - zsh_completions
 
 build-server-arch:
   extends: .build-server
@@ -60,20 +66,62 @@ build-server-ubuntu:
   tags:
     - docker
   image: git.thiesgerken.de:5005/thies/stockdb/server-ubuntu
-  
-# package:
-#   dependencies: 
-#     - build
-#   stage: package
-#   script:
-#     - chmod -R 777 arch # makepkg must not be run as root
-#     - su nobody -s /usr/bin/bash -c "cd arch && ./package.sh"
-#     - mv arch/build/sainlogic-gateway-0.1.0-0-aarch64.pkg.tar.xz .
-#   artifacts:
-#     expire_in: 1 month
-#     paths:
-#       - sainlogic-gateway-0.1.0-0-aarch64.pkg.tar.xz
-#   tags:
-#     - docker
-#   image: git.thiesgerken.de:5005/sensors/sainlogic-gateway/arch-aarch64
 
+package-server-ubuntu:
+  stage: package
+  tags:
+    - docker
+  image: git.thiesgerken.de:5005/thies/stockdb/package
+  dependencies: 
+    - build-server-ubuntu
+  script:
+    - cd package/ubuntu && ./package.sh
+    - mv package/ubuntu/build/stockdb.deb .
+  artifacts:
+    expire_in: 1 month
+    paths:
+      - stockdb.deb
+
+package-server-arch:
+  stage: package
+  tags:
+    - docker
+  image: git.thiesgerken.de:5005/thies/stockdb/package
+  dependencies: 
+    - build-server-arch
+  script:
+    - cd package/arch && ./package.sh
+    - mv package/arch/build/stockdb-0.1.0-0-x86_64.pkg.tar.xz .
+  artifacts:
+    expire_in: 1 month
+    paths:
+      - stockdb-0.1.0-0-x86_64.pkg.tar.xz
+
+.deploy-thiesgerken-de:
+  stage: deploy
+  dependencies:
+    - package-server-ubuntu
+  script:
+    - echo "$RSA_THIESGERKEN_DE" > id_rsa
+    - chmod 500 id_rsa
+    - scp -i id_rsa -oStrictHostKeyChecking=no stockdb.deb thies@thiesgerken.de:~
+    - ssh -i id_rsa -oStrictHostKeyChecking=no thies@thiesgerken.de "sudo systemctl stop stockdb"
+    - ssh -i id_rsa -oStrictHostKeyChecking=no thies@thiesgerken.de "sudo dpkg --force-confdef --force-confold -i stockdb.deb && rm stockdb.deb"
+    - ssh -i id_rsa -oStrictHostKeyChecking=no thies@thiesgerken.de "sudo systemctl enable stockdb && sudo systemctl start stockdb"
+    - rm id_rsa
+  environment:
+    name: thiesgerken.de
+    url: https://stocks.thiesgerken.de
+  tags:
+    - build-tools
+
+deploy-thiesgerken-de:
+  extends: .deploy-server
+  only:
+    - master
+
+deploy-thiesgerken-de-manual:
+  extends: .deploy-server
+  when: manual
+  except:
+    - master
