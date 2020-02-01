@@ -5,7 +5,7 @@ use std::io::Cursor;
 use std::path::PathBuf;
 
 #[derive(RustEmbed)]
-#[folder = "web/dist/"]
+#[folder = "web/build/"]
 struct Asset;
 
 #[get("/<file..>", rank = 0)]

@@ -28,6 +28,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
   c.bench_function("portfolio::compute<RealtimePrice>", |b| {
     b.iter(|| portfolio::compute::<RealtimePrice>(&connection, black_box(4), Utc::now()))
   });
+  c.bench_function("portfolio::compute<HistoricalPrice>", |b| {
+    b.iter(|| portfolio::compute::<HistoricalPrice>(&connection, black_box(4), Utc::now()))
+  });
 }
 
 criterion_group!(
