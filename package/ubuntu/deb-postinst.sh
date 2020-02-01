@@ -7,3 +7,4 @@ chmod 644 /etc/systemd/system/stockdb.service /usr/lib/sysusers.d/stockdb
 chown root:root /etc/systemd/system/stockdb.service /usr/lib/sysusers.d/stockdb
 
 systemctl daemon-reload
+systemd-sysusers

@@ -2,7 +2,6 @@
 
 ## TODO
 
-* install on thiesgerken.de and test deployment 
 * systemd timer for backups, also do them prior to updates
 
 ### Web

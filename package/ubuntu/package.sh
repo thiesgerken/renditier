@@ -23,7 +23,7 @@ mkdir -p build/stockdb/etc/systemd/system
 cp ../stockdb.service build/stockdb/etc/systemd/system/
 
 mkdir -p build/stockdb/usr/lib/sysusers.d
-cp ../sysusers.d build/stockdb/usr/lib/sysusers.d/stockdb
+cp ../sysusers.d build/stockdb/usr/lib/sysusers.d/stockdb.conf
 
 mkdir -p build/stockdb/usr/share/zsh/vendor-completions
 cp ../../zsh-completions build/stockdb/usr/share/zsh/vendor-completions/_stockdb
