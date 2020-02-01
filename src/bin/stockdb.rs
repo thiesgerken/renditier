@@ -1,5 +1,5 @@
-use stocks::cli::Config;
-use stocks::*;
+use stockdb::cli::Config;
+use stockdb::*;
 
 use log::{debug, info};
 use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode};
