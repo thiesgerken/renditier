@@ -18,11 +18,15 @@ pub fn serve<'r>(file: PathBuf) -> response::Result<'r> {
       .extension()
       .and_then(OsStr::to_str)
       .ok_or(Status::NotFound)?;
-    let content_type = ContentType::from_extension(ext).ok_or(Status::NotFound)?;
+    let content_type = ContentType::from_extension(ext).unwrap_or(ContentType::Plain);
     response::Response::build()
       .header(content_type)
       .sized_body(Cursor::new(d))
       .ok()
+  } else if filename != "index.html" {
+    // Routing is done client-side;
+    // hence, we just forward all requests that are not api calls or static files to the web app
+    serve(PathBuf::from("index.html"))
   } else {
     Err(Status::NotFound)
   }
