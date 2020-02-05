@@ -33,6 +33,18 @@ export const login = (user, password) => dispatch => {
     .catch(e => dispatch(loginError(e)));
 };
 
+export const checkLogin = () => dispatch => {
+  dispatch(loginRequest());
+  return fetch('/api/user')
+    .then(res => res.json())
+    .then(res => {
+      if (res.error) throw res.error;
+
+      dispatch(loginSuccess(res));
+    })
+    .catch(e => dispatch(loginError(e)));
+};
+
 export const LOGOUT_REQUEST = 'LOGOUT_REQUEST';
 export const logoutRequest = () => ({
   type: LOGOUT_REQUEST,

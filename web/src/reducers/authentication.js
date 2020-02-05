@@ -6,9 +6,9 @@ import {
   LOGOUT_REQUEST,
   LOGOUT_SUCCESS,
   LOGOUT_ERROR,
-} from '../actions/user';
+} from '../actions/authentication';
 
-const user = (
+const authentication = (
   state = {
     isFetching: false,
     didInvalidate: false,
@@ -49,4 +49,4 @@ const user = (
   }
 };
 
-export default user;
+export default authentication;

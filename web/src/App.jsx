@@ -6,6 +6,7 @@ import AddTodo from './containers/AddTodo';
 import VisibleTodoList from './containers/VisibleTodoList';
 
 import './App.css';
+import LoginPage from './containers/LoginPage';
 
 const App = () => (
   <div className="AppContainer">
@@ -23,7 +24,7 @@ const App = () => (
         </nav>
         <Switch>
           <Route path="/login">
-            <div className="App">Test</div>
+            <LoginPage />
           </Route>
           <Route path="/">
             <h1>My Todo List</h1>

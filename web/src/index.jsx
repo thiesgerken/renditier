@@ -9,7 +9,7 @@ import reducer from './reducers';
 import './index.css';
 import './semantic/dist/semantic.min.css';
 import { fetchPerformance } from './actions/performance';
-import { login } from './actions/user';
+import { login } from './actions/authentication';
 
 const middlewares = [thunkMiddleware];
 let composeEnhancers = compose;
