@@ -1,43 +1,62 @@
 import React from 'react';
-import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
+import { Switch, Route, Link } from 'react-router-dom';
+import { connect } from 'react-redux';
+import PropTypes from 'prop-types';
+import { push } from 'connected-react-router';
 
-import Footer from './components/Footer';
-import AddTodo from './containers/AddTodo';
-import VisibleTodoList from './containers/VisibleTodoList';
-
-import './App.css';
 import LoginPage from './containers/LoginPage';
+import {
+  isAuthenticated,
+  isAuthenticationInitialized,
+} from './selectors/authentication';
+import { logout, checkLogin } from './actions/authentication';
+import Dashboard from './containers/Dashboard';
 
-const App = () => (
-  <div className="AppContainer">
-    <Router>
-      <div>
-        <nav>
-          <ul>
-            <li>
-              <Link to="/">Home</Link>
-            </li>
-            <li>
-              <Link to="/login">Login</Link>
-            </li>
-          </ul>
-        </nav>
-        <Switch>
-          <Route path="/login">
-            <LoginPage />
-          </Route>
-          <Route path="/">
-            <h1>My Todo List</h1>
-            <div className="App">
-              <AddTodo />
-              <VisibleTodoList />
-              <Footer />
-            </div>
-          </Route>
-        </Switch>
-      </div>
-    </Router>
-  </div>
-);
+const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
+  if (!initialized) {
+    onInitAuthentication();
+    return <></>;
+  }
 
-export default App;
+  if (!loggedIn) return <LoginPage />;
+
+  return (
+    <Switch>
+      <Route exact path="/logout" render={onLogout} />
+      <Route
+        render={() => (
+          <>
+            <Link to="/logout">Logout</Link>
+            <Dashboard />
+          </>
+        )}
+      />
+    </Switch>
+  );
+};
+
+App.propTypes = {
+  loggedIn: PropTypes.bool.isRequired,
+  initialized: PropTypes.bool.isRequired,
+  onLogout: PropTypes.func.isRequired,
+  onInitAuthentication: PropTypes.func.isRequired,
+};
+
+const mapStateToProps = state => {
+  return {
+    loggedIn: isAuthenticated(state),
+    initialized: isAuthenticationInitialized(state),
+  };
+};
+
+const mapDispatchToProps = dispatch => {
+  return {
+    onLogout: () => {
+      // TODO: instead of redirecting, display a message (=> introduce Logout component?)
+      dispatch(logout()).then(() => dispatch(push('/')));
+    },
+    onInitAuthentication: () => dispatch(checkLogin()),
+  };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);

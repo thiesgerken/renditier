@@ -4,14 +4,17 @@ import React from 'react';
 import { render } from 'react-dom';
 import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
+import { createBrowserHistory } from 'history';
+import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
+
+import rootReducer from './reducers';
 import App from './App';
-import reducer from './reducers';
 import './index.css';
 import './semantic/dist/semantic.min.css';
-import { fetchPerformance } from './actions/performance';
-import { login } from './actions/authentication';
 
-const middlewares = [thunkMiddleware];
+const history = createBrowserHistory();
+
+const middlewares = [routerMiddleware(history), thunkMiddleware];
 let composeEnhancers = compose;
 
 if (process.env.NODE_ENV === `development`) {
@@ -23,17 +26,15 @@ if (process.env.NODE_ENV === `development`) {
 }
 
 const store = createStore(
-  reducer,
+  rootReducer(history),
   composeEnhancers(applyMiddleware(...middlewares))
 );
 
 render(
   <Provider store={store}>
-    <App />
+    <ConnectedRouter history={history}>
+      <App />
+    </ConnectedRouter>
   </Provider>,
   document.getElementById('root')
 );
-
-store.dispatch(login('thies', 'qwertz123')).then(() => {
-  store.dispatch(fetchPerformance());
-});

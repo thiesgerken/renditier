@@ -10,6 +10,8 @@ const performance = (
     isFetching: false,
     didInvalidate: false,
     items: [],
+    error: null,
+    lastUpdated: null,
   },
   action
 ) => {
@@ -25,9 +27,16 @@ const performance = (
         didInvalidate: false,
         items: action.data,
         lastUpdated: action.receivedAt,
+        error: null,
       };
     case FETCH_PERFORMANCE_ERROR:
-      return { ...state, isFetching: false };
+      return {
+        ...state,
+        isFetching: false,
+        items: [],
+        error: action.error,
+        lastUpdated: action.receivedAt,
+      };
     default:
       return state;
   }

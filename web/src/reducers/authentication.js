@@ -14,6 +14,7 @@ const authentication = (
     didInvalidate: false,
     userInfo: null,
     lastUpdated: null,
+    error: null,
   },
   action
 ) => {
@@ -29,9 +30,10 @@ const authentication = (
         didInvalidate: false,
         userInfo: action.data,
         lastUpdated: action.receivedAt,
+        error: null,
       };
     case LOGIN_ERROR:
-      return { ...state, isFetching: false };
+      return { ...state, isFetching: false, error: action.error };
     case LOGOUT_REQUEST:
       return { ...state, isFetching: true, didInvalidate: false };
     case LOGOUT_SUCCESS:
@@ -41,9 +43,10 @@ const authentication = (
         didInvalidate: false,
         userInfo: null,
         lastUpdated: action.receivedAt,
+        error: null,
       };
     case LOGOUT_ERROR:
-      return { ...state, isFetching: false };
+      return { ...state, isFetching: false, error: action.error };
     default:
       return state;
   }
