@@ -21,6 +21,7 @@ pub fn serve<'r>(file: PathBuf) -> response::Result<'r> {
     let content_type = ContentType::from_extension(ext).unwrap_or(ContentType::Plain);
     response::Response::build()
       .header(content_type)
+      .raw_header("Cache-control", "max-age=86400")
       .sized_body(Cursor::new(d))
       .ok()
   } else if filename != "index.html" {
