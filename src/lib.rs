@@ -27,6 +27,7 @@ extern crate rust_embed;
 use argonautica::{Hasher, Verifier};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use log::{error, info};
 use std::error::Error;
 
 embed_migrations!();
@@ -64,17 +65,20 @@ struct StockDummy {
 }
 
 pub fn add_missing_stocks(connection: &PgConnection) {
-    use log::{error, info};
-
     let isins = diesel::sql_query("SELECT isin FROM missing_stocks")
         .load::<StockDummy>(connection)
         .expect("Unable to find missing stocks")
         .into_iter()
-        .map(|sd| sd.isin);
+        .map(|sd| sd.isin)
+        .collect::<Vec<_>>();
+
+    if isins.is_empty() {
+        return;
+    }
 
     info!("Trying to obtain stock infos for {} stocks", isins.len());
 
-    for isin in isins {
+    for isin in isins.into_iter() {
         match onvista::get_info(&isin) {
             Ok((si, exs)) => {
                 diesel::insert_into(crate::schema::stock_infos::table)

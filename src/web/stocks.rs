@@ -11,164 +11,166 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Stock {
-  isin: String,
-  wkn: String,
-  title: String,
-  country: String,
-  fonds_type: String,
-  managing_company: String,
-  focus: String,
-  persistent: bool,
-  onvista_url: String,
-  last_historical_update: Option<DateTime<Utc>>,
-  last_realtime_update: Option<DateTime<Utc>>,
-  exchanges: Vec<Exchange>,
+    isin: String,
+    wkn: String,
+    title: String,
+    country: String,
+    fonds_type: String,
+    managing_company: String,
+    focus: String,
+    persistent: bool,
+    onvista_url: String,
+    last_historical_update: Option<DateTime<Utc>>,
+    last_realtime_update: Option<DateTime<Utc>>,
+    exchanges: Vec<Exchange>,
 }
 
 impl Stock {
-  fn new(s: StockInfo, exchanges: Vec<Exchange>) -> Self {
-    Self {
-      isin: s.isin,
-      wkn: s.wkn,
-      title: s.title,
-      country: s.country,
-      fonds_type: s.fonds_type,
-      managing_company: s.managing_company,
-      focus: s.focus,
-      persistent: s.persistent,
-      onvista_url: s.onvista_url,
-      last_historical_update: s.last_historical_update,
-      last_realtime_update: s.last_realtime_update,
-      exchanges,
+    fn new(s: StockInfo, exchanges: Vec<Exchange>) -> Self {
+        Self {
+            isin: s.isin,
+            wkn: s.wkn,
+            title: s.title,
+            country: s.country,
+            fonds_type: s.fonds_type,
+            managing_company: s.managing_company,
+            focus: s.focus,
+            persistent: s.persistent,
+            onvista_url: s.onvista_url,
+            last_historical_update: s.last_historical_update,
+            last_realtime_update: s.last_realtime_update,
+            exchanges,
+        }
     }
-  }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Price {
-  date: DateTime<Utc>,
-  price: f64,
-  currency: String,
+    date: DateTime<Utc>,
+    price: f64,
+    currency: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Exchange {
-  isin: String,
-  name: String,
-  code: String,
-  quality: String,
-  onvista_record_id: i32,   // ID specific to exchange+stock
-  onvista_exchange_id: i32, // ID specific to exchange only
-  current_price: Option<Price>,
+    isin: String,
+    name: String,
+    code: String,
+    quality: String,
+    onvista_record_id: i32,   // ID specific to exchange+stock
+    onvista_exchange_id: i32, // ID specific to exchange only
+    current_price: Option<Price>,
 }
 
 impl Exchange {
-  fn new(current_price: Option<RealtimePrice>, e: StockExchange) -> Self {
-    Self {
-      isin: e.isin,
-      name: e.name,
-      code: e.code,
-      quality: e.quality,
-      onvista_record_id: e.onvista_record_id, // ID specific to exchange+stock
-      onvista_exchange_id: e.onvista_exchange_id, // ID specific to exchange only
-      current_price: current_price.map(|p| Price {
-        date: p.date,
-        price: p.price,
-        currency: p.currency,
-      }),
+    fn new(current_price: Option<RealtimePrice>, e: StockExchange) -> Self {
+        Self {
+            isin: e.isin,
+            name: e.name,
+            code: e.code,
+            quality: e.quality,
+            onvista_record_id: e.onvista_record_id, // ID specific to exchange+stock
+            onvista_exchange_id: e.onvista_exchange_id, // ID specific to exchange only
+            current_price: current_price.map(|p| Price {
+                date: p.date,
+                price: p.price,
+                currency: p.currency,
+            }),
+        }
     }
-  }
 }
 
 #[get("/stocks?<offset>&<count>")]
 pub fn list(
-  _uid: UserId,
-  connection: DbConn,
-  offset: Option<i64>,
-  count: Option<i64>,
+    _uid: UserId,
+    connection: DbConn,
+    offset: Option<i64>,
+    count: Option<i64>,
 ) -> Option<Json<Vec<Stock>>> {
-  let infos = stock_infos::table
-    .order(stock_infos::isin.asc())
-    .limit(count.unwrap_or(i64::max_value()))
-    .offset(offset.unwrap_or(0))
-    .load::<StockInfo>(&*connection)
-    .ok()?;
+    let infos = stock_infos::table
+        .order(stock_infos::isin.asc())
+        .limit(count.unwrap_or(i64::max_value()))
+        .offset(offset.unwrap_or(0))
+        .load::<StockInfo>(&*connection)
+        .ok()?;
 
-  let exchanges = stock_exchanges::table
-    .filter(stock_exchanges::isin.eq_any(infos.iter().map(|s| &s.isin)))
-    .load::<StockExchange>(&*connection)
-    .ok()?;
+    let exchanges = stock_exchanges::table
+        .filter(stock_exchanges::isin.eq_any(infos.iter().map(|s| &s.isin)))
+        .load::<StockExchange>(&*connection)
+        .ok()?;
 
-  let prices = realtime_prices::table
-    .filter(
-      realtime_prices::onvista_record_id.eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
-    )
-    .order_by(realtime_prices::onvista_record_id.asc())
-    .then_order_by(realtime_prices::date.desc())
-    .load::<RealtimePrice>(&*connection)
-    .ok()?;
+    let prices = realtime_prices::table
+        .filter(
+            realtime_prices::onvista_record_id
+                .eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
+        )
+        .order_by(realtime_prices::onvista_record_id.asc())
+        .then_order_by(realtime_prices::date.desc())
+        .load::<RealtimePrice>(&*connection)
+        .ok()?;
 
-  let mut es = exchanges
-    .into_iter()
-    .map(|e| {
-      Exchange::new(
-        prices
-          .iter()
-          .find(|p| p.onvista_record_id == e.onvista_record_id)
-          .cloned(),
-        e,
-      )
-    })
-    .peekable();
+    let mut es = exchanges
+        .into_iter()
+        .map(|e| {
+            Exchange::new(
+                prices
+                    .iter()
+                    .find(|p| p.onvista_record_id == e.onvista_record_id)
+                    .cloned(),
+                e,
+            )
+        })
+        .peekable();
 
-  let mut x = Vec::with_capacity(infos.len());
+    let mut x = Vec::with_capacity(infos.len());
 
-  for s in infos.into_iter() {
-    let mut s_es = Vec::with_capacity(8); // up to 5 exchanges are grabbed in cli/data.rs
-    while es.peek().map(|e| &e.isin) == Some(&s.isin) {
-      s_es.push(es.next().unwrap())
+    for s in infos.into_iter() {
+        let mut s_es = Vec::with_capacity(8); // up to 5 exchanges are grabbed in cli/data.rs
+        while es.peek().map(|e| &e.isin) == Some(&s.isin) {
+            s_es.push(es.next().unwrap())
+        }
+
+        x.push(Stock::new(s, s_es));
     }
 
-    x.push(Stock::new(s, s_es));
-  }
-
-  Some(Json(x))
+    Some(Json(x))
 }
 
 #[get("/stocks/<isin>")]
 pub fn get(_uid: UserId, connection: DbConn, isin: String) -> Option<Json<Stock>> {
-  let isin = isin.to_uppercase();
-  let info = stock_infos::table
-    .find(&isin)
-    .first::<StockInfo>(&*connection)
-    .ok()?;
+    let isin = isin.to_uppercase();
+    let info = stock_infos::table
+        .find(&isin)
+        .first::<StockInfo>(&*connection)
+        .ok()?;
 
-  let exchanges = stock_exchanges::table
-    .filter(stock_exchanges::isin.eq(isin))
-    .load::<StockExchange>(&*connection)
-    .ok()?;
+    let exchanges = stock_exchanges::table
+        .filter(stock_exchanges::isin.eq(isin))
+        .load::<StockExchange>(&*connection)
+        .ok()?;
 
-  let prices = realtime_prices::table
-    .filter(
-      realtime_prices::onvista_record_id.eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
-    )
-    .order_by(realtime_prices::onvista_record_id.asc())
-    .then_order_by(realtime_prices::date.desc())
-    .load::<RealtimePrice>(&*connection)
-    .ok()?;
+    let prices = realtime_prices::table
+        .filter(
+            realtime_prices::onvista_record_id
+                .eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
+        )
+        .order_by(realtime_prices::onvista_record_id.asc())
+        .then_order_by(realtime_prices::date.desc())
+        .load::<RealtimePrice>(&*connection)
+        .ok()?;
 
-  let es = exchanges
-    .into_iter()
-    .map(|e| {
-      Exchange::new(
-        prices
-          .iter()
-          .find(|p| p.onvista_record_id == e.onvista_record_id)
-          .cloned(),
-        e,
-      )
-    })
-    .collect();
+    let es = exchanges
+        .into_iter()
+        .map(|e| {
+            Exchange::new(
+                prices
+                    .iter()
+                    .find(|p| p.onvista_record_id == e.onvista_record_id)
+                    .cloned(),
+                e,
+            )
+        })
+        .collect();
 
-  Some(Json(Stock::new(info, es)))
+    Some(Json(Stock::new(info, es)))
 }

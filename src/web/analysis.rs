@@ -12,31 +12,31 @@ use rocket_contrib::json::Json;
 
 #[get("/analysis/portfolio?<date>")]
 pub fn compute_historic_portfolio(
-  uid: UserId,
-  connection: DbConn,
-  date: String, // DateTime<Utc> not possible
+    uid: UserId,
+    connection: DbConn,
+    date: String, // DateTime<Utc> not possible
 ) -> Option<Json<Portfolio<HistoricalPrice>>> {
-  let date = Utc
-    .datetime_from_str(&format!("{} 17:30:00", &date), "%Y-%m-%d %H:%M:%S")
-    .ok()?;
+    let date = Utc
+        .datetime_from_str(&format!("{} 17:30:00", &date), "%Y-%m-%d %H:%M:%S")
+        .ok()?;
 
-  portfolio::compute(&*connection, *uid, date).ok().map(Json)
+    portfolio::compute(&*connection, *uid, date).ok().map(Json)
 }
 
 #[get("/analysis/portfolio")]
 pub fn compute_realtime_portfolio(
-  uid: UserId,
-  connection: DbConn,
+    uid: UserId,
+    connection: DbConn,
 ) -> Option<Json<Portfolio<RealtimePrice>>> {
-  let now = Utc::now();
-  portfolio::compute(&*connection, *uid, now).ok().map(Json)
+    let now = Utc::now();
+    portfolio::compute(&*connection, *uid, now).ok().map(Json)
 }
 
 #[get("/analysis/performance")]
 pub fn compute_performance(
-  uid: UserId,
-  connection: DbConn,
+    uid: UserId,
+    connection: DbConn,
 ) -> Option<Json<Vec<PortfolioPerformance>>> {
-  let now = Utc::now();
-  performance::compute(&*connection, *uid, now).ok().map(Json)
+    let now = Utc::now();
+    performance::compute(&*connection, *uid, now).ok().map(Json)
 }

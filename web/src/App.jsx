@@ -3,6 +3,7 @@ import { Switch, Route, Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { push } from 'connected-react-router';
+import { Link as UILink } from '@material-ui/core';
 
 import LoginPage from './containers/LoginPage';
 import {
@@ -26,7 +27,9 @@ const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
       <Route
         render={() => (
           <>
-            <Link to="/logout">Logout</Link>
+            <UILink to="/logout" component={Link}>
+              Logout
+            </UILink>
             <Dashboard />
           </>
         )}

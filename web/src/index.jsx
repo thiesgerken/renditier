@@ -7,10 +7,13 @@ import { Provider } from 'react-redux';
 import { createBrowserHistory } from 'history';
 import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
 
+import { ThemeProvider, createMuiTheme } from '@material-ui/core';
+// import 'typeface-roboto';
+import 'typeface-oxygen';
+// import 'typeface-open-sans';
+
 import rootReducer from './reducers';
 import App from './App';
-import './index.css';
-import './semantic/dist/semantic.min.css';
 
 const history = createBrowserHistory();
 
@@ -30,10 +33,20 @@ const store = createStore(
   composeEnhancers(applyMiddleware(...middlewares))
 );
 
+const theme = createMuiTheme({
+  typography: {
+    // fontFamily: ['Roboto'].join(','),
+    fontFamily: ['Oxygen'].join(','),
+    // fontFamily: ['Open Sans'].join(','),
+  },
+});
+
 render(
   <Provider store={store}>
     <ConnectedRouter history={history}>
-      <App />
+      <ThemeProvider theme={theme}>
+        <App />
+      </ThemeProvider>
     </ConnectedRouter>
   </Provider>,
   document.getElementById('root')

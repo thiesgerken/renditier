@@ -7,7 +7,7 @@
 ### Web
 
 - web interface
-- update realtime and historic data (every few minutes) via systemd-timer (or thread in `serve`?); check for missing stock infos as well (every few hours?)
+- check for missing stock infos as well (every few hours?)
 - transaction add/remove/update, account add/remove/update
 - on transaction modification: check for missing stock infos, if any start an update as well
 - charting data (subsampled historic data in simple form)
@@ -17,7 +17,6 @@
 - set alerts for high drops / increases in values
 - push notifications [weekly summary, daily on huge sudden changes]
 - REST interface
-- web UI (deploy to stocks.thiesgerken.de)
 - plot price + units in portfolio in same axis
 - static_files: send last_modified header to allow caching (use last build date for production builds, otherwise file mod date?)
 
