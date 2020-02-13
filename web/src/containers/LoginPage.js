@@ -8,6 +8,11 @@ const mapDispatchToProps = dispatch => ({
   },
 });
 
-const LoginPage = connect(null, mapDispatchToProps)(Login);
+const mapStateToProps = ({ authentication }) => ({
+  message: authentication.message,
+  messageType: authentication.messageType,
+});
+
+const LoginPage = connect(mapStateToProps, mapDispatchToProps)(Login);
 
 export default LoginPage;

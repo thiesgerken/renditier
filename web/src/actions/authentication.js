@@ -11,15 +11,21 @@ export const loginSuccess = json => ({
 });
 
 export const LOGIN_ERROR = 'LOGIN_ERROR';
-export const loginError = e => ({
+export const loginError = (e, message = true) => ({
   type: LOGIN_ERROR,
   error: e,
   receivedAt: Date.now(),
+  message,
 });
 
 export const INVALIDATE_LOGIN = 'INVALIDATE_LOGIN';
 export const invalidateLogin = () => ({
   type: INVALIDATE_LOGIN,
+});
+
+export const CLEAR_AUTH_MESSAGE = 'CLEAR_AUTH_MESSAGE';
+export const clearAuthMessage = () => ({
+  type: CLEAR_AUTH_MESSAGE,
 });
 
 export const login = (user, password) => dispatch => {
@@ -49,7 +55,7 @@ export const checkLogin = () => dispatch => {
       dispatch(loginSuccess(res));
     })
     .catch(e => {
-      dispatch(loginError(e));
+      dispatch(loginError(e, false));
     });
 };
 

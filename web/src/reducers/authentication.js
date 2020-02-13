@@ -6,6 +6,7 @@ import {
   LOGOUT_REQUEST,
   LOGOUT_SUCCESS,
   LOGOUT_ERROR,
+  CLEAR_AUTH_MESSAGE,
 } from '../actions/authentication';
 
 const authentication = (
@@ -15,14 +16,28 @@ const authentication = (
     userInfo: null,
     lastUpdated: null,
     error: null,
+    message: null,
+    messageType: null,
+    loginAttempted: false,
   },
   action
 ) => {
   switch (action.type) {
     case INVALIDATE_LOGIN:
-      return { ...state, didInvalidate: true };
+      return {
+        ...state,
+        didInvalidate: true,
+        messageType: null,
+        message: null,
+      };
     case LOGIN_REQUEST:
-      return { ...state, isFetching: true, didInvalidate: false };
+      return {
+        ...state,
+        isFetching: true,
+        didInvalidate: false,
+        messageType: null,
+        message: null,
+      };
     case LOGIN_SUCCESS:
       return {
         ...state,
@@ -31,11 +46,27 @@ const authentication = (
         userInfo: action.data,
         lastUpdated: action.receivedAt,
         error: null,
+        messageType: null,
+        message: null,
+        loginAttempted: true,
       };
     case LOGIN_ERROR:
-      return { ...state, isFetching: false, error: action.error };
+      return {
+        ...state,
+        isFetching: false,
+        error: action.error,
+        messageType: action.message ? 'error' : state.messageType,
+        message: action.message ? action.error.toString() : state.message,
+        loginAttempted: true,
+      };
     case LOGOUT_REQUEST:
-      return { ...state, isFetching: true, didInvalidate: false };
+      return {
+        ...state,
+        isFetching: true,
+        didInvalidate: false,
+        messageType: null,
+        message: null,
+      };
     case LOGOUT_SUCCESS:
       return {
         ...state,
@@ -44,9 +75,13 @@ const authentication = (
         userInfo: null,
         lastUpdated: action.receivedAt,
         error: null,
+        messageType: 'success',
+        message: 'Erfolgreich ausgeloggt.',
       };
     case LOGOUT_ERROR:
       return { ...state, isFetching: false, error: action.error };
+    case CLEAR_AUTH_MESSAGE:
+      return { ...state, messageType: null, message: null };
     default:
       return state;
   }

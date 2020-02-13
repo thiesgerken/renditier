@@ -7,12 +7,5 @@ export function isAuthenticated(state) {
 export function isAuthenticationInitialized(state) {
   const { authentication } = state;
 
-  if (
-    authentication.userInfo === null &&
-    !authentication.isFetching &&
-    authentication.error === null
-  )
-    return false;
-
-  return true;
+  return authentication.loginAttempted;
 }
