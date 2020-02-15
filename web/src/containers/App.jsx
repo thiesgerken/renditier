@@ -6,7 +6,7 @@ import { push } from 'connected-react-router';
 import { Link as MUILink } from '@material-ui/core';
 
 import LoginPage from './LoginPage';
-import AppLayout from '../components/AppLayout';
+// import AppLayout from '../components/AppLayout';
 import {
   isAuthenticated,
   isAuthenticationInitialized,
