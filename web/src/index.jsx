@@ -6,14 +6,12 @@ import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
 import { createBrowserHistory } from 'history';
 import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
-
 import { ThemeProvider, createMuiTheme } from '@material-ui/core';
-// import 'typeface-roboto';
 import 'typeface-oxygen';
-// import 'typeface-open-sans';
 
 import rootReducer from './reducers';
-import App from './App';
+import App from './containers/App';
+import * as serviceWorker from './serviceWorker';
 
 const history = createBrowserHistory();
 
@@ -35,9 +33,7 @@ const store = createStore(
 
 const theme = createMuiTheme({
   typography: {
-    // fontFamily: ['Roboto'].join(','),
     fontFamily: ['Oxygen'].join(','),
-    // fontFamily: ['Open Sans'].join(','),
   },
 });
 
@@ -51,3 +47,5 @@ render(
   </Provider>,
   document.getElementById('root')
 );
+
+serviceWorker.register();

@@ -5,13 +5,14 @@ import PropTypes from 'prop-types';
 import { push } from 'connected-react-router';
 import { Link as MUILink } from '@material-ui/core';
 
-import LoginPage from './containers/LoginPage';
+import LoginPage from './LoginPage';
+import AppLayout from '../components/AppLayout';
 import {
   isAuthenticated,
   isAuthenticationInitialized,
-} from './selectors/authentication';
-import { logout, checkLogin } from './actions/authentication';
-import Dashboard from './containers/Dashboard';
+} from '../selectors/authentication';
+import { logout, checkLogin } from '../actions/authentication';
+import Dashboard from './Dashboard';
 
 const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
   if (!initialized) {
@@ -22,6 +23,7 @@ const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
   if (!loggedIn) return <LoginPage />;
 
   return (
+    // <AppLayout>
     <Switch>
       <Route exact path="/logout" render={onLogout} />
       <Route
@@ -35,6 +37,7 @@ const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
         )}
       />
     </Switch>
+    // </AppLayout>
   );
 };
 
@@ -55,7 +58,6 @@ const mapStateToProps = state => {
 const mapDispatchToProps = dispatch => {
   return {
     onLogout: () => {
-      // TODO: instead of redirecting, display a message (=> introduce Logout component?)
       dispatch(logout()).then(() => dispatch(push('/')));
     },
     onInitAuthentication: () => dispatch(checkLogin()),

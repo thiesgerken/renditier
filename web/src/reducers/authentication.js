@@ -9,6 +9,13 @@ import {
   CLEAR_AUTH_MESSAGE,
 } from '../actions/authentication';
 
+const formatLoginError = e => {
+  if (e.message === '401')
+    return 'Falsche Kombination aus Benutzername und Passwort!';
+
+  return e.toString();
+};
+
 const authentication = (
   state = {
     isFetching: false,
@@ -56,7 +63,9 @@ const authentication = (
         isFetching: false,
         error: action.error,
         messageType: action.message ? 'error' : state.messageType,
-        message: action.message ? action.error.toString() : state.message,
+        message: action.message
+          ? formatLoginError(action.error)
+          : state.message,
         loginAttempted: true,
       };
     case LOGOUT_REQUEST:

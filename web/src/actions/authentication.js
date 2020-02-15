@@ -30,9 +30,11 @@ export const clearAuthMessage = () => ({
 
 export const login = (user, password) => dispatch => {
   dispatch(loginRequest());
-  return fetch(`/api/user/login?username=${user}&password=${password}`)
+  return fetch(
+    encodeURI(`/api/user/login?username=${user}&password=${password}`)
+  )
     .then(res => {
-      if (!res.ok) throw Error(`${res.status} ${res.statusText}`);
+      if (!res.ok) throw Error(res.status.toString());
       return res.json();
     })
     .then(res => {
@@ -46,7 +48,7 @@ export const login = (user, password) => dispatch => {
 export const checkLogin = () => dispatch => {
   return fetch('/api/user')
     .then(res => {
-      if (!res.ok) throw Error(`${res.status} ${res.statusText}`);
+      if (!res.ok) throw Error(res.status.toString());
       return res.json();
     })
     .then(res => {

@@ -13,6 +13,12 @@ pub fn serve<'r>(file: PathBuf) -> response::Result<'r> {
     let filename = file.display().to_string();
 
     if let Some(d) = Asset::get(&filename) {
+        let caching = if filename.starts_with("static/") {
+            "max-age=31536000,immutable"
+        } else {
+            "no-cache"
+        };
+
         let ext = file
             .as_path()
             .extension()
@@ -21,7 +27,7 @@ pub fn serve<'r>(file: PathBuf) -> response::Result<'r> {
         let content_type = ContentType::from_extension(ext).unwrap_or(ContentType::Plain);
         response::Response::build()
             .header(content_type)
-            .raw_header("Cache-control", "max-age=86400")
+            .raw_header("Cache-control", caching)
             .sized_body(Cursor::new(d))
             .ok()
     } else if filename != "index.html" {
