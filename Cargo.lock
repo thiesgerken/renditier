@@ -2257,7 +2257,7 @@ version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "stocks"
+name = "stockdb"
 version = "0.1.0"
 dependencies = [
  "argonautica 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",

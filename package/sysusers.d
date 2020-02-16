@@ -1,0 +1,1 @@
+u stockdb - "stockdb" /etc/stockdb

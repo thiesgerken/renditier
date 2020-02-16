@@ -1,4 +1,4 @@
-use stocks::cli;
+use stockdb::cli;
 
 use clap::{crate_authors, crate_name, crate_version, App, Arg, ArgGroup, Shell};
 use std::io;
@@ -36,12 +36,13 @@ fn main() {
     } else if matches.is_present("zsh") {
         cli::build(false).gen_completions_to(crate_name!(), Shell::Zsh, &mut io::stdout());
     } else if matches.is_present("config") {
-        let mut config: cli::Config = Default::default();
-        config.web.secret_key = Some("".into());
+        let config: cli::Config = Default::default();
 
         println!(
             "{}",
             toml::to_string(&config).expect("unable to serialize default config")
         );
+
+        println!("# [web]\n# secret_key = ")
     }
 }

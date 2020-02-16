@@ -1,0 +1,15 @@
+msg_blue() {
+    printf "${blue}==>${bold} $1${all_off}\n"
+}
+
+post_install() {
+    systemctl daemon-reload 
+}
+
+post_upgrade() {
+    systemctl daemon-reload 
+}
+
+pre_remove() {
+    systemctl stop stockdb
+}

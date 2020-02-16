@@ -1,3 +1,7 @@
 target
 backup.json
 stockdb.toml
+config-dist.toml
+stockdb
+zsh-completions
+bash-completions

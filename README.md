@@ -2,25 +2,21 @@
 
 ## TODO
 
-* build package (arch? ubuntu?) and put it in CI config. include completions and default config
+- systemd timer for backups, also do them prior to updates
 
 ### Web
 
-* web interface 
-* update realtime and historic data (every few minutes) via systemd-timer (or thread in `serve`?); check for missing stock infos as well (every few hours?)
-* transaction add/remove/update, account add/remove/update
-* on transaction modification: check for missing stock infos, if any start an update as well
-* charting data (subsampled historic data in simple form)
+- web interface
+- transaction add/remove/update, account add/remove/update
+- charting data (subsampled historic data in simple form)
 
-### CLI
+## Ideas
 
-* basic calculations?
+- set alerts for high drops / increases in values
+- push notifications [weekly summary, daily on huge sudden changes]
+- REST interface
+- plot price + units in portfolio in same axis
 
-## Ideas 
+## Install
 
-* set alerts for high drops / increases in values 
-* push notifications [weekly summary, daily on huge sudden changes]
-* REST interface
-* web UI (deploy to stocks.thiesgerken.de)
-* analysis: IRR, performance in some time window (day, week, month, year, total)
-* plot price + units in portfolio in same axis
+- `openssl rand -base64 32` to obtain secret key
