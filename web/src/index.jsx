@@ -8,6 +8,8 @@ import { createBrowserHistory } from 'history';
 import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
 import { ThemeProvider, createMuiTheme } from '@material-ui/core';
 import 'typeface-oxygen';
+import teal from '@material-ui/core/colors/teal';
+import lightGreen from '@material-ui/core/colors/lightGreen';
 
 import rootReducer from './reducers';
 import App from './containers/App';
@@ -34,6 +36,10 @@ const store = createStore(
 const theme = createMuiTheme({
   typography: {
     fontFamily: ['Oxygen'].join(','),
+  },
+  palette: {
+    primary: teal,
+    secondary: lightGreen,
   },
 });
 

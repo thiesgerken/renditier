@@ -1,12 +1,10 @@
 import React from 'react';
-import { Switch, Route, Link } from 'react-router-dom';
+import { Switch, Route } from 'react-router-dom';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import { push } from 'connected-react-router';
-import { Link as MUILink } from '@material-ui/core';
 
 import LoginPage from './LoginPage';
-// import AppLayout from '../components/AppLayout';
+import AppLayout from './AppLayout';
 import {
   isAuthenticated,
   isAuthenticationInitialized,
@@ -23,21 +21,12 @@ const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
   if (!loggedIn) return <LoginPage />;
 
   return (
-    // <AppLayout>
-    <Switch>
-      <Route exact path="/logout" render={onLogout} />
-      <Route
-        render={() => (
-          <>
-            <MUILink to="/logout" component={Link}>
-              Logout
-            </MUILink>
-            <Dashboard />
-          </>
-        )}
-      />
-    </Switch>
-    // </AppLayout>
+    <AppLayout>
+      <Switch>
+        <Route exact path="/logout" render={onLogout} />
+        <Route render={() => <Dashboard />} />
+      </Switch>
+    </AppLayout>
   );
 };
 
@@ -58,7 +47,7 @@ const mapStateToProps = state => {
 const mapDispatchToProps = dispatch => {
   return {
     onLogout: () => {
-      dispatch(logout()).then(() => dispatch(push('/')));
+      dispatch(logout());
     },
     onInitAuthentication: () => dispatch(checkLogin()),
   };

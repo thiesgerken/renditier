@@ -3,3 +3,4 @@
 ## TODO
 
 - invalidate user info as soon as a 401 is encountered
+- remove all cached data when the user logs out

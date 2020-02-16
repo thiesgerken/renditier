@@ -1,3 +1,5 @@
+import { push } from 'connected-react-router';
+
 export const LOGIN_REQUEST = 'LOGIN_REQUEST';
 export const loginRequest = () => ({
   type: LOGIN_REQUEST,
@@ -29,6 +31,7 @@ export const clearAuthMessage = () => ({
 });
 
 export const login = (user, password) => dispatch => {
+  dispatch(push('/'));
   dispatch(loginRequest());
   return fetch(
     encodeURI(`/api/user/login?username=${user}&password=${password}`)
@@ -87,6 +90,7 @@ export const logout = () => dispatch => {
       if (res.error) throw res.error;
 
       dispatch(logoutSuccess());
+      dispatch(push('/'));
     })
     .catch(e => dispatch(logoutError(e)));
 };

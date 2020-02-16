@@ -54,7 +54,7 @@ const Dashboard = ({ performance, onInitPerformance }) => {
         </TableHead>
         <TableBody>
           {performance.map(item => (
-            <TableRow>
+            <TableRow key={item.description}>
               <TableCell>{item.description}</TableCell>
               <TableCell align="right">
                 {item.start === null
