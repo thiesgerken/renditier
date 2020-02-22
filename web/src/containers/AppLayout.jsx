@@ -19,6 +19,7 @@ import { makeStyles, useTheme } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
 import AccountCircle from '@material-ui/icons/AccountCircle';
 import MenuItem from '@material-ui/core/MenuItem';
+import Grid from '@material-ui/core/Grid';
 import Menu from '@material-ui/core/Menu';
 import { push as routerPush } from 'connected-react-router';
 import { connect } from 'react-redux';
@@ -128,40 +129,44 @@ function ResponsiveDrawer(props) {
             Aktienverwaltung
           </Typography>
           <div>
-            {username}
-            <IconButton
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenu}
-              color="inherit"
-            >
-              <AccountCircle />
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={open}
-              onClose={handleClose}
-            >
-              <MenuItem
-                onClick={() => {
-                  handleClose();
-                  push('/logout');
-                }}
-              >
-                Ausloggen
-              </MenuItem>
-            </Menu>
+            <Grid container spacing={0} alignItems="center" justify="center">
+              <div>{username}</div>
+              <div>
+                <IconButton
+                  aria-label="account of current user"
+                  aria-controls="menu-appbar"
+                  aria-haspopup="true"
+                  onClick={handleMenu}
+                  color="inherit"
+                >
+                  <AccountCircle />
+                </IconButton>
+                <Menu
+                  id="menu-appbar"
+                  anchorEl={anchorEl}
+                  anchorOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  keepMounted
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  open={open}
+                  onClose={handleClose}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      handleClose();
+                      push('/logout');
+                    }}
+                  >
+                    Ausloggen
+                  </MenuItem>
+                </Menu>
+              </div>
+            </Grid>
           </div>
         </Toolbar>
       </AppBar>
