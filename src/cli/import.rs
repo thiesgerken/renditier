@@ -5,7 +5,6 @@ use clap::ArgMatches;
 use clap::{App, Arg, SubCommand};
 use diesel::prelude::*;
 use log::{debug, warn};
-use serde_json;
 use std::io;
 
 pub fn build() -> App<'static, 'static> {

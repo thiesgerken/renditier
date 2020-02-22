@@ -3,7 +3,6 @@ use crate::serialization::*;
 use clap::ArgMatches;
 use clap::{App, SubCommand};
 use diesel::prelude::*;
-use serde_json;
 
 pub fn build() -> App<'static, 'static> {
     SubCommand::with_name("export").about("exporting of data to stdout")

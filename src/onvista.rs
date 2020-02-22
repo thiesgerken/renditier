@@ -5,7 +5,7 @@ use std::error::Error;
 
 pub fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
     let params = qstring::QString::new(vec![("searchValue", needle)]);
-    let mut resp = reqwest::get(&format!("https://www.onvista.de/suche?{}", params))?;
+    let resp = reqwest::blocking::get(&format!("https://www.onvista.de/suche?{}", params))?;
 
     if !resp.status().is_success() {
         return Err("Data request unsuccessful".into());
@@ -144,7 +144,7 @@ pub fn get_data_historical(
     onvista_record_id: i32,
     start: Date<Local>,
 ) -> Result<Vec<HistoricalPrice>, Box<dyn Error>> {
-    let mut resp = reqwest::get(&format!("https://www.onvista.de/etf/snapshotHistoryCSV?kag=false&timeSpan=5Y&datetimeTzStartRange={}&idNotation={}",
+    let resp = reqwest::blocking::get(&format!("https://www.onvista.de/etf/snapshotHistoryCSV?kag=false&timeSpan=5Y&datetimeTzStartRange={}&idNotation={}",
       start.format("%d.%m.%Y"), onvista_record_id))
     ?;
 
@@ -220,7 +220,7 @@ fn parse_historical_row(
 }
 
 pub fn get_data_realtime(isin: &str) -> Result<Vec<RealtimePrice>, Box<dyn Error>> {
-    let mut resp = reqwest::get(&format!(
+    let resp = reqwest::blocking::get(&format!(
         "https://www.onvista.de/etf/handelsplaetze/{}",
         isin
     ))?;

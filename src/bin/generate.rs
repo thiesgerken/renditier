@@ -2,7 +2,6 @@ use stockdb::cli;
 
 use clap::{crate_authors, crate_name, crate_version, App, Arg, ArgGroup, Shell};
 use std::io;
-use toml;
 
 fn main() {
     let matches = App::new(crate_name!())
