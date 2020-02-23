@@ -4,8 +4,8 @@ stages:
   - package
   - deploy
 
-build-web: 
-  stage: build-web  
+build-web:
+  stage: build-web
   cache:
     key: ${CI_JOB_NAME}
     paths:
@@ -14,7 +14,7 @@ build-web:
   tags:
     - docker
   image: git.thiesgerken.de:5005/thies/stockdb/web
-  script: 
+  script:
     - cd web && yarn install && yarn run build && yarn run analyze
   before_script:
     - mkdir -p .yarn-registry
@@ -26,7 +26,7 @@ build-web:
 
 .build-server:
   stage: build-server
-  dependencies: 
+  dependencies:
     - build-web
   script:
     - cargo build --target=x86_64-unknown-linux-gnu --release
@@ -36,7 +36,7 @@ build-web:
     - target/x86_64-unknown-linux-gnu/release/generate --bash > bash-completions
     - target/x86_64-unknown-linux-gnu/release/generate --zsh > zsh-completions
   before_script:
-    - export LANG=C.UTF-8    
+    - export LANG=C.UTF-8
     - rustup update
     - mkdir -p .cargo-registry ~/.cargo
     - ln -s $(pwd)/.cargo-registry ~/.cargo/registry
@@ -50,15 +50,15 @@ build-web:
     expire_in: 1 month
     paths:
       - stockdb
-      - config-dist.toml 
+      - config-dist.toml
       - bash-completions
       - zsh-completions
 
-build-server-arch:
-  extends: .build-server
-  tags:
-    - docker
-  image: git.thiesgerken.de:5005/thies/stockdb/server-arch
+# build-server-arch:
+#   extends: .build-server
+#   tags:
+#     - docker
+#   image: git.thiesgerken.de:5005/thies/stockdb/server-arch
 
 build-server-ubuntu:
   extends: .build-server
@@ -71,7 +71,7 @@ package-server-ubuntu:
   tags:
     - docker
   image: git.thiesgerken.de:5005/thies/stockdb/package
-  dependencies: 
+  dependencies:
     - build-server-ubuntu
   script:
     - (cd package/ubuntu && ./package.sh)
@@ -81,21 +81,21 @@ package-server-ubuntu:
     paths:
       - stockdb.deb
 
-package-server-arch:
-  stage: package
-  tags:
-    - docker
-  image: git.thiesgerken.de:5005/thies/stockdb/package
-  dependencies: 
-    - build-server-arch
-  script:
-    - chmod -R 777 package/arch # makepkg must not be run as root
-    - su nobody -s /usr/bin/bash -c "cd package/arch && ./package.sh"
-    - mv package/arch/build/stockdb-0.1.0-0-x86_64.pkg.tar.xz .
-  artifacts:
-    expire_in: 1 month
-    paths:
-      - stockdb-0.1.0-0-x86_64.pkg.tar.xz
+# package-server-arch:
+#   stage: package
+#   tags:
+#     - docker
+#   image: git.thiesgerken.de:5005/thies/stockdb/package
+#   dependencies:
+#     - build-server-arch
+#   script:
+#     - chmod -R 777 package/arch # makepkg must not be run as root
+#     - su nobody -s /usr/bin/bash -c "cd package/arch && ./package.sh"
+#     - mv package/arch/build/stockdb-0.1.0-0-x86_64.pkg.tar.xz .
+#   artifacts:
+#     expire_in: 1 month
+#     paths:
+#       - stockdb-0.1.0-0-x86_64.pkg.tar.xz
 
 .deploy-thiesgerken-de:
   stage: deploy
