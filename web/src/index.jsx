@@ -54,4 +54,15 @@ render(
   document.getElementById('root')
 );
 
-serviceWorker.register();
+// serviceWorker.register();
+serviceWorker.register({
+  onUpdate: registration => {
+    // let refreshBar = document.querySelector('#custom-refresh-bar');
+    // if (refreshBar) {
+    //   refreshBar.style.display = '';
+    // }
+    // TODO: notify the user using a snack bar (eg. https://solidstudio.io/blog/pwa_refreshing_application.html)
+    console.log('onUpdate called');
+    console.log(registration);
+  },
+});
