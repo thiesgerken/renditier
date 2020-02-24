@@ -54,15 +54,13 @@ render(
   document.getElementById('root')
 );
 
-// serviceWorker.register();
 serviceWorker.register({
-  onUpdate: registration => {
-    // let refreshBar = document.querySelector('#custom-refresh-bar');
-    // if (refreshBar) {
-    //   refreshBar.style.display = '';
-    // }
-    // TODO: notify the user using a snack bar (eg. https://solidstudio.io/blog/pwa_refreshing_application.html)
-    console.log('onUpdate called');
+  onInit: registration => {
+    console.log('onInit called');
     console.log(registration);
+
+    // TODO: dispatch action that updates the state with the registration.
+    // TODO: check for push registration and tell the server as soon as we are logged in
+    // TODO: settings panel with a checkbox for push messages (if state contains a registration)
   },
 });
