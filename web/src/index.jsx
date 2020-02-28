@@ -14,6 +14,7 @@ import lightGreen from '@material-ui/core/colors/lightGreen';
 import rootReducer from './reducers';
 import App from './containers/App';
 import * as serviceWorker from './serviceWorker';
+import { updateRegistration } from './actions/notifications';
 
 const history = createBrowserHistory();
 
@@ -56,10 +57,8 @@ render(
 
 serviceWorker.register({
   onInit: registration => {
-    console.log('onInit called');
-    console.log(registration);
+    store.dispatch(updateRegistration(registration));
 
-    // TODO: dispatch action that updates the state with the registration.
     // TODO: check for push registration and tell the server as soon as we are logged in
     // TODO: settings panel with a checkbox for push messages (if state contains a registration)
   },
