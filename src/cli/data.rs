@@ -6,7 +6,7 @@ use chrono::{Duration, Utc};
 use clap::ArgMatches;
 use clap::{App, Arg, ArgGroup, SubCommand};
 use diesel::prelude::*;
-use log::info;
+use log::{error, info};
 
 pub fn build() -> App<'static, 'static> {
     SubCommand::with_name("data")
@@ -46,7 +46,9 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             "Updating realtime data for {} stocks",
             stocks_rt_update.len()
         );
-        fetch_realtime(connection, &stocks_rt_update);
+        if let Err(e) = fetch_realtime(connection, &stocks_rt_update) {
+            error!("Could not update realtime data: {}", e)
+        }
 
         let stocks_hist_update = stocks
             .iter()
@@ -59,7 +61,9 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             "Updating historical data for {} stocks",
             stocks_hist_update.len()
         );
-        fetch_historical(connection, &stocks_hist_update);
+        if let Err(e) = fetch_historical(connection, &stocks_hist_update) {
+            error!("Could not update realtime data: {}", e)
+        }
     } else if sub_matches.is_present("clean") {
         use crate::schema::realtime_prices::dsl::*;
         let now = Utc::now();

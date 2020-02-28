@@ -8,7 +8,7 @@ use chrono::{Duration, Utc};
 use clap::ArgMatches;
 use clap::{App, Arg, SubCommand};
 use diesel::prelude::*;
-use log::{info, warn};
+use log::{error, info, warn};
 use rocket::config::LoggingLevel;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -72,7 +72,9 @@ fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
       "Updating realtime data for {} stocks",
       stocks_rt_update.len()
     );
-    fetch_realtime(connection, &stocks_rt_update);
+    if let Err(e) = fetch_realtime(connection, &stocks_rt_update) {
+      error!("Could not update realtime data: {}", e)
+    }
   }
 
   let stocks_hist_update = stocks
@@ -87,7 +89,9 @@ fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
       "Updating historical data for {} stocks",
       stocks_hist_update.len()
     );
-    fetch_historical(connection, &stocks_hist_update);
+    if let Err(e) = fetch_historical(connection, &stocks_hist_update) {
+      error!("Could not update historical data: {}", e)
+    }
   }
 
   Ok(())

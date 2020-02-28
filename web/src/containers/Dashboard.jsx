@@ -24,6 +24,18 @@ const Dashboard = ({ performance, onInitPerformance }) => {
     },
   }))(TableCell);
 
+  const calculateProfit = (start, end) => {
+    if (end.value === null) {
+      return '\u2014';
+    }
+
+    return formatAmount(
+      end.value +
+        end.invested -
+        (start === null ? 0.0 : start.value + start.invested)
+    );
+  };
+
   return (
     <TableContainer component={Paper}>
       <Table size="small" aria-label="performance">
@@ -62,7 +74,7 @@ const Dashboard = ({ performance, onInitPerformance }) => {
                   : formatAmount(-1 * item.start.invested)}
               </TableCell>
               <TableCell align="right">
-                {item.start === null
+                {item.start === null || item.start.value === null
                   ? '\u2014'
                   : formatAmount(item.start.value)}
               </TableCell>
@@ -70,16 +82,12 @@ const Dashboard = ({ performance, onInitPerformance }) => {
                 {formatAmount(-1 * item.end.invested)}
               </TableCell>
               <TableCell align="right">
-                {formatAmount(item.end.value)}
+                {item.end.value === null
+                  ? '\u2014'
+                  : formatAmount(item.end.value)}
               </TableCell>
               <TableCell align="right">
-                {formatAmount(
-                  item.end.value +
-                    item.end.invested -
-                    (item.start === null
-                      ? 0.0
-                      : item.start.value + item.start.invested)
-                )}
+                {calculateProfit(item.start, item.end)}
               </TableCell>
               <TableCell align="right">
                 {item.irr === null

@@ -6,12 +6,14 @@ import SwipeableDrawer from '@material-ui/core/SwipeableDrawer';
 import Drawer from '@material-ui/core/Drawer';
 import Hidden from '@material-ui/core/Hidden';
 import IconButton from '@material-ui/core/IconButton';
-import InboxIcon from '@material-ui/icons/MoveToInbox';
+import DashboardIcon from '@material-ui/icons/Dashboard';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
-import MailIcon from '@material-ui/icons/Mail';
+import SettingsIcon from '@material-ui/icons/Settings';
+import ReceiptIcon from '@material-ui/icons/Receipt';
+import CreditCardIcon from '@material-ui/icons/CreditCard';
 import MenuIcon from '@material-ui/icons/Menu';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
@@ -19,6 +21,7 @@ import { makeStyles, useTheme } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
 import AccountCircle from '@material-ui/icons/AccountCircle';
 import MenuItem from '@material-ui/core/MenuItem';
+import Grid from '@material-ui/core/Grid';
 import Menu from '@material-ui/core/Menu';
 import { push as routerPush } from 'connected-react-router';
 import { connect } from 'react-redux';
@@ -62,39 +65,68 @@ const useStyles = makeStyles(theme => ({
 }));
 
 function ResponsiveDrawer(props) {
-  const { children, username, push } = props;
+  const { children, username, push, pathname } = props;
   const classes = useStyles();
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
+  let currentPage = pathname.split('/')[1];
+  if (currentPage === '') currentPage = 'dashboard';
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+
+  const makeMenuItem = x => (
+    <ListItem
+      button
+      key={x.key}
+      selected={currentPage === x.key}
+      onClick={() => push(`/${x.key}`)}
+    >
+      <ListItemIcon>{x.icon}</ListItemIcon>
+      <ListItemText primary={x.text} />
+    </ListItem>
+  );
 
   const drawer = (
     <div>
       <div className={classes.toolbar} />
       <Divider />
       <List>
-        {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
-          <ListItem button key={text}>
-            <ListItemIcon>
-              {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-            </ListItemIcon>
-            <ListItemText primary={text} />
-          </ListItem>
-        ))}
+        {' '}
+        {[
+          {
+            key: 'dashboard',
+            text: 'Übersicht',
+            icon: <DashboardIcon />,
+          },
+        ].map(makeMenuItem)}
       </List>
       <Divider />
       <List>
-        {['All mail', 'Trash', 'Spam'].map((text, index) => (
-          <ListItem button key={text}>
-            <ListItemIcon>
-              {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-            </ListItemIcon>
-            <ListItemText primary={text} />
-          </ListItem>
-        ))}
+        {[
+          {
+            key: 'transactions',
+            text: 'Transaktionen',
+            icon: <ReceiptIcon />,
+          },
+          {
+            key: 'accounts',
+            text: 'Depots',
+            icon: <CreditCardIcon />,
+          },
+        ].map(makeMenuItem)}
+      </List>
+      <Divider />
+      <List>
+        {[
+          {
+            key: 'settings',
+            text: 'Einstellungen',
+            icon: <SettingsIcon />,
+          },
+        ].map(makeMenuItem)}
       </List>
     </div>
   );
@@ -128,40 +160,44 @@ function ResponsiveDrawer(props) {
             Aktienverwaltung
           </Typography>
           <div>
-            {username}
-            <IconButton
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenu}
-              color="inherit"
-            >
-              <AccountCircle />
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={open}
-              onClose={handleClose}
-            >
-              <MenuItem
-                onClick={() => {
-                  handleClose();
-                  push('/logout');
-                }}
-              >
-                Ausloggen
-              </MenuItem>
-            </Menu>
+            <Grid container spacing={0} alignItems="center" justify="center">
+              <div>{username}</div>
+              <div>
+                <IconButton
+                  aria-label="account of current user"
+                  aria-controls="menu-appbar"
+                  aria-haspopup="true"
+                  onClick={handleMenu}
+                  color="inherit"
+                >
+                  <AccountCircle />
+                </IconButton>
+                <Menu
+                  id="menu-appbar"
+                  anchorEl={anchorEl}
+                  anchorOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  keepMounted
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  open={open}
+                  onClose={handleClose}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      handleClose();
+                      push('/logout');
+                    }}
+                  >
+                    Ausloggen
+                  </MenuItem>
+                </Menu>
+              </div>
+            </Grid>
           </div>
         </Toolbar>
       </AppBar>
@@ -212,11 +248,13 @@ ResponsiveDrawer.propTypes = {
   ]).isRequired,
   push: PropTypes.func.isRequired,
   username: PropTypes.string.isRequired,
+  pathname: PropTypes.string.isRequired,
 };
 
-const mapStateToProps = state => {
+const mapStateToProps = ({ authentication, router }) => {
   return {
-    username: state.authentication.userInfo.full_name,
+    username: authentication.userInfo.full_name,
+    pathname: router.location.pathname,
   };
 };
 
