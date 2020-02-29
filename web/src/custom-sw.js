@@ -12,7 +12,6 @@
 
 self.addEventListener('fetch', e => {
   // this needs to be here, even if it does not do anything.
-
-  console.log('workbox "fetch" event fired');
-  console.log(e);
+  // console.log('workbox "fetch" event fired');
+  // console.log(e);
 });

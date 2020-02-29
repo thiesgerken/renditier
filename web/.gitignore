@@ -7,3 +7,4 @@
 yarn-error.log
 /src/semantic
 /build
+/public/custom-sw.js
