@@ -1,6 +1,7 @@
 pub mod accounts;
 pub mod analysis;
 pub mod prices;
+pub mod push;
 pub mod static_files;
 pub mod stocks;
 pub mod transactions;
@@ -56,7 +57,9 @@ pub fn handle(config: Config) {
                 prices::list,
                 analysis::compute_historic_portfolio,
                 analysis::compute_realtime_portfolio,
-                analysis::compute_performance
+                analysis::compute_performance,
+                push::subscribe,
+                push::unsubscribe,
             ],
         )
         .mount("/", routes![static_files::serve, static_files::index])

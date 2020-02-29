@@ -9,12 +9,12 @@ import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
 import { ThemeProvider, createMuiTheme } from '@material-ui/core';
 import 'typeface-oxygen';
 import teal from '@material-ui/core/colors/teal';
-import lightGreen from '@material-ui/core/colors/lightGreen';
+import deepOrange from '@material-ui/core/colors/deepOrange';
 
 import rootReducer from './reducers';
 import App from './containers/App';
 import * as serviceWorker from './serviceWorker';
-import { updateRegistration } from './actions/notifications';
+import { updateRegistration, subscribe } from './actions/notifications';
 
 const history = createBrowserHistory();
 
@@ -40,7 +40,7 @@ const theme = createMuiTheme({
   },
   palette: {
     primary: teal,
-    secondary: lightGreen,
+    secondary: deepOrange,
   },
 });
 
@@ -58,6 +58,12 @@ render(
 serviceWorker.register({
   onInit: registration => {
     store.dispatch(updateRegistration(registration));
+
+    // Set the initial subscription value
+    registration.pushManager.getSubscription().then(subscription => {
+      // might fail if the user is not logged in, but okay ....
+      if (subscription !== null) store.dispatch(subscribe(subscription));
+    });
 
     // TODO: check for push registration and tell the server as soon as we are logged in
     // TODO: settings panel with a checkbox for push messages (if state contains a registration)

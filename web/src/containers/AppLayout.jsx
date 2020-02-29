@@ -82,7 +82,10 @@ function ResponsiveDrawer(props) {
       button
       key={x.key}
       selected={currentPage === x.key}
-      onClick={() => push(`/${x.key}`)}
+      onClick={() => {
+        push(`/${x.key}`);
+        setMobileOpen(false);
+      }}
     >
       <ListItemIcon>{x.icon}</ListItemIcon>
       <ListItemText primary={x.text} />
@@ -91,10 +94,11 @@ function ResponsiveDrawer(props) {
 
   const drawer = (
     <div>
-      <div className={classes.toolbar} />
-      <Divider />
+      <Hidden xsDown implementation="css">
+        <div className={classes.toolbar} />
+        <Divider />
+      </Hidden>
       <List>
-        {' '}
         {[
           {
             key: 'dashboard',

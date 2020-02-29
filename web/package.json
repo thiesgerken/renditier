@@ -37,7 +37,7 @@
     "cra-append-sw": "^2.7.0"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "react-scripts start && cra-append-sw ./src/custom-sw.js ",
     "build": "react-scripts build && cra-append-sw ./src/custom-sw.js",
     "test": "react-scripts test",
     "test:lint:js": "eslint --ext=js --ext=jsx src",
