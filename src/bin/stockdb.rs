@@ -56,6 +56,8 @@ fn main() {
         cli::import::handle(&connection, sub_matches);
     } else if let Some(sub_matches) = matches.subcommand_matches("export") {
         cli::export::handle(&connection, sub_matches);
+    } else if let Some(sub_matches) = matches.subcommand_matches("push") {
+        cli::push::handle(&connection, sub_matches, config.push);
     } else if let Some(sub_matches) = matches.subcommand_matches("serve") {
         std::mem::drop(connection); // `serve::handle` creates its own connections
         cli::serve::handle(sub_matches, config.web, config.database, config.verbosity);

@@ -41,7 +41,7 @@ pub fn build() -> App<'static, 'static> {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct Config {
-  pub secret_key: Option<String>,
+  pub secret_key: String,
   pub port: i64,
   pub address: String,
 }
@@ -49,7 +49,7 @@ pub struct Config {
 impl Default for Config {
   fn default() -> Self {
     Self {
-      secret_key: None,
+      secret_key: String::new(),
       port: 8383,
       address: "localhost".into(),
     }
@@ -103,9 +103,7 @@ pub fn handle(sub_matches: &ArgMatches<'_>, mut config: Config, database: String
   }
 
   if let Some(y) = sub_matches.value_of("secret") {
-    if !y.is_empty() {
-      config.secret_key = Some(y.into());
-    }
+    config.secret_key = y.into();
   }
 
   if let Some(y) = sub_matches.value_of("address") {
@@ -132,7 +130,11 @@ pub fn handle(sub_matches: &ArgMatches<'_>, mut config: Config, database: String
   web::handle(web::Config {
     port: config.port as u16,
     address: config.address,
-    secret_key: config.secret_key,
+    secret_key: if config.secret_key.is_empty() {
+      None
+    } else {
+      Some(config.secret_key)
+    },
     log_level: level,
     database_url: database,
   });

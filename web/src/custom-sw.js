@@ -15,3 +15,17 @@ self.addEventListener('fetch', e => {
   // console.log('workbox "fetch" event fired');
   // console.log(e);
 });
+
+self.addEventListener('push', e => {
+  console.log('[Service Worker] Push Received.');
+  console.log(`[Service Worker] Push had this data: "${e.data.text()}"`);
+
+  const title = 'Push Codelab';
+  const options = {
+    body: 'Yay it works.',
+    // icon: 'images/icon.png',
+    // badge: 'images/badge.png'
+  };
+
+  e.waitUntil(self.registration.showNotification(title, options));
+});
