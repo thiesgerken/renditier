@@ -113,10 +113,10 @@ pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>, con
         ]);
 
         for s in subs.iter() {
-            let s_endpoint = if sub_matches.is_present("full") || s.endpoint.len() <= 84 {
+            let s_endpoint = if sub_matches.is_present("full") || s.endpoint.len() <= 45 + 4 {
                 s.endpoint.clone()
             } else {
-                String::from(&format!("{} ...", s.endpoint[..80].to_string()))
+                String::from(&format!("{} ...", s.endpoint[..45].to_string()))
             };
 
             table.add_row(row![
