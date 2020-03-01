@@ -79,7 +79,7 @@ export const subscribe = () => (dispatch, getState) => {
     return outputArray;
   };
 
-  // TODO: put the server key in some kind of environment variable or config file
+  // TODO: obtain the server key upon user login instead
 
   return notifications.registration.pushManager
     .subscribe({
