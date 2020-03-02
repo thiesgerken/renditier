@@ -1,3 +1,4 @@
+use crate::analysis::performance;
 use crate::models::*;
 use crate::schema::push_subscriptions::dsl::*;
 
@@ -8,6 +9,7 @@ use diesel::prelude::*;
 use log::info;
 use prettytable::{cell, row, Table};
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 use std::fs::File;
 use web_push::*;
 
@@ -54,6 +56,23 @@ pub struct Config {
     pub key_file: String,
 }
 
+fn push_body(connection: &PgConnection, uid: i32) -> Result<String, Box<dyn Error>> {
+    // TODO: compute only what is necessary (daily performance)
+    // TODO: better formatting, also show percentage (in relation to start value if possible)
+    // TODO: move somewhere else
+    // TODO: scheduled execution every day
+
+    let now = Utc::now();
+    let perf = performance::compute(connection, uid, now)?;
+    let perf = perf.get(1).ok_or("performance empty")?;
+
+    let start = perf.start.as_ref().ok_or("no start")?;
+    let start = start.value.ok_or("no value")? + start.invested;
+    let end = perf.end.value.ok_or("no value")? + perf.end.invested;
+
+    Ok(format!("{}: {:+.2}€", perf.description, end - start))
+}
+
 #[tokio::main]
 pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>, config: Config) {
     if let Some(s_pid) = sub_matches.value_of("test") {
@@ -72,7 +91,7 @@ pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>, con
         let sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info).unwrap();
         builder.set_vapid_signature(sig_builder.build().unwrap());
 
-        let content = format!("Test {}", Utc::now());
+        let content = push_body(connection, sub.user_id).unwrap();
         builder.set_payload(ContentEncoding::AesGcm, content.as_bytes());
         let message = builder.build().unwrap();
 

@@ -10,6 +10,7 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import { withStyles } from '@material-ui/core/styles';
+import * as moment from 'moment';
 
 import { initPerformance } from '../actions/performance';
 
@@ -17,6 +18,8 @@ const Dashboard = ({ performance, onInitPerformance }) => {
   onInitPerformance();
 
   const formatAmount = value => (value === null ? '' : `${value.toFixed(2)}€`);
+  const formatPercentage = value =>
+    value === null ? '' : `${(value * 100).toFixed(2)}%`;
 
   const StyledTableCell = withStyles(() => ({
     head: {
@@ -25,15 +28,27 @@ const Dashboard = ({ performance, onInitPerformance }) => {
   }))(TableCell);
 
   const calculateProfit = (start, end) => {
-    if (end.value === null) {
+    if (end.value === null || (start !== null && start.value === null)) {
       return '\u2014';
     }
 
-    return formatAmount(
+    const diff =
       end.value +
-        end.invested -
-        (start === null ? 0.0 : start.value + start.invested)
+      end.invested -
+      (start === null ? 0.0 : start.value + start.invested);
+
+    return (
+      formatAmount(diff) +
+      (start === null || start.value === 0.0
+        ? ''
+        : ` (${formatPercentage(diff / start.value)})`)
     );
+  };
+
+  const hideIrr = item => {
+    if (item.start === null) return false;
+
+    return moment(item.end.date).diff(moment(item.start.date), 'days') < 32;
   };
 
   return (
@@ -90,9 +105,9 @@ const Dashboard = ({ performance, onInitPerformance }) => {
                 {calculateProfit(item.start, item.end)}
               </TableCell>
               <TableCell align="right">
-                {item.irr === null
-                  ? '\u2014'
-                  : `${(item.irr * 100).toFixed(1)}%`}
+                {item.irr === null || hideIrr(item)
+                  ? ''
+                  : `${formatPercentage(item.irr)} p.a.`}
               </TableCell>
             </TableRow>
           ))}
