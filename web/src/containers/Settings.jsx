@@ -20,7 +20,7 @@ const Settings = ({
 
   return (
     <div>
-      <div>ServiceWorker: {workerRegistered ? 'Ja' : 'Nein'}</div>
+      {/* <div>ServiceWorker: {workerRegistered ? 'Ja' : 'Nein'}</div> */}
       <div>
         Version #{buildCommit}, gebaut {moment(buildDate).format('LLL')} (
         {moment(buildDate).fromNow()})

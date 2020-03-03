@@ -1,6 +1,8 @@
+use crate::cli::push::Config as PushConfig;
 use crate::connect;
 use crate::data::*;
 use crate::models::*;
+use crate::push;
 use crate::schema::stock_infos::dsl::*;
 use crate::{add_missing_stocks, web};
 
@@ -12,6 +14,8 @@ use log::{error, info, warn};
 use rocket::config::LoggingLevel;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use std::fs::File;
+use std::io::Read;
 use std::thread;
 
 pub fn build() -> App<'static, 'static> {
@@ -97,7 +101,13 @@ fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
   Ok(())
 }
 
-pub fn handle(sub_matches: &ArgMatches<'_>, mut config: Config, database: String, verbosity: i64) {
+pub fn handle(
+  sub_matches: &ArgMatches<'_>,
+  mut config: Config,
+  push_config: PushConfig,
+  database: String,
+  verbosity: i64,
+) {
   if let Some(y) = sub_matches.value_of("port") {
     config.port = y.parse().expect("cannot parse port");
   }
@@ -120,9 +130,27 @@ pub fn handle(sub_matches: &ArgMatches<'_>, mut config: Config, database: String
   thread::spawn(move || {
     thread::sleep(std::time::Duration::from_secs(10));
     let connection = connect(&db_str).expect("error connecting to db");
+
+    let private_key_file = File::open(push_config.key_file);
+    let mut private_key = Vec::new();
+    if let Err(e) = private_key_file.and_then(|mut f| f.read_to_end(&mut private_key)) {
+      warn!(
+        "Error loading private key: {:?}, will not attempt to send notifications.",
+        e
+      );
+
+      private_key = Vec::new();
+    }
+
     loop {
       add_missing_stocks(&connection);
-      fetch_data(&connection).unwrap_or_else(|e| warn!("Error fetching new price data: {}", e));
+      fetch_data(&connection).unwrap_or_else(|e| error!("Error fetching new price data: {}", e));
+
+      if !private_key.is_empty() {
+        push::send_daily_notifications(&connection, &private_key)
+          .unwrap_or_else(|e| error!("Error sending notifications: {}", e));
+      }
+
       thread::sleep(std::time::Duration::from_secs(30));
     }
   });

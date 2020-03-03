@@ -10,46 +10,18 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import { withStyles } from '@material-ui/core/styles';
-import * as moment from 'moment';
 
 import { initPerformance } from '../actions/performance';
+import PerformanceRow from '../components/PerformanceRow';
 
 const Dashboard = ({ performance, onInitPerformance }) => {
   onInitPerformance();
-
-  const formatAmount = value => (value === null ? '' : `${value.toFixed(2)}€`);
-  const formatPercentage = value =>
-    value === null ? '' : `${(value * 100).toFixed(2)}%`;
 
   const StyledTableCell = withStyles(() => ({
     head: {
       fontWeight: 600,
     },
   }))(TableCell);
-
-  const calculateProfit = (start, end) => {
-    if (end.value === null || (start !== null && start.value === null)) {
-      return '\u2014';
-    }
-
-    const diff =
-      end.value +
-      end.invested -
-      (start === null ? 0.0 : start.value + start.invested);
-
-    return (
-      formatAmount(diff) +
-      (start === null || start.value === 0.0
-        ? ''
-        : ` (${formatPercentage(diff / start.value)})`)
-    );
-  };
-
-  const hideIrr = item => {
-    if (item.start === null) return false;
-
-    return moment(item.end.date).diff(moment(item.start.date), 'days') < 32;
-  };
 
   return (
     <TableContainer component={Paper}>
@@ -75,42 +47,41 @@ const Dashboard = ({ performance, onInitPerformance }) => {
             <StyledTableCell align="right">Wert</StyledTableCell>
             <StyledTableCell align="right">Investiert</StyledTableCell>
             <StyledTableCell align="right">Wert</StyledTableCell>
-            <StyledTableCell />
-            <StyledTableCell />
           </TableRow>
         </TableHead>
         <TableBody>
-          {performance.map(item => (
-            <TableRow key={item.description}>
-              <TableCell>{item.description}</TableCell>
-              <TableCell align="right">
-                {item.start === null
-                  ? '\u2014'
-                  : formatAmount(-1 * item.start.invested)}
-              </TableCell>
-              <TableCell align="right">
-                {item.start === null || item.start.value === null
-                  ? '\u2014'
-                  : formatAmount(item.start.value)}
-              </TableCell>
-              <TableCell align="right">
-                {formatAmount(-1 * item.end.invested)}
-              </TableCell>
-              <TableCell align="right">
-                {item.end.value === null
-                  ? '\u2014'
-                  : formatAmount(item.end.value)}
-              </TableCell>
-              <TableCell align="right">
-                {calculateProfit(item.start, item.end)}
-              </TableCell>
-              <TableCell align="right">
-                {item.irr === null || hideIrr(item)
-                  ? ''
-                  : `${formatPercentage(item.irr)} p.a.`}
-              </TableCell>
-            </TableRow>
-          ))}
+          {performance.map(
+            item =>
+              ['Today', 'WeekToDate'].includes(item.kind) && (
+                <PerformanceRow data={item} />
+              )
+          )}
+          <TableRow>
+            {Array(7)
+              .fill(1)
+              .map(() => (
+                <TableCell>&nbsp;</TableCell>
+              ))}
+          </TableRow>
+          {performance.map(
+            item =>
+              ['Total', 'YearToYear', 'YearToDate'].includes(item.kind) && (
+                <PerformanceRow data={item} />
+              )
+          )}
+          <TableRow>
+            {Array(7)
+              .fill(1)
+              .map(() => (
+                <TableCell>&nbsp;</TableCell>
+              ))}
+          </TableRow>
+          {performance.map(
+            item =>
+              ['MonthToMonth', 'MonthToDate'].includes(item.kind) && (
+                <PerformanceRow data={item} />
+              )
+          )}
         </TableBody>
       </Table>
     </TableContainer>

@@ -30,7 +30,7 @@ pub fn fetch_realtime(
 
         if data.len() < original_len {
             warn!(
-                "throwing away {} realtime data record(s) (of {}) for {} because they belong to unknown exchanges",
+                "Throwing away {} realtime data record(s) (of {}) for {} because they belong to unknown exchanges",
                 original_len - data.len(),
                 original_len,
                 &s.isin
@@ -43,7 +43,7 @@ pub fn fetch_realtime(
             .execute(connection)?;
 
         info!(
-            "inserted {} row(s) of realtime data (of {}) for {}",
+            "Inserted {} row(s) of realtime data (of {}) for {}",
             row_count,
             data.len(),
             &s.isin

@@ -49,9 +49,20 @@ impl EitherPrice {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub enum PerformanceKind {
+    Total,
+    Today,
+    YearToDate,
+    MonthToDate,
+    WeekToDate,
+    YearToYear,
+    MonthToMonth,
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct PortfolioPerformance {
-    pub description: String,
+    pub kind: PerformanceKind,
     pub start: Option<PortfolioSnapshot>,
     pub end: PortfolioSnapshot,
     pub irr: Option<f64>,
@@ -109,8 +120,6 @@ pub fn compute(
     isins.sort();
     let isins = isins;
 
-    // TODO: something goes wrong if realtime prices cannot be found (newton gets called anyway??)
-
     // find suitable price information
     let current_prices: PriceMap<RealtimePrice> =
         price::find(connection, &isins, date, 4 * 24, 4 * 24)?;
@@ -136,7 +145,7 @@ pub fn compute(
         .naive_local();
 
     let mut jobs = Vec::new();
-    jobs.push(("Insgesamt".to_owned(), None, None));
+    jobs.push((PerformanceKind::Total, None, None));
 
     /*
       EOD prices <-> current_prices:
@@ -146,28 +155,28 @@ pub fn compute(
       * end of last year
     */
 
-    jobs.push(("Heute".to_owned(), Some(prev_day), None));
+    jobs.push((PerformanceKind::Today, Some(prev_day), None));
 
     let days_from_friday = (prev_day.weekday().number_from_monday() as i64
         - Weekday::Fri.number_from_monday() as i64
         + 7)
         % 7;
     jobs.push((
-        "Diese Woche".to_owned(),
+        PerformanceKind::WeekToDate,
         prev_day.checked_sub_signed(Duration::days(days_from_friday)),
         None,
     ));
 
     let first_of_month = NaiveDate::from_ymd(prev_day.year(), prev_day.month(), 1);
     jobs.push((
-        "Dieser Monat".to_owned(),
+        PerformanceKind::MonthToDate,
         first_of_month.checked_sub_signed(Duration::days(1)),
         None,
     ));
 
     let first_of_year = NaiveDate::from_ymd(prev_day.year(), 1, 1);
     jobs.push((
-        "Dieses Jahr".to_owned(),
+        PerformanceKind::YearToDate,
         first_of_year.checked_sub_signed(Duration::days(1)),
         None,
     ));
@@ -181,32 +190,32 @@ pub fn compute(
     let yearlies = successors(
         first_of_year
             .checked_sub_signed(Duration::days(1))
-            .map(|x| (String::new(), x, first_of_year)),
-        |(_, last, _)| {
+            .map(|x| (x, first_of_year)),
+        |(last, _)| {
             NaiveDate::from_ymd(last.year(), 1, 1)
                 .checked_sub_signed(Duration::days(1))
-                .map(|x| (format!("{}", last.year()), x, *last))
+                .map(|x| (x, *last))
         },
     )
     .skip(1)
-    .take_while(|(_, _, last)| first_transaction_date < *last)
-    .map(|(s, x, y)| (s, Some(x), Some(y)));
+    .take_while(|(_, last)| first_transaction_date < *last)
+    .map(|(x, y)| (PerformanceKind::YearToYear, Some(x), Some(y)));
     jobs.extend(yearlies);
 
     let monthlies = successors(
         first_of_month
             .checked_sub_signed(Duration::days(1))
-            .map(|x| (String::new(), x, first_of_month)),
-        |(_, last, _)| {
+            .map(|x| (x, first_of_month)),
+        |(last, _)| {
             NaiveDate::from_ymd(last.year(), last.month(), 1)
                 .checked_sub_signed(Duration::days(1))
-                .map(|x| (format!("{}/{}", last.month(), last.year()), x, *last))
+                .map(|x| (x, *last))
         },
     )
     .skip(1)
-    .take_while(|(_, _, last)| first_transaction_date < *last)
+    .take_while(|(_, last)| first_transaction_date < *last)
     .take(12)
-    .map(|(s, x, y)| (s, Some(x), Some(y)));
+    .map(|(x, y)| (PerformanceKind::MonthToMonth, Some(x), Some(y)));
     jobs.extend(monthlies);
 
     // collect all relevant dates
@@ -241,7 +250,7 @@ pub fn compute(
 
     Ok(jobs
         .into_iter()
-        .map(|(s, st, en)| compute_performance(&ts, &isins, &current_prices, &prices, s, st, en))
+        .map(|(k, st, en)| compute_performance(&ts, &isins, &current_prices, &prices, k, st, en))
         .collect::<Vec<_>>())
 }
 
@@ -330,7 +339,7 @@ fn compute_performance(
     isins: &[String],
     current_prices: &PriceMap<RealtimePrice>,
     prices: &HashMap<NaiveDate, PriceMap<HistoricalPrice>>,
-    description: String,
+    kind: PerformanceKind,
     start: Option<NaiveDate>,
     end: Option<NaiveDate>,
 ) -> PortfolioPerformance {
@@ -437,7 +446,7 @@ fn compute_performance(
     };
 
     PortfolioPerformance {
-        description,
+        kind,
         start: start_snapshot,
         end: end_snapshot,
         irr,
