@@ -28,7 +28,10 @@ self.addEventListener('push', e => {
 
   if (Object.keys(data).includes('text')) {
     body = data.text;
-  } else if (Object.keys(data).includes('kind') && data.kind === 'Today') {
+  } else if (
+    Object.keys(data).includes('kind') &&
+    ['Today', 'WeekToDate'].includes(data.kind)
+  ) {
     if (
       data.end.value === null ||
       data.start === null ||
@@ -38,12 +41,13 @@ self.addEventListener('push', e => {
       return;
     }
 
+    const desc = data.kind === 'Today' ? 'Heute' : 'Diese Woche';
     const diff =
       data.end.value +
       data.end.invested -
       (data.start.value + data.start.invested);
 
-    body = `Heutiger Gewinn: ${diff.toFixed(2)}€`;
+    body = `Gewinn ${desc}: ${diff.toFixed(2)}€`;
     if (data.start.value !== 0.0)
       body += ` (${diff >= 0 ? '+' : ''}${(
         (diff / data.start.value) *

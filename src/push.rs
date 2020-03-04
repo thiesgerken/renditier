@@ -51,6 +51,7 @@ pub async fn send(
   client.send(message).await.map_err(|e| e.into())
 }
 
+// TODO: also send weekly notifications
 // returns error only on serious problems
 pub fn send_daily_notifications(
   connection: &PgConnection,
