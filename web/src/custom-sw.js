@@ -53,6 +53,9 @@ self.addEventListener('push', e => {
         (diff / data.start.value) *
         100
       ).toFixed(2)}%)`;
+    body += `; Gewinn Insgesamt: ${(data.end.value + data.end.invested).toFixed(
+      2
+    )}€`;
   } else {
     // console.error('unknown payload format in the push message');
     return;
