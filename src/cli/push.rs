@@ -73,7 +73,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>, config: C
         push::send(
             &private_key,
             sub,
-            format!("test payload, sent at {:?}", Utc::now()),
+            format!("{{text: \"test payload, sent at {:?}\"}}", Utc::now()),
         )
         .expect("failed to send push message");
     } else if let Some(s_pid) = sub_matches.value_of("remove") {
