@@ -61,7 +61,11 @@ pub fn send_daily_notifications(
   }
 
   let subs = push_subscriptions
-    .filter(last_notification.lt(Utc::now().checked_sub_signed(Duration::hours(12))))
+    .filter(
+      last_notification
+        .lt(Utc::now().checked_sub_signed(Duration::hours(12)))
+        .or(last_notification.is_null()),
+    )
     .load::<PushSubscription>(connection)?
     .into_iter()
     .sorted_by_key(|s| s.user_id)
