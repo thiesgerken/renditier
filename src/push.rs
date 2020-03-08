@@ -22,10 +22,23 @@ fn notification_body(
     .find(|p| p.kind == kind)
     .ok_or("performance empty")?;
 
-  // minimize the message footprint
-  perf.positions = HashMap::new();
+  let newest = perf
+    .positions
+    .iter()
+    .filter_map(|(_, p)| p.end.data_source.as_ref().map(|d| d.price.date()))
+    .max();
 
-  serde_json::to_string(&perf).map_err(|e| e.into())
+  if let Some(newest) = newest {
+    if newest.date() != now.date() {
+      return Ok(String::new());
+    }
+
+    // minimize the message footprint
+    perf.positions = HashMap::new();
+    serde_json::to_string(&perf).map_err(|e| e.into())
+  } else {
+    Ok(String::new())
+  }
 }
 
 #[tokio::main]
@@ -80,15 +93,16 @@ pub fn send_daily_notifications(
 
   for (uid, group) in &subs.iter().group_by(|s| s.user_id) {
     let body = notification_body(connection, uid, PerformanceKind::Today)?;
-
-    for sub in group {
-      if let Err(e) = send(private_key, sub.clone(), body.clone()) {
-        error!(
-          "Failed to send daily notification to device {}: {:?}",
-          sub.endpoint, e
-        );
-      } else {
-        info!("Sent daily notification to device {}", sub.endpoint);
+    if !body.is_empty() {
+      for sub in group {
+        if let Err(e) = send(private_key, sub.clone(), body.clone()) {
+          error!(
+            "Failed to send daily notification to device {}: {:?}",
+            sub.endpoint, e
+          );
+        } else {
+          info!("Sent daily notification to device {}", sub.endpoint);
+        }
       }
     }
   }

@@ -21,27 +21,27 @@ pub enum EitherPrice {
 }
 
 impl EitherPrice {
-    fn wrap_realtime(d: DataSource<RealtimePrice>) -> DataSource<EitherPrice> {
+    pub fn wrap_realtime(d: DataSource<RealtimePrice>) -> DataSource<EitherPrice> {
         DataSource {
             price: EitherPrice::RealtimePrice(d.price),
             exchange: d.exchange,
         }
     }
 
-    fn wrap_historical(d: DataSource<HistoricalPrice>) -> DataSource<EitherPrice> {
+    pub fn wrap_historical(d: DataSource<HistoricalPrice>) -> DataSource<EitherPrice> {
         DataSource {
             price: EitherPrice::HistoricalPrice(d.price),
             exchange: d.exchange,
         }
     }
 
-    fn value(&self) -> f64 {
+    pub fn value(&self) -> f64 {
         match self {
             EitherPrice::RealtimePrice(p) => p.value(),
             EitherPrice::HistoricalPrice(p) => p.value(),
         }
     }
-    fn date(&self) -> DateTime<Utc> {
+    pub fn date(&self) -> DateTime<Utc> {
         match self {
             EitherPrice::RealtimePrice(p) => p.date(),
             EitherPrice::HistoricalPrice(p) => p.date(),
@@ -85,6 +85,7 @@ pub struct PortfolioSnapshot {
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PositionSnapshot {
     pub date: NaiveDate,
     pub units: f64,
