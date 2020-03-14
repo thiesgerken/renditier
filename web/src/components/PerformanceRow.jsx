@@ -55,7 +55,7 @@ const getDescription = item => {
 };
 
 const PerformanceRow = ({ data }) => (
-  <TableRow key={getDescription(data)}>
+  <TableRow>
     <TableCell>{getDescription(data)}</TableCell>
     <TableCell align="right">
       {data.start === null ? '\u2014' : formatAmount(-1 * data.start.invested)}

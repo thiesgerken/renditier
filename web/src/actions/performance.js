@@ -54,7 +54,7 @@ export const updatePerformance = () => (dispatch, getState) => {
   const { performance } = getState();
 
   if (
-    performance.lastUpdated === null ||
+    performance.lastUpdated !== null &&
     Date.now() - performance.lastUpdated > 60 * 60 * 1e3
   )
     dispatch(invalidatePerformance());

@@ -14,6 +14,7 @@
 - remove all cached data when the user logs out
 - invalidate user info as soon as a 401 is encountered
 - colors in dashboard, show percentages
+- do not register service worker for api requests?
 
 ## Ideas
 
