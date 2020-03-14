@@ -59,8 +59,14 @@ export const fetchPortfolioPlot = (startDate, endDate) => (
         earningArea: p.value !== null ? [p.invested, p.value] : null,
       }));
 
-      while (res.points.length > 0 && res.points.slice(-1)[0].value === null) {
+      let i = 0;
+      while (
+        res.points.length > 0 &&
+        res.points.slice(-1)[0].value === null &&
+        i < 5
+      ) {
         res.points.pop();
+        i += 1;
       }
 
       dispatch(fetchPortfolioPlotSuccess(startDate, endDate, res));

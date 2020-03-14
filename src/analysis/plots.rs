@@ -48,27 +48,29 @@ pub fn compute_portfolio_plot(
   let isins = ts.iter().map(|t| &t.isin).cloned().collect::<HashSet<_>>();
 
   // for these ISINs, grab all exchanges and select the preferred one
-  let exs = stock_exchanges::table
+  let mut exs = stock_exchanges::table
     .filter(stock_exchanges::isin.eq_any(isins.clone()))
     .order(stock_exchanges::isin.asc())
     .load::<StockExchange>(&*connection)?
     .into_iter()
     .group_by(|se| se.isin.clone())
     .into_iter()
-    .filter_map(|(isin, es)| es.min_by(exchange_comparison).map(|e| (isin, e)))
+    .filter_map(|(isin, es)| es.min_by(exchange_comparison).map(|e| (isin, Some(e))))
     .collect::<HashMap<_, _>>();
 
-  // stock without exchanges? -> no price data for this one, all values would be None
-  if isins.len() != exs.len() {
-    return Ok(PortfolioPlot {
-      points: Vec::new(),
-      exchanges: Vec::new(),
-    });
+  for isin in isins {
+    exs.entry(isin).or_insert(None);
   }
 
   // for these Exchanges, grab all historical prices from start_date to end_date
   let prices = historical_prices::table
-    .filter(historical_prices::onvista_record_id.eq_any(exs.values().map(|e| e.onvista_record_id)))
+    .filter(
+      historical_prices::onvista_record_id.eq_any(
+        exs
+          .values()
+          .filter_map(|e| e.as_ref().map(|ee| ee.onvista_record_id)),
+      ),
+    )
     .filter(historical_prices::date.ge(start_date))
     .filter(historical_prices::date.le(end_date))
     .order(historical_prices::date.asc())
@@ -108,10 +110,14 @@ pub fn compute_portfolio_plot(
       .collect::<Vec<&Transaction>>();
 
     let mut p_idx = 0;
-    let isin_ps = prices
-      .iter()
-      .filter(|p| p.onvista_record_id == ex.onvista_record_id)
-      .collect::<Vec<&HistoricalPrice>>();
+    let isin_ps = if let Some(exx) = ex {
+      prices
+        .iter()
+        .filter(|p| p.onvista_record_id == exx.onvista_record_id)
+        .collect::<Vec<&HistoricalPrice>>()
+    } else {
+      Vec::new()
+    };
 
     let mut current_price = isin_ps.get(0);
 
@@ -144,7 +150,11 @@ pub fn compute_portfolio_plot(
   }
 
   Ok(PortfolioPlot {
-    exchanges: exs.values().cloned().collect::<Vec<_>>(),
+    exchanges: exs
+      .values()
+      .filter_map(|x| x.as_ref())
+      .cloned()
+      .collect::<Vec<_>>(),
     points,
   })
 }
