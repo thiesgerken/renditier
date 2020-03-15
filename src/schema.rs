@@ -20,10 +20,21 @@ table! {
 }
 
 table! {
+    push_subscriptions (endpoint) {
+        endpoint -> Text,
+        user_id -> Int4,
+        auth -> Text,
+        p256dh -> Text,
+        created -> Timestamptz,
+        last_contact -> Timestamptz,
+        last_notification -> Nullable<Timestamptz>,
+    }
+}
+
+table! {
     realtime_prices (date, onvista_record_id) {
         date -> Timestamptz,
         price -> Float8,
-        currency -> Text,
         onvista_record_id -> Int4,
     }
 }
@@ -33,9 +44,9 @@ table! {
         isin -> Bpchar,
         name -> Text,
         code -> Text,
-        quality -> Text,
+        quality -> Nullable<Text>,
         onvista_record_id -> Int4,
-        onvista_exchange_id -> Int4,
+        onvista_exchange_id -> Nullable<Int4>,
     }
 }
 
@@ -44,10 +55,10 @@ table! {
         isin -> Bpchar,
         wkn -> Bpchar,
         title -> Text,
-        country -> Text,
-        fonds_type -> Text,
-        managing_company -> Text,
-        focus -> Text,
+        kind -> Text,
+        company -> Text,
+        fonds_type -> Nullable<Text>,
+        focus -> Nullable<Text>,
         persistent -> Bool,
         onvista_url -> Text,
         last_historical_update -> Nullable<Timestamptz>,
@@ -80,6 +91,7 @@ table! {
 
 joinable!(accounts -> users (user_id));
 joinable!(historical_prices -> stock_exchanges (onvista_record_id));
+joinable!(push_subscriptions -> users (user_id));
 joinable!(realtime_prices -> stock_exchanges (onvista_record_id));
 joinable!(stock_exchanges -> stock_infos (isin));
 joinable!(transactions -> accounts (account_id));
@@ -87,6 +99,7 @@ joinable!(transactions -> accounts (account_id));
 allow_tables_to_appear_in_same_query!(
     accounts,
     historical_prices,
+    push_subscriptions,
     realtime_prices,
     stock_exchanges,
     stock_infos,

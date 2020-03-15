@@ -58,6 +58,7 @@ pub fn handle(config: Config) {
                 analysis::compute_historic_portfolio,
                 analysis::compute_realtime_portfolio,
                 analysis::compute_performance,
+                analysis::compute_portfolio_plot,
                 push::subscribe,
                 push::unsubscribe,
             ],

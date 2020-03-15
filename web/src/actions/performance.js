@@ -37,14 +37,21 @@ export const fetchPerformance = () => dispatch => {
     .catch(e => dispatch(fetchPerformanceError(e)));
 };
 
-export const initPerformance = () => (dispatch, getState) => {
+export const updatePerformance = () => (dispatch, getState) => {
   const { performance } = getState();
 
   if (
-    (performance.lastUpdated === null &&
-      !performance.isFetching &&
-      performance.error === null) ||
-    performance.didInvalidate
+    performance.lastUpdated !== null &&
+    Date.now() - performance.lastUpdated > 60 * 60 * 1e3
   )
-    dispatch(fetchPerformance());
+    dispatch(invalidatePerformance());
+
+  if (
+    !performance.isFetching &&
+    ((performance.lastUpdated === null && performance.error === null) ||
+      performance.didInvalidate)
+  )
+    return dispatch(fetchPerformance());
+
+  return Promise.resolve();
 };

@@ -64,11 +64,29 @@ export const subscribe = () => (dispatch, getState) => {
     return Promise.resolve();
   }
 
+  const urlBase64ToUint8Array = base64String => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; i += 1) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  // TODO: obtain the server key upon user login instead
+
   return notifications.registration.pushManager
     .subscribe({
       userVisibleOnly: true,
-      applicationServerKey:
-        'BCELnMEiw20yErokWA9BteJ28h0HakaGQ1aJ6LCIJEUdPcUALxsjpjdYRkhdGZQm16CZvsoRWlx1OM0WNyTz8w4',
+      applicationServerKey: urlBase64ToUint8Array(
+        'BP0rUec4RyUpBx8Rq2ZqMAVOrhb04ieT2DDVvFYWP9sdt9jwjTtabRx1KOKRUSuqgbDqgmwyoTZZ0dspxpFE-8Y='
+      ),
     })
     .then(subscription => {
       fetch(encodeURI(`/api/push/subscribe`), {

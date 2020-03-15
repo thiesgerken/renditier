@@ -9,11 +9,14 @@
     "connected-react-router": "^6.6.1",
     "gulp": "^4.0.0",
     "history": "^4.10.1",
+    "lodash": "^4.17.15",
+    "moment": "^2.24.0",
     "prop-types": "^15.6.1",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
     "react-redux": "^7.0.3",
     "react-router-dom": "^5.1.2",
+    "recharts": "^1.8.5",
     "redux": "^4.0.1",
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.3.0",
@@ -23,6 +26,7 @@
     "typeface-roboto": "^0.0.75"
   },
   "devDependencies": {
+    "cra-append-sw": "^2.7.0",
     "enzyme": "^3.3.0",
     "eslint": "^6.8.0",
     "eslint-config-airbnb": "^18.0.1",
@@ -33,16 +37,16 @@
     "eslint-plugin-react": "^7.18.2",
     "eslint-plugin-react-hooks": "^2.3.0",
     "prettier": "^1.19.1",
-    "react-scripts": "^3.4.0",
-    "cra-append-sw": "^2.7.0"
+    "react-scripts": "^3.4.0"
   },
   "scripts": {
-    "start": "react-scripts start && cra-append-sw ./src/custom-sw.js ",
-    "build": "react-scripts build && cra-append-sw ./src/custom-sw.js",
+    "start": "yarn run git && react-scripts start && cra-append-sw ./src/custom-sw.js ",
+    "build": "yarn run git && react-scripts build && cra-append-sw ./src/custom-sw.js",
     "test": "react-scripts test",
     "test:lint:js": "eslint --ext=js --ext=jsx src",
     "eject": "react-scripts eject",
-    "analyze": "source-map-explorer 'build/static/js/*.js' --html > build/bundle-analysis.html"
+    "analyze": "source-map-explorer 'build/static/js/*.js' --html > build/bundle-analysis.html",
+    "git": "echo \"export const buildCommit = '$(git log --pretty=format:'%h' -n 1)';\nexport const buildDate = '$(date --iso-8601=seconds)';\" > src/git.js"
   },
   "proxy": "http://localhost:8383",
   "browserslist": {

@@ -6,14 +6,15 @@ use serde::{Deserialize, Serialize};
 // grabbed periodically for relevant ISINs
 #[derive(Debug, Clone, Queryable, Insertable, Identifiable, Serialize, Deserialize)]
 #[primary_key("isin")]
+#[serde(rename_all = "camelCase")]
 pub struct StockInfo {
     pub isin: String,
     pub wkn: String,
     pub title: String,
-    pub country: String,
-    pub fonds_type: String,
-    pub managing_company: String,
-    pub focus: String,
+    pub kind: String,
+    pub company: String,
+    pub fonds_type: Option<String>,
+    pub focus: Option<String>,
     pub persistent: bool,
     pub onvista_url: String,
     pub last_historical_update: Option<DateTime<Utc>>,
@@ -25,13 +26,14 @@ pub struct StockInfo {
 )]
 #[primary_key("onvista_record_id")]
 #[belongs_to(StockInfo, foreign_key = "isin")]
+#[serde(rename_all = "camelCase")]
 pub struct StockExchange {
     pub isin: String,
     pub name: String,
     pub code: String,
-    pub quality: String,
-    pub onvista_record_id: i32,   // ID specific to exchange+stock
-    pub onvista_exchange_id: i32, // ID specific to exchange only
+    pub quality: Option<String>,
+    pub onvista_record_id: i32,           // ID specific to exchange+stock
+    pub onvista_exchange_id: Option<i32>, // ID specific to exchange only
 }
 
 // grabbed periodically for watched ISINs
@@ -40,6 +42,7 @@ pub struct StockExchange {
 )]
 #[belongs_to(StockExchange, foreign_key = "onvista_record_id")]
 #[primary_key("date", "onvista_record_id")]
+#[serde(rename_all = "camelCase")]
 pub struct HistoricalPrice {
     pub date: NaiveDate,
     pub opening: f64,
@@ -57,14 +60,15 @@ pub struct HistoricalPrice {
 )]
 #[belongs_to(StockExchange, foreign_key = "onvista_record_id")]
 #[primary_key("date", "onvista_record_id")]
+#[serde(rename_all = "camelCase")]
 pub struct RealtimePrice {
     pub date: DateTime<Utc>,
     pub price: f64,
-    pub currency: String,
     pub onvista_record_id: i32, // ID specific to exchange+stock
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, Identifiable, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: i32,
     pub name: String,
@@ -72,7 +76,8 @@ pub struct User {
     pub hash: String,
 }
 
-#[derive(Debug, Clone, Insertable)]
+#[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 #[table_name = "users"]
 pub struct NewUser {
     pub name: String,
@@ -84,6 +89,7 @@ pub struct NewUser {
     Debug, Clone, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize,
 )]
 #[belongs_to(User, foreign_key = "user_id")]
+#[serde(rename_all = "camelCase")]
 pub struct Account {
     pub id: i32,
     pub user_id: i32,
@@ -91,8 +97,9 @@ pub struct Account {
     pub iban: Option<String>,
 }
 
-#[derive(Debug, Clone, Insertable)]
+#[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
 #[table_name = "accounts"]
+#[serde(rename_all = "camelCase")]
 pub struct NewAccount {
     pub user_id: i32,
     pub name: String,
@@ -102,7 +109,24 @@ pub struct NewAccount {
 #[derive(
     Debug, Clone, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize,
 )]
+#[belongs_to(User, foreign_key = "user_id")]
+#[primary_key("endpoint")]
+#[serde(rename_all = "camelCase")]
+pub struct PushSubscription {
+    pub endpoint: String,
+    pub user_id: i32,
+    pub auth: String,
+    pub p256dh: String,
+    pub created: DateTime<Utc>,
+    pub last_contact: DateTime<Utc>,
+    pub last_notification: Option<DateTime<Utc>>,
+}
+
+#[derive(
+    Debug, Clone, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize,
+)]
 #[belongs_to(Account, foreign_key = "account_id")]
+#[serde(rename_all = "camelCase")]
 pub struct Transaction {
     pub id: i32,
     pub account_id: i32,
@@ -117,6 +141,7 @@ pub struct Transaction {
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
 #[table_name = "transactions"]
+#[serde(rename_all = "camelCase")]
 pub struct NewTransaction {
     pub account_id: i32,
     pub isin: String,

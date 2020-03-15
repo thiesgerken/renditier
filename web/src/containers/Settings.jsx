@@ -1,10 +1,14 @@
 import { connect } from 'react-redux';
 import React from 'react';
+import * as moment from 'moment';
+import 'moment/locale/de';
 import PropTypes from 'prop-types';
 import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
+
 import { subscribe, unsubscribe } from '../actions/notifications';
+import { buildCommit, buildDate } from '../git';
 
 const Settings = ({
   workerRegistered,
@@ -12,9 +16,15 @@ const Settings = ({
   pushSubscribe,
   pushUnsubscribe,
 }) => {
+  moment.locale('de');
+
   return (
     <div>
-      <div>ServiceWorker: {workerRegistered ? 'Ja' : 'Nein'}</div>
+      {/* <div>ServiceWorker: {workerRegistered ? 'Ja' : 'Nein'}</div> */}
+      <div>
+        Version #{buildCommit}, gebaut {moment(buildDate).format('LLL')} (
+        {moment(buildDate).fromNow()})
+      </div>
 
       <FormGroup row>
         <FormControlLabel
@@ -27,7 +37,7 @@ const Settings = ({
               disabled={!workerRegistered}
             />
           }
-          label="Secondary"
+          label="Push-Benachrichtigungen"
         />
       </FormGroup>
     </div>

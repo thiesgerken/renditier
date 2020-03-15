@@ -44,7 +44,7 @@ build-web:
   cache:
     key: ${CI_JOB_NAME}
     paths:
-      - target
+      # - target
       - .cargo-registry
   artifacts:
     expire_in: 1 month

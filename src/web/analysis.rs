@@ -1,5 +1,7 @@
 use crate::analysis::performance;
 use crate::analysis::performance::PortfolioPerformance;
+use crate::analysis::plots;
+use crate::analysis::plots::PortfolioPlot;
 use crate::analysis::portfolio;
 use crate::analysis::portfolio::Portfolio;
 use crate::models::*;
@@ -7,7 +9,7 @@ use crate::web::user::UserId;
 use crate::web::DbConn;
 
 use chrono::offset::TimeZone;
-use chrono::Utc;
+use chrono::{NaiveDate, Utc};
 use rocket_contrib::json::Json;
 
 #[get("/analysis/portfolio?<date>")]
@@ -39,4 +41,19 @@ pub fn compute_performance(
 ) -> Option<Json<Vec<PortfolioPerformance>>> {
     let now = Utc::now();
     performance::compute(&*connection, *uid, now).ok().map(Json)
+}
+
+#[get("/analysis/plots/portfolio?<start>&<end>")]
+pub fn compute_portfolio_plot(
+    uid: UserId,
+    connection: DbConn,
+    start: String,
+    end: String,
+) -> Option<Json<PortfolioPlot>> {
+    let start = NaiveDate::parse_from_str(&start, "%Y-%m-%d").ok()?;
+    let end = NaiveDate::parse_from_str(&end, "%Y-%m-%d").ok()?;
+
+    plots::compute_portfolio_plot(&*connection, *uid, start, end)
+        .ok()
+        .map(Json)
 }
