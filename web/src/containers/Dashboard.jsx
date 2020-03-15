@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { Grid } from '@material-ui/core';
 
 import { updatePerformance as updatePerformanceAction } from '../actions/performance';
-import { fetchPortfolioPlot as fetchPortfolioPlotAction } from '../actions/portfolio-plot';
+import { updatePortfolioPlot as updatePortfolioPlotAction } from '../actions/portfolio-plot';
 import PerformanceTable from '../components/PerformanceTable';
 import PortfolioPlot from '../components/PortfolioPlot';
 import PositionsTable from '../components/PositionsTable';
@@ -50,7 +50,7 @@ Dashboard.propTypes = {
 const mapDispatchToProps = dispatch => ({
   updatePerformance: () => dispatch(updatePerformanceAction()),
   updatePortfolioPlotData: (startDate, endDate) =>
-    dispatch(fetchPortfolioPlotAction(startDate, endDate)),
+    dispatch(updatePortfolioPlotAction(startDate, endDate)),
 });
 
 const mapStateToProps = state => {

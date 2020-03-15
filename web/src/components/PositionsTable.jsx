@@ -15,6 +15,9 @@ import { filter, find, map, min, max } from 'lodash';
 
 import PositionRow from './PositionRow';
 
+// TODO: Footer with totals
+// TODO: combobox to select timespan; show vorher/nachher columns only if needed (start !== null)
+
 const PositionsTable = ({ performance }) => {
   const StyledTableCell = withStyles(() => ({
     head: {
@@ -42,6 +45,9 @@ const PositionsTable = ({ performance }) => {
       newestTodayData = max(dates).format('LLL');
     }
 
+    const positions = map(tp.positions, (item, isin) => ({ ...item, isin }));
+    positions.sort((a, b) => a.end.invested - b.end.invested);
+
     return (
       <>
         <Paper>
@@ -60,12 +66,8 @@ const PositionsTable = ({ performance }) => {
               </TableHead>
               <TableBody>
                 {map(
-                  tp.positions,
-                  (item, isin) =>
-                    item.units !== 0 && (
-                      // eslint-disable-next-line react/no-array-index-key
-                      <PositionRow data={{ ...item, isin }} key={isin} />
-                    )
+                  positions,
+                  d => d.units !== 0 && <PositionRow data={d} key={d.isin} />
                 )}
               </TableBody>
             </Table>

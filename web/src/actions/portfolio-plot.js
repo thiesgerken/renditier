@@ -27,21 +27,9 @@ export const fetchPortfolioPlotError = (startDate, endDate, e) => ({
   receivedAt: Date.now(),
 });
 
-export const fetchPortfolioPlot = (startDate, endDate) => (
-  dispatch,
-  getState
-) => {
-  const data = getPlotData(getState(), startDate, endDate);
-
-  if (
-    data !== null &&
-    (data.isFetching ||
-      (data.lastUpdated !== null &&
-        Date.now() - data.lastUpdated < 60 * 60 * 1e3))
-  )
-    return Promise.resolve();
-
+export const fetchPortfolioPlot = (startDate, endDate) => dispatch => {
   dispatch(fetchPortfolioPlotRequest(startDate, endDate));
+
   return fetch(
     `/api/analysis/plots/portfolio?start=${startDate}&end=${endDate}`
   )
@@ -72,4 +60,21 @@ export const fetchPortfolioPlot = (startDate, endDate) => (
       dispatch(fetchPortfolioPlotSuccess(startDate, endDate, res));
     })
     .catch(e => dispatch(fetchPortfolioPlotError(startDate, endDate, e)));
+};
+
+export const updatePortfolioPlot = (startDate, endDate) => (
+  dispatch,
+  getState
+) => {
+  const data = getPlotData(getState(), startDate, endDate);
+
+  if (
+    data === null ||
+    (!data.isFetching &&
+      (data.lastUpdated === null ||
+        Date.now() - data.lastUpdated >= 60 * 60 * 1e3))
+  )
+    return dispatch(fetchPortfolioPlot(startDate, endDate));
+
+  return Promise.resolve();
 };

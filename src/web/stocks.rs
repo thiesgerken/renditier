@@ -14,10 +14,10 @@ pub struct Stock {
     isin: String,
     wkn: String,
     title: String,
-    country: String,
-    fonds_type: String,
-    managing_company: String,
-    focus: String,
+    kind: String,
+    company: String,
+    fonds_type: Option<String>,
+    focus: Option<String>,
     persistent: bool,
     onvista_url: String,
     last_historical_update: Option<DateTime<Utc>>,
@@ -31,9 +31,9 @@ impl Stock {
             isin: s.isin,
             wkn: s.wkn,
             title: s.title,
-            country: s.country,
+            kind: s.kind,
             fonds_type: s.fonds_type,
-            managing_company: s.managing_company,
+            company: s.company,
             focus: s.focus,
             persistent: s.persistent,
             onvista_url: s.onvista_url,
@@ -48,7 +48,6 @@ impl Stock {
 struct Price {
     date: DateTime<Utc>,
     price: f64,
-    currency: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,9 +55,9 @@ struct Exchange {
     isin: String,
     name: String,
     code: String,
-    quality: String,
-    onvista_record_id: i32,   // ID specific to exchange+stock
-    onvista_exchange_id: i32, // ID specific to exchange only
+    quality: Option<String>,
+    onvista_record_id: i32,           // ID specific to exchange+stock
+    onvista_exchange_id: Option<i32>, // ID specific to exchange only
     current_price: Option<Price>,
 }
 
@@ -74,7 +73,6 @@ impl Exchange {
             current_price: current_price.map(|p| Price {
                 date: p.date,
                 price: p.price,
-                currency: p.currency,
             }),
         }
     }

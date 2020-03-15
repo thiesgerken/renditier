@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import * as moment from 'moment';
+import { useTheme } from '@material-ui/core/styles';
 
 const formatAmount = value => (value === null ? '' : `${value.toFixed(2)}€`);
 const formatPercentage = value =>
@@ -19,12 +20,13 @@ const calculateProfit = (start, end) => {
     end.invested -
     (start === null ? 0.0 : start.value + start.invested);
 
-  return (
-    formatAmount(diff) +
-    (start === null || start.value === 0.0
-      ? ` (${formatPercentage(diff / end.invested)})`
-      : ` (${formatPercentage(diff / start.value)})`)
-  );
+  let perc = '';
+  if (start === null && end.invested !== 0)
+    perc = ` (${formatPercentage(diff / end.invested)})`;
+  else if (start !== null && start.value !== 0)
+    perc = ` (${formatPercentage(diff / start.value)})`;
+
+  return <div style={{ color: 'secondary' }}>{formatAmount(diff) + perc}</div>;
 };
 
 const hideIrr = item => {
@@ -54,29 +56,53 @@ const getDescription = item => {
   }
 };
 
-const PerformanceRow = ({ data }) => (
-  <TableRow>
-    <TableCell>{getDescription(data)}</TableCell>
-    <TableCell align="right">
-      {data.start === null ? '\u2014' : formatAmount(-1 * data.start.invested)}
-    </TableCell>
-    <TableCell align="right">
-      {data.start === null || data.start.value === null
-        ? '\u2014'
-        : formatAmount(data.start.value)}
-    </TableCell>
-    <TableCell align="right">{formatAmount(-1 * data.end.invested)}</TableCell>
-    <TableCell align="right">
-      {data.end.value === null ? '\u2014' : formatAmount(data.end.value)}
-    </TableCell>
-    <TableCell align="right">{calculateProfit(data.start, data.end)}</TableCell>
-    <TableCell align="right">
-      {data.irr === null || hideIrr(data)
-        ? ''
-        : `${formatPercentage(data.irr)} p.a.`}
-    </TableCell>
-  </TableRow>
-);
+const PerformanceRow = ({ data }) => {
+  const theme = useTheme();
+  const colorize = v =>
+    v === null
+      ? {}
+      : {
+          color:
+            v < 0 ? theme.palette.secondary.dark : theme.palette.primary.dark,
+        };
+
+  return (
+    <TableRow>
+      <TableCell>{getDescription(data)}</TableCell>
+      <TableCell align="right">
+        {data.start === null
+          ? '\u2014'
+          : formatAmount(-1 * data.start.invested)}
+      </TableCell>
+      <TableCell align="right">
+        {data.start === null || data.start.value === null
+          ? '\u2014'
+          : formatAmount(data.start.value)}
+      </TableCell>
+      <TableCell align="right">
+        {formatAmount(-1 * data.end.invested)}
+      </TableCell>
+      <TableCell align="right">
+        {data.end.value === null ? '\u2014' : formatAmount(data.end.value)}
+      </TableCell>
+      <TableCell
+        align="right"
+        style={colorize(
+          data.end.value +
+            data.end.invested -
+            (data.start === null ? 0.0 : data.start.value + data.start.invested)
+        )}
+      >
+        {calculateProfit(data.start, data.end)}
+      </TableCell>
+      <TableCell align="right" style={colorize(data.irr)}>
+        {data.irr === null || hideIrr(data)
+          ? ''
+          : `${formatPercentage(data.irr)} p.a.`}
+      </TableCell>
+    </TableRow>
+  );
+};
 
 PerformanceRow.propTypes = {
   data: PropTypes.shape({

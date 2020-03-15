@@ -18,7 +18,12 @@ pub fn fetch_realtime(
         .load::<StockExchange>(connection)?;
 
     for s in stocks {
-        let data = onvista::get_data_realtime(&s.isin)?;
+        let s_exs = exs
+            .iter()
+            .filter(|e| e.isin == s.isin)
+            .cloned()
+            .collect::<Vec<_>>();
+        let data = onvista::get_data_realtime(s, &s_exs)?;
         let original_len = data.len();
         let data = data
             .into_iter()

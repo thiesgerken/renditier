@@ -35,7 +35,6 @@ table! {
     realtime_prices (date, onvista_record_id) {
         date -> Timestamptz,
         price -> Float8,
-        currency -> Text,
         onvista_record_id -> Int4,
     }
 }
@@ -45,9 +44,9 @@ table! {
         isin -> Bpchar,
         name -> Text,
         code -> Text,
-        quality -> Text,
+        quality -> Nullable<Text>,
         onvista_record_id -> Int4,
-        onvista_exchange_id -> Int4,
+        onvista_exchange_id -> Nullable<Int4>,
     }
 }
 
@@ -56,10 +55,10 @@ table! {
         isin -> Bpchar,
         wkn -> Bpchar,
         title -> Text,
-        country -> Text,
-        fonds_type -> Text,
-        managing_company -> Text,
-        focus -> Text,
+        kind -> Text,
+        company -> Text,
+        fonds_type -> Nullable<Text>,
+        focus -> Nullable<Text>,
         persistent -> Bool,
         onvista_url -> Text,
         last_historical_update -> Nullable<Timestamptz>,

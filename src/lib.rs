@@ -1,4 +1,5 @@
 #![feature(proc_macro_hygiene, decl_macro)]
+#![feature(str_strip)]
 
 pub mod analysis;
 pub mod cli;
@@ -29,6 +30,7 @@ use argonautica::{Hasher, Verifier};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use log::{error, info};
+use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode};
 use std::error::Error;
 
 embed_migrations!();
@@ -96,5 +98,33 @@ pub fn add_missing_stocks(connection: &PgConnection) {
             }
             Err(e) => error!("Error obtaining stock infos for {}: {}", &isin, e),
         }
+    }
+}
+
+pub fn initialize_logging(verbosity: u32) {
+    let level = match verbosity {
+        0 => LevelFilter::Warn,
+        1 => LevelFilter::Info,
+        2 => LevelFilter::Debug,
+        _ => LevelFilter::Trace,
+    };
+
+    let mut log_config = simplelog::ConfigBuilder::new();
+    log_config.set_time_format_str("");
+
+    log_config.add_filter_ignore_str("html5ever");
+    log_config.add_filter_ignore_str("hyper");
+    log_config.add_filter_ignore_str("reqwest");
+    log_config.add_filter_ignore_str("selectors");
+
+    // log_config.add_filter_allow_str("stockdb");
+
+    if let Err(e) = TermLogger::init(level, log_config.build(), TerminalMode::Mixed) {
+        SimpleLogger::init(level, log_config.build())
+            .expect("TermLogger and SimpleLogger failed to init!?");
+        info!(
+            "Falling back to SimpleLogger because TermLogger init failed: {}",
+            e
+        );
     }
 }

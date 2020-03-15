@@ -37,19 +37,6 @@ export const fetchPerformance = () => dispatch => {
     .catch(e => dispatch(fetchPerformanceError(e)));
 };
 
-export const initPerformance = () => (dispatch, getState) => {
-  const { performance } = getState();
-
-  if (
-    !performance.isFetching &&
-    ((performance.lastUpdated === null && performance.error === null) ||
-      performance.didInvalidate)
-  )
-    return dispatch(fetchPerformance());
-
-  return Promise.resolve();
-};
-
 export const updatePerformance = () => (dispatch, getState) => {
   const { performance } = getState();
 
@@ -59,5 +46,12 @@ export const updatePerformance = () => (dispatch, getState) => {
   )
     dispatch(invalidatePerformance());
 
-  return dispatch(initPerformance());
+  if (
+    !performance.isFetching &&
+    ((performance.lastUpdated === null && performance.error === null) ||
+      performance.didInvalidate)
+  )
+    return dispatch(fetchPerformance());
+
+  return Promise.resolve();
 };

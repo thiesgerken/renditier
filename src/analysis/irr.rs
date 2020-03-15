@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use log::{debug, warn};
+use log::{debug, trace, warn};
 
 pub fn compute(transactions: &[(DateTime<Utc>, f64)]) -> Option<f64> {
     let beginning = transactions.iter().map(|(d, _)| d).min()?;
@@ -27,10 +27,11 @@ pub fn compute(transactions: &[(DateTime<Utc>, f64)]) -> Option<f64> {
             .fold(0.0, |acc, (t, y)| acc - t * y * (1.0 + x).powf(-t - 1.0))
     };
 
-    newton(&f, &df, 0.1, 25, 1e-2, 1e-6, -0.999_999_999)
+    newton(&f, &df, 0.1, 25, 1e-2, 1e-6, -0.999_999_999, 1000.0)
 }
 
 // newton method with projection of x to >= some lower bound (e.g. -0.999_999_999 for IRR)
+// divergence_ub: stop iterating after this upper bound is reached; can be set to f64::INFINITY to disable this
 fn newton(
     f: &dyn Fn(f64) -> f64,
     df: &dyn Fn(f64) -> f64,
@@ -39,6 +40,7 @@ fn newton(
     eps_val: f64,
     eps_step: f64,
     project_lb: f64,
+    divergence_ub: f64,
 ) -> Option<f64> {
     let mut n = 0;
     let mut x = x0;
@@ -46,7 +48,7 @@ fn newton(
     loop {
         if n >= max_iter {
             warn!(
-                "newton: maximum iteration count of {} reached; x={:0.2}, f(x)={:0.2}",
+                "Newton unsuccessful: reached maximum iteration count; n={}, x={:0.2}, f(x)={:0.2}",
                 n, x, fx
             );
             return None;
@@ -54,14 +56,21 @@ fn newton(
 
         fx = f(x);
         if fx.abs() < eps_val {
-            debug!("newton: |f(x)|<{:0.2e} after {} iterations", eps_val, n);
+            trace!(
+                "success: |f(x)|={:0.2e}<{:0.2e}; n={}, x={:0.2}, f(x)={:0.2}",
+                fx.abs(),
+                eps_val,
+                n,
+                x,
+                fx
+            );
             break;
         }
 
         let dfx = df(x);
         if dfx == 0.0 {
             warn!(
-                "newton: reached critical point after {} iterations; x={:0.2}, f(x)={:0.2}",
+                "Newton unsuccessful: reached critical point; n={}, x={:0.2}, f(x)={:0.2}",
                 n, x, fx
             );
             return None;
@@ -71,14 +80,27 @@ fn newton(
         x -= step;
 
         if x < project_lb {
-            debug!("newton: projecting iterate to {:0.4}", project_lb);
+            debug!(
+                "projecting iterate to {:0.9}, n={}, x={:0.2}, f(x)={:0.2}",
+                project_lb, n, x, fx
+            );
             x = project_lb;
+        } else if x >= divergence_ub {
+            warn!(
+                "Newton unsuccessful: reached upper bound; n={}, x={:0.2e}>{:0.2e}, f(x)={:0.2}",
+                n, x, divergence_ub, fx
+            );
+            return None;
         }
 
         if step.abs() < eps_step {
             debug!(
-                "newton: |x_n-x_{{n-1}}|<{:0.2e} after {} iterations, f(x_n)={:0.2}",
-                eps_step, n, fx
+                "success: |x_n-x_{{n-1}}|={:0.2e}<{:0.2e}, n={}, x_n={:0.2}, f(x_n)={:0.2}",
+                step.abs(),
+                eps_step,
+                n,
+                x,
+                fx
             );
             break;
         }

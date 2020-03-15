@@ -11,7 +11,7 @@ import {
 import React from 'react';
 import PropTypes from 'prop-types';
 import * as moment from 'moment';
-import { Paper, CircularProgress } from '@material-ui/core';
+import { Paper, CircularProgress, useTheme } from '@material-ui/core';
 
 function getData(items, startDate, endDate) {
   let item = null;
@@ -23,79 +23,121 @@ function getData(items, startDate, endDate) {
   return item;
 }
 
+// TODO: make timespan customizable; allow zooming
+// TODO: make what is shown customizable
+
 const PortfolioPlot = ({ data, updateData }) => {
+  const theme = useTheme();
+
   const sd = '2019-01-01';
   const ed = moment().format('YYYY-MM-DD');
   updateData(sd, ed);
   const plotData = getData(data, sd, ed);
+
+  const showDiff = true;
 
   if (
     plotData !== null &&
     plotData.data !== null &&
     plotData.data.points.length > 0
   ) {
-    const showDots = plotData.data.points.length < 20;
+    const showDots = plotData.data.points.length < 100;
+
+    // to color the areas differently
+    const off = (() => {
+      const dataMax = Math.max(...plotData.data.points.map(i => i.earnings));
+      const dataMin = Math.min(...plotData.data.points.map(i => i.earnings));
+
+      if (dataMax <= 0) {
+        return 0;
+      }
+      if (dataMin >= 0) {
+        return 1;
+      }
+
+      return dataMax / (dataMax - dataMin);
+    })();
 
     return (
       <Paper style={{ width: '100%', height: 300, padding: '1em' }}>
         <ResponsiveContainer>
           <ComposedChart data={plotData.data.points}>
             <XAxis dataKey="date" />
-            <YAxis yAxisId="left" unit="€" />
-            <YAxis yAxisId="right" orientation="right" unit="€" />
+            <YAxis unit="€" />
+            <CartesianGrid strokeDasharray="5 5" />
 
-            <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-            <Line
-              yAxisId="left"
-              type="monotone"
-              dataKey="invested"
-              stroke="#8884d8"
-              unit="€"
-              dot={showDots}
-              name="Investiert"
-            />
-            <Line
-              yAxisId="left"
-              type="monotone"
-              dataKey="value"
-              unit="€"
-              stroke="#82ca9d"
-              name="Wert"
-              dot={showDots}
-            />
-            {/* <Line
-    yAxisId="right"
-    type="monotone"
-    dataKey="earnings"
-    stroke="#ffc658"
-    dot={showDots}
-  /> */}
-            <Area
-              yAxisId="right"
-              type="monotone"
-              dataKey="earnings"
-              unit="€"
-              stroke="#ffc658"
-              fill="#ffc658"
-              name="Gewinn"
-            />
-            {/* <Area stroke="#8884d8" fill="#8884d8" dataKey="earningArea" /> */}
+            <defs>
+              <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset={off}
+                  stopColor={theme.palette.primary.dark}
+                  stopOpacity={1}
+                />
+                <stop
+                  offset={off}
+                  stopColor={theme.palette.secondary.dark}
+                  stopOpacity={1}
+                />
+              </linearGradient>
+              <linearGradient id="splitFill" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset={off}
+                  stopColor={theme.palette.primary.main}
+                  stopOpacity={0.8}
+                />
+                <stop
+                  offset={off}
+                  stopColor={theme.palette.secondary.main}
+                  stopOpacity={0.8}
+                />
+              </linearGradient>
+            </defs>
 
-            {/* <Area
-    type="monotone"
-    dataKey="invested"
-    stackId="1"
-    stroke="#8884d8"
-    fill="#8884d8"
-  />
-  <Area
-    type="monotone"
-    dataKey="value"
-    stackId="1"
-    stroke="#82ca9d"
-    fill="#82ca9d"
-  /> */}
-            {/* <Area type="monotone" dataKey="amt" stackId="1" stroke="#ffc658" fill="#ffc658" /> */}
+            {showDiff || (
+              <>
+                <Line
+                  type="monotone"
+                  dataKey="invested"
+                  stroke="#8884d8"
+                  unit="€"
+                  dot={showDots}
+                  name="Investiert"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  unit="€"
+                  stroke="#82ca9d"
+                  name="Wert"
+                  dot={showDots}
+                />
+              </>
+            )}
+
+            {showDiff && (
+              <Area
+                type="monotone"
+                dataKey="earnings"
+                unit="€"
+                // stroke="#eeeeee"
+                // fill="#ffc658"
+                stroke="url(#splitColor)"
+                strokeWidth={1.4}
+                fill="url(#splitFill)"
+                name="Gewinn"
+                dot={
+                  showDots
+                    ? { stroke: '#00000033', strokeWidth: 1, fill: '#00000033' }
+                    : false
+                }
+                activeDot={{
+                  stroke: '#00000033',
+                  strokeWidth: 1,
+                  fill: '#eeeeee',
+                }}
+              />
+            )}
+
             <Tooltip formatter={v => v.toFixed(2)} />
           </ComposedChart>
         </ResponsiveContainer>
