@@ -8,13 +8,14 @@
 
 - web interface
 - transaction add/remove/update, account add/remove/update
-- charting data (subsampled historic data in simple form)
 - server vapid key as the result of an api call, not hardcoded.
-- add/update/delete transactions
 - remove all cached data when the user logs out
 - invalidate user info as soon as a 401 is encountered
-- colors in dashboard, show percentages
 - do not register service worker for api requests?
+- chart: invested money by ISIN as pie
+- analysis for each isin, price chart with buys/sales => dedicated page for each stock; navigation?)
+- comboboxes for portfolio plot and positions table to set timespan
+- portfolio plot: option to show invested+value instead of earnings
 
 ## Ideas
 
@@ -22,6 +23,8 @@
 - push notifications [weekly summary, daily on huge sudden changes] (read private key only once!)
 - REST interface
 - plot price + units in portfolio in same axis
+- watchlist of isins for each user, so that they can be analyzed (and so that notifications can be set for them?)
+- send a test notification as soon as a new device registers
 
 ## Install
 
