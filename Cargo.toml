@@ -30,8 +30,8 @@ toml = "0.5"
 web-push = "0.7"
 futures = "0.3"
 tokio = { version = "0.2", features= ["macros"] }
-base64 = "0.11"
-itertools = "0.8"
+base64 = "0.12"
+itertools = "0.9"
 
 [dev-dependencies]
 criterion = "0.3"

@@ -22,7 +22,7 @@ const calculateProfit = (start, end) => {
   return (
     formatAmount(diff) +
     (start === null || start.value === 0.0
-      ? ''
+      ? ` (${formatPercentage(diff / end.invested)})`
       : ` (${formatPercentage(diff / start.value)})`)
   );
 };
