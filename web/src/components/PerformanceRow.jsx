@@ -5,6 +5,7 @@ import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import * as moment from 'moment';
 import { useTheme } from '@material-ui/core/styles';
+import { getPeriodDescription } from '../selectors/performance';
 
 const formatAmount = value => (value === null ? '' : `${value.toFixed(2)}€`);
 const formatPercentage = value =>
@@ -21,9 +22,9 @@ const calculateProfit = (start, end) => {
     (start === null ? 0.0 : start.value + start.invested);
 
   let perc = '';
-  if (start === null && end.invested !== 0)
-    perc = ` (${formatPercentage(diff / end.invested)})`;
-  else if (start !== null && start.value !== 0)
+  // if (end.value !== 0) perc = ` (${formatPercentage(diff / end.value)})`;
+  // else
+  if (start !== null && start.value !== 0)
     perc = ` (${formatPercentage(diff / start.value)})`;
 
   return <div style={{ color: 'secondary' }}>{formatAmount(diff) + perc}</div>;
@@ -33,27 +34,6 @@ const hideIrr = item => {
   if (item.start === null) return false;
 
   return moment(item.end.date).diff(moment(item.start.date), 'days') < 32;
-};
-
-const getDescription = item => {
-  switch (item.kind) {
-    case 'Total':
-      return 'Insgesamt';
-    case 'Today':
-      return 'Heute';
-    case 'WeekToDate':
-      return 'Diese Woche';
-    case 'MonthToDate':
-      return 'Dieser Monat';
-    case 'YearToDate':
-      return 'Dieses Jahr';
-    case 'YearToYear':
-      return moment(item.end.date).format('YYYY');
-    case 'MonthToMonth':
-      return moment(item.end.date).format('MM/YYYY');
-    default:
-      return '';
-  }
 };
 
 const PerformanceRow = ({ data }) => {
@@ -68,7 +48,7 @@ const PerformanceRow = ({ data }) => {
 
   return (
     <TableRow>
-      <TableCell>{getDescription(data)}</TableCell>
+      <TableCell>{getPeriodDescription(data)}</TableCell>
       <TableCell align="right">
         {data.start === null
           ? '\u2014'

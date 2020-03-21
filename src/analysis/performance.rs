@@ -146,7 +146,11 @@ pub fn compute(
         .naive_local();
 
     let mut jobs = Vec::new();
-    jobs.push((PerformanceKind::Total, None, None));
+    jobs.push((
+        PerformanceKind::Total,
+        Some(first_transaction_date.pred()),
+        None,
+    ));
 
     /*
       EOD prices <-> current_prices:

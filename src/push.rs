@@ -28,7 +28,7 @@ fn notification_body(
         .filter_map(|(_, p)| p.end.data_source.as_ref().map(|d| d.price.date()))
         .max();
 
-    if let Some(newest) = newest {
+    if let Some(newest) = newest && now.with_timezone(&Local).date().weekday().number_from_monday() <= 5 {
         if newest.date() != now.date() {
             return Ok(String::new());
         }

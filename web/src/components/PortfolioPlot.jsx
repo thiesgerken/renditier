@@ -1,17 +1,28 @@
 import {
   XAxis,
   YAxis,
-  Line,
   Tooltip,
   ComposedChart,
   CartesianGrid,
   ResponsiveContainer,
   Area,
 } from 'recharts';
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import * as moment from 'moment';
-import { Paper, CircularProgress, useTheme } from '@material-ui/core';
+import {
+  Paper,
+  CircularProgress,
+  useTheme,
+  Select,
+  InputLabel,
+  FormControl,
+  MenuItem,
+  Grid,
+} from '@material-ui/core';
+import { DatePicker } from '@material-ui/pickers';
+
+import { getPeriodDescription } from '../selectors/performance';
 
 function getData(items, startDate, endDate) {
   let item = null;
@@ -23,152 +34,331 @@ function getData(items, startDate, endDate) {
   return item;
 }
 
-// TODO: make timespan customizable; allow zooming
-// TODO: make what is shown customizable
-
-const PortfolioPlot = ({ data, updateData }) => {
+const PortfolioPlot = ({ performance, data, updateData }) => {
   const theme = useTheme();
+  const [period, setPeriod] = useState(0);
+  const [mode, setMode] = useState('earningsAbsolute');
+  const [startDate, setStartDate] = useState(moment().startOf('year'));
+  const [endDate, setEndDate] = useState(moment());
+  const [prevRange, setPrevRange] = useState(null);
 
-  const sd = '2019-01-01';
-  const ed = moment().format('YYYY-MM-DD');
-  updateData(sd, ed);
-  const plotData = getData(data, sd, ed);
+  const handlePeriodChange = event => {
+    setPeriod(event.target.value);
+  };
 
-  const showDiff = true;
+  const handleModeChange = event => {
+    setMode(event.target.value);
+  };
 
-  if (
-    plotData !== null &&
-    plotData.data !== null &&
-    plotData.data.points.length > 0
-  ) {
-    const showDots = plotData.data.points.length < 100;
+  let plotData = null;
+  if (period < performance.items.length) {
+    let sd = null;
+    let ed = null;
 
-    // to color the areas differently
-    const off = (() => {
-      const dataMax = Math.max(...plotData.data.points.map(i => i.earnings));
-      const dataMin = Math.min(...plotData.data.points.map(i => i.earnings));
+    if (period >= 0) {
+      sd = performance.items[period].start.date;
+      ed = performance.items[period].end.date;
+    } else {
+      sd = startDate.format('YYYY-MM-DD');
+      ed = endDate.format('YYYY-MM-DD');
+    }
 
-      if (dataMax <= 0) {
-        return 0;
+    updateData(sd, ed);
+    plotData = getData(data, sd, ed);
+
+    if ((plotData === null || plotData.isFetching) && prevRange !== null) {
+      plotData = getData(data, prevRange[0], prevRange[1]);
+    } else if (
+      prevRange === null ||
+      prevRange[0] !== sd ||
+      prevRange[1] !== ed
+    ) {
+      setPrevRange([sd, ed]);
+    }
+  }
+
+  const progress = (plotData === null ||
+    plotData.isFetching ||
+    performance.isFetching) && (
+    <div
+      style={{
+        position: 'relative',
+        'z-index': 9,
+        left: '50%',
+        top: '40%',
+        transform: 'translate(0%, -50%)',
+        width: '100%',
+        height: 0,
+      }}
+    >
+      <CircularProgress color="secondary" />
+    </div>
+  );
+
+  const points =
+    plotData !== null && plotData.data !== null ? plotData.data.points : [];
+
+  // to color the areas differently
+  const earningsAbsoluteOffset = (() => {
+    const dataMax = Math.max(...points.map(i => i.earnings));
+    const dataMin = Math.min(...points.map(i => i.earnings));
+
+    if (dataMax <= 0) {
+      return 0;
+    }
+    if (dataMin >= 0) {
+      return 1;
+    }
+
+    return dataMax / (dataMax - dataMin);
+  })();
+  const earningsRelativeOffset = (() => {
+    const dataMax = Math.max(...points.map(i => i.earningsRelative));
+    const dataMin = Math.min(...points.map(i => i.earningsRelative));
+
+    if (dataMax <= 0) {
+      return 0;
+    }
+    if (dataMin >= 0) {
+      return 1;
+    }
+
+    return dataMax / (dataMax - dataMin);
+  })();
+
+  const interp = 'monotone';
+  const showDots = points.length < 35;
+  const dot = showDots
+    ? {
+        stroke: '#00000033',
+        strokeWidth: 1,
+        fill: '#00000033',
       }
-      if (dataMin >= 0) {
-        return 1;
-      }
+    : false;
 
-      return dataMax / (dataMax - dataMin);
-    })();
+  const activeDot = {
+    stroke: '#00000033',
+    strokeWidth: 1,
+    fill: '#eeeeee',
+  };
 
-    return (
-      <Paper style={{ width: '100%', height: 300, padding: '1em' }}>
-        <ResponsiveContainer>
-          <ComposedChart data={plotData.data.points}>
-            <XAxis dataKey="date" />
-            <YAxis unit="€" />
-            <CartesianGrid strokeDasharray="5 5" />
+  return (
+    <Paper style={{ width: '100%', height: 300, padding: '1em' }}>
+      <Grid container style={{ width: '100%', height: '100%' }}>
+        <Grid item xs={12}>
+          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            {progress}
+            <div
+              style={{ position: 'relative', width: '100%', height: '100%' }}
+            >
+              <ResponsiveContainer>
+                <ComposedChart data={points}>
+                  <XAxis dataKey="date" />
+                  <YAxis unit={mode === 'earningsRelative' ? '%' : '€'} />
+                  <CartesianGrid strokeDasharray="5 5" />
 
-            <defs>
-              <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset={off}
-                  stopColor={theme.palette.primary.dark}
-                  stopOpacity={1}
-                />
-                <stop
-                  offset={off}
-                  stopColor={theme.palette.secondary.dark}
-                  stopOpacity={1}
-                />
-              </linearGradient>
-              <linearGradient id="splitFill" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset={off}
-                  stopColor={theme.palette.primary.main}
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset={off}
-                  stopColor={theme.palette.secondary.main}
-                  stopOpacity={0.8}
-                />
-              </linearGradient>
-            </defs>
+                  <defs>
+                    {[
+                      {
+                        offset: earningsAbsoluteOffset,
+                        name: 'earningsAbsolute',
+                      },
+                      {
+                        offset: earningsRelativeOffset,
+                        name: 'earningsRelative',
+                      },
+                    ].map(({ offset, name }) => (
+                      <>
+                        <linearGradient
+                          id={`${name}Color`}
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset={offset}
+                            stopColor={theme.palette.primary.dark}
+                            stopOpacity={1}
+                          />
+                          <stop
+                            offset={offset}
+                            stopColor={theme.palette.secondary.dark}
+                            stopOpacity={1}
+                          />
+                        </linearGradient>
+                        <linearGradient
+                          id={`${name}Fill`}
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset={offset}
+                            stopColor={theme.palette.primary.main}
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset={offset}
+                            stopColor={theme.palette.secondary.main}
+                            stopOpacity={0.8}
+                          />
+                        </linearGradient>
+                      </>
+                    ))}
+                  </defs>
 
-            {showDiff || (
+                  {mode === 'investedAndValue' && (
+                    <Area
+                      type={interp}
+                      dataKey="invested"
+                      stroke={theme.palette.secondary.dark}
+                      fill={theme.palette.secondary.main}
+                      strokeWidth={1.4}
+                      unit="€"
+                      dot={dot}
+                      activeDot={activeDot}
+                      name="Investiert"
+                      fillOpacity={0.2}
+                    />
+                  )}
+                  {mode === 'investedAndValue' && (
+                    <Area
+                      type={interp}
+                      dataKey="value"
+                      unit="€"
+                      stroke={theme.palette.primary.dark}
+                      fill={theme.palette.primary.main}
+                      strokeWidth={1.4}
+                      name="Wert"
+                      dot={dot}
+                      activeDot={activeDot}
+                      fillOpacity={0.2}
+                    />
+                  )}
+
+                  {mode === 'earningsAbsolute' && (
+                    <Area
+                      type={interp}
+                      dataKey="earnings"
+                      unit="€"
+                      stroke="url(#earningsAbsoluteColor)"
+                      strokeWidth={1.4}
+                      fill="url(#earningsAbsoluteFill)"
+                      name="Gewinn"
+                      dot={dot}
+                      activeDot={activeDot}
+                    />
+                  )}
+                  {mode === 'earningsRelative' && (
+                    <Area
+                      type={interp}
+                      dataKey="earningsRelative"
+                      unit="%"
+                      stroke="url(#earningsRelativeColor)"
+                      strokeWidth={1.4}
+                      fill="url(#earningsRelativeFill)"
+                      name="Gewinn"
+                      dot={dot}
+                      activeDot={activeDot}
+                    />
+                  )}
+
+                  <Tooltip formatter={v => v.toFixed(2)} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </Grid>
+        <Grid item>
+          <Grid container spacing={2}>
+            <Grid item>
+              <FormControl>
+                <InputLabel id="mode-select-label">Art</InputLabel>
+                <Select
+                  labelId="mode-select-label"
+                  id="mode-select"
+                  value={mode}
+                  onChange={handleModeChange}
+                >
+                  <MenuItem value="investedAndValue">
+                    Kaufpreis und Wert
+                  </MenuItem>
+                  <MenuItem value="earningsAbsolute">Gewinn (absolut)</MenuItem>
+                  <MenuItem value="earningsRelative">
+                    Gewinn (relativ zu Kaufpreis)
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item>
+              <FormControl>
+                <InputLabel id="period-select-label">Zeit</InputLabel>
+                <Select
+                  labelId="period-select-label"
+                  id="period-select"
+                  value={
+                    performance.items === null || performance.items.length === 0
+                      ? -1
+                      : period
+                  }
+                  onChange={handlePeriodChange}
+                >
+                  {performance.items.map((item, i) => (
+                    <MenuItem value={i} key={i}>
+                      {getPeriodDescription(item)}
+                    </MenuItem>
+                  ))}
+                  <MenuItem value={-1} key={-1}>
+                    Benutzerdefiniert
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            {period < 0 && (
               <>
-                <Line
-                  type="monotone"
-                  dataKey="invested"
-                  stroke="#8884d8"
-                  unit="€"
-                  dot={showDots}
-                  name="Investiert"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  unit="€"
-                  stroke="#82ca9d"
-                  name="Wert"
-                  dot={showDots}
-                />
+                <Grid item>
+                  <DatePicker
+                    label="Start"
+                    value={startDate}
+                    format="L"
+                    maxDate={endDate}
+                    onChange={setStartDate}
+                    animateYearScrolling
+                    disableFuture
+                    disabled={period >= 0}
+                  />
+                </Grid>
+                <Grid item>
+                  <DatePicker
+                    label="Ende"
+                    value={endDate}
+                    format="L"
+                    minDate={startDate}
+                    onChange={setEndDate}
+                    animateYearScrolling
+                    disableFuture
+                    disabled={period >= 0}
+                  />
+                </Grid>
               </>
             )}
-
-            {showDiff && (
-              <Area
-                type="monotone"
-                dataKey="earnings"
-                unit="€"
-                // stroke="#eeeeee"
-                // fill="#ffc658"
-                stroke="url(#splitColor)"
-                strokeWidth={1.4}
-                fill="url(#splitFill)"
-                name="Gewinn"
-                dot={
-                  showDots
-                    ? { stroke: '#00000033', strokeWidth: 1, fill: '#00000033' }
-                    : false
-                }
-                activeDot={{
-                  stroke: '#00000033',
-                  strokeWidth: 1,
-                  fill: '#eeeeee',
-                }}
-              />
-            )}
-
-            <Tooltip formatter={v => v.toFixed(2)} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </Paper>
-    );
-  }
-
-  if (plotData !== null && plotData.isFetching) {
-    return (
-      <Paper style={{ width: '100%', height: 300 }}>
-        <div
-          style={{
-            position: 'relative',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(0%, -50%)',
-            width: '100%',
-          }}
-        >
-          <CircularProgress color="secondary" />
-        </div>
-      </Paper>
-    );
-  }
-
-  return <></>;
+          </Grid>
+        </Grid>
+      </Grid>
+    </Paper>
+  );
 };
 
 PortfolioPlot.propTypes = {
   data: PropTypes.arrayOf(PropTypes.object).isRequired,
   updateData: PropTypes.func.isRequired,
+  performance: PropTypes.shape({
+    items: PropTypes.arrayOf(PropTypes.object),
+    lastUpdated: PropTypes.number,
+    isFetching: PropTypes.bool,
+  }).isRequired,
 };
 
 export default PortfolioPlot;

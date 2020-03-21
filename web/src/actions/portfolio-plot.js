@@ -44,7 +44,10 @@ export const fetchPortfolioPlot = (startDate, endDate) => dispatch => {
       res.points = map(res.points, p => ({
         ...p,
         earnings: p.value !== null ? p.value - p.invested : null,
-        earningArea: p.value !== null ? [p.invested, p.value] : null,
+        earningsRelative:
+          p.value !== null && p.invested !== 0
+            ? ((p.value - p.invested) / p.invested) * 100
+            : null,
       }));
 
       let i = 0;

@@ -10,6 +10,8 @@ import { ThemeProvider, createMuiTheme } from '@material-ui/core';
 import 'typeface-oxygen';
 import teal from '@material-ui/core/colors/teal';
 import deepOrange from '@material-ui/core/colors/deepOrange';
+import { MuiPickersUtilsProvider } from '@material-ui/pickers';
+import MomentUtils from '@date-io/moment';
 
 import rootReducer from './reducers';
 import App from './containers/App';
@@ -48,7 +50,9 @@ render(
   <Provider store={store}>
     <ConnectedRouter history={history}>
       <ThemeProvider theme={theme}>
-        <App />
+        <MuiPickersUtilsProvider utils={MomentUtils}>
+          <App />
+        </MuiPickersUtilsProvider>
       </ThemeProvider>
     </ConnectedRouter>
   </Provider>,

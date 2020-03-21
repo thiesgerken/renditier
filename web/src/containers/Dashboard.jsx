@@ -24,6 +24,7 @@ const Dashboard = ({
           <PortfolioPlot
             data={portfolioPlotData}
             updateData={updatePortfolioPlotData}
+            performance={performance}
           />
         </Grid>
         <Grid item xs={12}>
