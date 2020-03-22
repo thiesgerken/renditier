@@ -1,10 +1,16 @@
 use chrono::{DateTime, Utc};
 use log::{debug, trace, warn};
 
-pub fn compute(transactions: &[(DateTime<Utc>, f64)]) -> Option<f64> {
+pub fn convert(irr: f64, reference: chrono::Duration, target: chrono::Duration) -> f64 {
+    let d = reference.num_seconds() as f64 / target.num_seconds() as f64;
+
+    f64::exp(f64::ln(1.0 + irr) / d) - 1.0
+}
+
+pub fn compute(transactions: &[(DateTime<Utc>, f64)], period: chrono::Duration) -> Option<f64> {
     let beginning = transactions.iter().map(|(d, _)| d).min()?;
 
-    let seconds_per_interval = chrono::Duration::days(365).num_seconds();
+    let seconds_per_interval = period.num_seconds();
     let transactions = transactions
         .iter()
         .map(|(d, x)| {

@@ -19,6 +19,9 @@ import {
   FormControl,
   MenuItem,
   Grid,
+  makeStyles,
+  Container,
+  useMediaQuery,
 } from '@material-ui/core';
 import { DatePicker } from '@material-ui/pickers';
 
@@ -34,8 +37,20 @@ function getData(items, startDate, endDate) {
   return item;
 }
 
+const useStyles = makeStyles(theme => ({
+  formControl: {
+    margin: theme.spacing(1),
+    minWidth: 120,
+  },
+  selectEmpty: {
+    marginTop: theme.spacing(2),
+  },
+}));
+
 const PortfolioPlot = ({ performance, data, updateData }) => {
+  const classes = useStyles();
   const theme = useTheme();
+  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [period, setPeriod] = useState(0);
   const [mode, setMode] = useState('earningsAbsolute');
   const [startDate, setStartDate] = useState(moment().startOf('year'));
@@ -126,7 +141,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
     return dataMax / (dataMax - dataMin);
   })();
 
-  const interp = 'monotone';
+  const interpolation = 'monotone';
   const showDots = points.length < 35;
   const dot = showDots
     ? {
@@ -143,211 +158,214 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   };
 
   return (
-    <Paper style={{ width: '100%', height: 300, padding: '1em' }}>
-      <Grid container style={{ width: '100%', height: '100%' }}>
-        <Grid item xs={12}>
-          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            {progress}
+    <Container maxWidth="xl">
+      <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
+        <Grid container style={{ width: '100%' }}>
+          <Grid item xs={12}>
             <div
               style={{ position: 'relative', width: '100%', height: '100%' }}
             >
-              <ResponsiveContainer>
-                <ComposedChart data={points}>
-                  <XAxis dataKey="date" />
-                  <YAxis unit={mode === 'earningsRelative' ? '%' : '€'} />
-                  <CartesianGrid strokeDasharray="5 5" />
-
-                  <defs>
-                    {[
-                      {
-                        offset: earningsAbsoluteOffset,
-                        name: 'earningsAbsolute',
-                      },
-                      {
-                        offset: earningsRelativeOffset,
-                        name: 'earningsRelative',
-                      },
-                    ].map(({ offset, name }) => (
-                      <>
-                        <linearGradient
-                          id={`${name}Color`}
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset={offset}
-                            stopColor={theme.palette.primary.dark}
-                            stopOpacity={1}
-                          />
-                          <stop
-                            offset={offset}
-                            stopColor={theme.palette.secondary.dark}
-                            stopOpacity={1}
-                          />
-                        </linearGradient>
-                        <linearGradient
-                          id={`${name}Fill`}
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset={offset}
-                            stopColor={theme.palette.primary.main}
-                            stopOpacity={0.8}
-                          />
-                          <stop
-                            offset={offset}
-                            stopColor={theme.palette.secondary.main}
-                            stopOpacity={0.8}
-                          />
-                        </linearGradient>
-                      </>
-                    ))}
-                  </defs>
-
-                  {mode === 'investedAndValue' && (
-                    <Area
-                      type={interp}
-                      dataKey="invested"
-                      stroke={theme.palette.secondary.dark}
-                      fill={theme.palette.secondary.main}
-                      strokeWidth={1.4}
-                      unit="€"
-                      dot={dot}
-                      activeDot={activeDot}
-                      name="Investiert"
-                      fillOpacity={0.2}
+              {progress}
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: '100%',
+                }}
+              >
+                <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
+                  <ComposedChart data={points}>
+                    <XAxis dataKey="date" />
+                    <YAxis
+                      unit={mode === 'earningsRelative' ? '%' : '€'}
+                      hide={!mdUp}
                     />
-                  )}
-                  {mode === 'investedAndValue' && (
-                    <Area
-                      type={interp}
-                      dataKey="value"
-                      unit="€"
-                      stroke={theme.palette.primary.dark}
-                      fill={theme.palette.primary.main}
-                      strokeWidth={1.4}
-                      name="Wert"
-                      dot={dot}
-                      activeDot={activeDot}
-                      fillOpacity={0.2}
-                    />
-                  )}
+                    <CartesianGrid strokeDasharray="5 5" />
 
-                  {mode === 'earningsAbsolute' && (
-                    <Area
-                      type={interp}
-                      dataKey="earnings"
-                      unit="€"
-                      stroke="url(#earningsAbsoluteColor)"
-                      strokeWidth={1.4}
-                      fill="url(#earningsAbsoluteFill)"
-                      name="Gewinn"
-                      dot={dot}
-                      activeDot={activeDot}
-                    />
-                  )}
-                  {mode === 'earningsRelative' && (
-                    <Area
-                      type={interp}
-                      dataKey="earningsRelative"
-                      unit="%"
-                      stroke="url(#earningsRelativeColor)"
-                      strokeWidth={1.4}
-                      fill="url(#earningsRelativeFill)"
-                      name="Gewinn"
-                      dot={dot}
-                      activeDot={activeDot}
-                    />
-                  )}
+                    <defs>
+                      {[
+                        {
+                          offset: earningsAbsoluteOffset,
+                          name: 'earningsAbsolute',
+                        },
+                        {
+                          offset: earningsRelativeOffset,
+                          name: 'earningsRelative',
+                        },
+                      ].map(({ offset, name }) => (
+                        <>
+                          <linearGradient
+                            id={`${name}Color`}
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset={offset}
+                              stopColor={theme.palette.primary.dark}
+                              stopOpacity={1}
+                            />
+                            <stop
+                              offset={offset}
+                              stopColor={theme.palette.secondary.dark}
+                              stopOpacity={1}
+                            />
+                          </linearGradient>
+                          <linearGradient
+                            id={`${name}Fill`}
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset={offset}
+                              stopColor={theme.palette.primary.main}
+                              stopOpacity={0.8}
+                            />
+                            <stop
+                              offset={offset}
+                              stopColor={theme.palette.secondary.main}
+                              stopOpacity={0.8}
+                            />
+                          </linearGradient>
+                        </>
+                      ))}
+                    </defs>
 
-                  <Tooltip formatter={v => v.toFixed(2)} />
-                </ComposedChart>
-              </ResponsiveContainer>
+                    {mode === 'investedAndValue' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="invested"
+                        stroke={theme.palette.secondary.dark}
+                        fill={theme.palette.secondary.main}
+                        strokeWidth={1.4}
+                        unit="€"
+                        dot={dot}
+                        activeDot={activeDot}
+                        name="Investiert"
+                        fillOpacity={0.2}
+                      />
+                    )}
+                    {mode === 'investedAndValue' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="value"
+                        unit="€"
+                        stroke={theme.palette.primary.dark}
+                        fill={theme.palette.primary.main}
+                        strokeWidth={1.4}
+                        name="Wert"
+                        dot={dot}
+                        activeDot={activeDot}
+                        fillOpacity={0.2}
+                      />
+                    )}
+
+                    {mode === 'earningsAbsolute' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="earnings"
+                        unit="€"
+                        stroke="url(#earningsAbsoluteColor)"
+                        strokeWidth={1.4}
+                        fill="url(#earningsAbsoluteFill)"
+                        name="Gewinn"
+                        dot={dot}
+                        activeDot={activeDot}
+                      />
+                    )}
+                    {mode === 'earningsRelative' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="earningsRelative"
+                        unit="%"
+                        stroke="url(#earningsRelativeColor)"
+                        strokeWidth={1.4}
+                        fill="url(#earningsRelativeFill)"
+                        name="Gewinn"
+                        dot={dot}
+                        activeDot={activeDot}
+                      />
+                    )}
+
+                    <Tooltip formatter={v => v.toFixed(2)} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
-        </Grid>
-        <Grid item>
-          <Grid container spacing={2}>
-            <Grid item>
-              <FormControl>
-                <InputLabel id="mode-select-label">Art</InputLabel>
-                <Select
-                  labelId="mode-select-label"
-                  id="mode-select"
-                  value={mode}
-                  onChange={handleModeChange}
-                >
-                  <MenuItem value="investedAndValue">
-                    Kaufpreis und Wert
+          </Grid>
+          <Grid item xs={9}>
+            <FormControl className={classes.formControl}>
+              <InputLabel id="mode-select-label">Art</InputLabel>
+              <Select
+                labelId="mode-select-label"
+                id="mode-select"
+                value={mode}
+                autoWidth
+                onChange={handleModeChange}
+              >
+                <MenuItem value="investedAndValue">Kaufpreis und Wert</MenuItem>
+                <MenuItem value="earningsAbsolute">Gewinn (absolut)</MenuItem>
+                <MenuItem value="earningsRelative">
+                  Gewinn (relativ zu Kaufpreis)
+                </MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl className={classes.formControl}>
+              <InputLabel id="period-select-label">Zeit</InputLabel>
+              <Select
+                labelId="period-select-label"
+                id="period-select"
+                autoWidth
+                value={
+                  performance.items === null || performance.items.length === 0
+                    ? -1
+                    : period
+                }
+                onChange={handlePeriodChange}
+              >
+                {performance.items.map((item, i) => (
+                  <MenuItem value={i} key={i}>
+                    {getPeriodDescription(item)}
                   </MenuItem>
-                  <MenuItem value="earningsAbsolute">Gewinn (absolut)</MenuItem>
-                  <MenuItem value="earningsRelative">
-                    Gewinn (relativ zu Kaufpreis)
-                  </MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item>
-              <FormControl>
-                <InputLabel id="period-select-label">Zeit</InputLabel>
-                <Select
-                  labelId="period-select-label"
-                  id="period-select"
-                  value={
-                    performance.items === null || performance.items.length === 0
-                      ? -1
-                      : period
-                  }
-                  onChange={handlePeriodChange}
-                >
-                  {performance.items.map((item, i) => (
-                    <MenuItem value={i} key={i}>
-                      {getPeriodDescription(item)}
-                    </MenuItem>
-                  ))}
-                  <MenuItem value={-1} key={-1}>
-                    Benutzerdefiniert
-                  </MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+                ))}
+                <MenuItem value={-1} key={-1}>
+                  Benutzerdefiniert
+                </MenuItem>
+              </Select>
+            </FormControl>
             {period < 0 && (
               <>
-                <Grid item>
-                  <DatePicker
-                    label="Start"
-                    value={startDate}
-                    format="L"
-                    maxDate={endDate}
-                    onChange={setStartDate}
-                    animateYearScrolling
-                    disableFuture
-                    disabled={period >= 0}
-                  />
-                </Grid>
-                <Grid item>
-                  <DatePicker
-                    label="Ende"
-                    value={endDate}
-                    format="L"
-                    minDate={startDate}
-                    onChange={setEndDate}
-                    animateYearScrolling
-                    disableFuture
-                    disabled={period >= 0}
-                  />
-                </Grid>
+                <DatePicker
+                  label="Start"
+                  value={startDate}
+                  format="L"
+                  maxDate={endDate}
+                  onChange={setStartDate}
+                  animateYearScrolling
+                  disableFuture
+                  disabled={period >= 0}
+                  className={classes.formControl}
+                />
+                <DatePicker
+                  label="Ende"
+                  value={endDate}
+                  format="L"
+                  minDate={startDate}
+                  onChange={setEndDate}
+                  animateYearScrolling
+                  disableFuture
+                  disabled={period >= 0}
+                  className={classes.formControl}
+                />
               </>
             )}
           </Grid>
         </Grid>
-      </Grid>
-    </Paper>
+      </Paper>
+    </Container>
   );
 };
 

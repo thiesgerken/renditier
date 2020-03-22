@@ -8,14 +8,24 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
-import { Typography, Grid, CircularProgress } from '@material-ui/core';
-import { withStyles } from '@material-ui/core/styles';
+import {
+  Typography,
+  Grid,
+  CircularProgress,
+  Container,
+  Hidden,
+  useMediaQuery,
+} from '@material-ui/core';
+import { withStyles, useTheme } from '@material-ui/core/styles';
 import * as moment from 'moment';
 import { filter, find, map, min, max } from 'lodash';
 
 import PerformanceRow from './PerformanceRow';
 
 const PerformanceTable = ({ performance }) => {
+  const theme = useTheme();
+  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+
   const StyledTableCell = withStyles(() => ({
     head: {
       fontWeight: 600,
@@ -42,31 +52,19 @@ const PerformanceTable = ({ performance }) => {
     }
 
     return (
-      <>
+      <Container maxWidth="xl">
         <Paper>
           <TableContainer>
             <Table size="small" aria-label="performance">
               <TableHead>
                 <TableRow>
-                  <StyledTableCell rowSpan="2">Zeitraum</StyledTableCell>
-                  <StyledTableCell align="center" colSpan="2">
-                    Start
-                  </StyledTableCell>
-                  <StyledTableCell align="center" colSpan="2">
-                    Ende
-                  </StyledTableCell>
-                  <StyledTableCell align="right" rowSpan="2">
-                    Gewinn
-                  </StyledTableCell>
-                  <StyledTableCell align="right" rowSpan="2">
-                    Zinsfuß
-                  </StyledTableCell>
-                </TableRow>
-                <TableRow>
-                  <StyledTableCell align="right">Investiert</StyledTableCell>
+                  <StyledTableCell>Zeitraum</StyledTableCell>
+                  <Hidden xsDown>
+                    <StyledTableCell align="right">Kaufpreis</StyledTableCell>
+                  </Hidden>
                   <StyledTableCell align="right">Wert</StyledTableCell>
-                  <StyledTableCell align="right">Investiert</StyledTableCell>
-                  <StyledTableCell align="right">Wert</StyledTableCell>
+                  <StyledTableCell align="right">Gewinn</StyledTableCell>
+                  <StyledTableCell align="right">Zinsfuß</StyledTableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -80,7 +78,7 @@ const PerformanceTable = ({ performance }) => {
                     )
                 )}
                 <TableRow>
-                  {Array(7)
+                  {Array(xsDown ? 4 : 5)
                     .fill(1)
                     .map((_, i) => (
                       <TableCell key={`filler0-${i.toString()}`}>
@@ -100,7 +98,7 @@ const PerformanceTable = ({ performance }) => {
                     )
                 )}
                 <TableRow>
-                  {Array(7)
+                  {Array(xsDown ? 4 : 5)
                     .fill(1)
                     .map((_, i) => (
                       <TableCell key={`filler1-${i.toString()}`}>
@@ -146,7 +144,7 @@ const PerformanceTable = ({ performance }) => {
             </Grid>
           </Typography>
         </Paper>
-      </>
+      </Container>
     );
   }
 

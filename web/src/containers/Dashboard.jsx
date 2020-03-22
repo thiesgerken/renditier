@@ -1,7 +1,7 @@
 import { connect } from 'react-redux';
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Grid } from '@material-ui/core';
+import { Grid, Hidden } from '@material-ui/core';
 
 import { updatePerformance as updatePerformanceAction } from '../actions/performance';
 import { updatePortfolioPlot as updatePortfolioPlotAction } from '../actions/portfolio-plot';
@@ -18,23 +18,23 @@ const Dashboard = ({
   updatePerformance();
 
   return (
-    <>
-      <Grid container spacing={1}>
-        <Grid item xs={12}>
+    <Grid container spacing={3}>
+      <Hidden xsDown implementation="js">
+        <Grid item xs={12} style={{ padding: '4px' }}>
           <PortfolioPlot
             data={portfolioPlotData}
             updateData={updatePortfolioPlotData}
             performance={performance}
           />
         </Grid>
-        <Grid item xs={12}>
-          <PerformanceTable performance={performance} />
-        </Grid>
-        <Grid item xs={12}>
-          <PositionsTable performance={performance} />
-        </Grid>
+      </Hidden>
+      <Grid item xs={12} style={{ padding: '4px' }}>
+        <PerformanceTable performance={performance} />
       </Grid>
-    </>
+      <Grid item xs={12} style={{ padding: '4px' }}>
+        <PositionsTable performance={performance} />
+      </Grid>
+    </Grid>
   );
 };
 

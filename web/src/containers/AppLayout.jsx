@@ -33,7 +33,7 @@ const useStyles = makeStyles(theme => ({
     display: 'flex',
   },
   drawer: {
-    [theme.breakpoints.up('sm')]: {
+    [theme.breakpoints.up('md')]: {
       width: drawerWidth,
       flexShrink: 0,
     },
@@ -47,7 +47,7 @@ const useStyles = makeStyles(theme => ({
   },
   menuButton: {
     marginRight: theme.spacing(2),
-    [theme.breakpoints.up('sm')]: {
+    [theme.breakpoints.up('md')]: {
       display: 'none',
     },
   },
@@ -57,7 +57,7 @@ const useStyles = makeStyles(theme => ({
   },
   content: {
     flexGrow: 1,
-    padding: theme.spacing(3),
+    'padding-top': theme.spacing(3),
   },
   title: {
     flexGrow: 1,
@@ -94,7 +94,7 @@ function ResponsiveDrawer(props) {
 
   const drawer = (
     <div>
-      <Hidden xsDown implementation="css">
+      <Hidden smDown implementation="css">
         <div className={classes.toolbar} />
         <Divider />
       </Hidden>
@@ -206,8 +206,7 @@ function ResponsiveDrawer(props) {
         </Toolbar>
       </AppBar>
       <nav className={classes.drawer} aria-label="mailbox folders">
-        {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
-        <Hidden smUp implementation="css">
+        <Hidden mdUp>
           <SwipeableDrawer
             variant="temporary"
             anchor={theme.direction === 'rtl' ? 'right' : 'left'}
@@ -225,7 +224,7 @@ function ResponsiveDrawer(props) {
             {drawer}
           </SwipeableDrawer>
         </Hidden>
-        <Hidden xsDown implementation="css">
+        <Hidden smDown>
           <Drawer
             classes={{
               paper: classes.drawerPaper,

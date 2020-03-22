@@ -8,7 +8,13 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
-import { Typography, Grid, CircularProgress } from '@material-ui/core';
+import {
+  Typography,
+  Grid,
+  CircularProgress,
+  Container,
+  Hidden,
+} from '@material-ui/core';
 import { withStyles } from '@material-ui/core/styles';
 import * as moment from 'moment';
 import { filter, find, map, min, max } from 'lodash';
@@ -49,16 +55,18 @@ const PositionsTable = ({ performance }) => {
     positions.sort((a, b) => a.end.invested - b.end.invested);
 
     return (
-      <>
+      <Container maxWidth="xl">
         <Paper>
           <TableContainer>
             <Table size="small" aria-label="positions">
               <TableHead>
                 <TableRow>
                   <StyledTableCell>ISIN</StyledTableCell>
-                  <StyledTableCell align="right">Einheiten</StyledTableCell>
-                  <StyledTableCell align="right">Kurs</StyledTableCell>
-                  <StyledTableCell align="right">Investiert</StyledTableCell>
+                  <Hidden xsDown>
+                    <StyledTableCell align="right">Einheiten</StyledTableCell>
+                    <StyledTableCell align="right">Kurs</StyledTableCell>
+                    <StyledTableCell align="right">Kaufpreis</StyledTableCell>
+                  </Hidden>
                   <StyledTableCell align="right">Wert</StyledTableCell>
                   <StyledTableCell align="right">Gewinn</StyledTableCell>
                   <StyledTableCell align="right">Zinsfuß</StyledTableCell>
@@ -98,7 +106,7 @@ const PositionsTable = ({ performance }) => {
             </Grid>
           </Typography>
         </Paper>
-      </>
+      </Container>
     );
   }
 

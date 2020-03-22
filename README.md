@@ -14,8 +14,9 @@
 - do not register service worker for api requests?
 - chart: invested money by ISIN as pie
 - analysis for each isin, price chart with buys/sales => dedicated page for each stock; navigation?)
-- comboboxes for portfolio plot and positions table to set timespan
+- comboboxes for positions table to set timespan
 - portfolio plot: option to show invested+value instead of earnings
+- Bug: Dashboard is a few pixels too wide (every screen size)
 
 ## Ideas
 

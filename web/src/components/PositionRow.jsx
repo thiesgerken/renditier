@@ -4,12 +4,12 @@ import PropTypes from 'prop-types';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import * as moment from 'moment';
-import { useTheme } from '@material-ui/core';
+import { useTheme, Hidden } from '@material-ui/core';
 import { min, map, max } from 'lodash';
 
 const formatAmount = value => (value === null ? '' : `${value.toFixed(2)}€`);
 const formatPercentage = value =>
-  value === null ? '' : `${(value * 100).toFixed(2)}%`;
+  value === null ? '' : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(2)}%`;
 
 const calculateProfit = end => {
   if (end.value === null) {
@@ -25,9 +25,7 @@ const calculateProfit = end => {
 
 const hideIrr = item => {
   let firstTransaction = min(map(item.transactions, t => moment(t.date)));
-
-  if (item.start !== null)
-    firstTransaction = max([moment(item.start.date), firstTransaction]);
+  firstTransaction = max([moment(item.start.date), firstTransaction]);
 
   if (firstTransaction === undefined) return true;
   return moment(item.end.date).diff(firstTransaction, 'days') < 32;
@@ -46,15 +44,17 @@ const PositionRow = ({ data }) => {
   return (
     <TableRow>
       <TableCell>{data.isin}</TableCell>
-      <TableCell align="right">{data.end.units.toFixed(3)}</TableCell>
-      <TableCell align="right">
-        {data.end.dataSource === null
-          ? '\u2014'
-          : formatAmount(data.end.dataSource.price.price)}
-      </TableCell>
-      <TableCell align="right">
-        {formatAmount(-1 * data.end.invested)}
-      </TableCell>
+      <Hidden xsDown>
+        <TableCell align="right">{data.end.units.toFixed(3)}</TableCell>
+        <TableCell align="right">
+          {data.end.dataSource === null
+            ? '\u2014'
+            : formatAmount(data.end.dataSource.price.price)}
+        </TableCell>
+        <TableCell align="right">
+          {formatAmount(-1 * data.end.invested)}
+        </TableCell>
+      </Hidden>
       <TableCell align="right">
         {data.end.value === null ? '\u2014' : formatAmount(data.end.value)}
       </TableCell>
@@ -68,10 +68,10 @@ const PositionRow = ({ data }) => {
       >
         {calculateProfit(data.end)}
       </TableCell>
-      <TableCell align="right" style={colorize(data.irr)}>
-        {data.irr === null || hideIrr(data)
+      <TableCell align="right" style={colorize(data.irrAnnual)}>
+        {data.irrAnnual === null || hideIrr(data)
           ? ''
-          : `${formatPercentage(data.irr)} p.a.`}
+          : `${formatPercentage(data.irrAnnual)} p.a.`}
       </TableCell>
     </TableRow>
   );
@@ -83,7 +83,7 @@ PositionRow.propTypes = {
     units: PropTypes.number,
     end: PropTypes.object,
     start: PropTypes.object,
-    irr: PropTypes.number,
+    irrAnnual: PropTypes.number,
   }).isRequired,
 };
 

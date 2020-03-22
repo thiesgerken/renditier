@@ -90,7 +90,7 @@ where
             .chain(sales)
             .collect::<Vec<_>>();
 
-        irr::compute(&ts)
+        irr::compute(&ts, chrono::Duration::days(365))
     } else {
         None
     };
@@ -132,7 +132,7 @@ where
             .chain(std::iter::once(sale))
             .collect::<Vec<_>>();
 
-        irr::compute(&ts)
+        irr::compute(&ts, chrono::Duration::days(365))
     } else {
         None
     };
