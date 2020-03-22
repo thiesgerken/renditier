@@ -39,10 +39,6 @@ const useStyles = makeStyles(theme => ({
     },
   },
   appBar: {
-    // [theme.breakpoints.up('sm')]: {
-    //   width: `calc(100% - ${drawerWidth}px)`,
-    //   marginLeft: drawerWidth,
-    // },
     zIndex: theme.zIndex.drawer + 1,
   },
   menuButton: {
@@ -94,7 +90,7 @@ function ResponsiveDrawer(props) {
 
   const drawer = (
     <div>
-      <Hidden smDown implementation="css">
+      <Hidden smDown>
         <div className={classes.toolbar} />
         <Divider />
       </Hidden>
@@ -238,7 +234,7 @@ function ResponsiveDrawer(props) {
       </nav>
       <main className={classes.content}>
         <div className={classes.toolbar} />
-        {children}
+        <div style={{ padding: '12px' }}>{children}</div>
       </main>
     </div>
   );

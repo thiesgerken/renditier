@@ -4,24 +4,8 @@ import PropTypes from 'prop-types';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import * as moment from 'moment';
-import { useTheme, Hidden } from '@material-ui/core';
+import { useTheme, Hidden, useMediaQuery } from '@material-ui/core';
 import { min, map, max } from 'lodash';
-
-const formatAmount = value => (value === null ? '' : `${value.toFixed(2)}€`);
-const formatPercentage = value =>
-  value === null ? '' : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(2)}%`;
-
-const calculateProfit = end => {
-  if (end.value === null) {
-    return '\u2014';
-  }
-
-  const diff = end.value + end.invested;
-
-  return `${formatAmount(diff)} (${formatPercentage(
-    (-1.0 * diff) / end.invested
-  )})`;
-};
 
 const hideIrr = item => {
   let firstTransaction = min(map(item.transactions, t => moment(t.date)));
@@ -33,6 +17,7 @@ const hideIrr = item => {
 
 const PositionRow = ({ data }) => {
   const theme = useTheme();
+  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const colorize = v =>
     v === null
       ? {}
@@ -40,6 +25,25 @@ const PositionRow = ({ data }) => {
           color:
             v < 0 ? theme.palette.secondary.dark : theme.palette.primary.dark,
         };
+
+  const formatAmount = value =>
+    value === null ? '' : `${value.toFixed(xsDown ? 0 : 2)}€`;
+  const formatPercentage = value =>
+    value === null
+      ? ''
+      : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(xsDown ? 1 : 2)}%`;
+
+  const calculateProfit = end => {
+    if (end.value === null) {
+      return '\u2014';
+    }
+
+    const diff = end.value + end.invested;
+
+    return `${formatAmount(diff)} (${formatPercentage(
+      (-1.0 * diff) / end.invested
+    )})`;
+  };
 
   return (
     <TableRow>

@@ -138,7 +138,10 @@ pub fn compute(
         .with_timezone(&Local)
         .date()
         .naive_local();
-    let prev_day = current_day.pred();
+    let mut prev_day = current_day.pred();
+    while prev_day.weekday().number_from_monday() > 4 {
+        prev_day = prev_day.pred();
+    }
 
     let first_transaction_date = ts
         .iter()

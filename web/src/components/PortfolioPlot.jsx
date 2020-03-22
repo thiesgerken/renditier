@@ -1,29 +1,29 @@
 import {
-  XAxis,
-  YAxis,
-  Tooltip,
-  ComposedChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Area,
-} from 'recharts';
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
-import * as moment from 'moment';
-import {
-  Paper,
   CircularProgress,
-  useTheme,
-  Select,
-  InputLabel,
-  FormControl,
-  MenuItem,
-  Grid,
-  makeStyles,
   Container,
+  FormControl,
+  Grid,
+  InputLabel,
+  makeStyles,
+  MenuItem,
+  Paper,
+  Select,
   useMediaQuery,
+  useTheme,
 } from '@material-ui/core';
 import { DatePicker } from '@material-ui/pickers';
+import * as moment from 'moment';
+import PropTypes from 'prop-types';
+import React, { useState } from 'react';
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 import { getPeriodDescription } from '../selectors/performance';
 
@@ -51,6 +51,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   const classes = useStyles();
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const [period, setPeriod] = useState(0);
   const [mode, setMode] = useState('earningsAbsolute');
   const [startDate, setStartDate] = useState(moment().startOf('year'));
@@ -158,7 +159,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   };
 
   return (
-    <Container maxWidth="xl">
+    <Container maxWidth="xl" style={{ padding: '0px' }}>
       <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
         <Grid container style={{ width: '100%' }}>
           <Grid item xs={12}>
@@ -178,7 +179,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                     <XAxis dataKey="date" />
                     <YAxis
                       unit={mode === 'earningsRelative' ? '%' : '€'}
-                      hide={!mdUp}
+                      hide={xsDown}
                     />
                     <CartesianGrid strokeDasharray="5 5" />
 

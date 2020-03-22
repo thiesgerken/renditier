@@ -8,16 +8,9 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
-import {
-  Typography,
-  Grid,
-  CircularProgress,
-  Container,
-  Hidden,
-} from '@material-ui/core';
+import { CircularProgress, Container, Hidden } from '@material-ui/core';
 import { withStyles } from '@material-ui/core/styles';
-import * as moment from 'moment';
-import { filter, find, map, min, max } from 'lodash';
+import { find, map } from 'lodash';
 
 import PositionRow from './PositionRow';
 
@@ -36,26 +29,11 @@ const PositionsTable = ({ performance }) => {
       ? undefined
       : find(performance.items, p => p.kind === 'Total');
   if (tp !== undefined) {
-    let oldestTodayData = null;
-    let newestTodayData = null;
-
-    const dates = filter(
-      map(tp.positions, p =>
-        p.end.dataSource !== null ? moment(p.end.dataSource.price.date) : null
-      ),
-      d => d !== null
-    );
-
-    if (dates.length > 0) {
-      oldestTodayData = min(dates).format('LLL');
-      newestTodayData = max(dates).format('LLL');
-    }
-
     const positions = map(tp.positions, (item, isin) => ({ ...item, isin }));
     positions.sort((a, b) => a.end.invested - b.end.invested);
 
     return (
-      <Container maxWidth="xl">
+      <Container maxWidth="xl" style={{ padding: '0px' }}>
         <Paper>
           <TableContainer>
             <Table size="small" aria-label="positions">
@@ -65,7 +43,7 @@ const PositionsTable = ({ performance }) => {
                   <Hidden xsDown>
                     <StyledTableCell align="right">Einheiten</StyledTableCell>
                     <StyledTableCell align="right">Kurs</StyledTableCell>
-                    <StyledTableCell align="right">Kaufpreis</StyledTableCell>
+                    <StyledTableCell align="right">Investiert</StyledTableCell>
                   </Hidden>
                   <StyledTableCell align="right">Wert</StyledTableCell>
                   <StyledTableCell align="right">Gewinn</StyledTableCell>
@@ -80,31 +58,6 @@ const PositionsTable = ({ performance }) => {
               </TableBody>
             </Table>
           </TableContainer>
-          <Typography variant="caption">
-            <Grid
-              container
-              spacing={0}
-              style={{ marginTop: '1em', marginLeft: '0.5em' }}
-            >
-              {performance.lastUpdated !== null && (
-                <Grid item xs={12}>
-                  {`Berechnungen aktualisiert: ${moment(
-                    performance.lastUpdated
-                  ).format('LLL')} (${moment(
-                    performance.lastUpdated
-                  ).fromNow()})`}
-                </Grid>
-              )}
-              {oldestTodayData && (
-                <Grid item xs={12}>
-                  Echtzeit-Preisberechnungen basierend auf Daten von
-                  {oldestTodayData !== newestTodayData
-                    ? ` ${oldestTodayData} bis ${newestTodayData}`
-                    : ` ${oldestTodayData}`}
-                </Grid>
-              )}
-            </Grid>
-          </Typography>
         </Paper>
       </Container>
     );

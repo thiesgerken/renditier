@@ -3,28 +3,15 @@ import PropTypes from 'prop-types';
 
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
-import * as moment from 'moment';
+import { Hidden, useMediaQuery } from '@material-ui/core';
 import { useTheme } from '@material-ui/core/styles';
+import * as moment from 'moment';
+
 import { getPeriodDescription } from '../selectors/performance';
-import { Hidden } from '@material-ui/core';
-
-const formatAmount = value =>
-  value === null ? '\u2014' : `${value.toFixed(2)}€`;
-const formatPercentage = value =>
-  value === null ? '' : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(2)}%`;
-
-const chooseIrr = data => {
-  if (moment(data.end.date).diff(moment(data.start.date), 'days') < 32) {
-    return data.irrPeriod === null ? '' : formatPercentage(data.irrPeriod);
-  }
-
-  return data.irrAnnual === null
-    ? ''
-    : `${formatPercentage(data.irrAnnual)} p.a.`;
-};
 
 const PerformanceRow = ({ data }) => {
   const theme = useTheme();
+  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const colorize = v =>
     v === null
       ? {}
@@ -33,7 +20,23 @@ const PerformanceRow = ({ data }) => {
             v < 0 ? theme.palette.secondary.dark : theme.palette.primary.dark,
         };
 
+  const formatAmount = value =>
+    value === null ? '\u2014' : `${value.toFixed(xsDown ? 0 : 2)}€`;
+  const formatPercentage = value =>
+    value === null
+      ? ''
+      : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(xsDown ? 1 : 2)}%`;
+
+  const chooseIrr = x => {
+    if (moment(x.end.date).diff(moment(x.start.date), 'days') < 32) {
+      return x.irrPeriod === null ? '' : formatPercentage(x.irrPeriod);
+    }
+
+    return x.irrAnnual === null ? '' : `${formatPercentage(x.irrAnnual)} p.a.`;
+  };
   const fromTo = (v1, v2, showDifference) => {
+    if (v1 === 0.0) return formatAmount(v2);
+
     let arr = '→';
     if (v1 !== null && v2 !== null && v2 !== v1) arr = v2 > v1 ? '↗' : '↘';
 
