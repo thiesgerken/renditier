@@ -18,49 +18,85 @@ const hideIrr = item => {
 const PositionRow = ({ data }) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+
   const colorize = v =>
-    v === null
+    v === null || v === 0.0
       ? {}
       : {
           color:
             v < 0 ? theme.palette.secondary.dark : theme.palette.primary.dark,
         };
 
-  const formatAmount = value =>
-    value === null ? '' : `${value.toFixed(xsDown ? 0 : 2)}€`;
   const formatPercentage = value =>
     value === null
       ? ''
       : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(xsDown ? 1 : 2)}%`;
 
-  const calculateProfit = end => {
-    if (end.value === null) {
-      return '\u2014';
+  const formatAmount = (value, unit) =>
+    value === null
+      ? '\u2014'
+      : `${value.toFixed(xsDown ? 0 : 2)}${unit === undefined ? '€' : unit}`;
+
+  const formatUnits = value => {
+    if (value === null) return '\u2014';
+
+    return value.toFixed(xsDown ? 0 : 2);
+    // while (s[s.length - 1] === '0' || s[s.length - 1] === '.')
+    //   s = s.substr(0, s.length - 1);
+    // return s;
+  };
+
+  const getPrice = dataSource => {
+    if (dataSource === null) return '\u2014';
+
+    if (dataSource.price.price !== undefined) return dataSource.price.price;
+    return dataSource.price.closing;
+  };
+
+  const chooseIrr = x => {
+    if (moment(x.end.date).diff(moment(x.start.date), 'days') < 32) {
+      return x.irrPeriod === null ? '' : formatPercentage(x.irrPeriod);
     }
 
-    const diff = end.value + end.invested;
+    return x.irrAnnual === null ? '' : `${formatPercentage(x.irrAnnual)} p.a.`;
+  };
 
-    return `${formatAmount(diff)} (${formatPercentage(
-      (-1.0 * diff) / end.invested
-    )})`;
+  const fromTo = (v1, v2, showDifference, unit, fmt) => {
+    const formatter = fmt === undefined ? formatAmount : fmt;
+
+    if (v1 === 0.0) return formatter(v2, unit);
+
+    let arr = '→';
+    if (v1 !== null && v2 !== null && v2 !== v1) arr = v2 > v1 ? '↗' : '↘';
+
+    let s = `${formatter(v1)} ${arr} ${formatter(v2, unit)}`;
+
+    if (showDifference && v1 !== null && v2 !== null && v2 !== v1 && v1 !== 0)
+      s += ` (${v2 >= v1 ? '+' : ''}${formatter(v2 - v1, unit)})`;
+
+    return s;
   };
 
   return (
     <TableRow>
       <TableCell>{data.isin}</TableCell>
       <Hidden xsDown>
-        <TableCell align="right">{data.end.units.toFixed(3)}</TableCell>
         <TableCell align="right">
-          {data.end.dataSource === null
-            ? '\u2014'
-            : formatAmount(data.end.dataSource.price.price)}
+          {fromTo(data.start.units, data.end.units, true, '', formatUnits)}
         </TableCell>
         <TableCell align="right">
-          {formatAmount(-1 * data.end.invested)}
+          {fromTo(
+            getPrice(data.start.dataSource),
+            getPrice(data.end.dataSource)
+          )}
+        </TableCell>
+        <TableCell align="right">
+          {fromTo(-1 * data.start.invested, -1 * data.end.invested)}
         </TableCell>
       </Hidden>
       <TableCell align="right">
-        {data.end.value === null ? '\u2014' : formatAmount(data.end.value)}
+        {' '}
+        {fromTo(data.start.value, data.end.value)}
       </TableCell>
       <TableCell
         align="right"
@@ -70,12 +106,14 @@ const PositionRow = ({ data }) => {
             (data.start === null ? 0.0 : data.start.value + data.start.invested)
         )}
       >
-        {calculateProfit(data.end)}
+        {fromTo(
+          data.start.value + data.start.invested,
+          data.end.value + data.end.invested,
+          true
+        )}
       </TableCell>
       <TableCell align="right" style={colorize(data.irrAnnual)}>
-        {data.irrAnnual === null || hideIrr(data)
-          ? ''
-          : `${formatPercentage(data.irrAnnual)} p.a.`}
+        {chooseIrr(data)}
       </TableCell>
     </TableRow>
   );

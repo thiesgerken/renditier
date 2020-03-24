@@ -22,6 +22,10 @@ pub fn compute(transactions: &[(DateTime<Utc>, f64)], period: chrono::Duration) 
         })
         .collect::<Vec<_>>();
 
+    if transactions.is_empty() {
+        return None;
+    }
+
     let f = |x: f64| {
         transactions
             .iter()

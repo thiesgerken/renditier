@@ -66,9 +66,11 @@ const Dashboard = ({
       <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
         <PositionsTable performance={performance} />
       </Grid>
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
-        <PositionsPie performance={performance} />
-      </Grid>
+      <Hidden xsDown implementation="js">
+        <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+          <PositionsPie performance={performance} />
+        </Grid>
+      </Hidden>
       {oldestTodayData !== null && (
         <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
           <Container maxWidth="xl" style={{ padding: '0px' }}>

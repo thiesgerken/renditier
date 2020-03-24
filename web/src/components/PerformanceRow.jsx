@@ -13,7 +13,7 @@ const PerformanceRow = ({ data }) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const colorize = v =>
-    v === null
+    v === null || v === 0.0
       ? {}
       : {
           color:

@@ -311,11 +311,15 @@ fn compute_position(
         let mut ts = Vec::new();
 
         // simulated sale
-        ts.push((ep.price.date(), (units + prior_units) * ep.price.value()));
+        if units + prior_units != 0.0 {
+            ts.push((ep.price.date(), (units + prior_units) * ep.price.value()));
+        }
 
-        if let Some(sp) = start_price.as_ref() {
-            // simulated purchase
-            ts.push((sp.price.date(), -1.0 * prior_units * sp.price.value()));
+        if prior_units != 0.0 {
+            if let Some(sp) = start_price.as_ref() {
+                // simulated purchase
+                ts.push((sp.price.date(), -1.0 * prior_units * sp.price.value()));
+            }
         }
 
         ts.extend(
@@ -445,18 +449,24 @@ fn compute_performance(
 
         // simulated sales
         ts.extend(positions.values().filter_map(|p| {
-            p.end
-                .data_source
-                .as_ref()
-                .map(|s| (s.price.date(), p.end.units * s.price.value()))
+            p.end.data_source.as_ref().and_then(|s| {
+                if p.end.units == 0.0 {
+                    None
+                } else {
+                    Some((s.price.date(), p.end.units * s.price.value()))
+                }
+            })
         }));
 
         // simulated purchases
         ts.extend(positions.values().filter_map(|p| {
-            p.start
-                .data_source
-                .as_ref()
-                .map(|s| (s.price.date(), -1.0 * p.start.units * s.price.value()))
+            p.start.data_source.as_ref().and_then(|s| {
+                if p.start.units == 0.0 {
+                    None
+                } else {
+                    Some((s.price.date(), -1.0 * p.start.units * s.price.value()))
+                }
+            })
         }));
 
         // relevant transactions
@@ -496,16 +506,6 @@ fn compute_performance(
             )
         }
     };
-
-    // let irr_period = irr_annual.map(|irr| {
-    //     let d = 365.25
-    //         / (end
-    //             .unwrap_or_else(|| Local::today().naive_local())
-    //             .signed_duration_since(start)
-    //             .num_days() as f64);
-
-    //     f64::exp(f64::ln(1.0 + irr) / d) - 1.0
-    // });
 
     PortfolioPerformance {
         kind,

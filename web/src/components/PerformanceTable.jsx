@@ -28,98 +28,93 @@ const PerformanceTable = ({ performance }) => {
     },
   }))(TableCell);
 
-  if (performance.items !== null) {
-    return (
-      <Container maxWidth="xl" style={{ padding: '0px' }}>
-        <Paper>
-          <TableContainer>
-            <Table size="small" aria-label="performance">
-              <TableHead>
-                <TableRow>
-                  <StyledTableCell>Zeitraum</StyledTableCell>
-                  <Hidden xsDown>
-                    <StyledTableCell align="right">Investiert</StyledTableCell>
-                  </Hidden>
-                  <StyledTableCell align="right">Wert</StyledTableCell>
-                  <StyledTableCell align="right">Gewinn</StyledTableCell>
-                  <StyledTableCell align="right">Zinsfuß</StyledTableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {performance.items.map(
-                  item =>
-                    ['Today', 'WeekToDate'].includes(item.kind) && (
-                      <PerformanceRow
-                        data={item}
-                        key={`${item.kind}-${item.end.date}`}
-                      />
-                    )
-                )}
-                <TableRow>
-                  {Array(xsDown ? 4 : 5)
-                    .fill(1)
-                    .map((_, i) => (
-                      <TableCell key={`filler0-${i.toString()}`}>
-                        &nbsp;
-                      </TableCell>
-                    ))}
-                </TableRow>
-                {performance.items.map(
-                  item =>
-                    ['Total', 'YearToYear', 'YearToDate'].includes(
-                      item.kind
-                    ) && (
-                      <PerformanceRow
-                        data={item}
-                        key={`${item.kind}-${item.end.date}`}
-                      />
-                    )
-                )}
-                <TableRow>
-                  {Array(xsDown ? 4 : 5)
-                    .fill(1)
-                    .map((_, i) => (
-                      <TableCell key={`filler1-${i.toString()}`}>
-                        &nbsp;
-                      </TableCell>
-                    ))}
-                </TableRow>
-                {performance.items.map(
-                  item =>
-                    ['MonthToMonth', 'MonthToDate'].includes(item.kind) && (
-                      <PerformanceRow
-                        data={item}
-                        key={`${item.kind}-${item.end.date}`}
-                      />
-                    )
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      </Container>
-    );
-  }
-
-  if (performance.isFetching) {
-    return (
-      <Paper style={{ width: '100%', height: 300 }}>
-        <div
-          style={{
-            position: 'relative',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(0%, -50%)',
-            width: '100%',
-          }}
-        >
-          <CircularProgress color="secondary" />
-        </div>
+  return (
+    <Container maxWidth="xl" style={{ padding: '0px' }}>
+      <Paper>
+        <TableContainer>
+          <Table size="small" aria-label="performance">
+            <TableHead>
+              <TableRow>
+                <StyledTableCell>Zeitraum</StyledTableCell>
+                <Hidden xsDown>
+                  <StyledTableCell align="right">Investiert</StyledTableCell>
+                </Hidden>
+                <StyledTableCell align="right">Wert</StyledTableCell>
+                <StyledTableCell align="right">Gewinn</StyledTableCell>
+                <StyledTableCell align="right">Zinsfuß</StyledTableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {performance.items !== null && (
+                <>
+                  {performance.items.map(
+                    item =>
+                      ['Today', 'WeekToDate'].includes(item.kind) && (
+                        <PerformanceRow
+                          data={item}
+                          key={`${item.kind}-${item.end.date}`}
+                        />
+                      )
+                  )}
+                  <TableRow>
+                    {Array(xsDown ? 4 : 5)
+                      .fill(1)
+                      .map((_, i) => (
+                        <TableCell key={`filler0-${i.toString()}`}>
+                          &nbsp;
+                        </TableCell>
+                      ))}
+                  </TableRow>
+                  {performance.items.map(
+                    item =>
+                      ['Total', 'YearToYear', 'YearToDate'].includes(
+                        item.kind
+                      ) && (
+                        <PerformanceRow
+                          data={item}
+                          key={`${item.kind}-${item.end.date}`}
+                        />
+                      )
+                  )}
+                  <TableRow>
+                    {Array(xsDown ? 4 : 5)
+                      .fill(1)
+                      .map((_, i) => (
+                        <TableCell key={`filler1-${i.toString()}`}>
+                          &nbsp;
+                        </TableCell>
+                      ))}
+                  </TableRow>
+                  {performance.items.map(
+                    item =>
+                      ['MonthToMonth', 'MonthToDate'].includes(item.kind) && (
+                        <PerformanceRow
+                          data={item}
+                          key={`${item.kind}-${item.end.date}`}
+                        />
+                      )
+                  )}
+                </>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        {performance.isFetching && (
+          <div
+            style={{
+              position: 'relative',
+              left: '50%',
+              transform: 'translate(0%, 0%)',
+              width: '100%',
+              padding: '20px',
+            }}
+          >
+            <CircularProgress color="secondary" />
+          </div>
+        )}
       </Paper>
-    );
-  }
-
-  return <></>;
+    </Container>
+  );
 };
 
 PerformanceTable.propTypes = {
