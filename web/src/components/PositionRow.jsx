@@ -5,15 +5,6 @@ import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import * as moment from 'moment';
 import { useTheme, Hidden, useMediaQuery } from '@material-ui/core';
-import { min, map, max } from 'lodash';
-
-const hideIrr = item => {
-  let firstTransaction = min(map(item.transactions, t => moment(t.date)));
-  firstTransaction = max([moment(item.start.date), firstTransaction]);
-
-  if (firstTransaction === undefined) return true;
-  return moment(item.end.date).diff(firstTransaction, 'days') < 32;
-};
 
 const PositionRow = ({ data }) => {
   const theme = useTheme();

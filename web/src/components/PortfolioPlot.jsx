@@ -99,7 +99,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
     <div
       style={{
         position: 'relative',
-        'z-index': 9,
+        zIndex: 9,
         left: '50%',
         top: '40%',
         transform: 'translate(0%, -50%)',
