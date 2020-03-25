@@ -14,6 +14,7 @@ import Dashboard from './Dashboard';
 import Settings from './Settings';
 import Transactions from './Transactions';
 import Accounts from './Accounts';
+import StockTable from './StockTable';
 
 const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
   if (!initialized) {
@@ -27,6 +28,7 @@ const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
     <AppLayout>
       <Switch>
         <Route exact path="/logout" render={onLogout} />
+        <Route exact path="/stocks" render={() => <StockTable />} />
         <Route exact path="/accounts" render={() => <Accounts />} />
         <Route exact path="/transactions" render={() => <Transactions />} />
         <Route exact path="/settings" render={() => <Settings />} />

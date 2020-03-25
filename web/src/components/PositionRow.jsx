@@ -4,9 +4,10 @@ import PropTypes from 'prop-types';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import * as moment from 'moment';
-import { useTheme, Hidden, useMediaQuery } from '@material-ui/core';
+import { useTheme, Hidden, useMediaQuery, Button } from '@material-ui/core';
+import ShowChartIcon from '@material-ui/icons/ShowChart';
 
-const PositionRow = ({ data }) => {
+const PositionRow = ({ data, stock }) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
 
@@ -68,9 +69,18 @@ const PositionRow = ({ data }) => {
     return s;
   };
 
+  // TODO: add a cell with stock name
+
   return (
     <TableRow>
-      <TableCell>{data.isin}</TableCell>
+      <TableCell style={{ padding: '2px' }}>
+        <Button variant="text" color="primary" startIcon={<ShowChartIcon />}>
+          {data.isin}
+        </Button>
+      </TableCell>
+      <Hidden xsDown>
+        <TableCell>{stock !== null ? stock.title : ''}</TableCell>
+      </Hidden>
       <Hidden xsDown>
         <TableCell align="right">
           {fromTo(data.start.units, data.end.units, true, '', formatUnits)}
@@ -118,6 +128,9 @@ PositionRow.propTypes = {
     start: PropTypes.object,
     irrAnnual: PropTypes.number,
   }).isRequired,
+  stock: PropTypes.shape({
+    title: PropTypes.string,
+  }),
 };
 
 export default PositionRow;

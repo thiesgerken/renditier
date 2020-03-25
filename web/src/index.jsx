@@ -9,9 +9,9 @@ import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
 import { ThemeProvider, createMuiTheme } from '@material-ui/core';
 import 'typeface-oxygen';
 import teal from '@material-ui/core/colors/teal';
-import deepOrange from '@material-ui/core/colors/deepOrange';
 import { MuiPickersUtilsProvider } from '@material-ui/pickers';
 import MomentUtils from '@date-io/moment';
+import { pink } from '@material-ui/core/colors';
 
 import rootReducer from './reducers';
 import App from './containers/App';
@@ -42,7 +42,7 @@ const theme = createMuiTheme({
   },
   palette: {
     primary: teal,
-    secondary: deepOrange,
+    secondary: pink,
   },
 });
 

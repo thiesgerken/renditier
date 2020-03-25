@@ -22,9 +22,7 @@ import { map } from 'lodash';
 
 import PositionRow from './PositionRow';
 import { getPeriodDescription } from '../selectors/performance';
-
-// TODO: Footer with totals
-// TODO: combobox to select timespan; show vorher/nachher columns only if needed (start !== null)
+import { findStock } from '../selectors/stocks';
 
 const useStyles = makeStyles(theme => ({
   formControl: {
@@ -36,19 +34,19 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const PositionsTable = ({ performance }) => {
+const StyledTableCell = withStyles(() => ({
+  head: {
+    fontWeight: 600,
+  },
+}))(TableCell);
+
+const PositionsTable = ({ performance, stocks }) => {
   const classes = useStyles();
   const [period, setPeriod] = useState(0);
 
   const handlePeriodChange = event => {
     setPeriod(event.target.value);
   };
-
-  const StyledTableCell = withStyles(() => ({
-    head: {
-      fontWeight: 600,
-    },
-  }))(TableCell);
 
   const tp =
     performance.items === null || period >= performance.items.length
@@ -72,6 +70,9 @@ const PositionsTable = ({ performance }) => {
                   <TableRow>
                     <StyledTableCell>ISIN</StyledTableCell>
                     <Hidden xsDown>
+                      <StyledTableCell>Name</StyledTableCell>
+                    </Hidden>
+                    <Hidden xsDown>
                       <StyledTableCell align="right">Einheiten</StyledTableCell>
                       <StyledTableCell align="right">Kurs</StyledTableCell>
                       <StyledTableCell align="right">
@@ -86,7 +87,14 @@ const PositionsTable = ({ performance }) => {
                 <TableBody>
                   {map(
                     positions,
-                    d => d.units !== 0 && <PositionRow data={d} key={d.isin} />
+                    d =>
+                      d.units !== 0 && (
+                        <PositionRow
+                          data={d}
+                          key={d.isin}
+                          stock={findStock(stocks, d.isin)}
+                        />
+                      )
                   )}
                 </TableBody>
               </Table>
@@ -135,6 +143,11 @@ const PositionsTable = ({ performance }) => {
 
 PositionsTable.propTypes = {
   performance: PropTypes.shape({
+    items: PropTypes.arrayOf(PropTypes.object),
+    lastUpdated: PropTypes.number,
+    isFetching: PropTypes.bool,
+  }).isRequired,
+  stocks: PropTypes.shape({
     items: PropTypes.arrayOf(PropTypes.object),
     lastUpdated: PropTypes.number,
     isFetching: PropTypes.bool,

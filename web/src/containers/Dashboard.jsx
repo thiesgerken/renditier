@@ -14,6 +14,7 @@ import * as moment from 'moment';
 
 import { updatePerformance as updatePerformanceAction } from '../actions/performance';
 import { updatePortfolioPlot as updatePortfolioPlotAction } from '../actions/portfolio-plot';
+import { updateStocks as updateStocksAction } from '../actions/stocks';
 import PerformanceTable from '../components/PerformanceTable';
 import PortfolioPlot from '../components/PortfolioPlot';
 import PositionsTable from '../components/PositionsTable';
@@ -22,12 +23,15 @@ import PositionsPie from '../components/PositionsPie';
 const Dashboard = ({
   performance,
   updatePerformance,
+  stocks,
+  updateStocks,
   portfolioPlotData,
   updatePortfolioPlotData,
 }) => {
   const theme = useTheme();
 
   updatePerformance();
+  updateStocks();
 
   let oldestTodayData = null;
   let newestTodayData = null;
@@ -64,11 +68,11 @@ const Dashboard = ({
         <PerformanceTable performance={performance} />
       </Grid>
       <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
-        <PositionsTable performance={performance} />
+        <PositionsTable stocks={stocks} performance={performance} />
       </Grid>
       <Hidden xsDown implementation="js">
         <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
-          <PositionsPie performance={performance} />
+          <PositionsPie stocks={stocks} performance={performance} />
         </Grid>
       </Hidden>
       {oldestTodayData !== null && (
@@ -99,21 +103,28 @@ Dashboard.propTypes = {
     lastUpdated: PropTypes.number,
   }).isRequired,
   updatePerformance: PropTypes.func.isRequired,
+  stocks: PropTypes.shape({
+    items: PropTypes.arrayOf(PropTypes.object),
+    lastUpdated: PropTypes.number,
+  }).isRequired,
+  updateStocks: PropTypes.func.isRequired,
   portfolioPlotData: PropTypes.arrayOf(PropTypes.object).isRequired,
   updatePortfolioPlotData: PropTypes.func.isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
   updatePerformance: () => dispatch(updatePerformanceAction()),
+  updateStocks: () => dispatch(updateStocksAction()),
   updatePortfolioPlotData: (startDate, endDate) =>
     dispatch(updatePortfolioPlotAction(startDate, endDate)),
 });
 
 const mapStateToProps = state => {
-  const { performance, portfolioPlot } = state;
+  const { performance, stocks, portfolioPlot } = state;
 
   return {
     performance,
+    stocks,
     portfolioPlotData: portfolioPlot.items,
   };
 };

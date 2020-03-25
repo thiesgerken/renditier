@@ -37,7 +37,9 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const PositionsPie = ({ performance }) => {
+// TODO: add stock name as info
+
+const PositionsPie = ({ performance, stocks }) => {
   const classes = useStyles();
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -65,7 +67,7 @@ const PositionsPie = ({ performance }) => {
     <div
       style={{
         position: 'relative',
-        'z-index': 9,
+        zIndex: 9,
         left: '50%',
         top: '40%',
         transform: 'translate(0%, -50%)',
@@ -182,6 +184,11 @@ const PositionsPie = ({ performance }) => {
 
 PositionsPie.propTypes = {
   performance: PropTypes.shape({
+    items: PropTypes.arrayOf(PropTypes.object),
+    lastUpdated: PropTypes.number,
+    isFetching: PropTypes.bool,
+  }).isRequired,
+  stocks: PropTypes.shape({
     items: PropTypes.arrayOf(PropTypes.object),
     lastUpdated: PropTypes.number,
     isFetching: PropTypes.bool,

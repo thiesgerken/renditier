@@ -7,6 +7,7 @@ import Drawer from '@material-ui/core/Drawer';
 import Hidden from '@material-ui/core/Hidden';
 import IconButton from '@material-ui/core/IconButton';
 import DashboardIcon from '@material-ui/icons/Dashboard';
+import AssessmentOutlinedIcon from '@material-ui/icons/AssessmentOutlined';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
@@ -100,6 +101,11 @@ function ResponsiveDrawer(props) {
             key: 'dashboard',
             text: 'Übersicht',
             icon: <DashboardIcon />,
+          },
+          {
+            key: 'stocks',
+            text: 'Wertpapiere',
+            icon: <AssessmentOutlinedIcon />,
           },
         ].map(makeMenuItem)}
       </List>
