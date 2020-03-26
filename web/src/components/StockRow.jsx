@@ -1,32 +1,48 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import {
   Button,
   withStyles,
-  Link,
-  IconButton,
   Hidden,
+  useTheme,
+  useMediaQuery,
+  Tooltip,
 } from '@material-ui/core';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
 
-// rgb(160, 20, 139)
+import { abbreviateTitle } from '../selectors/stocks';
 
 const StyledButton = withStyles(() => ({
   root: { textTransform: 'none', fontWeight: 600 },
 }))(Button);
 
 const StockRow = ({ data }) => {
+  const theme = useTheme();
+  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+
   return (
     <TableRow>
+      <TableCell>{data.isin}</TableCell>
       <TableCell style={{ padding: '2px' }}>
         <Button variant="text" color="primary" startIcon={<ShowChartIcon />}>
-          {data.isin}
+          <span
+            style={{
+              wordWrap: 'break-word',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              wordBreak: 'break-all',
+              WebkitLineClamp: 2,
+              textAlign: 'left',
+            }}
+          >
+            {abbreviateTitle(data.title, xsDown)}
+          </span>
         </Button>
       </TableCell>
-      <TableCell>{data.title}</TableCell>
       <TableCell>{data.kind}</TableCell>
       <Hidden xsDown>
         <TableCell>{data.focus}</TableCell>
@@ -39,15 +55,17 @@ const StockRow = ({ data }) => {
       </Hidden>
       <Hidden xsDown>
         <TableCell>
-          <StyledButton
-            color="secondary"
-            rel="noreferrer"
-            size="small"
-            href={`https://www.onvista.de${data.onvistaUrl}`}
-            target="_blank"
-          >
-            onvista
-          </StyledButton>
+          <Tooltip title="auf onvista.de ansehen" arrow>
+            <StyledButton
+              color="secondary"
+              rel="noreferrer"
+              size="small"
+              href={`https://www.onvista.de${data.onvistaUrl}`}
+              target="_blank"
+            >
+              onvista
+            </StyledButton>
+          </Tooltip>
         </TableCell>
       </Hidden>
     </TableRow>

@@ -72,8 +72,10 @@ const PositionsTable = ({ performance, stocks }) => {
                     <Hidden xsDown>
                       <StyledTableCell>Name</StyledTableCell>
                     </Hidden>
-                    <Hidden xsDown>
+                    <Hidden lgDown>
                       <StyledTableCell align="right">Einheiten</StyledTableCell>
+                    </Hidden>
+                    <Hidden xsDown>
                       <StyledTableCell align="right">Kurs</StyledTableCell>
                       <StyledTableCell align="right">
                         Investiert
@@ -82,6 +84,7 @@ const PositionsTable = ({ performance, stocks }) => {
                     <StyledTableCell align="right">Wert</StyledTableCell>
                     <StyledTableCell align="right">Gewinn</StyledTableCell>
                     <StyledTableCell align="right">Zinsfuß</StyledTableCell>
+                    <StyledTableCell align="right">&nbsp;</StyledTableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

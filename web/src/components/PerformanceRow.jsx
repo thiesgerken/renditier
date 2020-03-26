@@ -29,7 +29,9 @@ const PerformanceRow = ({ data }) => {
 
   const chooseIrr = x => {
     if (moment(x.end.date).diff(moment(x.start.date), 'days') < 32) {
-      return x.irrPeriod === null ? '' : formatPercentage(x.irrPeriod);
+      if (x.irrPeriod === null) return '';
+
+      return formatPercentage(x.irrPeriod);
     }
 
     return x.irrAnnual === null ? '' : `${formatPercentage(x.irrAnnual)} p.a.`;

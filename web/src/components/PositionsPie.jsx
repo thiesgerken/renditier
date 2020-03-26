@@ -13,7 +13,7 @@ import {
 } from '@material-ui/core';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
-import { find, map } from 'lodash';
+import { find, map, sumBy } from 'lodash';
 import { ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import {
   red,
@@ -26,6 +26,7 @@ import {
   deepPurple,
   orange,
 } from '@material-ui/core/colors';
+import { findStock, abbreviateTitle } from '../selectors/stocks';
 
 const useStyles = makeStyles(theme => ({
   formControl: {
@@ -84,30 +85,38 @@ const PositionsPie = ({ performance, stocks }) => {
       ? undefined
       : find(performance.items, p => p.kind === 'Total');
   let data = [];
+  let valueSum = 0;
+
   if (tp !== undefined) {
     const positions = map(tp.positions, (item, isin) => ({ ...item, isin }));
-    positions.sort((a, b) => a.end.invested - b.end.invested);
 
     if (mode === 'invested')
       data = positions.map(p => ({
         isin: p.isin,
+        stock: findStock(stocks, p.isin),
         value: -1 * p.end.invested,
       }));
     else if (mode === 'value')
       data = positions.map(p => ({
         isin: p.isin,
+        stock: findStock(stocks, p.isin),
         value: p.end.value,
       }));
     else if (mode === 'profit')
       data = positions.map(p => ({
         isin: p.isin,
+        stock: findStock(stocks, p.isin),
         value: Math.max(0, p.end.invested + p.end.value),
       }));
     else if (mode === 'loss')
       data = positions.map(p => ({
         isin: p.isin,
+        stock: findStock(stocks, p.isin),
         value: Math.max(0, -1 * (p.end.invested + p.end.value)),
       }));
+
+    data.sort((a, b) => a.value - b.value);
+    valueSum = sumBy(data, x => x.value);
   }
 
   return (
@@ -134,14 +143,16 @@ const PositionsPie = ({ performance, stocks }) => {
                       animationDuration={500}
                       animationBegin={100}
                       // NOTE: sometimes the end result does not render?
-                      // isAnimationActive={false}
+                      isAnimationActive={false}
                       data={data}
                       cx="50%"
                       cy="50%"
                       innerRadius="40%"
                       outerRadius="80%"
                       fill="#8884d8"
-                      label={x => x.isin}
+                      label={x =>
+                        x.stock ? abbreviateTitle(x.stock.title) : x.isin
+                      }
                       paddingAngle={3}
                     >
                       {data.map((entry, index) => (
@@ -153,7 +164,20 @@ const PositionsPie = ({ performance, stocks }) => {
                         />
                       ))}
                     </Pie>
-                    <Tooltip formatter={v => `${v.toFixed(2)}€`} />
+                    <Tooltip
+                      formatter={(v, isin) => {
+                        const stock = findStock(stocks, isin);
+                        const percentage =
+                          valueSum !== 0.0
+                            ? ` (${((v / valueSum) * 100).toFixed(1)}%)`
+                            : '';
+
+                        return [
+                          `${v.toFixed(2)}€${percentage}`,
+                          stock ? stock.title : isin,
+                        ];
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

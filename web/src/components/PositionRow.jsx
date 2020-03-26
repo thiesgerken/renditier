@@ -4,8 +4,16 @@ import PropTypes from 'prop-types';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import * as moment from 'moment';
-import { useTheme, Hidden, useMediaQuery, Button } from '@material-ui/core';
+import {
+  useTheme,
+  Hidden,
+  useMediaQuery,
+  Button,
+  withStyles,
+  Tooltip,
+} from '@material-ui/core';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
+import { abbreviateTitle } from '../selectors/stocks';
 
 const PositionRow = ({ data, stock }) => {
   const theme = useTheme();
@@ -45,6 +53,30 @@ const PositionRow = ({ data, stock }) => {
     return dataSource.price.closing;
   };
 
+  const formatDataSource = dataSource => {
+    if (!dataSource) return '';
+
+    if (dataSource.price.type === 'RealtimePrice') {
+      return `${formatAmount(dataSource.price.price)} am ${moment(
+        dataSource.price.date
+      ).format('L LT')} (${dataSource.exchange.name})`;
+    }
+
+    return `${formatAmount(dataSource.price.closing)} am ${moment(
+      dataSource.price.date
+    ).format('L')} (${dataSource.exchange.name})`;
+  };
+
+  const getPriceTooltip = (dsStart, dsEnd) => {
+    return (
+      <>
+        {formatDataSource(dsStart)}
+        {dsStart !== null && dsEnd !== null && <br />}
+        {formatDataSource(dsEnd)}
+      </>
+    );
+  };
+
   const chooseIrr = x => {
     if (moment(x.end.date).diff(moment(x.start.date), 'days') < 32) {
       return x.irrPeriod === null ? '' : formatPercentage(x.irrPeriod);
@@ -52,6 +84,10 @@ const PositionRow = ({ data, stock }) => {
 
     return x.irrAnnual === null ? '' : `${formatPercentage(x.irrAnnual)} p.a.`;
   };
+
+  const StyledButton = withStyles(() => ({
+    root: { textTransform: 'none', fontWeight: 600 },
+  }))(Button);
 
   const fromTo = (v1, v2, showDifference, unit, fmt) => {
     const formatter = fmt === undefined ? formatAmount : fmt;
@@ -69,34 +105,57 @@ const PositionRow = ({ data, stock }) => {
     return s;
   };
 
-  // TODO: add a cell with stock name
-
   return (
     <TableRow>
-      <TableCell style={{ padding: '2px' }}>
+      <Hidden xsDown>
+        <TableCell>{data.isin}</TableCell>
+      </Hidden>
+      <TableCell
+        style={{
+          padding: '2px',
+        }}
+      >
         <Button variant="text" color="primary" startIcon={<ShowChartIcon />}>
-          {data.isin}
+          <span
+            style={{
+              wordWrap: 'break-word',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              wordBreak: 'break-all',
+              WebkitLineClamp: 2,
+              textAlign: 'left',
+            }}
+          >
+            {stock !== null ? abbreviateTitle(stock.title, xsDown) : data.isin}
+          </span>
         </Button>
       </TableCell>
-      <Hidden xsDown>
-        <TableCell>{stock !== null ? stock.title : ''}</TableCell>
-      </Hidden>
-      <Hidden xsDown>
+      <Hidden lgDown>
         <TableCell align="right">
           {fromTo(data.start.units, data.end.units, true, '', formatUnits)}
         </TableCell>
+      </Hidden>
+      <Hidden xsDown>
         <TableCell align="right">
-          {fromTo(
-            getPrice(data.start.dataSource),
-            getPrice(data.end.dataSource)
-          )}
+          <Tooltip
+            title={getPriceTooltip(data.start.dataSource, data.end.dataSource)}
+            arrow
+          >
+            <span>
+              {fromTo(
+                getPrice(data.start.dataSource),
+                getPrice(data.end.dataSource)
+              )}
+            </span>
+          </Tooltip>
         </TableCell>
         <TableCell align="right">
           {fromTo(-1 * data.start.invested, -1 * data.end.invested)}
         </TableCell>
       </Hidden>
       <TableCell align="right">
-        {' '}
         {fromTo(data.start.value, data.end.value)}
       </TableCell>
       <TableCell
@@ -116,6 +175,23 @@ const PositionRow = ({ data, stock }) => {
       <TableCell align="right" style={colorize(data.irrAnnual)}>
         {chooseIrr(data)}
       </TableCell>
+      <Hidden lgDown>
+        <TableCell align="center">
+          {stock && (
+            <Tooltip title="auf onvista.de ansehen" arrow>
+              <StyledButton
+                color="secondary"
+                rel="noreferrer"
+                size="small"
+                href={`https://www.onvista.de${stock.onvistaUrl}`}
+                target="_blank"
+              >
+                onvista
+              </StyledButton>
+            </Tooltip>
+          )}
+        </TableCell>
+      </Hidden>
     </TableRow>
   );
 };
