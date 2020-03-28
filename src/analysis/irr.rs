@@ -1,10 +1,16 @@
 use chrono::{DateTime, Utc};
 use log::{debug, trace, warn};
 
-pub fn compute(transactions: &[(DateTime<Utc>, f64)]) -> Option<f64> {
+pub fn convert(irr: f64, reference: chrono::Duration, target: chrono::Duration) -> f64 {
+    let d = reference.num_seconds() as f64 / target.num_seconds() as f64;
+
+    f64::exp(f64::ln(1.0 + irr) / d) - 1.0
+}
+
+pub fn compute(transactions: &[(DateTime<Utc>, f64)], period: chrono::Duration) -> Option<f64> {
     let beginning = transactions.iter().map(|(d, _)| d).min()?;
 
-    let seconds_per_interval = chrono::Duration::days(365).num_seconds();
+    let seconds_per_interval = period.num_seconds();
     let transactions = transactions
         .iter()
         .map(|(d, x)| {
@@ -15,6 +21,10 @@ pub fn compute(transactions: &[(DateTime<Utc>, f64)]) -> Option<f64> {
             )
         })
         .collect::<Vec<_>>();
+
+    if transactions.is_empty() {
+        return None;
+    }
 
     let f = |x: f64| {
         transactions
@@ -27,11 +37,11 @@ pub fn compute(transactions: &[(DateTime<Utc>, f64)]) -> Option<f64> {
             .fold(0.0, |acc, (t, y)| acc - t * y * (1.0 + x).powf(-t - 1.0))
     };
 
-    newton(&f, &df, 0.1, 25, 1e-2, 1e-6, -0.999_999_999, 1000.0)
+    newton(&f, &df, 0.1, 25, 1e-2, 1e-6, (-0.999_999_999, 1000.0))
 }
 
 // newton method with projection of x to >= some lower bound (e.g. -0.999_999_999 for IRR)
-// divergence_ub: stop iterating after this upper bound is reached; can be set to f64::INFINITY to disable this
+// stops iterating after upper bound is reached; can be set to f64::INFINITY to disable this
 fn newton(
     f: &dyn Fn(f64) -> f64,
     df: &dyn Fn(f64) -> f64,
@@ -39,9 +49,10 @@ fn newton(
     max_iter: u32,
     eps_val: f64,
     eps_step: f64,
-    project_lb: f64,
-    divergence_ub: f64,
+    bounds: (f64, f64),
 ) -> Option<f64> {
+    let (project_lb, divergence_ub) = bounds;
+
     let mut n = 0;
     let mut x = x0;
     let mut fx = 0.0;

@@ -10,6 +10,7 @@ use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Stock {
     isin: String,
     wkn: String,
@@ -51,6 +52,7 @@ struct Price {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct Exchange {
     isin: String,
     name: String,

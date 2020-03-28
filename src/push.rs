@@ -3,7 +3,7 @@ use crate::analysis::performance::PerformanceKind;
 use crate::models::*;
 use crate::schema::push_subscriptions::dsl::*;
 
-use chrono::{Duration, Local, Timelike, Utc};
+use chrono::{Datelike, Duration, Local, Timelike, Utc};
 use diesel::prelude::*;
 use itertools::Itertools;
 use log::{error, info};
@@ -29,7 +29,14 @@ fn notification_body(
         .max();
 
     if let Some(newest) = newest {
-        if newest.date() != now.date() {
+        if newest.date() != now.date()
+            || now
+                .with_timezone(&Local)
+                .date()
+                .weekday()
+                .number_from_monday()
+                > 5
+        {
             return Ok(String::new());
         }
 

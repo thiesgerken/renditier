@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
@@ -8,119 +7,144 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
-import { Typography, Grid, CircularProgress } from '@material-ui/core';
-import { withStyles } from '@material-ui/core/styles';
-import * as moment from 'moment';
-import { filter, find, map, min, max } from 'lodash';
+import {
+  CircularProgress,
+  Container,
+  Hidden,
+  Grid,
+  MenuItem,
+  InputLabel,
+  Select,
+  FormControl,
+} from '@material-ui/core';
+import { withStyles, makeStyles } from '@material-ui/core/styles';
+import { map } from 'lodash';
 
 import PositionRow from './PositionRow';
+import { getPeriodDescription } from '../selectors/performance';
+import { findStock } from '../selectors/stocks';
 
-// TODO: Footer with totals
-// TODO: combobox to select timespan; show vorher/nachher columns only if needed (start !== null)
+const useStyles = makeStyles(theme => ({
+  formControl: {
+    margin: theme.spacing(1),
+    minWidth: 120,
+  },
+  selectEmpty: {
+    marginTop: theme.spacing(2),
+  },
+}));
 
-const PositionsTable = ({ performance }) => {
-  const StyledTableCell = withStyles(() => ({
-    head: {
-      fontWeight: 600,
-    },
-  }))(TableCell);
+const StyledTableCell = withStyles(() => ({
+  head: {
+    fontWeight: 600,
+  },
+}))(TableCell);
+
+const PositionsTable = ({ performance, stocks, push }) => {
+  const classes = useStyles();
+  const [period, setPeriod] = useState(0);
+
+  const handlePeriodChange = event => {
+    setPeriod(event.target.value);
+  };
 
   const tp =
-    performance.items === null
+    performance.items === null || period >= performance.items.length
       ? undefined
-      : find(performance.items, p => p.kind === 'Total');
-  if (tp !== undefined) {
-    let oldestTodayData = null;
-    let newestTodayData = null;
+      : performance.items[period];
 
-    const dates = filter(
-      map(tp.positions, p =>
-        p.end.dataSource !== null ? moment(p.end.dataSource.price.date) : null
-      ),
-      d => d !== null
-    );
+  const positions =
+    tp === undefined
+      ? []
+      : map(tp.positions, (item, isin) => ({ ...item, isin }));
+  positions.sort((a, b) => a.end.invested - b.end.invested);
 
-    if (dates.length > 0) {
-      oldestTodayData = min(dates).format('LLL');
-      newestTodayData = max(dates).format('LLL');
-    }
-
-    const positions = map(tp.positions, (item, isin) => ({ ...item, isin }));
-    positions.sort((a, b) => a.end.invested - b.end.invested);
-
-    return (
-      <>
-        <Paper>
-          <TableContainer>
-            <Table size="small" aria-label="positions">
-              <TableHead>
-                <TableRow>
-                  <StyledTableCell>ISIN</StyledTableCell>
-                  <StyledTableCell align="right">Einheiten</StyledTableCell>
-                  <StyledTableCell align="right">Kurs</StyledTableCell>
-                  <StyledTableCell align="right">Investiert</StyledTableCell>
-                  <StyledTableCell align="right">Wert</StyledTableCell>
-                  <StyledTableCell align="right">Gewinn</StyledTableCell>
-                  <StyledTableCell align="right">Zinsfuß</StyledTableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {map(
-                  positions,
-                  d => d.units !== 0 && <PositionRow data={d} key={d.isin} />
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <Typography variant="caption">
-            <Grid
-              container
-              spacing={0}
-              style={{ marginTop: '1em', marginLeft: '0.5em' }}
-            >
-              {performance.lastUpdated !== null && (
-                <Grid item xs={12}>
-                  {`Berechnungen aktualisiert: ${moment(
-                    performance.lastUpdated
-                  ).format('LLL')} (${moment(
-                    performance.lastUpdated
-                  ).fromNow()})`}
-                </Grid>
-              )}
-              {oldestTodayData && (
-                <Grid item xs={12}>
-                  Echtzeit-Preisberechnungen basierend auf Daten von
-                  {oldestTodayData !== newestTodayData
-                    ? ` ${oldestTodayData} bis ${newestTodayData}`
-                    : ` ${oldestTodayData}`}
-                </Grid>
-              )}
-            </Grid>
-          </Typography>
-        </Paper>
-      </>
-    );
-  }
-
-  if (performance.isFetching) {
-    return (
-      <Paper style={{ width: '100%', height: 300 }}>
-        <div
-          style={{
-            position: 'relative',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(0%, -50%)',
-            width: '100%',
-          }}
-        >
-          <CircularProgress color="secondary" />
-        </div>
+  return (
+    <Container maxWidth="xl" style={{ padding: '0px' }}>
+      <Paper>
+        <Grid container style={{ width: '100%' }}>
+          <Grid item xs={12}>
+            <TableContainer>
+              <Table size="small" aria-label="positions">
+                <TableHead>
+                  <TableRow>
+                    <Hidden lgDown>
+                      <StyledTableCell>ISIN</StyledTableCell>
+                    </Hidden>
+                    <StyledTableCell>Name</StyledTableCell>
+                    <Hidden lgDown>
+                      <StyledTableCell align="right">Einheiten</StyledTableCell>
+                    </Hidden>
+                    <Hidden xsDown>
+                      <StyledTableCell align="right">Kurs</StyledTableCell>
+                      <StyledTableCell align="right">
+                        Investiert
+                      </StyledTableCell>
+                    </Hidden>
+                    <StyledTableCell align="right">Wert</StyledTableCell>
+                    <StyledTableCell align="right">Gewinn</StyledTableCell>
+                    <StyledTableCell align="right">Zinsfuß</StyledTableCell>
+                    <Hidden lgDown>
+                      <StyledTableCell align="right">&nbsp;</StyledTableCell>
+                    </Hidden>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {map(
+                    positions,
+                    d =>
+                      d.units !== 0 && (
+                        <PositionRow
+                          data={d}
+                          key={d.isin}
+                          push={push}
+                          stock={findStock(stocks, d.isin)}
+                        />
+                      )
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            {performance.isFetching && (
+              <div
+                style={{
+                  position: 'relative',
+                  left: '50%',
+                  transform: 'translate(0%, 0%)',
+                  width: '100%',
+                  padding: '20px',
+                }}
+              >
+                <CircularProgress color="secondary" />
+              </div>
+            )}
+          </Grid>
+          <Grid item xs={9}>
+            <FormControl className={classes.formControl}>
+              <InputLabel id="period-select-label">Zeit</InputLabel>
+              <Select
+                labelId="period-select-label"
+                id="period-select"
+                autoWidth
+                value={
+                  performance.items === null || performance.items.length === 0
+                    ? ''
+                    : period
+                }
+                onChange={handlePeriodChange}
+              >
+                {performance.items.map((item, i) => (
+                  <MenuItem value={i} key={i}>
+                    {getPeriodDescription(item)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
       </Paper>
-    );
-  }
-
-  return <></>;
+    </Container>
+  );
 };
 
 PositionsTable.propTypes = {
@@ -129,6 +153,12 @@ PositionsTable.propTypes = {
     lastUpdated: PropTypes.number,
     isFetching: PropTypes.bool,
   }).isRequired,
+  stocks: PropTypes.shape({
+    items: PropTypes.arrayOf(PropTypes.object),
+    lastUpdated: PropTypes.number,
+    isFetching: PropTypes.bool,
+  }).isRequired,
+  push: PropTypes.func.isRequired,
 };
 
 export default PositionsTable;

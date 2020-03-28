@@ -3,87 +3,63 @@ import PropTypes from 'prop-types';
 
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
-import * as moment from 'moment';
+import { Hidden, useMediaQuery } from '@material-ui/core';
 import { useTheme } from '@material-ui/core/styles';
+import * as moment from 'moment';
 
-const formatAmount = value => (value === null ? '' : `${value.toFixed(2)}€`);
-const formatPercentage = value =>
-  value === null ? '' : `${(value * 100).toFixed(2)}%`;
-
-const calculateProfit = (start, end) => {
-  if (end.value === null || (start !== null && start.value === null)) {
-    return '\u2014';
-  }
-
-  const diff =
-    end.value +
-    end.invested -
-    (start === null ? 0.0 : start.value + start.invested);
-
-  let perc = '';
-  if (start === null && end.invested !== 0)
-    perc = ` (${formatPercentage(diff / end.invested)})`;
-  else if (start !== null && start.value !== 0)
-    perc = ` (${formatPercentage(diff / start.value)})`;
-
-  return <div style={{ color: 'secondary' }}>{formatAmount(diff) + perc}</div>;
-};
-
-const hideIrr = item => {
-  if (item.start === null) return false;
-
-  return moment(item.end.date).diff(moment(item.start.date), 'days') < 32;
-};
-
-const getDescription = item => {
-  switch (item.kind) {
-    case 'Total':
-      return 'Insgesamt';
-    case 'Today':
-      return 'Heute';
-    case 'WeekToDate':
-      return 'Diese Woche';
-    case 'MonthToDate':
-      return 'Dieser Monat';
-    case 'YearToDate':
-      return 'Dieses Jahr';
-    case 'YearToYear':
-      return moment(item.end.date).format('YYYY');
-    case 'MonthToMonth':
-      return moment(item.end.date).format('MM/YYYY');
-    default:
-      return '';
-  }
-};
+import { getPeriodDescription } from '../selectors/performance';
 
 const PerformanceRow = ({ data }) => {
   const theme = useTheme();
+  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const colorize = v =>
-    v === null
+    v === null || v === 0.0
       ? {}
       : {
           color:
             v < 0 ? theme.palette.secondary.dark : theme.palette.primary.dark,
         };
 
+  const formatAmount = value =>
+    value === null ? '\u2014' : `${value.toFixed(xsDown ? 0 : 2)}€`;
+  const formatPercentage = value =>
+    value === null
+      ? ''
+      : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(xsDown ? 1 : 2)}%`;
+
+  const chooseIrr = x => {
+    if (moment(x.end.date).diff(moment(x.start.date), 'days') < 32) {
+      if (x.irrPeriod === null) return '';
+
+      return formatPercentage(x.irrPeriod);
+    }
+
+    return x.irrAnnual === null ? '' : `${formatPercentage(x.irrAnnual)} p.a.`;
+  };
+  const fromTo = (v1, v2, showDifference) => {
+    if (v1 === 0.0) return formatAmount(v2);
+
+    let arr = '→';
+    if (v1 !== null && v2 !== null && v2 !== v1) arr = v2 > v1 ? '↗' : '↘';
+
+    let s = `${formatAmount(v1)} ${arr} ${formatAmount(v2)}`;
+
+    if (showDifference && v1 !== null && v2 !== null && v2 !== v1 && v1 !== 0)
+      s += ` (${v2 >= v1 ? '+' : ''}${formatAmount(v2 - v1)})`;
+
+    return s;
+  };
+
   return (
     <TableRow>
-      <TableCell>{getDescription(data)}</TableCell>
+      <TableCell>{getPeriodDescription(data)}</TableCell>
+      <Hidden xsDown>
+        <TableCell align="right">
+          {fromTo(-1 * data.start.invested, -1 * data.end.invested)}
+        </TableCell>
+      </Hidden>
       <TableCell align="right">
-        {data.start === null
-          ? '\u2014'
-          : formatAmount(-1 * data.start.invested)}
-      </TableCell>
-      <TableCell align="right">
-        {data.start === null || data.start.value === null
-          ? '\u2014'
-          : formatAmount(data.start.value)}
-      </TableCell>
-      <TableCell align="right">
-        {formatAmount(-1 * data.end.invested)}
-      </TableCell>
-      <TableCell align="right">
-        {data.end.value === null ? '\u2014' : formatAmount(data.end.value)}
+        {fromTo(data.start.value, data.end.value)}
       </TableCell>
       <TableCell
         align="right"
@@ -93,12 +69,14 @@ const PerformanceRow = ({ data }) => {
             (data.start === null ? 0.0 : data.start.value + data.start.invested)
         )}
       >
-        {calculateProfit(data.start, data.end)}
+        {fromTo(
+          data.start.value + data.start.invested,
+          data.end.value + data.end.invested,
+          true
+        )}
       </TableCell>
-      <TableCell align="right" style={colorize(data.irr)}>
-        {data.irr === null || hideIrr(data)
-          ? ''
-          : `${formatPercentage(data.irr)} p.a.`}
+      <TableCell align="right" style={colorize(data.irrAnnual)}>
+        {chooseIrr(data)}
       </TableCell>
     </TableRow>
   );
@@ -109,7 +87,8 @@ PerformanceRow.propTypes = {
     kind: PropTypes.string,
     start: PropTypes.object,
     end: PropTypes.object,
-    irr: PropTypes.number,
+    irrAnnual: PropTypes.number,
+    irrPeriod: PropTypes.number,
   }).isRequired,
 };
 

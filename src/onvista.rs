@@ -409,13 +409,13 @@ fn get_etc_etn_data_realtime_exchange(
     );
 
     Ok(rds
-        .filter_map(|s| parse_etc_etn_realtime_row(onvista_record_id, &date, s))
+        .filter_map(|s| parse_etc_etn_realtime_row(onvista_record_id, date, s))
         .next())
 }
 
 fn parse_etc_etn_realtime_row(
     onvista_record_id: i32,
-    date: &Date<Local>,
+    date: Date<Local>,
     record: csv::StringRecord,
 ) -> Option<RealtimePrice> {
     if record.len() != 4 {

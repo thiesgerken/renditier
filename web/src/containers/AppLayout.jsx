@@ -7,6 +7,7 @@ import Drawer from '@material-ui/core/Drawer';
 import Hidden from '@material-ui/core/Hidden';
 import IconButton from '@material-ui/core/IconButton';
 import DashboardIcon from '@material-ui/icons/Dashboard';
+import AssessmentOutlinedIcon from '@material-ui/icons/AssessmentOutlined';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
@@ -33,21 +34,17 @@ const useStyles = makeStyles(theme => ({
     display: 'flex',
   },
   drawer: {
-    [theme.breakpoints.up('sm')]: {
+    [theme.breakpoints.up('md')]: {
       width: drawerWidth,
       flexShrink: 0,
     },
   },
   appBar: {
-    // [theme.breakpoints.up('sm')]: {
-    //   width: `calc(100% - ${drawerWidth}px)`,
-    //   marginLeft: drawerWidth,
-    // },
     zIndex: theme.zIndex.drawer + 1,
   },
   menuButton: {
     marginRight: theme.spacing(2),
-    [theme.breakpoints.up('sm')]: {
+    [theme.breakpoints.up('md')]: {
       display: 'none',
     },
   },
@@ -57,7 +54,7 @@ const useStyles = makeStyles(theme => ({
   },
   content: {
     flexGrow: 1,
-    padding: theme.spacing(3),
+    'padding-top': theme.spacing(3),
   },
   title: {
     flexGrow: 1,
@@ -94,7 +91,7 @@ function ResponsiveDrawer(props) {
 
   const drawer = (
     <div>
-      <Hidden xsDown implementation="css">
+      <Hidden smDown>
         <div className={classes.toolbar} />
         <Divider />
       </Hidden>
@@ -104,6 +101,11 @@ function ResponsiveDrawer(props) {
             key: 'dashboard',
             text: 'Übersicht',
             icon: <DashboardIcon />,
+          },
+          {
+            key: 'stocks',
+            text: 'Wertpapiere',
+            icon: <AssessmentOutlinedIcon />,
           },
         ].map(makeMenuItem)}
       </List>
@@ -206,8 +208,7 @@ function ResponsiveDrawer(props) {
         </Toolbar>
       </AppBar>
       <nav className={classes.drawer} aria-label="mailbox folders">
-        {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
-        <Hidden smUp implementation="css">
+        <Hidden mdUp>
           <SwipeableDrawer
             variant="temporary"
             anchor={theme.direction === 'rtl' ? 'right' : 'left'}
@@ -225,7 +226,7 @@ function ResponsiveDrawer(props) {
             {drawer}
           </SwipeableDrawer>
         </Hidden>
-        <Hidden xsDown implementation="css">
+        <Hidden smDown>
           <Drawer
             classes={{
               paper: classes.drawerPaper,
@@ -239,7 +240,7 @@ function ResponsiveDrawer(props) {
       </nav>
       <main className={classes.content}>
         <div className={classes.toolbar} />
-        {children}
+        <div style={{ padding: '12px' }}>{children}</div>
       </main>
     </div>
   );
