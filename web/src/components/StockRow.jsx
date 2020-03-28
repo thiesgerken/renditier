@@ -2,21 +2,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
-import {
-  Button,
-  withStyles,
-  Hidden,
-  useTheme,
-  useMediaQuery,
-  Tooltip,
-} from '@material-ui/core';
+import { Button, Hidden, useTheme, useMediaQuery } from '@material-ui/core';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
 
 import { abbreviateTitle } from '../selectors/stocks';
-
-const StyledButton = withStyles(() => ({
-  root: { textTransform: 'none', fontWeight: 600 },
-}))(Button);
+import OnvistaButton from './OnvistaButton';
 
 const StockRow = ({ data, push }) => {
   const theme = useTheme();
@@ -64,17 +54,7 @@ const StockRow = ({ data, push }) => {
             padding: '2px',
           }}
         >
-          <Tooltip title="auf onvista.de ansehen" arrow>
-            <StyledButton
-              color="secondary"
-              rel="noreferrer"
-              size="small"
-              href={`https://www.onvista.de${data.onvistaUrl}`}
-              target="_blank"
-            >
-              onvista
-            </StyledButton>
-          </Tooltip>
+          <OnvistaButton relativeUrl={data.onvistaUrl} />
         </TableCell>
       </Hidden>
     </TableRow>

@@ -9,11 +9,11 @@ import {
   Hidden,
   useMediaQuery,
   Button,
-  withStyles,
   Tooltip,
 } from '@material-ui/core';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
 import { abbreviateTitle } from '../selectors/stocks';
+import OnvistaButton from './OnvistaButton';
 
 const PositionRow = ({ data, stock, push }) => {
   const theme = useTheme();
@@ -81,10 +81,6 @@ const PositionRow = ({ data, stock, push }) => {
 
     return x.irrAnnual === null ? '' : `${formatPercentage(x.irrAnnual)} p.a.`;
   };
-
-  const StyledButton = withStyles(() => ({
-    root: { textTransform: 'none', fontWeight: 600 },
-  }))(Button);
 
   const fromTo = (v1, v2, showDifference, unit, fmt) => {
     const formatter = fmt === undefined ? formatAmount : fmt;
@@ -179,19 +175,7 @@ const PositionRow = ({ data, stock, push }) => {
       </TableCell>
       <Hidden lgDown>
         <TableCell align="center">
-          {stock && (
-            <Tooltip title="auf onvista.de ansehen" arrow>
-              <StyledButton
-                color="secondary"
-                rel="noreferrer"
-                size="small"
-                href={`https://www.onvista.de${stock.onvistaUrl}`}
-                target="_blank"
-              >
-                onvista
-              </StyledButton>
-            </Tooltip>
-          )}
+          {stock && <OnvistaButton relativeUrl={stock.onvistaUrl} />}
         </TableCell>
       </Hidden>
     </TableRow>

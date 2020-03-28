@@ -8,14 +8,21 @@ import {
   CircularProgress,
   Container,
   Paper,
+  List,
+  ListItem,
+  Typography,
+  useMediaQuery,
+  withStyles,
 } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import * as moment from 'moment';
 
 import { updateStocks as updateStocksAction } from '../actions/stocks';
 import { updatePerformance as updatePerformanceAction } from '../actions/performance';
-import { findStock } from '../selectors/stocks';
+import { findStock, capitalizeTitle } from '../selectors/stocks';
 import StockPerformanceTable from '../components/StockPerformanceTable';
+import OnvistaButton from '../components/OnvistaButton';
+import TransactionsTable from '../components/TransactionsTable';
 
 const StockAnalysis = ({
   isin,
@@ -25,6 +32,7 @@ const StockAnalysis = ({
   updatePerformance,
 }) => {
   const theme = useTheme();
+  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
 
   const formatAmount = (value, precision, unit) =>
     value === null
@@ -32,6 +40,20 @@ const StockAnalysis = ({
       : `${value.toFixed(Number.isInteger(precision) ? precision : 2)}${
           unit === undefined ? '€' : unit
         }`;
+
+  const formatDataSource = dataSource => {
+    if (!dataSource) return '';
+
+    if (dataSource.price.type === 'RealtimePrice') {
+      return `${formatAmount(dataSource.price.price)} (am ${moment(
+        dataSource.price.date
+      ).format('L [um] LT')} bei ${dataSource.exchange.name})`;
+    }
+
+    return `${formatAmount(dataSource.price.closing)} (am ${moment(
+      dataSource.price.date
+    ).format('L')} bei ${dataSource.exchange.name})`;
+  };
 
   updatePerformance();
   updateStocks();
@@ -84,52 +106,116 @@ const StockAnalysis = ({
     p => p.kind === 'Total'
   );
 
+  const todayPerformance = find(
+    stockPerformance.items,
+    p => p.kind === 'Today'
+  );
+  const currentPrice = todayPerformance.end.dataSource;
+  let currentPriceInfo;
+  if (currentPrice !== null)
+    currentPriceInfo = `Aktueller Kurs: ${formatDataSource(currentPrice)}`;
+
   const { transactions } = totalPerformance;
   const transactionVolume = sumBy(transactions, t => Math.abs(t.amount));
   const transactionFees = sumBy(transactions, t => Math.abs(t.fees));
   const firstTransaction = min(map(transactions, t => moment(t.date)));
   const lastTransaction = max(map(transactions, t => moment(t.date)));
 
-  // TODO: Formatting of General information
-  // TODO: table for all transactions (and how they performed? what about sales?)
   // TODO: plot with historical data, mark the transactions (switch to realtime data at some resolution?)
+
+  let transactionInfo;
+  if (transactions.length === 0)
+    transactionInfo = 'Transaktionen: bisher nicht gehandelt';
+  else if (transactions.length === 1)
+    transactionInfo = `Transaktionen: eine, getätigt am ${firstTransaction.format(
+      'L [um] LT [Uhr]'
+    )}`;
+  else
+    transactionInfo = `Transaktionen: ${
+      transactions.length
+    }, getätigt im Zeitraum von ${firstTransaction.format(
+      'L'
+    )} bis ${lastTransaction.format('L')}`;
+
+  let typeInfo;
+  if (stock.kind === 'ETF')
+    typeInfo = `Typ: ${stock.kind} (${stock.fondsType}) mit Fokus auf ${stock.focus}`;
+  else typeInfo = `Typ: ${stock.kind}`;
+
+  const StyledListItem = withStyles(() => ({
+    root: {
+      height: '2em',
+    },
+  }))(ListItem);
 
   return (
     <Grid container spacing={3}>
       <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
-        <Container maxWidth="lg">
+        <Container maxWidth="lg" style={{ padding: '0px' }}>
           <Paper>
-            <Grid container>
-              <Grid item xs={12}>
-                {stock.title}
+            <Grid container style={{ margin: '0px' }}>
+              <Grid
+                item
+                xs={12}
+                style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  padding: theme.spacing(2),
+                }}
+              >
+                <Typography variant="h5">
+                  {capitalizeTitle(stock.title)}
+                </Typography>
               </Grid>
-              <Grid item xs={12}>
-                ISIN: {stock.isin}
-              </Grid>
-              <Grid item xs={12}>
-                WKN: {stock.wkn}
-              </Grid>
-              <Grid item xs={12}>
-                {`Typ: ${stock.kind} (${stock.fondsType}) mit Fokus auf ${stock.focus}`}
-              </Grid>
-              <Grid item xs={12}>
-                Herausgeber: {stock.company}
-              </Grid>
-              <Grid item xs={12}>
-                Transaktionen: {transactions.length}
-                {transactions.length > 0 && (
-                  <>
-                    , im Zeitraum von {firstTransaction.format('L LT')}
-                    bis {lastTransaction.format('L LT')}
-                  </>
-                )}
-              </Grid>
-              <Grid item xs={12}>
-                Transaktionsvolumen: {formatAmount(transactionVolume / 100)}
-              </Grid>
-              <Grid item xs={12}>
-                bezahlte Gebühren: {formatAmount(transactionFees / 100)}
-              </Grid>
+              {xsDown && (
+                <Grid item xs={12} md={6}>
+                  <List>
+                    <ListItem>
+                      {`ISIN: ${stock.isin}, WKN: ${stock.wkn}`}
+                      <OnvistaButton relativeUrl={stock.onvistaUrl} />
+                    </ListItem>
+                    <ListItem>{typeInfo}</ListItem>
+                    <ListItem>{`Herausgeber: ${stock.company}`}</ListItem>
+                    <ListItem>{transactionInfo}</ListItem>
+                    <ListItem>
+                      {`Transaktionsvolumen: ${formatAmount(
+                        transactionVolume / 100
+                      )}; dazu ${formatAmount(
+                        transactionFees / 100
+                      )} an Gebühren`}
+                    </ListItem>
+                  </List>
+                </Grid>
+              )}
+              {xsDown || (
+                <>
+                  <Grid item xs={12} md={6}>
+                    <List>
+                      <StyledListItem>
+                        {`ISIN: ${stock.isin}, WKN: ${stock.wkn}`}
+                        <OnvistaButton relativeUrl={stock.onvistaUrl} />
+                      </StyledListItem>
+                      <StyledListItem>{typeInfo}</StyledListItem>
+                      <StyledListItem>{`Herausgeber: ${stock.company}`}</StyledListItem>
+                    </List>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <List>
+                      <StyledListItem>{transactionInfo}</StyledListItem>
+                      <StyledListItem>
+                        {`Transaktionsvolumen: ${formatAmount(
+                          transactionVolume / 100
+                        )}; dazu ${formatAmount(
+                          transactionFees / 100
+                        )} an Gebühren`}
+                      </StyledListItem>
+                      {currentPrice !== null && (
+                        <StyledListItem>{currentPriceInfo}</StyledListItem>
+                      )}
+                    </List>
+                  </Grid>
+                </>
+              )}
             </Grid>
           </Paper>
         </Container>
@@ -145,6 +231,12 @@ const StockAnalysis = ({
       </Hidden> */}
       <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
         <StockPerformanceTable performance={stockPerformance} />
+      </Grid>
+      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+        <TransactionsTable
+          transactions={transactions}
+          currentPrice={currentPrice}
+        />
       </Grid>
     </Grid>
   );

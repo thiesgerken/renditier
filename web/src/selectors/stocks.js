@@ -5,8 +5,17 @@ export const findStock = (stocks, isin) => {
   return find(stocks.items, x => x.isin === isin) || null;
 };
 
+export const capitalizeTitle = title => {
+  return title
+    .replace(/ISHARES/, 'iShares')
+    .replace(/LYXOR/, 'Lyxor')
+    .replace(/AMUNDI/, 'Amundi')
+    .trim();
+};
+
 export const abbreviateTitle = (title, shorten) => {
-  if (shorten !== undefined && shorten !== null && !shorten) return title;
+  if (shorten !== undefined && shorten !== null && !shorten)
+    return capitalizeTitle(title);
 
   return title
     .replace(/ETF/i, '')

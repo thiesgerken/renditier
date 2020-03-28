@@ -31,6 +31,15 @@ const PerformanceTable = ({ performance }) => {
   return (
     <Container maxWidth="xl" style={{ padding: '0px' }}>
       <Paper>
+        {/* <Typography
+          variant="h6"
+          style={{
+            padding: theme.spacing(1),
+            paddingLeft: theme.spacing(2),
+          }}
+        >
+          Performance
+        </Typography> */}
         <TableContainer>
           <Table size="small" aria-label="performance">
             <TableHead>
