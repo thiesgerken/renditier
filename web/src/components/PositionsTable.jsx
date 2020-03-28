@@ -40,7 +40,7 @@ const StyledTableCell = withStyles(() => ({
   },
 }))(TableCell);
 
-const PositionsTable = ({ performance, stocks }) => {
+const PositionsTable = ({ performance, stocks, push }) => {
   const classes = useStyles();
   const [period, setPeriod] = useState(0);
 
@@ -68,10 +68,10 @@ const PositionsTable = ({ performance, stocks }) => {
               <Table size="small" aria-label="positions">
                 <TableHead>
                   <TableRow>
-                    <StyledTableCell>ISIN</StyledTableCell>
-                    <Hidden xsDown>
-                      <StyledTableCell>Name</StyledTableCell>
+                    <Hidden lgDown>
+                      <StyledTableCell>ISIN</StyledTableCell>
                     </Hidden>
+                    <StyledTableCell>Name</StyledTableCell>
                     <Hidden lgDown>
                       <StyledTableCell align="right">Einheiten</StyledTableCell>
                     </Hidden>
@@ -84,7 +84,9 @@ const PositionsTable = ({ performance, stocks }) => {
                     <StyledTableCell align="right">Wert</StyledTableCell>
                     <StyledTableCell align="right">Gewinn</StyledTableCell>
                     <StyledTableCell align="right">Zinsfuß</StyledTableCell>
-                    <StyledTableCell align="right">&nbsp;</StyledTableCell>
+                    <Hidden lgDown>
+                      <StyledTableCell align="right">&nbsp;</StyledTableCell>
+                    </Hidden>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -95,6 +97,7 @@ const PositionsTable = ({ performance, stocks }) => {
                         <PositionRow
                           data={d}
                           key={d.isin}
+                          push={push}
                           stock={findStock(stocks, d.isin)}
                         />
                       )
@@ -155,6 +158,7 @@ PositionsTable.propTypes = {
     lastUpdated: PropTypes.number,
     isFetching: PropTypes.bool,
   }).isRequired,
+  push: PropTypes.func.isRequired,
 };
 
 export default PositionsTable;

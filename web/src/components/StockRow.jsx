@@ -18,7 +18,7 @@ const StyledButton = withStyles(() => ({
   root: { textTransform: 'none', fontWeight: 600 },
 }))(Button);
 
-const StockRow = ({ data }) => {
+const StockRow = ({ data, push }) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
 
@@ -26,7 +26,12 @@ const StockRow = ({ data }) => {
     <TableRow>
       <TableCell>{data.isin}</TableCell>
       <TableCell style={{ padding: '2px' }}>
-        <Button variant="text" color="primary" startIcon={<ShowChartIcon />}>
+        <Button
+          variant="text"
+          color="primary"
+          startIcon={<ShowChartIcon />}
+          onClick={() => push(`/stocks/${data.isin}`)}
+        >
           <span
             style={{
               wordWrap: 'break-word',
@@ -34,7 +39,7 @@ const StockRow = ({ data }) => {
               textOverflow: 'ellipsis',
               display: '-webkit-box',
               WebkitBoxOrient: 'vertical',
-              wordBreak: 'break-all',
+              // wordBreak: 'break-all',
               WebkitLineClamp: 2,
               textAlign: 'left',
             }}
@@ -54,7 +59,11 @@ const StockRow = ({ data }) => {
         <TableCell>{data.company}</TableCell>
       </Hidden>
       <Hidden xsDown>
-        <TableCell>
+        <TableCell
+          style={{
+            padding: '2px',
+          }}
+        >
           <Tooltip title="auf onvista.de ansehen" arrow>
             <StyledButton
               color="secondary"
@@ -83,6 +92,7 @@ StockRow.propTypes = {
     company: PropTypes.string,
     onvistaUrl: PropTypes.string,
   }).isRequired,
+  push: PropTypes.func.isRequired,
 };
 
 export default StockRow;

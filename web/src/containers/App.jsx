@@ -15,6 +15,7 @@ import Settings from './Settings';
 import Transactions from './Transactions';
 import Accounts from './Accounts';
 import StockTable from './StockTable';
+import StockAnalysis from './StockAnalysis';
 
 const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
   if (!initialized) {
@@ -27,11 +28,15 @@ const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
   return (
     <AppLayout>
       <Switch>
-        <Route exact path="/logout" render={onLogout} />
-        <Route exact path="/stocks" render={() => <StockTable />} />
-        <Route exact path="/accounts" render={() => <Accounts />} />
-        <Route exact path="/transactions" render={() => <Transactions />} />
-        <Route exact path="/settings" render={() => <Settings />} />
+        <Route path="/logout" render={onLogout} />
+        <Route
+          path="/stocks/:isin"
+          render={e => <StockAnalysis isin={e.match.params.isin} />}
+        />
+        <Route path="/stocks" render={() => <StockTable />} />
+        <Route path="/accounts" render={() => <Accounts />} />
+        <Route path="/transactions" render={() => <Transactions />} />
+        <Route path="/settings" render={() => <Settings />} />
         <Route render={() => <Dashboard />} />
       </Switch>
     </AppLayout>

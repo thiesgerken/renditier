@@ -15,7 +15,7 @@ import {
 import ShowChartIcon from '@material-ui/icons/ShowChart';
 import { abbreviateTitle } from '../selectors/stocks';
 
-const PositionRow = ({ data, stock }) => {
+const PositionRow = ({ data, stock, push }) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
 
@@ -41,9 +41,6 @@ const PositionRow = ({ data, stock }) => {
     if (value === null) return '\u2014';
 
     return value.toFixed(xsDown ? 0 : 2);
-    // while (s[s.length - 1] === '0' || s[s.length - 1] === '.')
-    //   s = s.substr(0, s.length - 1);
-    // return s;
   };
 
   const getPrice = dataSource => {
@@ -107,7 +104,7 @@ const PositionRow = ({ data, stock }) => {
 
   return (
     <TableRow>
-      <Hidden xsDown>
+      <Hidden lgDown>
         <TableCell>{data.isin}</TableCell>
       </Hidden>
       <TableCell
@@ -115,7 +112,12 @@ const PositionRow = ({ data, stock }) => {
           padding: '2px',
         }}
       >
-        <Button variant="text" color="primary" startIcon={<ShowChartIcon />}>
+        <Button
+          variant="text"
+          color="primary"
+          startIcon={<ShowChartIcon />}
+          onClick={() => push(`/stocks/${data.isin}`)}
+        >
           <span
             style={{
               wordWrap: 'break-word',
@@ -123,8 +125,8 @@ const PositionRow = ({ data, stock }) => {
               textOverflow: 'ellipsis',
               display: '-webkit-box',
               WebkitBoxOrient: 'vertical',
-              wordBreak: 'break-all',
-              WebkitLineClamp: 2,
+              // wordBreak: 'break-all',
+              WebkitLineClamp: xsDown ? 3 : 2,
               textAlign: 'left',
             }}
           >
@@ -206,7 +208,13 @@ PositionRow.propTypes = {
   }).isRequired,
   stock: PropTypes.shape({
     title: PropTypes.string,
+    onvistaUrl: PropTypes.string,
   }),
+  push: PropTypes.func.isRequired,
+};
+
+PositionRow.defaultProps = {
+  stock: null,
 };
 
 export default PositionRow;

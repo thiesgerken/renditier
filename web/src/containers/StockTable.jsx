@@ -15,6 +15,7 @@ import {
 import { map } from 'lodash';
 import React from 'react';
 import { withStyles } from '@material-ui/core/styles';
+import { push as routerPush } from 'connected-react-router';
 
 import { updateStocks as updateStocksAction } from '../actions/stocks';
 import StockRow from '../components/StockRow';
@@ -25,7 +26,7 @@ const StyledTableCell = withStyles(() => ({
   },
 }))(TableCell);
 
-const StockTable = ({ stocks, updateStocks }) => {
+const StockTable = ({ stocks, updateStocks, push }) => {
   updateStocks();
 
   // TODO: also include some overview analysis of how well the entries perform (not regarding invested money)
@@ -57,7 +58,7 @@ const StockTable = ({ stocks, updateStocks }) => {
             </TableHead>
             <TableBody>
               {map(stocks.items, d => (
-                <StockRow data={d} key={d.isin} />
+                <StockRow data={d} key={d.isin} push={push} />
               ))}
             </TableBody>
           </Table>
@@ -87,10 +88,12 @@ StockTable.propTypes = {
     lastUpdated: PropTypes.number,
   }).isRequired,
   updateStocks: PropTypes.func.isRequired,
+  push: PropTypes.func.isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
   updateStocks: () => dispatch(updateStocksAction()),
+  push: x => dispatch(routerPush(x)),
 });
 
 const mapStateToProps = state => {

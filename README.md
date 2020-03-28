@@ -8,12 +8,12 @@
 
 - web interface
 - transaction add/remove/update, account add/remove/update
-- server vapid key as the result of an api call, not hardcoded.
+- server vapid key as the result of an api call, not hard-coded.
 - remove all cached data when the user logs out
 - invalidate user info as soon as a 401 is encountered
 - do not register service worker for api requests?
 - analysis for each isin, price chart with buys/sales => dedicated page for each stock; navigation?)
-- comboboxes for positions table to set timespan
+- unify formatting and querying functions
 
 ## Ideas
 

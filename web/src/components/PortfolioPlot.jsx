@@ -14,7 +14,7 @@ import {
 import { DatePicker } from '@material-ui/pickers';
 import * as moment from 'moment';
 import PropTypes from 'prop-types';
-import React, { useState } from 'react';
+import React, { useState, Fragment } from 'react';
 import {
   Area,
   CartesianGrid,
@@ -194,7 +194,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                           name: 'earningsRelative',
                         },
                       ].map(({ offset, name }) => (
-                        <>
+                        <Fragment key={name}>
                           <linearGradient
                             id={`${name}Color`}
                             x1="0"
@@ -231,7 +231,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                               stopOpacity={0.8}
                             />
                           </linearGradient>
-                        </>
+                        </Fragment>
                       ))}
                     </defs>
 

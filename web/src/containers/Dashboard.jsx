@@ -11,6 +11,7 @@ import {
 } from '@material-ui/core';
 import { find, filter, max, min, map } from 'lodash';
 import * as moment from 'moment';
+import { push as routerPush } from 'connected-react-router';
 
 import { updatePerformance as updatePerformanceAction } from '../actions/performance';
 import { updatePortfolioPlot as updatePortfolioPlotAction } from '../actions/portfolio-plot';
@@ -27,6 +28,7 @@ const Dashboard = ({
   updateStocks,
   portfolioPlotData,
   updatePortfolioPlotData,
+  push,
 }) => {
   const theme = useTheme();
 
@@ -68,7 +70,7 @@ const Dashboard = ({
         <PerformanceTable performance={performance} />
       </Grid>
       <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
-        <PositionsTable stocks={stocks} performance={performance} />
+        <PositionsTable stocks={stocks} performance={performance} push={push} />
       </Grid>
       <Hidden xsDown implementation="js">
         <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
@@ -110,6 +112,7 @@ Dashboard.propTypes = {
   updateStocks: PropTypes.func.isRequired,
   portfolioPlotData: PropTypes.arrayOf(PropTypes.object).isRequired,
   updatePortfolioPlotData: PropTypes.func.isRequired,
+  push: PropTypes.func.isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
@@ -117,6 +120,7 @@ const mapDispatchToProps = dispatch => ({
   updateStocks: () => dispatch(updateStocksAction()),
   updatePortfolioPlotData: (startDate, endDate) =>
     dispatch(updatePortfolioPlotAction(startDate, endDate)),
+  push: x => dispatch(routerPush(x)),
 });
 
 const mapStateToProps = state => {
