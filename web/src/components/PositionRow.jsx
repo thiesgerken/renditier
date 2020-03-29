@@ -33,7 +33,7 @@ const PositionRow = ({ data, stock, push }) => {
       : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(xsDown ? 1 : 2)}%`;
 
   const formatAmount = (value, unit) =>
-    value === null
+    value === null || value === undefined
       ? '\u2014'
       : `${value.toFixed(xsDown ? 0 : 2)}${unit === undefined ? '€' : unit}`;
 

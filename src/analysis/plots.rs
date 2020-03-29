@@ -7,7 +7,7 @@ use chrono::offset::TimeZone;
 use chrono::{Duration, NaiveDate, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use itertools::Itertools;
-use log::debug;
+use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::collections::HashMap;
@@ -84,14 +84,34 @@ pub fn compute_portfolio_plot(
         .take_while(|d| d.date() <= end_date)
         .collect::<Vec<_>>();
 
-        let points = dates
-            .into_iter()
-            .map(|d| PlotDataPoint {
-                date: d.date().and_hms(18, 0, 0),
-                value: Some(0.0),
-                invested: 0.0,
-            })
-            .collect::<Vec<_>>();
+        let points = if dates.len() >= 150 {
+            dates
+                .into_iter()
+                .map(|d| PlotDataPoint {
+                    date: d.date().and_hms(18, 0, 0),
+                    value: Some(0.0),
+                    invested: 0.0,
+                })
+                .collect::<Vec<_>>()
+        } else {
+            dates
+                .into_iter()
+                .flat_map(|d| {
+                    vec![
+                        PlotDataPoint {
+                            date: d.date().and_hms(9, 0, 0),
+                            value: Some(0.0),
+                            invested: 0.0,
+                        },
+                        PlotDataPoint {
+                            date: d.date().and_hms(18, 0, 0),
+                            value: Some(0.0),
+                            invested: 0.0,
+                        },
+                    ]
+                })
+                .collect::<Vec<_>>()
+        };
 
         // for these Exchanges, grab all historical prices from start_date to end_date
         let prices = historical_prices::table
@@ -106,11 +126,16 @@ pub fn compute_portfolio_plot(
             .order(historical_prices::date.asc())
             .load::<HistoricalPrice>(&*connection)?
             .into_iter()
-            .map(EitherPrice::HistoricalPrice)
+            .flat_map(|p| {
+                vec![
+                    EitherPrice::HistoricalPriceOpening(p.clone()),
+                    EitherPrice::HistoricalPrice(p),
+                ]
+            })
             .collect::<Vec<_>>();
         debug!(
             "loaded {} historical prices for {} exchanges",
-            prices.len(),
+            prices.len() / 2,
             exs.len()
         );
 
@@ -118,6 +143,9 @@ pub fn compute_portfolio_plot(
     } else {
         // sample 200 dates between start and end, but at most once every 15min
         let interval = max((end_date - start_date) / 200, Duration::minutes(15));
+        // and make sure that its a multiple of 5 minutes.
+        let interval = Duration::minutes((interval.num_minutes() / 5) * 5);
+
         let dates = successors(Some(Utc.from_utc_date(&start_date).and_hms(9, 0, 0)), |x| {
             x.checked_add_signed(interval)
         })
@@ -156,7 +184,9 @@ pub fn compute_portfolio_plot(
         );
 
         // failsafe if no realtime data is available and the user doesn't care about the source
-        if source_selection == DataSourceSelection::Automatic && prices.len() == 0 {
+        if source_selection == DataSourceSelection::Automatic && prices.len() < 2 * exs.len() {
+            info!("Falling back to historical data because realtime data does not contain many points");
+
             return compute_portfolio_plot(
                 connection,
                 user_id,

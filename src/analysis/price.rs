@@ -301,6 +301,7 @@ impl Price for HistoricalPrice {
 pub enum EitherPrice {
     RealtimePrice(RealtimePrice),
     HistoricalPrice(HistoricalPrice),
+    HistoricalPriceOpening(HistoricalPrice),
 }
 
 impl EitherPrice {
@@ -321,13 +322,19 @@ impl EitherPrice {
     pub fn value(&self) -> f64 {
         match self {
             EitherPrice::RealtimePrice(p) => p.value(),
-            EitherPrice::HistoricalPrice(p) => p.value(),
+            EitherPrice::HistoricalPrice(p) => p.closing,
+            EitherPrice::HistoricalPriceOpening(p) => p.opening,
         }
     }
     pub fn date(&self) -> DateTime<Utc> {
         match self {
             EitherPrice::RealtimePrice(p) => p.date(),
             EitherPrice::HistoricalPrice(p) => p.date(),
+            EitherPrice::HistoricalPriceOpening(p) => chrono::Local
+                .from_local_datetime(&p.date.and_hms(9, 0, 0))
+                .earliest()
+                .unwrap_or_else(|| chrono::Local.from_utc_datetime(&p.date.and_hms(9, 0, 0)))
+                .with_timezone(&Utc),
         }
     }
 
@@ -335,6 +342,7 @@ impl EitherPrice {
         match self {
             EitherPrice::RealtimePrice(p) => p.onvista_record_id(),
             EitherPrice::HistoricalPrice(p) => p.onvista_record_id(),
+            EitherPrice::HistoricalPriceOpening(p) => p.onvista_record_id(),
         }
     }
 }

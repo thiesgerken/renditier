@@ -24,6 +24,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { curveCardinal } from 'd3-shape';
 
 import { getPeriodDescription } from '../selectors/performance';
 
@@ -153,8 +154,9 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
     return dataMax / (dataMax - dataMin);
   })();
 
-  const interpolation = 'natural';
-  const showDots = points.length < 35;
+  // const interpolation = 'natural';
+  const interpolation = curveCardinal.tension(0.4);
+  const showDots = points.length < 100;
   const dot = showDots
     ? {
         stroke: '#00000033',
@@ -188,7 +190,9 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                 <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
                   <ComposedChart data={points}>
                     <XAxis
-                      dataKey="date"
+                      dataKey="epoch"
+                      type="number"
+                      domain={['dataMin', 'dataMax']}
                       tickFormatter={d => moment(d).format('L')}
                     />
                     <YAxis
