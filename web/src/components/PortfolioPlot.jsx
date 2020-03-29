@@ -192,6 +192,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                     <XAxis
                       dataKey="epoch"
                       type="number"
+                      scale="utc"
                       domain={['dataMin', 'dataMax']}
                       tickFormatter={d => moment(d).format('L')}
                     />
