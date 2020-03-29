@@ -27,11 +27,16 @@ import {
 
 import { getPeriodDescription } from '../selectors/performance';
 
-function getData(items, startDate, endDate) {
+function getData(items, startDate, endDate, source) {
   let item = null;
 
   items.forEach(v => {
-    if (v.startDate === startDate && v.endDate === endDate) item = v;
+    if (
+      v.startDate === startDate &&
+      v.endDate === endDate &&
+      v.source === source
+    )
+      item = v;
   });
 
   return item;
@@ -54,6 +59,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const [period, setPeriod] = useState(0);
   const [mode, setMode] = useState('earningsAbsolute');
+  const [source, setSource] = useState('auto');
   const [startDate, setStartDate] = useState(moment().startOf('year'));
   const [endDate, setEndDate] = useState(moment());
   const [prevRange, setPrevRange] = useState(null);
@@ -64,6 +70,10 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
 
   const handleModeChange = event => {
     setMode(event.target.value);
+  };
+
+  const handleSourceChange = event => {
+    setSource(event.target.value);
   };
 
   let plotData = null;
@@ -79,17 +89,18 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
       ed = endDate.format('YYYY-MM-DD');
     }
 
-    updateData(sd, ed);
-    plotData = getData(data, sd, ed);
+    updateData(sd, ed, source);
+    plotData = getData(data, sd, ed, source);
 
     if ((plotData === null || plotData.isFetching) && prevRange !== null) {
-      plotData = getData(data, prevRange[0], prevRange[1]);
+      plotData = getData(data, prevRange[0], prevRange[1], prevRange[2]);
     } else if (
       prevRange === null ||
       prevRange[0] !== sd ||
-      prevRange[1] !== ed
+      prevRange[1] !== ed ||
+      prevRange[2] !== source
     ) {
-      setPrevRange([sd, ed]);
+      setPrevRange([sd, ed, source]);
     }
   }
 
@@ -142,7 +153,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
     return dataMax / (dataMax - dataMin);
   })();
 
-  const interpolation = 'monotone';
+  const interpolation = 'natural';
   const showDots = points.length < 35;
   const dot = showDots
     ? {
@@ -176,7 +187,10 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
               >
                 <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
                   <ComposedChart data={points}>
-                    <XAxis dataKey="date" />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={d => moment(d).format('L')}
+                    />
                     <YAxis
                       unit={mode === 'earningsRelative' ? '%' : '€'}
                       hide={xsDown}
@@ -291,7 +305,10 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                       />
                     )}
 
-                    <Tooltip formatter={v => v.toFixed(2)} />
+                    <Tooltip
+                      formatter={v => v.toFixed(2)}
+                      labelFormatter={d => moment(d).format('L LT')}
+                    />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -312,6 +329,20 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                 <MenuItem value="earningsRelative">
                   Gewinn (relativ zu Kaufpreis)
                 </MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl className={classes.formControl}>
+              <InputLabel id="source-select-label">Datenquelle</InputLabel>
+              <Select
+                labelId="source-select-label"
+                id="source-select"
+                value={source}
+                autoWidth
+                onChange={handleSourceChange}
+              >
+                <MenuItem value="auto">Automatisch</MenuItem>
+                <MenuItem value="historical">Historisch</MenuItem>
+                <MenuItem value="realtime">Echtzeit</MenuItem>
               </Select>
             </FormControl>
             <FormControl className={classes.formControl}>

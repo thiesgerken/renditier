@@ -64,10 +64,12 @@ fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
     let now = Utc::now();
     let stocks = stock_infos.load::<StockInfo>(connection)?;
 
+    // TODO: do not update rt data in the night or on weekends, or at least at a higher interval
+
     let stocks_rt_update = stocks
         .iter()
         .filter(|x| match x.last_realtime_update {
-            Some(t) => now.signed_duration_since(t) > Duration::hours(1),
+            Some(t) => now.signed_duration_since(t) > Duration::minutes(15),
             None => true,
         })
         .collect::<Vec<_>>();
@@ -81,6 +83,8 @@ fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
         }
     }
 
+    // TODO: do not update hist data in the night or on weekends, or at least at a higher interval
+    // maybe decrease the interval between 18:00 and 20:00 on weekdays? or make sure that it is checked at 19:00?
     let stocks_hist_update = stocks
         .iter()
         .filter(|x| match x.last_historical_update {

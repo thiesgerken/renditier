@@ -118,8 +118,8 @@ Dashboard.propTypes = {
 const mapDispatchToProps = dispatch => ({
   updatePerformance: () => dispatch(updatePerformanceAction()),
   updateStocks: () => dispatch(updateStocksAction()),
-  updatePortfolioPlotData: (startDate, endDate) =>
-    dispatch(updatePortfolioPlotAction(startDate, endDate)),
+  updatePortfolioPlotData: (startDate, endDate, source) =>
+    dispatch(updatePortfolioPlotAction(startDate, endDate, source)),
   push: x => dispatch(routerPush(x)),
 });
 

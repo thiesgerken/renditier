@@ -33,6 +33,7 @@ pub trait Price {
 
     fn value(&self) -> f64;
     fn date(&self) -> DateTime<Utc>;
+    fn onvista_record_id(&self) -> i32;
 }
 
 pub fn find<T>(
@@ -59,6 +60,10 @@ impl Price for RealtimePrice {
 
     fn date(&self) -> DateTime<Utc> {
         self.date
+    }
+
+    fn onvista_record_id(&self) -> i32 {
+        self.onvista_record_id
     }
 
     fn find_multiple(
@@ -166,9 +171,13 @@ impl Price for HistoricalPrice {
         self.closing
     }
 
+    fn onvista_record_id(&self) -> i32 {
+        self.onvista_record_id
+    }
+
     fn date(&self) -> DateTime<Utc> {
         // does not have to be exact
-        let d = self.date.and_hms(17, 30, 0);
+        let d = self.date.and_hms(18, 0, 0);
 
         chrono::Local
             .from_local_datetime(&d)
@@ -284,5 +293,48 @@ impl Price for HistoricalPrice {
                 res
             })
             .collect::<Vec<_>>())
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+#[serde(tag = "type")]
+pub enum EitherPrice {
+    RealtimePrice(RealtimePrice),
+    HistoricalPrice(HistoricalPrice),
+}
+
+impl EitherPrice {
+    pub fn wrap_realtime(d: DataSource<RealtimePrice>) -> DataSource<EitherPrice> {
+        DataSource {
+            price: EitherPrice::RealtimePrice(d.price),
+            exchange: d.exchange,
+        }
+    }
+
+    pub fn wrap_historical(d: DataSource<HistoricalPrice>) -> DataSource<EitherPrice> {
+        DataSource {
+            price: EitherPrice::HistoricalPrice(d.price),
+            exchange: d.exchange,
+        }
+    }
+
+    pub fn value(&self) -> f64 {
+        match self {
+            EitherPrice::RealtimePrice(p) => p.value(),
+            EitherPrice::HistoricalPrice(p) => p.value(),
+        }
+    }
+    pub fn date(&self) -> DateTime<Utc> {
+        match self {
+            EitherPrice::RealtimePrice(p) => p.date(),
+            EitherPrice::HistoricalPrice(p) => p.date(),
+        }
+    }
+
+    pub fn onvista_record_id(&self) -> i32 {
+        match self {
+            EitherPrice::RealtimePrice(p) => p.onvista_record_id(),
+            EitherPrice::HistoricalPrice(p) => p.onvista_record_id(),
+        }
     }
 }

@@ -1,4 +1,4 @@
-use crate::analysis::price::{DataSource, Price, PriceMap};
+use crate::analysis::price::{DataSource, EitherPrice, Price, PriceMap};
 use crate::analysis::{irr, price};
 use crate::models::*;
 use crate::schema::*;
@@ -12,42 +12,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
 use std::iter::successors;
-
-#[derive(Deserialize, Serialize, Clone)]
-#[serde(tag = "type")]
-pub enum EitherPrice {
-    RealtimePrice(RealtimePrice),
-    HistoricalPrice(HistoricalPrice),
-}
-
-impl EitherPrice {
-    pub fn wrap_realtime(d: DataSource<RealtimePrice>) -> DataSource<EitherPrice> {
-        DataSource {
-            price: EitherPrice::RealtimePrice(d.price),
-            exchange: d.exchange,
-        }
-    }
-
-    pub fn wrap_historical(d: DataSource<HistoricalPrice>) -> DataSource<EitherPrice> {
-        DataSource {
-            price: EitherPrice::HistoricalPrice(d.price),
-            exchange: d.exchange,
-        }
-    }
-
-    pub fn value(&self) -> f64 {
-        match self {
-            EitherPrice::RealtimePrice(p) => p.value(),
-            EitherPrice::HistoricalPrice(p) => p.value(),
-        }
-    }
-    pub fn date(&self) -> DateTime<Utc> {
-        match self {
-            EitherPrice::RealtimePrice(p) => p.date(),
-            EitherPrice::HistoricalPrice(p) => p.date(),
-        }
-    }
-}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum PerformanceKind {
