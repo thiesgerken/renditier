@@ -14,7 +14,7 @@ import * as moment from 'moment';
 import { push as routerPush } from 'connected-react-router';
 
 import { updatePerformance as updatePerformanceAction } from '../actions/performance';
-import { updatePortfolioPlot as updatePortfolioPlotAction } from '../actions/portfolio-plot';
+import { updatePortfolioPlot as updatePortfolioPlotAction } from '../actions/portfolioPlot';
 import { updateStocks as updateStocksAction } from '../actions/stocks';
 import PerformanceTable from '../components/PerformanceTable';
 import PortfolioPlot from '../components/PortfolioPlot';

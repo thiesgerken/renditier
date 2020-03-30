@@ -1,7 +1,7 @@
 import { map } from 'lodash';
 import moment from 'moment';
 
-import getPlotData from '../selectors/portfolio-plot';
+import getPlotData from '../selectors/portfolioPlot';
 
 export const FETCH_PORTFOLIO_PLOT_REQUEST = 'FETCH_PORTFOLIO_PLOT_REQUEST';
 export const fetchPortfolioPlotRequest = (startDate, endDate, source) => ({
@@ -58,6 +58,13 @@ export const fetchPortfolioPlot = (startDate, endDate, source) => dispatch => {
             ? ((p.value - p.invested) / p.invested) * 100
             : null,
         epoch: moment(p.date).valueOf(),
+      }));
+
+      res.points = map(res.points, p => ({
+        ...p,
+        earningsStart: p.earnings - res.points[0].earnings,
+        earningsRelativeStart:
+          p.earningsRelative - res.points[0].earningsRelative,
       }));
 
       let i = 0;

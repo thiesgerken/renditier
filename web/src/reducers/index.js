@@ -5,7 +5,8 @@ import performance from './performance';
 import stocks from './stocks';
 import authentication from './authentication';
 import notifications from './notifications';
-import portfolioPlot from './portfolio-plot';
+import portfolioPlot from './portfolioPlot';
+import stockPlot from './stockPlot';
 
 const root = history =>
   combineReducers({
@@ -14,6 +15,7 @@ const root = history =>
     authentication,
     notifications,
     portfolioPlot,
+    stockPlot,
     stocks,
   });
 

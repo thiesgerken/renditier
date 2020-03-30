@@ -103,7 +103,7 @@ pub fn compute(
         .date()
         .naive_local();
     let mut prev_day = current_day.pred();
-    while prev_day.weekday().number_from_monday() > 4 {
+    while prev_day.weekday().number_from_monday() > 5 {
         prev_day = prev_day.pred();
     }
 

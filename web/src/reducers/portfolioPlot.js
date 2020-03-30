@@ -2,7 +2,7 @@ import {
   FETCH_PORTFOLIO_PLOT_REQUEST,
   FETCH_PORTFOLIO_PLOT_ERROR,
   FETCH_PORTFOLIO_PLOT_SUCCESS,
-} from '../actions/portfolio-plot';
+} from '../actions/portfolioPlot';
 
 const insertItem = (items, startDate, endDate, source) => {
   let idx = -1;

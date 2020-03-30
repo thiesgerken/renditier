@@ -1,0 +1,513 @@
+import {
+  CircularProgress,
+  Container,
+  FormControl,
+  Grid,
+  InputLabel,
+  makeStyles,
+  MenuItem,
+  Paper,
+  Select,
+  useMediaQuery,
+  useTheme,
+} from '@material-ui/core';
+import { DatePicker } from '@material-ui/pickers';
+import * as moment from 'moment';
+import PropTypes from 'prop-types';
+import React, { useState, Fragment } from 'react';
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+
+import { getPeriodDescription } from '../selectors/performance';
+
+function getData(items, isin, startDate, endDate, source) {
+  let item = null;
+
+  items.forEach(v => {
+    if (
+      v.startDate === startDate &&
+      v.endDate === endDate &&
+      v.source === source &&
+      v.isin === isin
+    )
+      item = v;
+  });
+
+  return item;
+}
+
+const useStyles = makeStyles(theme => ({
+  formControl: {
+    margin: theme.spacing(1),
+    minWidth: 120,
+  },
+  selectEmpty: {
+    marginTop: theme.spacing(2),
+  },
+}));
+
+const StockPlot = ({ isin, performance, data, updateData }) => {
+  const classes = useStyles();
+  const theme = useTheme();
+  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+  const [period, setPeriod] = useState(0);
+  const [mode, setMode] = useState('price');
+  const [source, setSource] = useState('auto');
+  const [startDate, setStartDate] = useState(moment().startOf('year'));
+  const [endDate, setEndDate] = useState(moment());
+  const [prevRange, setPrevRange] = useState(null);
+
+  const handlePeriodChange = event => {
+    setPeriod(event.target.value);
+  };
+
+  const handleModeChange = event => {
+    setMode(event.target.value);
+  };
+
+  const handleSourceChange = event => {
+    setSource(event.target.value);
+  };
+
+  let plotData = null;
+  if (period < performance.items.length) {
+    let sd = null;
+    let ed = null;
+
+    if (period >= 0) {
+      sd = moment(performance.items[period].start.date)
+        .add(1, 'days')
+        .format('YYYY-MM-DD');
+      ed = performance.items[period].end.date;
+    } else {
+      sd = startDate.format('YYYY-MM-DD');
+      ed = endDate.format('YYYY-MM-DD');
+    }
+
+    updateData(isin, sd, ed, source);
+    plotData = getData(data, isin, sd, ed, source);
+
+    if ((plotData === null || plotData.isFetching) && prevRange !== null) {
+      plotData = getData(data, isin, prevRange[0], prevRange[1], prevRange[2]);
+    } else if (
+      prevRange === null ||
+      prevRange[0] !== sd ||
+      prevRange[1] !== ed ||
+      prevRange[2] !== source
+    ) {
+      setPrevRange([sd, ed, source]);
+    }
+  }
+
+  const progress = (plotData === null ||
+    plotData.isFetching ||
+    performance.isFetching) && (
+    <div
+      style={{
+        position: 'relative',
+        zIndex: 9,
+        left: '50%',
+        top: '40%',
+        transform: 'translate(0%, -50%)',
+        width: '100%',
+        height: 0,
+      }}
+    >
+      <CircularProgress color="secondary" />
+    </div>
+  );
+
+  const points =
+    plotData !== null && plotData.data !== null ? plotData.data.points : [];
+
+  // to color the areas differently
+  const makeOffset = f => {
+    const dataMax = Math.max(...points.map(f));
+    const dataMin = Math.min(...points.map(f));
+
+    if (dataMax <= 0) {
+      return 0;
+    }
+    if (dataMin >= 0) {
+      return 1;
+    }
+
+    return dataMax / (dataMax - dataMin);
+  };
+
+  const earningsAbsoluteOffset = makeOffset(i => i.earnings);
+  const earningsRelativeOffset = makeOffset(i => i.earningsRelative);
+  const earningsAbsoluteStartOffset = makeOffset(i => i.earningsStart);
+  const earningsRelativeStartOffset = makeOffset(i => i.earningsRelativeStart);
+  const priceRelativeStartOffset = makeOffset(i => i.priceRelativeStart);
+
+  const interpolation = 'monotone';
+  const showDots = points.length < 100;
+  const dot = showDots
+    ? {
+        stroke: '#00000033',
+        strokeWidth: 1,
+        fill: '#00000033',
+      }
+    : false;
+
+  const activeDot = {
+    stroke: '#00000033',
+    strokeWidth: 1,
+    fill: '#eeeeee',
+  };
+
+  let unit = '';
+  if (mode.indexOf('Relative') >= 0) unit = '%';
+  else if (mode !== 'units') unit = '€';
+
+  return (
+    <Container maxWidth="xl" style={{ padding: '0px' }}>
+      <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
+        <Grid container style={{ width: '100%' }}>
+          <Grid item xs={12}>
+            <div
+              style={{ position: 'relative', width: '100%', height: '100%' }}
+            >
+              {progress}
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: '100%',
+                }}
+              >
+                <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
+                  <ComposedChart data={points}>
+                    <XAxis
+                      dataKey="epoch"
+                      type="number"
+                      scale="utc"
+                      domain={['dataMin', 'dataMax']}
+                      tickFormatter={d => moment(d).format('L')}
+                    />
+                    <YAxis unit={unit} hide={xsDown} />
+                    <CartesianGrid strokeDasharray="5 5" />
+
+                    <defs>
+                      {[
+                        {
+                          offset: earningsAbsoluteOffset,
+                          name: 'earningsAbsolute',
+                        },
+                        {
+                          offset: earningsRelativeOffset,
+                          name: 'earningsRelative',
+                        },
+                        {
+                          offset: earningsAbsoluteStartOffset,
+                          name: 'earningsAbsoluteStart',
+                        },
+                        {
+                          offset: earningsRelativeStartOffset,
+                          name: 'earningsRelativeStart',
+                        },
+                        {
+                          offset: priceRelativeStartOffset,
+                          name: 'priceRelativeStart',
+                        },
+                      ].map(({ offset, name }) => (
+                        <Fragment key={name}>
+                          <linearGradient
+                            id={`${name}Color`}
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset={offset}
+                              stopColor={theme.palette.primary.dark}
+                              stopOpacity={1}
+                            />
+                            <stop
+                              offset={offset}
+                              stopColor={theme.palette.secondary.dark}
+                              stopOpacity={1}
+                            />
+                          </linearGradient>
+                          <linearGradient
+                            id={`${name}Fill`}
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset={offset}
+                              stopColor={theme.palette.primary.main}
+                              stopOpacity={0.8}
+                            />
+                            <stop
+                              offset={offset}
+                              stopColor={theme.palette.secondary.main}
+                              stopOpacity={0.8}
+                            />
+                          </linearGradient>
+                        </Fragment>
+                      ))}
+                    </defs>
+
+                    {(mode === 'investedAndValue' || mode === 'invested') && (
+                      <Area
+                        type={interpolation}
+                        dataKey="invested"
+                        stroke={theme.palette.secondary.dark}
+                        fill={theme.palette.secondary.main}
+                        strokeWidth={1.4}
+                        unit="€"
+                        dot={dot}
+                        activeDot={activeDot}
+                        name="Investiert"
+                        fillOpacity={0.2}
+                      />
+                    )}
+
+                    {(mode === 'investedAndValue' || mode === 'value') && (
+                      <Area
+                        type={interpolation}
+                        dataKey="value"
+                        unit="€"
+                        stroke={theme.palette.primary.dark}
+                        fill={theme.palette.primary.main}
+                        strokeWidth={1.4}
+                        name="Wert"
+                        dot={dot}
+                        activeDot={activeDot}
+                        fillOpacity={0.2}
+                      />
+                    )}
+
+                    {mode === 'earningsAbsolute' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="earnings"
+                        unit="€"
+                        stroke="url(#earningsAbsoluteColor)"
+                        strokeWidth={1.4}
+                        fill="url(#earningsAbsoluteFill)"
+                        name="Gewinn"
+                        dot={dot}
+                        activeDot={activeDot}
+                      />
+                    )}
+
+                    {mode === 'units' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="units"
+                        unit=""
+                        stroke={theme.palette.primary.dark}
+                        fill={theme.palette.primary.main}
+                        strokeWidth={1.4}
+                        name="Einheiten"
+                        dot={dot}
+                        activeDot={activeDot}
+                        fillOpacity={0.2}
+                      />
+                    )}
+
+                    {mode === 'price' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="price"
+                        unit="€"
+                        stroke={theme.palette.primary.dark}
+                        fill={theme.palette.primary.main}
+                        strokeWidth={1.4}
+                        name="Kurs"
+                        dot={dot}
+                        activeDot={activeDot}
+                        fillOpacity={0.2}
+                      />
+                    )}
+
+                    {mode === 'priceRelativeStart' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="priceRelativeStart"
+                        unit="%"
+                        stroke="url(#priceRelativeStartColor)"
+                        fill="url(#priceRelativeStartFill)"
+                        strokeWidth={1.4}
+                        name="Kursveränderung"
+                        dot={dot}
+                        activeDot={activeDot}
+                        fillOpacity={0.2}
+                      />
+                    )}
+
+                    {mode === 'earningsAbsoluteStart' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="earningsStart"
+                        unit="€"
+                        stroke="url(#earningsAbsoluteStartColor)"
+                        strokeWidth={1.4}
+                        fill="url(#earningsAbsoluteStartFill)"
+                        name="Gewinn"
+                        dot={dot}
+                        activeDot={activeDot}
+                      />
+                    )}
+
+                    {mode === 'earningsRelativeStart' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="earningsRelativeStart"
+                        unit="%"
+                        stroke="url(#earningsRelativeStartColor)"
+                        strokeWidth={1.4}
+                        fill="url(#earningsRelativeStartFill)"
+                        name="Gewinn"
+                        dot={dot}
+                        activeDot={activeDot}
+                      />
+                    )}
+
+                    {mode === 'earningsRelative' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="earningsRelative"
+                        unit="%"
+                        stroke="url(#earningsRelativeColor)"
+                        strokeWidth={1.4}
+                        fill="url(#earningsRelativeFill)"
+                        name="Gewinn"
+                        dot={dot}
+                        activeDot={activeDot}
+                      />
+                    )}
+
+                    <Tooltip
+                      formatter={v => v.toFixed(2)}
+                      labelFormatter={d => moment(d).format('L LT')}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </Grid>
+          <Grid item xs={9}>
+            <FormControl className={classes.formControl}>
+              <InputLabel id="mode-select-label">Art</InputLabel>
+              <Select
+                labelId="mode-select-label"
+                id="mode-select"
+                value={mode}
+                autoWidth
+                onChange={handleModeChange}
+              >
+                <MenuItem value="price">Kurs</MenuItem>
+                <MenuItem value="priceRelativeStart">Kursveränderung</MenuItem>
+                <MenuItem value="investedAndValue">Kaufpreis und Wert</MenuItem>
+                <MenuItem value="invested">Kaufpreis</MenuItem>
+                <MenuItem value="value">Wert</MenuItem>
+                <MenuItem value="units">Einheiten</MenuItem>
+                <MenuItem value="earningsAbsolute">Gewinn</MenuItem>
+                <MenuItem value="earningsAbsoluteStart">
+                  Gewinn (seit Start)
+                </MenuItem>
+                <MenuItem value="earningsRelative">
+                  Gewinn (rel. zu Kaufpreis)
+                </MenuItem>
+                <MenuItem value="earningsRelativeStart">
+                  Gewinn (rel. zu Kaufpreis, seit Start)
+                </MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl className={classes.formControl}>
+              <InputLabel id="source-select-label">Datenquelle</InputLabel>
+              <Select
+                labelId="source-select-label"
+                id="source-select"
+                value={source}
+                autoWidth
+                onChange={handleSourceChange}
+              >
+                <MenuItem value="auto">Automatisch</MenuItem>
+                <MenuItem value="historical">Historisch</MenuItem>
+                <MenuItem value="realtime">Echtzeit</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl className={classes.formControl}>
+              <InputLabel id="period-select-label">Zeit</InputLabel>
+              <Select
+                labelId="period-select-label"
+                id="period-select"
+                autoWidth
+                value={
+                  performance.items === null || performance.items.length === 0
+                    ? -1
+                    : period
+                }
+                onChange={handlePeriodChange}
+              >
+                {performance.items.map((item, i) => (
+                  <MenuItem value={i} key={i}>
+                    {getPeriodDescription(item)}
+                  </MenuItem>
+                ))}
+                <MenuItem value={-1} key={-1}>
+                  Benutzerdefiniert
+                </MenuItem>
+              </Select>
+            </FormControl>
+            {period < 0 && (
+              <>
+                <DatePicker
+                  label="Start"
+                  value={startDate}
+                  format="L"
+                  maxDate={endDate}
+                  onChange={setStartDate}
+                  animateYearScrolling
+                  disableFuture
+                  disabled={period >= 0}
+                  className={classes.formControl}
+                />
+                <DatePicker
+                  label="Ende"
+                  value={endDate}
+                  format="L"
+                  minDate={startDate}
+                  onChange={setEndDate}
+                  animateYearScrolling
+                  disableFuture
+                  disabled={period >= 0}
+                  className={classes.formControl}
+                />
+              </>
+            )}
+          </Grid>
+        </Grid>
+      </Paper>
+    </Container>
+  );
+};
+
+StockPlot.propTypes = {
+  isin: PropTypes.string.isRequired,
+  data: PropTypes.arrayOf(PropTypes.object).isRequired,
+  updateData: PropTypes.func.isRequired,
+  performance: PropTypes.shape({
+    items: PropTypes.arrayOf(PropTypes.object),
+    lastUpdated: PropTypes.number,
+    isFetching: PropTypes.bool,
+  }).isRequired,
+};
+
+export default StockPlot;

@@ -276,7 +276,7 @@ pub fn compute_stock_plot(
     source_selection: DataSourceSelection,
 ) -> Result<StockPlot, Box<dyn Error>> {
     // for this ISIN, grab all exchanges and select the preferred one
-    let mut ex = stock_exchanges::table
+    let ex = stock_exchanges::table
         .filter(stock_exchanges::isin.eq(isin.clone()))
         .load::<StockExchange>(&*connection)?
         .into_iter()
@@ -309,6 +309,9 @@ pub fn compute_stock_plot(
             date: d,
             value: Some(0.0),
             invested: 0.0,
+            units: 0.0,
+            price: None,
+            price_date: None,
         })
         .collect::<Vec<_>>();
 
@@ -330,7 +333,9 @@ pub fn compute_stock_plot(
 
             t_idx += 1;
         }
-        p.invested += invested;
+
+        p.invested = invested;
+        p.units = units;
 
         while p_idx < prices.len() && prices[p_idx].date().naive_utc() <= p.date {
             current_price = prices.get(p_idx);
@@ -339,7 +344,9 @@ pub fn compute_stock_plot(
 
         if let Some(c_price) = current_price {
             if (p.date - c_price.date().naive_utc()).num_days().abs() < 7 {
-                p.value = p.value.map(|v| v + units * c_price.value());
+                p.value = Some(units * c_price.value());
+                p.price = Some(c_price.value());
+                p.price_date = Some(c_price.date().naive_utc());
             } else {
                 p.value = None;
             }
@@ -352,7 +359,7 @@ pub fn compute_stock_plot(
         exchange: ex,
         points: points
             .into_iter()
-            .dedup_by(|x, y| x.value == y.value && x.invested == y.invested)
+            .dedup_by(|x, y| x.value == y.value && x.invested == y.invested && x.price == y.price)
             .collect::<Vec<_>>(),
     })
 }

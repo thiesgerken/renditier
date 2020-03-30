@@ -23,7 +23,6 @@
 - plot price + units in portfolio in same axis
 - watchlist of isins for each user, so that they can be analyzed (and so that notifications can be set for them?)
 - send a test notification as soon as a new device registers
-- plots: make sure that the interval of realtime plots is a multiple of 5 minutes
 
 ## Install
 
