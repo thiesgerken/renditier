@@ -77,15 +77,21 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
     setSource(event.target.value);
   };
 
+  const nextWeekDay = date => {
+    let d = moment(date);
+    while (d.day() === 0 || d.day() === 6) d = d.add(1, 'days');
+    return d;
+  };
+
   let plotData = null;
   if (period < performance.items.length) {
     let sd = null;
     let ed = null;
 
     if (period >= 0) {
-      sd = moment(performance.items[period].start.date)
-        .add(1, 'days')
-        .format('YYYY-MM-DD');
+      sd = nextWeekDay(
+        moment(performance.items[period].start.date).add(1, 'days')
+      ).format('YYYY-MM-DD');
       ed = performance.items[period].end.date;
     } else {
       sd = startDate.format('YYYY-MM-DD');
@@ -143,11 +149,11 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
     return dataMax / (dataMax - dataMin);
   };
 
-  const earningsAbsoluteOffset = makeOffset(i => i.earnings);
-  const earningsRelativeOffset = makeOffset(i => i.earningsRelative);
-  const earningsAbsoluteStartOffset = makeOffset(i => i.earningsStart);
-  const earningsRelativeStartOffset = makeOffset(i => i.earningsRelativeStart);
-  const priceRelativeStartOffset = makeOffset(i => i.priceRelativeStart);
+  const earningsOffset = makeOffset(i => i.earnings);
+  const earningsRelInvestmentOffset = makeOffset(i => i.earningsRelInvestment);
+  const valueRelStartOffset = makeOffset(i => i.valueRelStart);
+  const investedRelStartOffset = makeOffset(i => i.investedRelStart);
+  const priceRelStartOffset = makeOffset(i => i.priceRelStart);
 
   const interpolation = 'monotone';
   const showDots = points.length < 100;
@@ -166,7 +172,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
   };
 
   let unit = '';
-  if (mode.indexOf('Relative') >= 0) unit = '%';
+  if (mode.indexOf('Rel') >= 0) unit = '%';
   else if (mode !== 'units') unit = '€';
 
   return (
@@ -194,30 +200,33 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                       domain={['dataMin', 'dataMax']}
                       tickFormatter={d => moment(d).format('L')}
                     />
-                    <YAxis unit={unit} hide={xsDown} />
+                    <YAxis
+                      unit={unit}
+                      hide={xsDown}
+                      domain={['auto', 'auto']}
+                    />
                     <CartesianGrid strokeDasharray="5 5" />
-
                     <defs>
                       {[
                         {
-                          offset: earningsAbsoluteOffset,
-                          name: 'earningsAbsolute',
+                          offset: earningsOffset,
+                          name: 'earnings',
                         },
                         {
-                          offset: earningsRelativeOffset,
-                          name: 'earningsRelative',
+                          offset: earningsRelInvestmentOffset,
+                          name: 'earningsRelInvestment',
                         },
                         {
-                          offset: earningsAbsoluteStartOffset,
-                          name: 'earningsAbsoluteStart',
+                          offset: valueRelStartOffset,
+                          name: 'valueRelStart',
                         },
                         {
-                          offset: earningsRelativeStartOffset,
-                          name: 'earningsRelativeStart',
+                          offset: investedRelStartOffset,
+                          name: 'investedRelStart',
                         },
                         {
-                          offset: priceRelativeStartOffset,
-                          name: 'priceRelativeStart',
+                          offset: priceRelStartOffset,
+                          name: 'priceRelStart',
                         },
                       ].map(({ offset, name }) => (
                         <Fragment key={name}>
@@ -265,8 +274,16 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                       <Area
                         type={interpolation}
                         dataKey="invested"
-                        stroke={theme.palette.secondary.dark}
-                        fill={theme.palette.secondary.main}
+                        stroke={
+                          mode === 'investedAndValue'
+                            ? theme.palette.secondary.dark
+                            : theme.palette.info.dark
+                        }
+                        fill={
+                          mode === 'investedAndValue'
+                            ? theme.palette.secondary.main
+                            : theme.palette.info.main
+                        }
                         strokeWidth={1.4}
                         unit="€"
                         dot={dot}
@@ -281,8 +298,16 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                         type={interpolation}
                         dataKey="value"
                         unit="€"
-                        stroke={theme.palette.primary.dark}
-                        fill={theme.palette.primary.main}
+                        stroke={
+                          mode === 'investedAndValue'
+                            ? theme.palette.primary.dark
+                            : theme.palette.info.dark
+                        }
+                        fill={
+                          mode === 'investedAndValue'
+                            ? theme.palette.primary.main
+                            : theme.palette.info.main
+                        }
                         strokeWidth={1.4}
                         name="Wert"
                         dot={dot}
@@ -291,17 +316,18 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                       />
                     )}
 
-                    {mode === 'earningsAbsolute' && (
+                    {mode === 'earnings' && (
                       <Area
                         type={interpolation}
                         dataKey="earnings"
                         unit="€"
-                        stroke="url(#earningsAbsoluteColor)"
+                        stroke="url(#earningsColor)"
                         strokeWidth={1.4}
-                        fill="url(#earningsAbsoluteFill)"
+                        fill="url(#earningsFill)"
                         name="Gewinn"
                         dot={dot}
                         activeDot={activeDot}
+                        fillOpacity={0.2}
                       />
                     )}
 
@@ -310,8 +336,8 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                         type={interpolation}
                         dataKey="units"
                         unit=""
-                        stroke={theme.palette.primary.dark}
-                        fill={theme.palette.primary.main}
+                        stroke={theme.palette.info.dark}
+                        fill={theme.palette.info.main}
                         strokeWidth={1.4}
                         name="Einheiten"
                         dot={dot}
@@ -325,8 +351,8 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                         type={interpolation}
                         dataKey="price"
                         unit="€"
-                        stroke={theme.palette.primary.dark}
-                        fill={theme.palette.primary.main}
+                        stroke={theme.palette.info.dark}
+                        fill={theme.palette.info.main}
                         strokeWidth={1.4}
                         name="Kurs"
                         dot={dot}
@@ -335,13 +361,13 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                       />
                     )}
 
-                    {mode === 'priceRelativeStart' && (
+                    {mode === 'priceRelStart' && (
                       <Area
                         type={interpolation}
-                        dataKey="priceRelativeStart"
+                        dataKey="priceRelStart"
                         unit="%"
-                        stroke="url(#priceRelativeStartColor)"
-                        fill="url(#priceRelativeStartFill)"
+                        stroke="url(#priceRelStartColor)"
+                        fill="url(#priceRelStartFill)"
                         strokeWidth={1.4}
                         name="Kursveränderung"
                         dot={dot}
@@ -350,45 +376,48 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                       />
                     )}
 
-                    {mode === 'earningsAbsoluteStart' && (
+                    {mode === 'earningsRelInvestment' && (
                       <Area
                         type={interpolation}
-                        dataKey="earningsStart"
-                        unit="€"
-                        stroke="url(#earningsAbsoluteStartColor)"
+                        dataKey="earningsRelInvestment"
+                        unit="%"
+                        stroke="url(#earningsRelInvestmentColor)"
                         strokeWidth={1.4}
-                        fill="url(#earningsAbsoluteStartFill)"
-                        name="Gewinn"
+                        fill="url(#earningsRelInvestmentFill)"
+                        name="Gewinn rel. zu Kaufpreis"
                         dot={dot}
                         activeDot={activeDot}
+                        fillOpacity={0.2}
                       />
                     )}
 
-                    {mode === 'earningsRelativeStart' && (
+                    {mode === 'valueRelStart' && (
                       <Area
                         type={interpolation}
-                        dataKey="earningsRelativeStart"
+                        dataKey="valueRelStart"
                         unit="%"
-                        stroke="url(#earningsRelativeStartColor)"
+                        stroke="url(#valueRelStartColor)"
                         strokeWidth={1.4}
-                        fill="url(#earningsRelativeStartFill)"
-                        name="Gewinn"
+                        fill="url(#valueRelStartFill)"
+                        name="Gewinnveränderung"
                         dot={dot}
                         activeDot={activeDot}
+                        fillOpacity={0.2}
                       />
                     )}
 
-                    {mode === 'earningsRelative' && (
+                    {mode === 'investedRelStart' && (
                       <Area
                         type={interpolation}
-                        dataKey="earningsRelative"
+                        dataKey="investedRelStart"
                         unit="%"
-                        stroke="url(#earningsRelativeColor)"
+                        stroke="url(#investedRelStartColor)"
                         strokeWidth={1.4}
-                        fill="url(#earningsRelativeFill)"
-                        name="Gewinn"
+                        fill="url(#investedRelStartFill)"
+                        name="Kaufpreisveränderung"
                         dot={dot}
                         activeDot={activeDot}
+                        fillOpacity={0.2}
                       />
                     )}
 
@@ -412,20 +441,18 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                 onChange={handleModeChange}
               >
                 <MenuItem value="price">Kurs</MenuItem>
-                <MenuItem value="priceRelativeStart">Kursveränderung</MenuItem>
+                <MenuItem value="priceRelStart">Kursveränderung</MenuItem>
                 <MenuItem value="investedAndValue">Kaufpreis und Wert</MenuItem>
-                <MenuItem value="invested">Kaufpreis</MenuItem>
                 <MenuItem value="value">Wert</MenuItem>
+                <MenuItem value="valueRelStart">Wertveränderung</MenuItem>
+                <MenuItem value="invested">Kaufpreis</MenuItem>
+                <MenuItem value="investedRelStart">
+                  Kaufpreisveränderung
+                </MenuItem>
                 <MenuItem value="units">Einheiten</MenuItem>
-                <MenuItem value="earningsAbsolute">Gewinn</MenuItem>
-                <MenuItem value="earningsAbsoluteStart">
-                  Gewinn (seit Start)
-                </MenuItem>
-                <MenuItem value="earningsRelative">
-                  Gewinn (rel. zu Kaufpreis)
-                </MenuItem>
-                <MenuItem value="earningsRelativeStart">
-                  Gewinn (rel. zu Kaufpreis, seit Start)
+                <MenuItem value="earnings">Gewinn</MenuItem>
+                <MenuItem value="earningsRelInvestment">
+                  Gewinn rel. zu Kaufpreis
                 </MenuItem>
               </Select>
             </FormControl>

@@ -62,7 +62,7 @@ export const fetchStockPlot = (
       res.points = map(res.points, p => ({
         ...p,
         earnings: p.value !== null ? p.value - p.invested : null,
-        earningsRelative:
+        earningsRelInvestment:
           p.value !== null && p.invested !== 0
             ? ((p.value - p.invested) / p.invested) * 100
             : null,
@@ -71,11 +71,13 @@ export const fetchStockPlot = (
 
       res.points = map(res.points, p => ({
         ...p,
-        earningsStart: p.earnings - res.points[0].earnings,
-        priceRelativeStart:
+        valueRelStart:
+          ((p.value - res.points[0].value) / res.points[0].value) * 100,
+        investedRelStart:
+          ((p.invested - res.points[0].invested) / res.points[0].invested) *
+          100,
+        priceRelStart:
           ((p.price - res.points[0].price) / res.points[0].price) * 100,
-        earningsRelativeStart:
-          p.earningsRelative - res.points[0].earningsRelative,
       }));
 
       let i = 0;

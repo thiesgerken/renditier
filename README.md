@@ -12,15 +12,14 @@
 - remove all cached data when the user logs out
 - invalidate user info as soon as a 401 is encountered
 - do not register service worker for api requests?
-- analysis for each isin, price chart with buys/sales => dedicated page for each stock; navigation?)
 - unify formatting and querying functions
+- StockPlot: mark the transactions or plot price + units in portfolio in same axis
 
 ## Ideas
 
 - set alerts for high drops / increases in values
 - push notifications [weekly summary, daily only on huge sudden changes]
 - REST interface
-- plot price + units in portfolio in same axis
 - watchlist of isins for each user, so that they can be analyzed (and so that notifications can be set for them?)
 - send a test notification as soon as a new device registers
 

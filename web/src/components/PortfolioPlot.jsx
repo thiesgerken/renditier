@@ -58,7 +58,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const [period, setPeriod] = useState(0);
-  const [mode, setMode] = useState('earningsAbsolute');
+  const [mode, setMode] = useState('earnings');
   const [source, setSource] = useState('auto');
   const [startDate, setStartDate] = useState(moment().startOf('year'));
   const [endDate, setEndDate] = useState(moment());
@@ -76,15 +76,21 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
     setSource(event.target.value);
   };
 
+  const nextWeekDay = date => {
+    let d = moment(date);
+    while (d.day() === 0 || d.day() === 6) d = d.add(1, 'days');
+    return d;
+  };
+
   let plotData = null;
   if (period < performance.items.length) {
     let sd = null;
     let ed = null;
 
     if (period >= 0) {
-      sd = moment(performance.items[period].start.date)
-        .add(1, 'days')
-        .format('YYYY-MM-DD');
+      sd = nextWeekDay(
+        moment(performance.items[period].start.date).add(1, 'days')
+      ).format('YYYY-MM-DD');
       ed = performance.items[period].end.date;
     } else {
       sd = startDate.format('YYYY-MM-DD');
@@ -142,10 +148,10 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
     return dataMax / (dataMax - dataMin);
   };
 
-  const earningsAbsoluteOffset = makeOffset(i => i.earnings);
-  const earningsRelativeOffset = makeOffset(i => i.earningsRelative);
-  const earningsAbsoluteStartOffset = makeOffset(i => i.earningsStart);
-  const earningsRelativeStartOffset = makeOffset(i => i.earningsRelativeStart);
+  const earningsOffset = makeOffset(i => i.earnings);
+  const earningsRelInvestedOffset = makeOffset(i => i.earningsRelInvested);
+  const valueRelStartOffset = makeOffset(i => i.valueRelStart);
+  const investedRelStartOffset = makeOffset(i => i.investedRelStart);
 
   const interpolation = 'monotone';
   const showDots = points.length < 100;
@@ -189,7 +195,8 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                       tickFormatter={d => moment(d).format('L')}
                     />
                     <YAxis
-                      unit={mode.startsWith('earningsRelative') ? '%' : '€'}
+                      unit={mode.indexOf('Rel') >= 0 ? '%' : '€'}
+                      domain={['auto', 'auto']}
                       hide={xsDown}
                     />
                     <CartesianGrid strokeDasharray="5 5" />
@@ -197,20 +204,20 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                     <defs>
                       {[
                         {
-                          offset: earningsAbsoluteOffset,
-                          name: 'earningsAbsolute',
+                          offset: earningsOffset,
+                          name: 'earnings',
                         },
                         {
-                          offset: earningsRelativeOffset,
-                          name: 'earningsRelative',
+                          offset: earningsRelInvestedOffset,
+                          name: 'earningsRelInvested',
                         },
                         {
-                          offset: earningsAbsoluteStartOffset,
-                          name: 'earningsAbsoluteStart',
+                          offset: valueRelStartOffset,
+                          name: 'valueRelStart',
                         },
                         {
-                          offset: earningsRelativeStartOffset,
-                          name: 'earningsRelativeStart',
+                          offset: investedRelStartOffset,
+                          name: 'investedRelStart',
                         },
                       ].map(({ offset, name }) => (
                         <Fragment key={name}>
@@ -284,59 +291,63 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                       />
                     )}
 
-                    {mode === 'earningsAbsolute' && (
+                    {mode === 'earnings' && (
                       <Area
                         type={interpolation}
                         dataKey="earnings"
                         unit="€"
-                        stroke="url(#earningsAbsoluteColor)"
+                        stroke="url(#earningsColor)"
                         strokeWidth={1.4}
-                        fill="url(#earningsAbsoluteFill)"
+                        fill="url(#earningsFill)"
                         name="Gewinn"
                         dot={dot}
                         activeDot={activeDot}
+                        fillOpacity={0.2}
                       />
                     )}
 
-                    {mode === 'earningsAbsoluteStart' && (
+                    {mode === 'valueRelStart' && (
                       <Area
                         type={interpolation}
-                        dataKey="earningsStart"
-                        unit="€"
-                        stroke="url(#earningsAbsoluteStartColor)"
-                        strokeWidth={1.4}
-                        fill="url(#earningsAbsoluteStartFill)"
-                        name="Gewinn"
-                        dot={dot}
-                        activeDot={activeDot}
-                      />
-                    )}
-
-                    {mode === 'earningsRelativeStart' && (
-                      <Area
-                        type={interpolation}
-                        dataKey="earningsRelativeStart"
+                        dataKey="valueRelStart"
                         unit="%"
-                        stroke="url(#earningsRelativeStartColor)"
+                        stroke="url(#valueRelStartColor)"
                         strokeWidth={1.4}
-                        fill="url(#earningsRelativeStartFill)"
-                        name="Gewinn"
+                        fill="url(#valueRelStartFill)"
+                        name="Wertveränderung"
                         dot={dot}
                         activeDot={activeDot}
+                        fillOpacity={0.2}
                       />
                     )}
 
-                    {mode === 'earningsRelative' && (
+                    {mode === 'investedRelStart' && (
                       <Area
                         type={interpolation}
-                        dataKey="earningsRelative"
+                        dataKey="investedRelStart"
                         unit="%"
-                        stroke="url(#earningsRelativeColor)"
+                        stroke="url(#investedRelStartColor)"
                         strokeWidth={1.4}
-                        fill="url(#earningsRelativeFill)"
-                        name="Gewinn"
+                        fill="url(#investedRelStartFill)"
+                        name="Kaufpreisveränderung"
                         dot={dot}
                         activeDot={activeDot}
+                        fillOpacity={0.2}
+                      />
+                    )}
+
+                    {mode === 'earningsRelInvested' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="earningsRelInvested"
+                        unit="%"
+                        stroke="url(#earningsRelInvestedColor)"
+                        strokeWidth={1.4}
+                        fill="url(#earningsRelInvestedFill)"
+                        name="Gewinn rel. Kaufpreis"
+                        dot={dot}
+                        activeDot={activeDot}
+                        fillOpacity={0.2}
                       />
                     )}
 
@@ -359,18 +370,16 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                 autoWidth
                 onChange={handleModeChange}
               >
+                <MenuItem value="earnings">Gewinn</MenuItem>
                 <MenuItem value="investedAndValue">Kaufpreis und Wert</MenuItem>
                 <MenuItem value="invested">Kaufpreis</MenuItem>
+                <MenuItem value="investedRelStart">
+                  Kaufpreisveränderung
+                </MenuItem>
                 <MenuItem value="value">Wert</MenuItem>
-                <MenuItem value="earningsAbsolute">Gewinn</MenuItem>
-                <MenuItem value="earningsAbsoluteStart">
-                  Gewinn (seit Start)
-                </MenuItem>
-                <MenuItem value="earningsRelative">
-                  Gewinn (rel. zu Kaufpreis)
-                </MenuItem>
-                <MenuItem value="earningsRelativeStart">
-                  Gewinn (rel. zu Kaufpreis, seit Start)
+                <MenuItem value="valueRelStart">Wertveränderung</MenuItem>
+                <MenuItem value="earningsRelInvested">
+                  Gewinn rel. zu Kaufpreis
                 </MenuItem>
               </Select>
             </FormControl>

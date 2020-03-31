@@ -126,8 +126,6 @@ const StockAnalysis = ({
   const firstTransaction = min(map(transactions, t => moment(t.date)));
   const lastTransaction = max(map(transactions, t => moment(t.date)));
 
-  // TODO: plot with historical data, mark the transactions (switch to realtime data at some resolution?)
-
   let transactionInfo;
   if (transactions.length === 0)
     transactionInfo = 'Transaktionen: bisher nicht gehandelt';

@@ -53,7 +53,7 @@ export const fetchPortfolioPlot = (startDate, endDate, source) => dispatch => {
       res.points = map(res.points, p => ({
         ...p,
         earnings: p.value !== null ? p.value - p.invested : null,
-        earningsRelative:
+        earningsRelInvested:
           p.value !== null && p.invested !== 0
             ? ((p.value - p.invested) / p.invested) * 100
             : null,
@@ -62,9 +62,11 @@ export const fetchPortfolioPlot = (startDate, endDate, source) => dispatch => {
 
       res.points = map(res.points, p => ({
         ...p,
-        earningsStart: p.earnings - res.points[0].earnings,
-        earningsRelativeStart:
-          p.earningsRelative - res.points[0].earningsRelative,
+        valueRelStart:
+          ((p.value - res.points[0].value) / res.points[0].value) * 100,
+        investedRelStart:
+          ((p.invested - res.points[0].invested) / res.points[0].invested) *
+          100,
       }));
 
       let i = 0;
