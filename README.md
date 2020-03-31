@@ -13,7 +13,6 @@
 - invalidate user info as soon as a 401 is encountered
 - do not register service worker for api requests?
 - unify formatting and querying functions
-- StockPlot: mark the transactions or plot price + units in portfolio in same axis
 
 ## Ideas
 

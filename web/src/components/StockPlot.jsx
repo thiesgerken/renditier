@@ -59,7 +59,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const [period, setPeriod] = useState(0);
-  const [mode, setMode] = useState('price');
+  const [mode, setMode] = useState('priceAndUnits');
   const [source, setSource] = useState('auto');
   const [startDate, setStartDate] = useState(moment().startOf('year'));
   const [endDate, setEndDate] = useState(moment());
@@ -331,6 +331,21 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                       />
                     )}
 
+                    {(mode === 'price' || mode === 'priceAndUnits') && (
+                      <Area
+                        type={interpolation}
+                        dataKey="price"
+                        unit="€"
+                        stroke={theme.palette.info.dark}
+                        fill={theme.palette.info.main}
+                        strokeWidth={1.4}
+                        name="Kurs"
+                        dot={dot}
+                        activeDot={activeDot}
+                        fillOpacity={0.2}
+                      />
+                    )}
+
                     {mode === 'units' && (
                       <Area
                         type={interpolation}
@@ -346,18 +361,29 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                       />
                     )}
 
-                    {mode === 'price' && (
+                    {mode === 'priceAndUnits' && (
                       <Area
                         type={interpolation}
-                        dataKey="price"
-                        unit="€"
-                        stroke={theme.palette.info.dark}
-                        fill={theme.palette.info.main}
+                        dataKey="units"
+                        unit=""
+                        stroke={theme.palette.warning.dark}
+                        fill={theme.palette.warning.main}
                         strokeWidth={1.4}
-                        name="Kurs"
+                        name="Einheiten"
+                        yAxisId={1}
                         dot={dot}
                         activeDot={activeDot}
                         fillOpacity={0.2}
+                      />
+                    )}
+
+                    {mode === 'priceAndUnits' && (
+                      <YAxis
+                        unit=""
+                        yAxisId={1}
+                        hide={xsDown}
+                        orientation="right"
+                        domain={['auto', 'auto']}
                       />
                     )}
 
@@ -442,6 +468,8 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
               >
                 <MenuItem value="price">Kurs</MenuItem>
                 <MenuItem value="priceRelStart">Kursveränderung</MenuItem>
+                <MenuItem value="units">Einheiten</MenuItem>
+                <MenuItem value="priceAndUnits">Kurs und Einheiten</MenuItem>
                 <MenuItem value="investedAndValue">Kaufpreis und Wert</MenuItem>
                 <MenuItem value="value">Wert</MenuItem>
                 <MenuItem value="valueRelStart">Wertveränderung</MenuItem>
@@ -449,7 +477,6 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                 <MenuItem value="investedRelStart">
                   Kaufpreisveränderung
                 </MenuItem>
-                <MenuItem value="units">Einheiten</MenuItem>
                 <MenuItem value="earnings">Gewinn</MenuItem>
                 <MenuItem value="earningsRelInvestment">
                   Gewinn rel. zu Kaufpreis
