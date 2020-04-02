@@ -13,6 +13,7 @@
 - invalidate user info as soon as a 401 is encountered
 - do not register service worker for api requests?
 - unify formatting and querying functions
+- ** show date of price in plot tooltip **
 
 ## Ideas
 

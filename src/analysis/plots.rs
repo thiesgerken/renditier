@@ -4,7 +4,7 @@ use crate::models::*;
 use crate::schema::*;
 
 use chrono::offset::TimeZone;
-use chrono::{Duration, NaiveDate, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, Local, NaiveDate, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use itertools::Itertools;
 use log::{debug, info};
@@ -17,7 +17,7 @@ use std::iter::successors;
 
 #[derive(Deserialize, Serialize)]
 pub struct PortfolioPlotDataPoint {
-    date: NaiveDateTime,
+    date: DateTime<Utc>,
     invested: f64,
     value: Option<f64>,
 }
@@ -30,10 +30,10 @@ pub struct PortfolioPlot {
 
 #[derive(Deserialize, Serialize)]
 pub struct StockPlotDataPoint {
-    date: NaiveDateTime,
+    date: DateTime<Utc>,
     units: f64,
     invested: f64,
-    price_date: Option<NaiveDateTime>,
+    price_date: Option<DateTime<Utc>>,
     price: Option<f64>,
     value: Option<f64>,
 }
@@ -57,24 +57,40 @@ fn choose_and_query_points(
     start_date: NaiveDate,
     end_date: NaiveDate,
     source_selection: DataSourceSelection,
-) -> Result<(Vec<NaiveDateTime>, Vec<EitherPrice>), Box<dyn Error>> {
+) -> Result<(Vec<DateTime<Utc>>, Vec<EitherPrice>), Box<dyn Error>> {
     if source_selection == DataSourceSelection::Historical
         || (end_date - start_date > Duration::weeks(3)
             && source_selection == DataSourceSelection::Automatic)
     {
         // sample 200 dates between start and end, but at most once a day
         let interval = max((end_date - start_date) / 200, Duration::days(1));
-        let mut dates = successors(Some(Utc.from_utc_date(&start_date).and_hms(1, 0, 0)), |x| {
-            x.checked_add_signed(interval)
-        })
-        .map(|d| d.naive_utc())
-        .take_while(|d| d.date() <= end_date)
+        let mut dates = successors(
+            Some(
+                Local
+                    .from_utc_date(&start_date)
+                    .and_hms(9, 0, 0)
+                    .with_timezone(&Utc),
+            ),
+            |x| x.checked_add_signed(interval),
+        )
+        .take_while(|d| d.date().naive_utc() <= end_date)
         .collect::<Vec<_>>();
 
         if dates.len() < 150 {
             dates = dates
                 .into_iter()
-                .flat_map(|d| vec![d.date().and_hms(9, 0, 0), d.date().and_hms(18, 0, 0)])
+                .flat_map(|d| {
+                    vec![
+                        Local
+                            .from_utc_date(&d.naive_utc().date())
+                            .and_hms(9, 0, 0)
+                            .with_timezone(&Utc),
+                        Local
+                            .from_utc_date(&d.naive_utc().date())
+                            .and_hms(18, 0, 0)
+                            .with_timezone(&Utc),
+                    ]
+                })
                 .collect::<Vec<_>>()
         }
 
@@ -106,11 +122,21 @@ fn choose_and_query_points(
         // and make sure that its a multiple of 5 minutes.
         let interval = Duration::minutes((interval.num_minutes() / 5) * 5);
 
-        let dates = successors(Some(Utc.from_utc_date(&start_date).and_hms(9, 0, 0)), |x| {
-            x.checked_add_signed(interval)
+        let dates = successors(
+            Some(
+                Local
+                    .from_utc_date(&start_date)
+                    .and_hms(9, 0, 0)
+                    .with_timezone(&Utc),
+            ),
+            |x| x.checked_add_signed(interval),
+        )
+        .take_while(|d| {
+            d <= &Local
+                .from_utc_date(&end_date)
+                .and_hms(18, 0, 0)
+                .with_timezone(&Utc)
         })
-        .map(|d| d.naive_utc())
-        .take_while(|d| d <= &end_date.and_hms(18, 0, 0))
         .collect::<Vec<_>>();
 
         // for these Exchanges, grab all realtime prices from start_date to end_date
@@ -228,7 +254,7 @@ pub fn compute_portfolio_plot(
         // go through all points, search for the nearest price,
         // calculate invested money and current value
         for p in points.iter_mut() {
-            while t_idx < isin_ts.len() && isin_ts[t_idx].date.naive_utc() <= p.date {
+            while t_idx < isin_ts.len() && isin_ts[t_idx].date <= p.date {
                 let t = &isin_ts[t_idx];
                 units += t.units;
                 invested -= (t.amount + t.fees) as f64 / 100.0;
@@ -237,13 +263,13 @@ pub fn compute_portfolio_plot(
             }
             p.invested += invested;
 
-            while p_idx < isin_ps.len() && isin_ps[p_idx].date().naive_utc() <= p.date {
+            while p_idx < isin_ps.len() && isin_ps[p_idx].date() <= p.date {
                 current_price = isin_ps.get(p_idx);
                 p_idx += 1;
             }
 
             if let Some(c_price) = current_price {
-                if (p.date - c_price.date().naive_utc()).num_days().abs() < 7 {
+                if (p.date - c_price.date()).num_days().abs() < 7 {
                     p.value = p.value.map(|v| v + units * c_price.value());
                 } else {
                     p.value = None;
@@ -326,7 +352,7 @@ pub fn compute_stock_plot(
     // go through all points, search for the nearest price,
     // calculate invested money and current value
     for p in points.iter_mut() {
-        while t_idx < ts.len() && ts[t_idx].date.naive_utc() <= p.date {
+        while t_idx < ts.len() && ts[t_idx].date <= p.date {
             let t = &ts[t_idx];
             units += t.units;
             invested -= (t.amount + t.fees) as f64 / 100.0;
@@ -337,16 +363,16 @@ pub fn compute_stock_plot(
         p.invested = invested;
         p.units = units;
 
-        while p_idx < prices.len() && prices[p_idx].date().naive_utc() <= p.date {
+        while p_idx < prices.len() && prices[p_idx].date() <= p.date {
             current_price = prices.get(p_idx);
             p_idx += 1;
         }
 
         if let Some(c_price) = current_price {
-            if (p.date - c_price.date().naive_utc()).num_days().abs() < 7 {
+            if (p.date - c_price.date()).num_days().abs() < 7 {
                 p.value = Some(units * c_price.value());
                 p.price = Some(c_price.value());
-                p.price_date = Some(c_price.date().naive_utc());
+                p.price_date = Some(c_price.date());
             } else {
                 p.value = None;
             }
@@ -359,7 +385,12 @@ pub fn compute_stock_plot(
         exchange: ex,
         points: points
             .into_iter()
-            .dedup_by(|x, y| x.value == y.value && x.invested == y.invested && x.price == y.price)
+            .dedup_by(|x, y| {
+                x.value == y.value
+                    && x.invested == y.invested
+                    && x.price == y.price
+                    && x.price_date == y.price_date
+            })
             .collect::<Vec<_>>(),
     })
 }

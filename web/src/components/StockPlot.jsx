@@ -447,6 +447,16 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                       />
                     )}
 
+                    {/* <Area
+                      type={interpolation}
+                      dataKey="price_date"
+                      unit=""
+                      name="Datum Datenquelle"
+                      dot={dot}
+                      activeDot={activeDot}
+                      fillOpacity={0.0}
+                    /> */}
+
                     <Tooltip
                       formatter={v => v.toFixed(2)}
                       labelFormatter={d => moment(d).format('L LT')}
