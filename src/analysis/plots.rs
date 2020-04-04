@@ -132,7 +132,7 @@ fn choose_and_query_points(
             .from_utc_date(&start_date)
             .and_hms(9, 0, 0)
             .with_timezone(&Utc);
-        let end_time = max(
+        let end_time = min(
             Local
                 .from_utc_date(&end_date)
                 .and_hms(18, 0, 0)
