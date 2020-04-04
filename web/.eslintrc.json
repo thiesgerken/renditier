@@ -15,7 +15,10 @@
         "trailingComma": "es5"
       }
     ],
-    "react/no-array-index-key": "off"
+    "react/no-array-index-key": "off",
+    "react/jsx-wrap-multilines": "off",
+    "react/jsx-one-expression-per-line": "off",
+    "react/jsx-curly-newline": "off"
   },
   "parserOptions": {
     "ecmaFeatures": {

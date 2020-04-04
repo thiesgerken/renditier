@@ -13,21 +13,26 @@ import {
   Typography,
   useMediaQuery,
   withStyles,
+  Hidden,
 } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import * as moment from 'moment';
 
 import { updateStocks as updateStocksAction } from '../actions/stocks';
 import { updatePerformance as updatePerformanceAction } from '../actions/performance';
+import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
 import { findStock, capitalizeTitle } from '../selectors/stocks';
 import StockPerformanceTable from '../components/StockPerformanceTable';
 import OnvistaButton from '../components/OnvistaButton';
 import TransactionsTable from '../components/TransactionsTable';
+import StockPlot from '../components/StockPlot';
 
 const StockAnalysis = ({
   isin,
   stocks,
   updateStocks,
+  stockPlotData,
+  updateStockPlotData,
   performance,
   updatePerformance,
 }) => {
@@ -110,6 +115,7 @@ const StockAnalysis = ({
     stockPerformance.items,
     p => p.kind === 'Today'
   );
+
   const currentPrice = todayPerformance.end.dataSource;
   let currentPriceInfo;
   if (currentPrice !== null)
@@ -120,8 +126,6 @@ const StockAnalysis = ({
   const transactionFees = sumBy(transactions, t => Math.abs(t.fees));
   const firstTransaction = min(map(transactions, t => moment(t.date)));
   const lastTransaction = max(map(transactions, t => moment(t.date)));
-
-  // TODO: plot with historical data, mark the transactions (switch to realtime data at some resolution?)
 
   let transactionInfo;
   if (transactions.length === 0)
@@ -220,15 +224,16 @@ const StockAnalysis = ({
           </Paper>
         </Container>
       </Grid>
-      {/* <Hidden xsDown implementation="js">
+      <Hidden xsDown implementation="js">
         <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
-          <PortfolioPlot
-            data={portfolioPlotData}
-            updateData={updatePortfolioPlotData}
+          <StockPlot
+            isin={isin}
+            data={stockPlotData}
+            updateData={updateStockPlotData}
             performance={performance}
           />
         </Grid>
-      </Hidden> */}
+      </Hidden>
       <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
         <StockPerformanceTable performance={stockPerformance} />
       </Grid>
@@ -256,19 +261,24 @@ StockAnalysis.propTypes = {
     lastUpdated: PropTypes.number,
   }).isRequired,
   updatePerformance: PropTypes.func.isRequired,
+  stockPlotData: PropTypes.arrayOf(PropTypes.object).isRequired,
+  updateStockPlotData: PropTypes.func.isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
   updatePerformance: () => dispatch(updatePerformanceAction()),
   updateStocks: () => dispatch(updateStocksAction()),
+  updateStockPlotData: (isin, startDate, endDate, source) =>
+    dispatch(updateStockPlotAction(isin, startDate, endDate, source)),
 });
 
 const mapStateToProps = state => {
-  const { performance, stocks } = state;
+  const { performance, stocks, stockPlot } = state;
 
   return {
     performance,
     stocks,
+    stockPlotData: stockPlot.items,
   };
 };
 

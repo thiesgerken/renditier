@@ -14,7 +14,7 @@ import {
 import { DatePicker } from '@material-ui/pickers';
 import * as moment from 'moment';
 import PropTypes from 'prop-types';
-import React, { useState, Fragment } from 'react';
+import React, { useState, Fragment, useCallback, useEffect } from 'react';
 import {
   Area,
   CartesianGrid,
@@ -27,11 +27,16 @@ import {
 
 import { getPeriodDescription } from '../selectors/performance';
 
-function getData(items, startDate, endDate) {
+function getData(items, startDate, endDate, source) {
   let item = null;
 
   items.forEach(v => {
-    if (v.startDate === startDate && v.endDate === endDate) item = v;
+    if (
+      v.startDate === startDate &&
+      v.endDate === endDate &&
+      v.source === source
+    )
+      item = v;
   });
 
   return item;
@@ -53,45 +58,71 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const [period, setPeriod] = useState(0);
-  const [mode, setMode] = useState('earningsAbsolute');
+  const [mode, setMode] = useState('earnings');
+  const [source, setSource] = useState('auto');
   const [startDate, setStartDate] = useState(moment().startOf('year'));
   const [endDate, setEndDate] = useState(moment());
   const [prevRange, setPrevRange] = useState(null);
 
-  const handlePeriodChange = event => {
+  const handlePeriodChange = useCallback(event => {
     setPeriod(event.target.value);
-  };
+  }, []);
 
-  const handleModeChange = event => {
+  const handleModeChange = useCallback(event => {
     setMode(event.target.value);
+  }, []);
+
+  const handleSourceChange = useCallback(event => {
+    setSource(event.target.value);
+  }, []);
+
+  const handleStartDateChange = useCallback(v => {
+    setStartDate(v);
+  }, []);
+
+  const handleEndDateChange = useCallback(v => {
+    setEndDate(v);
+  }, []);
+
+  const nextWeekDay = date => {
+    let d = moment(date);
+    while (d.day() === 0 || d.day() === 6) d = d.add(1, 'days');
+    return d;
   };
 
   let plotData = null;
-  if (period < performance.items.length) {
-    let sd = null;
-    let ed = null;
+  let sd = null;
+  let ed = null;
 
+  if (period < performance.items.length) {
     if (period >= 0) {
-      sd = performance.items[period].start.date;
+      sd = nextWeekDay(
+        moment(performance.items[period].start.date).add(1, 'days')
+      ).format('YYYY-MM-DD');
       ed = performance.items[period].end.date;
     } else {
       sd = startDate.format('YYYY-MM-DD');
       ed = endDate.format('YYYY-MM-DD');
     }
 
-    updateData(sd, ed);
-    plotData = getData(data, sd, ed);
+    plotData = getData(data, sd, ed, source);
 
     if ((plotData === null || plotData.isFetching) && prevRange !== null) {
-      plotData = getData(data, prevRange[0], prevRange[1]);
+      plotData = getData(data, prevRange[0], prevRange[1], prevRange[2]);
     } else if (
       prevRange === null ||
       prevRange[0] !== sd ||
-      prevRange[1] !== ed
+      prevRange[1] !== ed ||
+      prevRange[2] !== source
     ) {
-      setPrevRange([sd, ed]);
+      setPrevRange([sd, ed, source]);
     }
   }
+
+  useEffect(() => {
+    updateData(sd, ed, source);
+    return undefined;
+  }, [sd, ed, source, updateData]);
 
   const progress = (plotData === null ||
     plotData.isFetching ||
@@ -114,10 +145,23 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   const points =
     plotData !== null && plotData.data !== null ? plotData.data.points : [];
 
+  let axisTimeFormat = 'L';
+  if (points.length === 1) {
+    axisTimeFormat = 'L LT';
+  } else if (points.length >= 2) {
+    const fd = moment(points[0].date);
+    const ld = moment(points[points.length - 1].date);
+
+    if (fd.isSame(ld, 'year')) axisTimeFormat = 'DD.MM.';
+
+    if (moment.duration(ld - fd) <= moment.duration(10, 'days'))
+      axisTimeFormat += ' LT';
+  }
+
   // to color the areas differently
-  const earningsAbsoluteOffset = (() => {
-    const dataMax = Math.max(...points.map(i => i.earnings));
-    const dataMin = Math.min(...points.map(i => i.earnings));
+  const makeOffset = f => {
+    const dataMax = Math.max(...points.map(f));
+    const dataMin = Math.min(...points.map(f));
 
     if (dataMax <= 0) {
       return 0;
@@ -127,23 +171,15 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
     }
 
     return dataMax / (dataMax - dataMin);
-  })();
-  const earningsRelativeOffset = (() => {
-    const dataMax = Math.max(...points.map(i => i.earningsRelative));
-    const dataMin = Math.min(...points.map(i => i.earningsRelative));
+  };
 
-    if (dataMax <= 0) {
-      return 0;
-    }
-    if (dataMin >= 0) {
-      return 1;
-    }
-
-    return dataMax / (dataMax - dataMin);
-  })();
+  const earningsOffset = makeOffset(i => i.earnings);
+  const earningsRelInvestedOffset = makeOffset(i => i.earningsRelInvested);
+  const valueRelStartOffset = makeOffset(i => i.valueRelStart);
+  const investedRelStartOffset = makeOffset(i => i.investedRelStart);
 
   const interpolation = 'monotone';
-  const showDots = points.length < 35;
+  const showDots = points.length < 100;
   const dot = showDots
     ? {
         stroke: '#00000033',
@@ -176,9 +212,16 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
               >
                 <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
                   <ComposedChart data={points}>
-                    <XAxis dataKey="date" />
+                    <XAxis
+                      dataKey="epoch"
+                      type="number"
+                      scale="utc"
+                      domain={['dataMin', 'dataMax']}
+                      tickFormatter={d => moment(d).format(axisTimeFormat)}
+                    />
                     <YAxis
-                      unit={mode === 'earningsRelative' ? '%' : '€'}
+                      unit={mode.indexOf('Rel') >= 0 ? '%' : '€'}
+                      domain={['auto', 'auto']}
                       hide={xsDown}
                     />
                     <CartesianGrid strokeDasharray="5 5" />
@@ -186,12 +229,20 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                     <defs>
                       {[
                         {
-                          offset: earningsAbsoluteOffset,
-                          name: 'earningsAbsolute',
+                          offset: earningsOffset,
+                          name: 'earnings',
                         },
                         {
-                          offset: earningsRelativeOffset,
-                          name: 'earningsRelative',
+                          offset: earningsRelInvestedOffset,
+                          name: 'earningsRelInvested',
+                        },
+                        {
+                          offset: valueRelStartOffset,
+                          name: 'valueRelStart',
+                        },
+                        {
+                          offset: investedRelStartOffset,
+                          name: 'investedRelStart',
                         },
                       ].map(({ offset, name }) => (
                         <Fragment key={name}>
@@ -235,7 +286,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                       ))}
                     </defs>
 
-                    {mode === 'investedAndValue' && (
+                    {(mode === 'investedAndValue' || mode === 'invested') && (
                       <Area
                         type={interpolation}
                         dataKey="invested"
@@ -249,7 +300,8 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                         fillOpacity={0.2}
                       />
                     )}
-                    {mode === 'investedAndValue' && (
+
+                    {(mode === 'investedAndValue' || mode === 'value') && (
                       <Area
                         type={interpolation}
                         dataKey="value"
@@ -264,34 +316,70 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                       />
                     )}
 
-                    {mode === 'earningsAbsolute' && (
+                    {mode === 'earnings' && (
                       <Area
                         type={interpolation}
                         dataKey="earnings"
                         unit="€"
-                        stroke="url(#earningsAbsoluteColor)"
+                        stroke="url(#earningsColor)"
                         strokeWidth={1.4}
-                        fill="url(#earningsAbsoluteFill)"
+                        fill="url(#earningsFill)"
                         name="Gewinn"
                         dot={dot}
                         activeDot={activeDot}
-                      />
-                    )}
-                    {mode === 'earningsRelative' && (
-                      <Area
-                        type={interpolation}
-                        dataKey="earningsRelative"
-                        unit="%"
-                        stroke="url(#earningsRelativeColor)"
-                        strokeWidth={1.4}
-                        fill="url(#earningsRelativeFill)"
-                        name="Gewinn"
-                        dot={dot}
-                        activeDot={activeDot}
+                        fillOpacity={0.2}
                       />
                     )}
 
-                    <Tooltip formatter={v => v.toFixed(2)} />
+                    {mode === 'valueRelStart' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="valueRelStart"
+                        unit="%"
+                        stroke="url(#valueRelStartColor)"
+                        strokeWidth={1.4}
+                        fill="url(#valueRelStartFill)"
+                        name="Wertveränderung"
+                        dot={dot}
+                        activeDot={activeDot}
+                        fillOpacity={0.2}
+                      />
+                    )}
+
+                    {mode === 'investedRelStart' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="investedRelStart"
+                        unit="%"
+                        stroke="url(#investedRelStartColor)"
+                        strokeWidth={1.4}
+                        fill="url(#investedRelStartFill)"
+                        name="Kaufpreisveränderung"
+                        dot={dot}
+                        activeDot={activeDot}
+                        fillOpacity={0.2}
+                      />
+                    )}
+
+                    {mode === 'earningsRelInvested' && (
+                      <Area
+                        type={interpolation}
+                        dataKey="earningsRelInvested"
+                        unit="%"
+                        stroke="url(#earningsRelInvestedColor)"
+                        strokeWidth={1.4}
+                        fill="url(#earningsRelInvestedFill)"
+                        name="Gewinn rel. Kaufpreis"
+                        dot={dot}
+                        activeDot={activeDot}
+                        fillOpacity={0.2}
+                      />
+                    )}
+
+                    <Tooltip
+                      formatter={v => v.toFixed(2)}
+                      labelFormatter={d => moment(d).format('L LT')}
+                    />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -307,11 +395,31 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                 autoWidth
                 onChange={handleModeChange}
               >
+                <MenuItem value="earnings">Gewinn</MenuItem>
                 <MenuItem value="investedAndValue">Kaufpreis und Wert</MenuItem>
-                <MenuItem value="earningsAbsolute">Gewinn (absolut)</MenuItem>
-                <MenuItem value="earningsRelative">
-                  Gewinn (relativ zu Kaufpreis)
+                <MenuItem value="invested">Kaufpreis</MenuItem>
+                <MenuItem value="investedRelStart">
+                  Kaufpreisveränderung
                 </MenuItem>
+                <MenuItem value="value">Wert</MenuItem>
+                <MenuItem value="valueRelStart">Wertveränderung</MenuItem>
+                <MenuItem value="earningsRelInvested">
+                  Gewinn rel. zu Kaufpreis
+                </MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl className={classes.formControl}>
+              <InputLabel id="source-select-label">Datenquelle</InputLabel>
+              <Select
+                labelId="source-select-label"
+                id="source-select"
+                value={source}
+                autoWidth
+                onChange={handleSourceChange}
+              >
+                <MenuItem value="auto">Automatisch</MenuItem>
+                <MenuItem value="historical">Historisch</MenuItem>
+                <MenuItem value="realtime">Echtzeit</MenuItem>
               </Select>
             </FormControl>
             <FormControl className={classes.formControl}>
@@ -344,7 +452,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                   value={startDate}
                   format="L"
                   maxDate={endDate}
-                  onChange={setStartDate}
+                  onChange={handleStartDateChange}
                   animateYearScrolling
                   disableFuture
                   disabled={period >= 0}
@@ -355,7 +463,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                   value={endDate}
                   format="L"
                   minDate={startDate}
-                  onChange={setEndDate}
+                  onChange={handleEndDateChange}
                   animateYearScrolling
                   disableFuture
                   disabled={period >= 0}

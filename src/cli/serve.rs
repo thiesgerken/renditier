@@ -6,7 +6,7 @@ use crate::push;
 use crate::schema::stock_infos::dsl::*;
 use crate::{add_missing_stocks, web};
 
-use chrono::{Duration, Utc};
+use chrono::{Datelike, Duration, Local, Timelike, Utc};
 use clap::ArgMatches;
 use clap::{App, Arg, SubCommand};
 use diesel::prelude::*;
@@ -62,12 +62,23 @@ impl Default for Config {
 
 fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
     let now = Utc::now();
+    let now_local = now.with_timezone(&Local);
     let stocks = stock_infos.load::<StockInfo>(connection)?;
+
+    // do not update data as often in the night and on weekends
+    let rt_interval = if now.date().weekday().number_from_monday() >= 6
+        || now_local.hour() > 19
+        || now_local.hour() < 9
+    {
+        Duration::hours(6)
+    } else {
+        Duration::minutes(15)
+    };
 
     let stocks_rt_update = stocks
         .iter()
         .filter(|x| match x.last_realtime_update {
-            Some(t) => now.signed_duration_since(t) > Duration::hours(1),
+            Some(t) => now.signed_duration_since(t) > rt_interval,
             None => true,
         })
         .collect::<Vec<_>>();
@@ -81,10 +92,20 @@ fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
         }
     }
 
+    // do not update data as often in the night and on weekends
+    let hist_interval = if now.date().weekday().number_from_monday() >= 6
+        || now_local.hour() > 22
+        || now_local.hour() < 18
+    {
+        Duration::hours(6)
+    } else {
+        Duration::hours(2)
+    };
+
     let stocks_hist_update = stocks
         .iter()
         .filter(|x| match x.last_historical_update {
-            Some(t) => now.signed_duration_since(t) > Duration::hours(4),
+            Some(t) => now.signed_duration_since(t) > hist_interval,
             None => true,
         })
         .collect::<Vec<_>>();
