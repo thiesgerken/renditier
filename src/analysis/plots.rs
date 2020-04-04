@@ -9,7 +9,7 @@ use diesel::prelude::*;
 use itertools::Itertools;
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
-use std::cmp::max;
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
