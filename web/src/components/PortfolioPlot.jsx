@@ -145,6 +145,19 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   const points =
     plotData !== null && plotData.data !== null ? plotData.data.points : [];
 
+  let axisTimeFormat = 'L';
+  if (points.length === 1) {
+    axisTimeFormat = 'L LT';
+  } else if (points.length >= 2) {
+    const fd = moment(points[0].date);
+    const ld = moment(points[points.length - 1].date);
+
+    if (fd.isSame(ld, 'year')) axisTimeFormat = 'DD.MM.';
+
+    if (moment.duration(ld - fd) <= moment.duration(10, 'days'))
+      axisTimeFormat += ' LT';
+  }
+
   // to color the areas differently
   const makeOffset = f => {
     const dataMax = Math.max(...points.map(f));
@@ -204,7 +217,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                       type="number"
                       scale="utc"
                       domain={['dataMin', 'dataMax']}
-                      tickFormatter={d => moment(d).format('L')}
+                      tickFormatter={d => moment(d).format(axisTimeFormat)}
                     />
                     <YAxis
                       unit={mode.indexOf('Rel') >= 0 ? '%' : '€'}

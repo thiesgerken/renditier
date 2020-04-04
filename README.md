@@ -6,14 +6,12 @@
 
 ### Web
 
-- web interface
 - transaction add/remove/update, account add/remove/update
 - server vapid key as the result of an api call, not hard-coded.
 - remove all cached data when the user logs out
 - invalidate user info as soon as a 401 is encountered
 - do not register service worker for api requests?
-- unify formatting and querying functions
-- ** show date of price in plot tooltip **
+- unify formatting and querying functions, subdirectories for components folder
 
 ## Ideas
 

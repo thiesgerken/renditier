@@ -63,10 +63,14 @@ export const fetchPortfolioPlot = (startDate, endDate, source) => dispatch => {
       res.points = map(res.points, p => ({
         ...p,
         valueRelStart:
-          ((p.value - res.points[0].value) / res.points[0].value) * 100,
+          res.points[0].value > 0
+            ? ((p.value - res.points[0].value) / res.points[0].value) * 100
+            : null,
         investedRelStart:
-          ((p.invested - res.points[0].invested) / res.points[0].invested) *
-          100,
+          res.points[0].invested > 0
+            ? ((p.invested - res.points[0].invested) / res.points[0].invested) *
+              100
+            : null,
       }));
 
       let i = 0;
