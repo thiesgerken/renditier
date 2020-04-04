@@ -107,6 +107,14 @@ export const updateStockPlot = (isin, startDate, endDate, source) => (
   dispatch,
   getState
 ) => {
+  if (
+    isin === null ||
+    startDate === null ||
+    endDate === null ||
+    source === null
+  )
+    return Promise.resolve();
+
   const data = getPlotData(getState(), isin, startDate, endDate, source);
 
   if (

@@ -14,7 +14,7 @@ import {
 import { DatePicker } from '@material-ui/pickers';
 import * as moment from 'moment';
 import PropTypes from 'prop-types';
-import React, { useState, Fragment } from 'react';
+import React, { useState, Fragment, useCallback, useEffect } from 'react';
 import {
   Area,
   CartesianGrid,
@@ -64,17 +64,25 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   const [endDate, setEndDate] = useState(moment());
   const [prevRange, setPrevRange] = useState(null);
 
-  const handlePeriodChange = event => {
+  const handlePeriodChange = useCallback(event => {
     setPeriod(event.target.value);
-  };
+  }, []);
 
-  const handleModeChange = event => {
+  const handleModeChange = useCallback(event => {
     setMode(event.target.value);
-  };
+  }, []);
 
-  const handleSourceChange = event => {
+  const handleSourceChange = useCallback(event => {
     setSource(event.target.value);
-  };
+  }, []);
+
+  const handleStartDateChange = useCallback(v => {
+    setStartDate(v);
+  }, []);
+
+  const handleEndDateChange = useCallback(v => {
+    setEndDate(v);
+  }, []);
 
   const nextWeekDay = date => {
     let d = moment(date);
@@ -83,10 +91,10 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   };
 
   let plotData = null;
-  if (period < performance.items.length) {
-    let sd = null;
-    let ed = null;
+  let sd = null;
+  let ed = null;
 
+  if (period < performance.items.length) {
     if (period >= 0) {
       sd = nextWeekDay(
         moment(performance.items[period].start.date).add(1, 'days')
@@ -97,7 +105,6 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
       ed = endDate.format('YYYY-MM-DD');
     }
 
-    updateData(sd, ed, source);
     plotData = getData(data, sd, ed, source);
 
     if ((plotData === null || plotData.isFetching) && prevRange !== null) {
@@ -111,6 +118,11 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
       setPrevRange([sd, ed, source]);
     }
   }
+
+  useEffect(() => {
+    updateData(sd, ed, source);
+    return undefined;
+  }, [sd, ed, source, updateData]);
 
   const progress = (plotData === null ||
     plotData.isFetching ||
@@ -427,7 +439,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                   value={startDate}
                   format="L"
                   maxDate={endDate}
-                  onChange={setStartDate}
+                  onChange={handleStartDateChange}
                   animateYearScrolling
                   disableFuture
                   disabled={period >= 0}
@@ -438,7 +450,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                   value={endDate}
                   format="L"
                   minDate={startDate}
-                  onChange={setEndDate}
+                  onChange={handleEndDateChange}
                   animateYearScrolling
                   disableFuture
                   disabled={period >= 0}

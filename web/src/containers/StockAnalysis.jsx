@@ -115,6 +115,7 @@ const StockAnalysis = ({
     stockPerformance.items,
     p => p.kind === 'Today'
   );
+
   const currentPrice = todayPerformance.end.dataSource;
   let currentPriceInfo;
   if (currentPrice !== null)

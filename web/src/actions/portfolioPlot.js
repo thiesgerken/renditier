@@ -90,6 +90,9 @@ export const updatePortfolioPlot = (startDate, endDate, source) => (
   dispatch,
   getState
 ) => {
+  if (startDate === null || endDate === null || source === null)
+    return Promise.resolve();
+
   const data = getPlotData(getState(), startDate, endDate, source);
 
   if (
