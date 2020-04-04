@@ -26,6 +26,7 @@ import {
 } from 'recharts';
 
 import { getPeriodDescription } from '../selectors/performance';
+import StockTooltipContent from './StockTooltipContent';
 
 function getData(items, isin, startDate, endDate, source) {
   let item = null;
@@ -447,17 +448,16 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                       />
                     )}
 
-                    {/* <Area
-                      type={interpolation}
-                      dataKey="price_date"
-                      unit=""
-                      name="Datum Datenquelle"
-                      dot={dot}
-                      activeDot={activeDot}
-                      fillOpacity={0.0}
-                    /> */}
-
                     <Tooltip
+                      content={
+                        <StockTooltipContent
+                          showPriceDate={
+                            ['units', 'investedRelStart', 'invested'].indexOf(
+                              mode
+                            ) < 0
+                          }
+                        />
+                      }
                       formatter={v => v.toFixed(2)}
                       labelFormatter={d => moment(d).format('L LT')}
                     />

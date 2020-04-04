@@ -1,9 +1,7 @@
 import { connect } from 'react-redux';
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import MaterialTable from 'material-table';
 // import PropTypes from 'prop-types';
-
-import { forwardRef } from 'react';
 
 import AddBox from '@material-ui/icons/AddBox';
 import ArrowDownward from '@material-ui/icons/ArrowDownward';
@@ -46,7 +44,7 @@ const tableIcons = {
 };
 
 const Transactions = () => {
-  const [columns, setColumns] = useState([
+  const [columns] = useState([
     { title: 'Name', field: 'name' },
     {
       title: 'Surname',
@@ -77,10 +75,8 @@ const Transactions = () => {
           onRowAdd: newData =>
             new Promise((resolve, reject) => {
               setTimeout(() => {
-                {
-                  data.push(newData);
-                  setData(data);
-                }
+                data.push(newData);
+                setData(data);
                 resolve();
               }, 1000);
             }),

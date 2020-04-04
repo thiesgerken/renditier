@@ -4,7 +4,7 @@ use crate::models::*;
 use crate::schema::*;
 
 use chrono::offset::TimeZone;
-use chrono::{DateTime, Duration, Local, NaiveDate, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, Local, NaiveDate, Timelike, Utc};
 use diesel::prelude::*;
 use itertools::Itertools;
 use log::{debug, info};
@@ -29,6 +29,7 @@ pub struct PortfolioPlot {
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StockPlotDataPoint {
     date: DateTime<Utc>,
     units: f64,
@@ -76,8 +77,8 @@ fn choose_and_query_points(
         .take_while(|d| d.date().naive_utc() <= end_date)
         .collect::<Vec<_>>();
 
-        if dates.len() < 150 {
-            dates = dates
+        dates = if dates.len() < 150 {
+            dates
                 .into_iter()
                 .flat_map(|d| {
                     vec![
@@ -92,7 +93,17 @@ fn choose_and_query_points(
                     ]
                 })
                 .collect::<Vec<_>>()
-        }
+        } else {
+            dates
+                .into_iter()
+                .map(|d| {
+                    Local
+                        .from_utc_date(&d.naive_utc().date())
+                        .and_hms(18, 0, 0)
+                        .with_timezone(&Utc)
+                })
+                .collect::<Vec<_>>()
+        };
 
         // for these Exchanges, grab all historical prices from start_date to end_date
         let prices = historical_prices::table
@@ -117,27 +128,27 @@ fn choose_and_query_points(
 
         Ok((dates, prices))
     } else {
-        // sample 200 dates between start and end, but at most once every 15min
-        let interval = max((end_date - start_date) / 200, Duration::minutes(15));
+        let start_time = Local
+            .from_utc_date(&start_date)
+            .and_hms(9, 0, 0)
+            .with_timezone(&Utc);
+        let end_time = max(
+            Local
+                .from_utc_date(&end_date)
+                .and_hms(18, 0, 0)
+                .with_timezone(&Utc),
+            Utc::now(),
+        );
+
+        // sample many dates between start and end, but at most once every 15min
+        let interval = max((end_time - start_time) / 400, Duration::minutes(15));
         // and make sure that its a multiple of 5 minutes.
         let interval = Duration::minutes((interval.num_minutes() / 5) * 5);
 
-        let dates = successors(
-            Some(
-                Local
-                    .from_utc_date(&start_date)
-                    .and_hms(9, 0, 0)
-                    .with_timezone(&Utc),
-            ),
-            |x| x.checked_add_signed(interval),
-        )
-        .take_while(|d| {
-            d <= &Local
-                .from_utc_date(&end_date)
-                .and_hms(18, 0, 0)
-                .with_timezone(&Utc)
-        })
-        .collect::<Vec<_>>();
+        let dates = successors(Some(start_time), |x| x.checked_add_signed(interval))
+            .take_while(|d| d <= &end_time)
+            .filter(|d| d.with_timezone(&Local).hour() >= 9 && d.with_timezone(&Local).hour() <= 18)
+            .collect::<Vec<_>>();
 
         // for these Exchanges, grab all realtime prices from start_date to end_date
         let prices = realtime_prices::table
