@@ -16,7 +16,6 @@
     "history": "^4.10.1",
     "immutable": "^4.0.0-rc.12",
     "lodash": "^4.17.15",
-    "material-table": "^1.57.2",
     "moment": "^2.24.0",
     "mui-datatables": "^2.14.0",
     "prop-types": "^15.6.1",

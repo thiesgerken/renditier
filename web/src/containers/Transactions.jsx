@@ -8,6 +8,7 @@ import {
   createMuiTheme,
   useTheme,
   useMediaQuery,
+  Container,
 } from '@material-ui/core';
 
 import { updateTransactions as updateTransactionsAction } from '../actions/transactions';
@@ -55,8 +56,6 @@ const Transactions = ({
 
   updateTransactions();
   updateStocks();
-
-  console.log(stocks);
 
   const columns = [
     {
@@ -176,14 +175,16 @@ const Transactions = ({
   };
   return (
     <div style={{ margin: '-4px' }}>
-      <ThemeProvider theme={myTheme}>
-        <MUIDataTable
-          title="Transaktionen"
-          data={transactions.items}
-          columns={columns}
-          options={options}
-        />
-      </ThemeProvider>
+      <Container maxWidth="xl" style={{ padding: '0px' }}>
+        <ThemeProvider theme={myTheme}>
+          <MUIDataTable
+            title="Transaktionen"
+            data={transactions.items}
+            columns={columns}
+            options={options}
+          />
+        </ThemeProvider>
+      </Container>
     </div>
   );
 };
