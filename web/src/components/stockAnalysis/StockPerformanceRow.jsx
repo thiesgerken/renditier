@@ -7,13 +7,13 @@ import { Hidden, useMediaQuery, Tooltip } from '@material-ui/core';
 import { useTheme } from '@material-ui/core/styles';
 import * as moment from 'moment';
 
-import { getPeriodDescription } from '../selectors/performance';
+import { getPeriodDescription } from '../../selectors/performance';
 
 const StockPerformanceRow = ({ data }) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const colorize = v =>
-    v === null || v === 0.0
+    v === null || Math.abs(v) < 5e-3
       ? {}
       : {
           color:

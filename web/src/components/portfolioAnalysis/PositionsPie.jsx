@@ -26,7 +26,7 @@ import {
   deepPurple,
   orange,
 } from '@material-ui/core/colors';
-import { findStock, abbreviateTitle } from '../selectors/stocks';
+import { findStock, abbreviateTitle } from '../../selectors/stocks';
 
 const useStyles = makeStyles(theme => ({
   formControl: {

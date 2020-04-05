@@ -21,8 +21,8 @@ import { withStyles, makeStyles } from '@material-ui/core/styles';
 import { map } from 'lodash';
 
 import PositionRow from './PositionRow';
-import { getPeriodDescription } from '../selectors/performance';
-import { findStock } from '../selectors/stocks';
+import { getPeriodDescription } from '../../selectors/performance';
+import { findStock } from '../../selectors/stocks';
 
 const useStyles = makeStyles(theme => ({
   formControl: {

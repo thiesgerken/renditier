@@ -12,8 +12,8 @@ import {
   Tooltip,
 } from '@material-ui/core';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
-import { abbreviateTitle } from '../selectors/stocks';
-import OnvistaButton from './OnvistaButton';
+import { abbreviateTitle } from '../../selectors/stocks';
+import OnvistaButton from '../OnvistaButton';
 
 const PositionRow = ({ data, stock, push }) => {
   const theme = useTheme();

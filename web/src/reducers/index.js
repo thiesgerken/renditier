@@ -6,6 +6,7 @@ import stocks from './stocks';
 import authentication from './authentication';
 import notifications from './notifications';
 import portfolioPlot from './portfolioPlot';
+import transactions from './transactions';
 import stockPlot from './stockPlot';
 
 const root = history =>
@@ -17,6 +18,7 @@ const root = history =>
     portfolioPlot,
     stockPlot,
     stocks,
+    transactions,
   });
 
 export default root;

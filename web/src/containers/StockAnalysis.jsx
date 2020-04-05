@@ -22,10 +22,10 @@ import { updateStocks as updateStocksAction } from '../actions/stocks';
 import { updatePerformance as updatePerformanceAction } from '../actions/performance';
 import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
 import { findStock, capitalizeTitle } from '../selectors/stocks';
-import StockPerformanceTable from '../components/StockPerformanceTable';
+import StockPerformanceTable from '../components/stockAnalysis/StockPerformanceTable';
 import OnvistaButton from '../components/OnvistaButton';
-import TransactionsTable from '../components/TransactionsTable';
-import StockPlot from '../components/StockPlot';
+import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
+import StockPlot from '../components/stockAnalysis/StockPlot';
 
 const StockAnalysis = ({
   isin,

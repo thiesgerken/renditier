@@ -3,6 +3,9 @@
 ## TODO
 
 - systemd timer for backups, also do them prior to updates
+- import from stockdb:
+  - do not clean stock infos and prices,
+  - import exchanges properly
 
 ### Web
 
@@ -20,6 +23,7 @@
 - REST interface
 - watchlist of isins for each user, so that they can be analyzed (and so that notifications can be set for them?)
 - send a test notification as soon as a new device registers
+- StockAnalysis: List of exchanges and current prices (+ dates)
 
 ## Install
 

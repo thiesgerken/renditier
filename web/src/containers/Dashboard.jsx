@@ -16,10 +16,10 @@ import { push as routerPush } from 'connected-react-router';
 import { updatePerformance as updatePerformanceAction } from '../actions/performance';
 import { updatePortfolioPlot as updatePortfolioPlotAction } from '../actions/portfolioPlot';
 import { updateStocks as updateStocksAction } from '../actions/stocks';
-import PerformanceTable from '../components/PerformanceTable';
-import PortfolioPlot from '../components/PortfolioPlot';
-import PositionsTable from '../components/PositionsTable';
-import PositionsPie from '../components/PositionsPie';
+import PerformanceTable from '../components/portfolioAnalysis/PerformanceTable';
+import PortfolioPlot from '../components/portfolioAnalysis/PortfolioPlot';
+import PositionsTable from '../components/portfolioAnalysis/PositionsTable';
+import PositionsPie from '../components/portfolioAnalysis/PositionsPie';
 
 const Dashboard = ({
   performance,
