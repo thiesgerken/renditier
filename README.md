@@ -15,6 +15,7 @@
 - invalidate user info as soon as a 401 is encountered
 - do not register service worker for api requests?
 - unify formatting and querying functions, subdirectories for components folder
+- Use new daterange component as soon as it works better https://github.com/mui-org/material-ui-pickers
 
 ## Ideas
 

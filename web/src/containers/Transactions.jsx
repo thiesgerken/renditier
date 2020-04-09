@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import MUIDataTable from 'mui-datatables';
 import moment from 'moment';
+import { find } from 'lodash';
 import {
   ThemeProvider,
   createMuiTheme,
@@ -11,22 +12,67 @@ import {
   Container,
   Button,
   CircularProgress,
+  Tooltip,
+  IconButton,
 } from '@material-ui/core';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
-import { push as routerPush } from 'connected-react-router';
+import AddIcon from '@material-ui/icons/Add';
+import { useLocation, useHistory } from 'react-router';
 
 import { updateTransactions as updateTransactionsAction } from '../actions/transactions';
 import { updateStocks as updateStocksAction } from '../actions/stocks';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
 import TransactionDialog from '../components/TransactionDialog';
 
+function useQuery(key) {
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  const history = useHistory();
+
+  const set = value => {
+    if (value === null || value === undefined) query.delete(key);
+    else query.set(key, value);
+
+    const qs = query.toString();
+    history.push(`${location.pathname}${qs.length ? '?' : ''}${qs}`);
+  };
+
+  return [query.get(key), set];
+}
+
 const Transactions = ({
   stocks,
   transactions,
   updateStocks,
   updateTransactions,
-  push,
 }) => {
+  const [transactionId, setTransactionId] = useQuery('id');
+  const [page, setPage] = useQuery('page');
+  const [transaction, setTransaction] = useState({});
+
+  let initialTransaction = {
+    id: null,
+    accountId: null,
+    isin: null,
+    date: moment().format(),
+    units: null,
+    fees: null,
+    amount: null,
+    comments: '',
+    onvistaExchangeId: null,
+  };
+  if (
+    transactions.items !== null &&
+    transactionId !== null &&
+    parseInt(transactionId, 10) >= 0
+  ) {
+    const t = find(
+      transactions.items,
+      x => x.id === parseInt(transactionId, 10)
+    );
+    if (t !== undefined) initialTransaction = t;
+  }
+
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
 
@@ -64,7 +110,7 @@ const Transactions = ({
     </span>
   );
 
-  const [currentTransaction, setCurrentTransaction] = useState(null);
+  const history = useHistory();
 
   updateTransactions();
   updateStocks();
@@ -122,7 +168,7 @@ const Transactions = ({
               style={{
                 margin: theme.spacing(-2),
               }}
-              onClick={() => push(`/stocks/${stock.isin}`)}
+              onClick={() => history.push(`/stocks/${stock.isin}`)}
             >
               <span
                 style={{
@@ -183,14 +229,16 @@ const Transactions = ({
     },
   ];
 
-  // TODO: show loading indicator if necessary
-
   const options = {
     selectableRows: 'single',
     selectableRowsOnClick: true,
     // expandableRowsOnClick: true,
     disableToolbarSelect: true,
     print: false,
+    page: page === null ? 0 : parseInt(page, 10), // https://github.com/gregnb/mui-datatables/issues/957
+    onChangePage: p => {
+      setPage(p === 0 ? null : p);
+    },
     // pagination: mdUp,
     // expandableRows: true,
     // renderExpandableRow: rowData => {
@@ -202,10 +250,9 @@ const Transactions = ({
     //   );
     // },
     onRowsSelect: (_, rows) => {
-      if (rows.length > 0 && rows[0].dataIndex < transactions.items.length) {
-        setCurrentTransaction(transactions.items[rows[0].dataIndex]);
-        console.log(currentTransaction);
-      } else setCurrentTransaction(null);
+      if (rows.length > 0 && rows[0].dataIndex < transactions.items.length)
+        setTransactionId(transactions.items[rows[0].dataIndex].id);
+      else setTransactionId(null);
     },
     // onRowClick: (_, { dataIndex }) => {
     //   if (dataIndex < transactions.items.length) {
@@ -216,6 +263,13 @@ const Transactions = ({
     download: false,
     rowsPerPageOptions: mdUp ? [10, 25, 50] : [10],
     responsive: 'scrollFullHeight',
+    customToolbar: () => (
+      <Tooltip title="Neue Transaktion">
+        <IconButton onClick={() => setTransactionId(-1)}>
+          <AddIcon />
+        </IconButton>
+      </Tooltip>
+    ),
     textLabels: {
       body: {
         noMatch: 'Keine Transaktionen vorhanden.',
@@ -292,13 +346,13 @@ const Transactions = ({
       </Container>
       <TransactionDialog
         stocks={stocks}
-        transaction={currentTransaction}
-        open={currentTransaction !== null}
-        onClose={() => setCurrentTransaction(null)}
-      >
-        {' '}
-        Hello!{' '}
-      </TransactionDialog>
+        transaction={transaction}
+        open={transactionId !== null}
+        onEnter={() => setTransaction(initialTransaction)}
+        onClose={() => {
+          setTransactionId(null);
+        }}
+      />
     </div>
   );
 };
@@ -316,13 +370,11 @@ Transactions.propTypes = {
     lastUpdated: PropTypes.number,
     isFetching: PropTypes.bool,
   }).isRequired,
-  push: PropTypes.func.isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
   updateTransactions: () => dispatch(updateTransactionsAction()),
   updateStocks: () => dispatch(updateStocksAction()),
-  push: x => dispatch(routerPush(x)),
 });
 
 const mapStateToProps = state => {

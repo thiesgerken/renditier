@@ -59,8 +59,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   const [period, setPeriod] = useState(0);
   const [mode, setMode] = useState('earnings');
   const [source, setSource] = useState('auto');
-  const [startDate, setStartDate] = useState(moment().startOf('year'));
-  const [endDate, setEndDate] = useState(moment());
+  const [dates, setDates] = useState([moment().startOf('year'), moment()]);
   const [prevRange, setPrevRange] = useState(null);
 
   const handlePeriodChange = useCallback(event => {
@@ -75,12 +74,8 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
     setSource(event.target.value);
   }, []);
 
-  const handleStartDateChange = useCallback(v => {
-    setStartDate(v);
-  }, []);
-
-  const handleEndDateChange = useCallback(v => {
-    setEndDate(v);
+  const handleDateChange = useCallback(v => {
+    setDates(v);
   }, []);
 
   const nextWeekDay = date => {
@@ -100,8 +95,8 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
       ).format('YYYY-MM-DD');
       ed = performance.items[period].end.date;
     } else {
-      sd = startDate.format('YYYY-MM-DD');
-      ed = endDate.format('YYYY-MM-DD');
+      sd = dates[0].format('YYYY-MM-DD');
+      ed = dates[1].format('YYYY-MM-DD');
     }
 
     plotData = getData(data, sd, ed, source);
@@ -420,24 +415,30 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
             </FormControl>
             {period < 0 && (
               <>
+                {/* <DateRangePicker
+                startText="Start"
+                endText="Ende"
+                value={dates}
+                onChange={handleDateChange}
+                disableFuture
+                className={classes.formControl}
+              /> */}
                 <DatePicker
                   label="Start"
-                  value={startDate}
-                  format="L"
-                  maxDate={endDate}
-                  onChange={handleStartDateChange}
-                  animateYearScrolling
+                  value={dates[0]}
+                  inputFormat="DD/MM/YYYY"
+                  maxDate={dates[1]}
+                  onChange={d => handleDateChange([d, dates[1]])}
                   disableFuture
                   disabled={period >= 0}
                   className={classes.formControl}
                 />
                 <DatePicker
                   label="Ende"
-                  value={endDate}
-                  format="L"
-                  minDate={startDate}
-                  onChange={handleEndDateChange}
-                  animateYearScrolling
+                  value={dates[1]}
+                  inputFormat="DD/MM/YYYY"
+                  minDate={dates[0]}
+                  onChange={d => handleDateChange([dates[0], d])}
                   disableFuture
                   disabled={period >= 0}
                   className={classes.formControl}

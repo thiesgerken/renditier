@@ -9,9 +9,10 @@ import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
 import { ThemeProvider, createMuiTheme } from '@material-ui/core';
 import 'typeface-oxygen';
 import teal from '@material-ui/core/colors/teal';
-import { MuiPickersUtilsProvider } from '@material-ui/pickers';
+import { LocalizationProvider } from '@material-ui/pickers';
 import MomentUtils from '@date-io/moment';
 import { pink } from '@material-ui/core/colors';
+import * as moment from 'moment';
 
 import rootReducer from './reducers';
 import App from './containers/App';
@@ -50,9 +51,12 @@ render(
   <Provider store={store}>
     <ConnectedRouter history={history}>
       <ThemeProvider theme={theme}>
-        <MuiPickersUtilsProvider utils={MomentUtils}>
+        <LocalizationProvider
+          dateAdapter={MomentUtils}
+          dateLibInstance={moment}
+        >
           <App />
-        </MuiPickersUtilsProvider>
+        </LocalizationProvider>
       </ThemeProvider>
     </ConnectedRouter>
   </Provider>,
