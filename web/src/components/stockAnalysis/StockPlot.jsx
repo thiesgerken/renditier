@@ -1,12 +1,10 @@
 import {
-  CircularProgress,
   Container,
   FormControl,
   Grid,
   InputLabel,
   makeStyles,
   MenuItem,
-  Paper,
   Select,
   useMediaQuery,
   useTheme,
@@ -27,6 +25,7 @@ import {
 
 import { getPeriodDescription } from '../../selectors/performance';
 import StockTooltipContent from './StockTooltipContent';
+import ProgressPaper from '../ProgressPaper';
 
 function getData(items, isin, startDate, endDate, source) {
   let item = null;
@@ -126,24 +125,6 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
     return undefined;
   }, [isin, sd, ed, source, updateData]);
 
-  const progress = (plotData === null ||
-    plotData.isFetching ||
-    performance.isFetching) && (
-    <div
-      style={{
-        position: 'relative',
-        zIndex: 9,
-        left: '50%',
-        top: '40%',
-        transform: 'translate(0%, -50%)',
-        width: '100%',
-        height: 0,
-      }}
-    >
-      <CircularProgress color="secondary" />
-    </div>
-  );
-
   const points =
     plotData !== null && plotData.data !== null ? plotData.data.points : [];
 
@@ -203,293 +184,281 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
 
   return (
     <Container maxWidth="xl" style={{ padding: '0px' }}>
-      <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
+      <ProgressPaper
+        loading={
+          plotData === null || plotData.isFetching || performance.isFetching
+        }
+        style={{ width: '100%', padding: theme.spacing(1) }}
+      >
         <Grid container style={{ width: '100%' }}>
           <Grid item xs={12}>
-            <div
-              style={{ position: 'relative', width: '100%', height: '100%' }}
-            >
-              {progress}
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '100%',
-                }}
-              >
-                <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
-                  <ComposedChart data={points}>
-                    <XAxis
-                      dataKey="epoch"
-                      type="number"
-                      scale="utc"
-                      domain={['dataMin', 'dataMax']}
-                      tickFormatter={d => moment(d).format(axisTimeFormat)}
-                    />
-                    <YAxis
-                      unit={unit}
-                      hide={xsDown}
-                      domain={['auto', 'auto']}
-                    />
-                    <CartesianGrid strokeDasharray="5 5" />
-                    <defs>
-                      {[
-                        {
-                          offset: earningsOffset,
-                          name: 'earnings',
-                        },
-                        {
-                          offset: earningsRelInvestmentOffset,
-                          name: 'earningsRelInvestment',
-                        },
-                        {
-                          offset: valueRelStartOffset,
-                          name: 'valueRelStart',
-                        },
-                        {
-                          offset: investedRelStartOffset,
-                          name: 'investedRelStart',
-                        },
-                        {
-                          offset: priceRelStartOffset,
-                          name: 'priceRelStart',
-                        },
-                      ].map(({ offset, name }) => (
-                        <Fragment key={name}>
-                          <linearGradient
-                            id={`${name}Color`}
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset={offset}
-                              stopColor={theme.palette.primary.dark}
-                              stopOpacity={1}
-                            />
-                            <stop
-                              offset={offset}
-                              stopColor={theme.palette.secondary.dark}
-                              stopOpacity={1}
-                            />
-                          </linearGradient>
-                          <linearGradient
-                            id={`${name}Fill`}
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset={offset}
-                              stopColor={theme.palette.primary.main}
-                              stopOpacity={0.8}
-                            />
-                            <stop
-                              offset={offset}
-                              stopColor={theme.palette.secondary.main}
-                              stopOpacity={0.8}
-                            />
-                          </linearGradient>
-                        </Fragment>
-                      ))}
-                    </defs>
-
-                    {(mode === 'investedAndValue' || mode === 'invested') && (
-                      <Area
-                        type={interpolation}
-                        dataKey="invested"
-                        stroke={
-                          mode === 'investedAndValue'
-                            ? theme.palette.secondary.dark
-                            : theme.palette.info.dark
-                        }
-                        fill={
-                          mode === 'investedAndValue'
-                            ? theme.palette.secondary.main
-                            : theme.palette.info.main
-                        }
-                        strokeWidth={1.4}
-                        unit="€"
-                        dot={dot}
-                        activeDot={activeDot}
-                        name="Investiert"
-                        fillOpacity={0.2}
-                      />
-                    )}
-
-                    {(mode === 'investedAndValue' || mode === 'value') && (
-                      <Area
-                        type={interpolation}
-                        dataKey="value"
-                        unit="€"
-                        stroke={
-                          mode === 'investedAndValue'
-                            ? theme.palette.primary.dark
-                            : theme.palette.info.dark
-                        }
-                        fill={
-                          mode === 'investedAndValue'
-                            ? theme.palette.primary.main
-                            : theme.palette.info.main
-                        }
-                        strokeWidth={1.4}
-                        name="Wert"
-                        dot={dot}
-                        activeDot={activeDot}
-                        fillOpacity={0.2}
-                      />
-                    )}
-
-                    {mode === 'earnings' && (
-                      <Area
-                        type={interpolation}
-                        dataKey="earnings"
-                        unit="€"
-                        stroke="url(#earningsColor)"
-                        strokeWidth={1.4}
-                        fill="url(#earningsFill)"
-                        name="Gewinn"
-                        dot={dot}
-                        activeDot={activeDot}
-                        fillOpacity={0.2}
-                      />
-                    )}
-
-                    {(mode === 'price' || mode === 'priceAndUnits') && (
-                      <Area
-                        type={interpolation}
-                        dataKey="price"
-                        unit="€"
-                        stroke={theme.palette.info.dark}
-                        fill={theme.palette.info.main}
-                        strokeWidth={1.4}
-                        name="Kurs"
-                        dot={dot}
-                        activeDot={activeDot}
-                        fillOpacity={0.2}
-                      />
-                    )}
-
-                    {mode === 'units' && (
-                      <Area
-                        type={interpolation}
-                        dataKey="units"
-                        unit=""
-                        stroke={theme.palette.info.dark}
-                        fill={theme.palette.info.main}
-                        strokeWidth={1.4}
-                        name="Einheiten"
-                        dot={dot}
-                        activeDot={activeDot}
-                        fillOpacity={0.2}
-                      />
-                    )}
-
-                    {mode === 'priceAndUnits' && (
-                      <Area
-                        type={interpolation}
-                        dataKey="units"
-                        unit=""
-                        stroke={theme.palette.warning.dark}
-                        fill={theme.palette.warning.main}
-                        strokeWidth={1.4}
-                        name="Einheiten"
-                        yAxisId={1}
-                        dot={dot}
-                        activeDot={activeDot}
-                        fillOpacity={0.2}
-                      />
-                    )}
-
-                    {mode === 'priceAndUnits' && (
-                      <YAxis
-                        unit=""
-                        yAxisId={1}
-                        hide={xsDown}
-                        orientation="right"
-                        domain={['auto', 'auto']}
-                      />
-                    )}
-
-                    {mode === 'priceRelStart' && (
-                      <Area
-                        type={interpolation}
-                        dataKey="priceRelStart"
-                        unit="%"
-                        stroke="url(#priceRelStartColor)"
-                        fill="url(#priceRelStartFill)"
-                        strokeWidth={1.4}
-                        name="Kursveränderung"
-                        dot={dot}
-                        activeDot={activeDot}
-                        fillOpacity={0.2}
-                      />
-                    )}
-
-                    {mode === 'earningsRelInvestment' && (
-                      <Area
-                        type={interpolation}
-                        dataKey="earningsRelInvestment"
-                        unit="%"
-                        stroke="url(#earningsRelInvestmentColor)"
-                        strokeWidth={1.4}
-                        fill="url(#earningsRelInvestmentFill)"
-                        name="Gewinn rel. zu Kaufpreis"
-                        dot={dot}
-                        activeDot={activeDot}
-                        fillOpacity={0.2}
-                      />
-                    )}
-
-                    {mode === 'valueRelStart' && (
-                      <Area
-                        type={interpolation}
-                        dataKey="valueRelStart"
-                        unit="%"
-                        stroke="url(#valueRelStartColor)"
-                        strokeWidth={1.4}
-                        fill="url(#valueRelStartFill)"
-                        name="Gewinnveränderung"
-                        dot={dot}
-                        activeDot={activeDot}
-                        fillOpacity={0.2}
-                      />
-                    )}
-
-                    {mode === 'investedRelStart' && (
-                      <Area
-                        type={interpolation}
-                        dataKey="investedRelStart"
-                        unit="%"
-                        stroke="url(#investedRelStartColor)"
-                        strokeWidth={1.4}
-                        fill="url(#investedRelStartFill)"
-                        name="Kaufpreisveränderung"
-                        dot={dot}
-                        activeDot={activeDot}
-                        fillOpacity={0.2}
-                      />
-                    )}
-
-                    <Tooltip
-                      content={
-                        <StockTooltipContent
-                          showPriceDate={
-                            ['units', 'investedRelStart', 'invested'].indexOf(
-                              mode
-                            ) < 0
-                          }
+            <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
+              <ComposedChart data={points}>
+                <XAxis
+                  dataKey="epoch"
+                  type="number"
+                  scale="utc"
+                  domain={['dataMin', 'dataMax']}
+                  tickFormatter={d => moment(d).format(axisTimeFormat)}
+                />
+                <YAxis unit={unit} hide={xsDown} domain={['auto', 'auto']} />
+                <CartesianGrid strokeDasharray="5 5" />
+                <defs>
+                  {[
+                    {
+                      offset: earningsOffset,
+                      name: 'earnings',
+                    },
+                    {
+                      offset: earningsRelInvestmentOffset,
+                      name: 'earningsRelInvestment',
+                    },
+                    {
+                      offset: valueRelStartOffset,
+                      name: 'valueRelStart',
+                    },
+                    {
+                      offset: investedRelStartOffset,
+                      name: 'investedRelStart',
+                    },
+                    {
+                      offset: priceRelStartOffset,
+                      name: 'priceRelStart',
+                    },
+                  ].map(({ offset, name }) => (
+                    <Fragment key={name}>
+                      <linearGradient
+                        id={`${name}Color`}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset={offset}
+                          stopColor={theme.palette.primary.dark}
+                          stopOpacity={1}
                         />
+                        <stop
+                          offset={offset}
+                          stopColor={theme.palette.secondary.dark}
+                          stopOpacity={1}
+                        />
+                      </linearGradient>
+                      <linearGradient
+                        id={`${name}Fill`}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset={offset}
+                          stopColor={theme.palette.primary.main}
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset={offset}
+                          stopColor={theme.palette.secondary.main}
+                          stopOpacity={0.8}
+                        />
+                      </linearGradient>
+                    </Fragment>
+                  ))}
+                </defs>
+
+                {(mode === 'investedAndValue' || mode === 'invested') && (
+                  <Area
+                    type={interpolation}
+                    dataKey="invested"
+                    stroke={
+                      mode === 'investedAndValue'
+                        ? theme.palette.secondary.dark
+                        : theme.palette.info.dark
+                    }
+                    fill={
+                      mode === 'investedAndValue'
+                        ? theme.palette.secondary.main
+                        : theme.palette.info.main
+                    }
+                    strokeWidth={1.4}
+                    unit="€"
+                    dot={dot}
+                    activeDot={activeDot}
+                    name="Investiert"
+                    fillOpacity={0.2}
+                  />
+                )}
+
+                {(mode === 'investedAndValue' || mode === 'value') && (
+                  <Area
+                    type={interpolation}
+                    dataKey="value"
+                    unit="€"
+                    stroke={
+                      mode === 'investedAndValue'
+                        ? theme.palette.primary.dark
+                        : theme.palette.info.dark
+                    }
+                    fill={
+                      mode === 'investedAndValue'
+                        ? theme.palette.primary.main
+                        : theme.palette.info.main
+                    }
+                    strokeWidth={1.4}
+                    name="Wert"
+                    dot={dot}
+                    activeDot={activeDot}
+                    fillOpacity={0.2}
+                  />
+                )}
+
+                {mode === 'earnings' && (
+                  <Area
+                    type={interpolation}
+                    dataKey="earnings"
+                    unit="€"
+                    stroke="url(#earningsColor)"
+                    strokeWidth={1.4}
+                    fill="url(#earningsFill)"
+                    name="Gewinn"
+                    dot={dot}
+                    activeDot={activeDot}
+                    fillOpacity={0.2}
+                  />
+                )}
+
+                {(mode === 'price' || mode === 'priceAndUnits') && (
+                  <Area
+                    type={interpolation}
+                    dataKey="price"
+                    unit="€"
+                    stroke={theme.palette.info.dark}
+                    fill={theme.palette.info.main}
+                    strokeWidth={1.4}
+                    name="Kurs"
+                    dot={dot}
+                    activeDot={activeDot}
+                    fillOpacity={0.2}
+                  />
+                )}
+
+                {mode === 'units' && (
+                  <Area
+                    type={interpolation}
+                    dataKey="units"
+                    unit=""
+                    stroke={theme.palette.info.dark}
+                    fill={theme.palette.info.main}
+                    strokeWidth={1.4}
+                    name="Einheiten"
+                    dot={dot}
+                    activeDot={activeDot}
+                    fillOpacity={0.2}
+                  />
+                )}
+
+                {mode === 'priceAndUnits' && (
+                  <Area
+                    type={interpolation}
+                    dataKey="units"
+                    unit=""
+                    stroke={theme.palette.warning.dark}
+                    fill={theme.palette.warning.main}
+                    strokeWidth={1.4}
+                    name="Einheiten"
+                    yAxisId={1}
+                    dot={dot}
+                    activeDot={activeDot}
+                    fillOpacity={0.2}
+                  />
+                )}
+
+                {mode === 'priceAndUnits' && (
+                  <YAxis
+                    unit=""
+                    yAxisId={1}
+                    hide={xsDown}
+                    orientation="right"
+                    domain={['auto', 'auto']}
+                  />
+                )}
+
+                {mode === 'priceRelStart' && (
+                  <Area
+                    type={interpolation}
+                    dataKey="priceRelStart"
+                    unit="%"
+                    stroke="url(#priceRelStartColor)"
+                    fill="url(#priceRelStartFill)"
+                    strokeWidth={1.4}
+                    name="Kursveränderung"
+                    dot={dot}
+                    activeDot={activeDot}
+                    fillOpacity={0.2}
+                  />
+                )}
+
+                {mode === 'earningsRelInvestment' && (
+                  <Area
+                    type={interpolation}
+                    dataKey="earningsRelInvestment"
+                    unit="%"
+                    stroke="url(#earningsRelInvestmentColor)"
+                    strokeWidth={1.4}
+                    fill="url(#earningsRelInvestmentFill)"
+                    name="Gewinn rel. zu Kaufpreis"
+                    dot={dot}
+                    activeDot={activeDot}
+                    fillOpacity={0.2}
+                  />
+                )}
+
+                {mode === 'valueRelStart' && (
+                  <Area
+                    type={interpolation}
+                    dataKey="valueRelStart"
+                    unit="%"
+                    stroke="url(#valueRelStartColor)"
+                    strokeWidth={1.4}
+                    fill="url(#valueRelStartFill)"
+                    name="Gewinnveränderung"
+                    dot={dot}
+                    activeDot={activeDot}
+                    fillOpacity={0.2}
+                  />
+                )}
+
+                {mode === 'investedRelStart' && (
+                  <Area
+                    type={interpolation}
+                    dataKey="investedRelStart"
+                    unit="%"
+                    stroke="url(#investedRelStartColor)"
+                    strokeWidth={1.4}
+                    fill="url(#investedRelStartFill)"
+                    name="Kaufpreisveränderung"
+                    dot={dot}
+                    activeDot={activeDot}
+                    fillOpacity={0.2}
+                  />
+                )}
+
+                <Tooltip
+                  content={
+                    <StockTooltipContent
+                      showPriceDate={
+                        ['units', 'investedRelStart', 'invested'].indexOf(
+                          mode
+                        ) < 0
                       }
-                      formatter={v => v.toFixed(2)}
-                      labelFormatter={d => moment(d).format('L LT')}
                     />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+                  }
+                  formatter={v => v.toFixed(2)}
+                  labelFormatter={d => moment(d).format('LLLL')}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
           </Grid>
           <Grid item xs={9}>
             <FormControl className={classes.formControl}>
@@ -583,7 +552,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
             )}
           </Grid>
         </Grid>
-      </Paper>
+      </ProgressPaper>
     </Container>
   );
 };

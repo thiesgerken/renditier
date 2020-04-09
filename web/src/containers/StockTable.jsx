@@ -2,14 +2,12 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import {
   Container,
-  Paper,
   TableBody,
   Table,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  CircularProgress,
   Hidden,
 } from '@material-ui/core';
 import { map } from 'lodash';
@@ -19,6 +17,7 @@ import { push as routerPush } from 'connected-react-router';
 
 import { updateStocks as updateStocksAction } from '../actions/stocks';
 import StockRow from '../components/StockRow';
+import ProgressPaper from '../components/ProgressPaper';
 
 const StyledTableCell = withStyles(() => ({
   head: {
@@ -34,7 +33,7 @@ const StockTable = ({ stocks, updateStocks, push }) => {
 
   return (
     <Container maxWidth="xl" style={{ padding: '0px' }}>
-      <Paper>
+      <ProgressPaper loading={stocks.isFetching}>
         <TableContainer>
           <Table size="small" aria-label="positions">
             <TableHead>
@@ -63,20 +62,7 @@ const StockTable = ({ stocks, updateStocks, push }) => {
             </TableBody>
           </Table>
         </TableContainer>
-        {stocks.isFetching && (
-          <div
-            style={{
-              position: 'relative',
-              left: '50%',
-              transform: 'translate(0%, 0%)',
-              width: '100%',
-              padding: '20px',
-            }}
-          >
-            <CircularProgress color="secondary" />
-          </div>
-        )}
-      </Paper>
+      </ProgressPaper>
     </Container>
   );
 };

@@ -75,6 +75,7 @@ fn choose_and_query_points(
             |x| x.checked_add_signed(interval),
         )
         .take_while(|d| d.date().naive_utc() <= end_date)
+        // .filter(|d| d.date().weekday().number_from_monday() < 6)
         .collect::<Vec<_>>();
 
         dates = if dates.len() < 150 {
@@ -140,8 +141,8 @@ fn choose_and_query_points(
             Utc::now(),
         );
 
-        // sample many dates between start and end, but at most once every 15min
-        let interval = max((end_time - start_time) / 400, Duration::minutes(15));
+        // sample many dates between start and end, but at most once every 5min
+        let interval = max((end_time - start_time) / 400, Duration::minutes(5));
         // and make sure that its a multiple of 5 minutes.
         let interval = Duration::minutes((interval.num_minutes() / 5) * 5);
 
@@ -324,7 +325,7 @@ pub fn compute_stock_plot(
     let ts = transactions::table
         .inner_join(accounts::table)
         .filter(accounts::user_id.eq(user_id))
-        .filter(transactions::isin.eq(isin.clone()))
+        .filter(transactions::isin.eq(isin))
         .filter(transactions::date.le(Utc.from_utc_date(&end_date).and_hms(18, 0, 0)))
         .order(transactions::date.asc())
         .load::<(Transaction, Account)>(&*connection)?

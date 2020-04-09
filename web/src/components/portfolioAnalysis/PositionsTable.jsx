@@ -6,9 +6,7 @@ import TableCell from '@material-ui/core/TableCell';
 import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import Paper from '@material-ui/core/Paper';
 import {
-  CircularProgress,
   Container,
   Hidden,
   Grid,
@@ -23,6 +21,7 @@ import { map } from 'lodash';
 import PositionRow from './PositionRow';
 import { getPeriodDescription } from '../../selectors/performance';
 import { findStock } from '../../selectors/stocks';
+import ProgressPaper from '../ProgressPaper';
 
 const useStyles = makeStyles(theme => ({
   formControl: {
@@ -61,7 +60,7 @@ const PositionsTable = ({ performance, stocks, push }) => {
 
   return (
     <Container maxWidth="xl" style={{ padding: '0px' }}>
-      <Paper>
+      <ProgressPaper loading={performance.isFetching}>
         <Grid container style={{ width: '100%' }}>
           <Grid item xs={12}>
             <TableContainer>
@@ -105,19 +104,6 @@ const PositionsTable = ({ performance, stocks, push }) => {
                 </TableBody>
               </Table>
             </TableContainer>
-            {performance.isFetching && (
-              <div
-                style={{
-                  position: 'relative',
-                  left: '50%',
-                  transform: 'translate(0%, 0%)',
-                  width: '100%',
-                  padding: '20px',
-                }}
-              >
-                <CircularProgress color="secondary" />
-              </div>
-            )}
           </Grid>
           <Grid item xs={9}>
             <FormControl className={classes.formControl}>
@@ -142,7 +128,7 @@ const PositionsTable = ({ performance, stocks, push }) => {
             </FormControl>
           </Grid>
         </Grid>
-      </Paper>
+      </ProgressPaper>
     </Container>
   );
 };
