@@ -60,8 +60,7 @@ const TransactionDialog = ({
       !t.date.isValid() ||
       t.amount === null ||
       t.fees === null ||
-      t.units === null ||
-      t.exchange === null
+      t.units === null
     )
       return null;
 
@@ -69,24 +68,17 @@ const TransactionDialog = ({
     const tAccount = findAccountByName(accounts, t.account);
     if (tStock === null || tAccount === null) return null;
 
-    let ex = null;
-    if (t.exchange !== '') {
-      ex = findExchangeByName(tStock, t.exchange);
-
-      if (!ex) return null;
-      ex = ex.onvistaExchangeId;
-    }
-
     if (
       parseFloat(t.units) === 0 &&
       Math.abs(parseFloat(t.amount)) + Math.abs(parseFloat(t.fees)) < 0.01
     )
       return null;
 
-    return {
+    const ret = {
       id: t.id,
       isin: t.isin,
-      onvistaExchangeId: ex,
+      onvistaExchangeId: null,
+      exchange: null,
       comments: t.comments,
       units: parseFloat(t.units),
       amount: Math.round(parseFloat(t.amount) * 100),
@@ -94,6 +86,18 @@ const TransactionDialog = ({
       account: tAccount.id,
       date: t.date.format(),
     };
+
+    if (t.exchange.trim() !== '') {
+      const ex = findExchangeByName(tStock, t.exchange);
+
+      if (!ex) {
+        ret.exchange = t.exchange.trim();
+      } else {
+        ret.onvistaExchangeId = ex.onvistaExchangeId;
+      }
+    }
+
+    return ret;
   };
 
   const toEditable = t => {
@@ -261,9 +265,9 @@ const TransactionDialog = ({
                     {...params}
                     label="Handelsplatz"
                     fullWidth
-                    error={
-                      findExchangeByName(stock, transaction.exchange) === null
-                    }
+                    // error={
+                    //   findExchangeByName(stock, transaction.exchange) === null
+                    // }
                   />
                 )}
               />

@@ -52,13 +52,23 @@ pub enum DataSourceSelection {
     Automatic,
 }
 
+fn option_almost_eq(a: Option<f64>, b: Option<f64>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => (b - a).abs() < 0.01,
+        (_, _) => false,
+    }
+}
+
+type MyResult<T> = Result<T, Box<dyn Error>>;
+
 fn choose_and_query_points(
     connection: &diesel::PgConnection,
     exchanges: &[i32],
     start_date: NaiveDate,
     end_date: NaiveDate,
     source_selection: DataSourceSelection,
-) -> Result<(Vec<DateTime<Utc>>, Vec<EitherPrice>), Box<dyn Error>> {
+) -> MyResult<(Vec<DateTime<Utc>>, Vec<EitherPrice>)> {
     if source_selection == DataSourceSelection::Historical
         || (end_date - start_date > Duration::weeks(3)
             && source_selection == DataSourceSelection::Automatic)
@@ -300,7 +310,9 @@ pub fn compute_portfolio_plot(
             .collect::<Vec<_>>(),
         points: points
             .into_iter()
-            .dedup_by(|x, y| x.value == y.value && x.invested == y.invested)
+            .dedup_by(|x, y| {
+                option_almost_eq(x.value, y.value) && (x.invested - y.invested).abs() < 0.01
+            })
             .collect::<Vec<_>>(),
     })
 }
@@ -398,8 +410,8 @@ pub fn compute_stock_plot(
         points: points
             .into_iter()
             .dedup_by(|x, y| {
-                x.value == y.value
-                    && x.invested == y.invested
+                option_almost_eq(x.value, y.value)
+                    && (x.invested - y.invested).abs() < 0.01
                     && x.price == y.price
                     && x.price_date == y.price_date
             })

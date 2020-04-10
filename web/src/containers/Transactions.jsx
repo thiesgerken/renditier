@@ -3,7 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import MUIDataTable from 'mui-datatables';
 import moment from 'moment';
-import { find } from 'lodash';
+import { find, map } from 'lodash';
 import {
   ThemeProvider,
   createMuiTheme,
@@ -41,6 +41,29 @@ function useQuery(key) {
   return [query.get(key), set];
 }
 
+const manipulateExchange = (stocks, x) => {
+  let ex = null;
+  if (x.exchange !== null) ex = x.exchange;
+  if (x.onvistaExchangeId !== null) {
+    ex = `[${x.onvistaExchangeId}]`;
+
+    const stock = findStock(stocks, x.isin);
+    if (stock !== null) {
+      const e = find(
+        stock.exchanges,
+        ee => ee.onvistaExchangeId === x.onvistaExchangeId
+      );
+
+      if (e !== undefined && e !== null) ex = e.name;
+    }
+  }
+
+  return {
+    ...x,
+    exchangeDisplay: ex,
+  };
+};
+
 const Transactions = ({
   stocks,
   transactions,
@@ -62,6 +85,7 @@ const Transactions = ({
     amount: 0,
     comments: '',
     onvistaExchangeId: null,
+    exchange: null,
   };
   if (
     transactions.items !== null &&
@@ -217,7 +241,7 @@ const Transactions = ({
       },
     },
     {
-      name: 'onvistaExchangeId',
+      name: 'exchangeDisplay',
       label: 'Handelsplatz',
       options: {
         display: mdUp,
@@ -340,7 +364,9 @@ const Transactions = ({
             <ThemeProvider theme={myTheme}>
               <MUIDataTable
                 title="Transaktionen"
-                data={transactions.items}
+                data={map(transactions.items, x =>
+                  manipulateExchange(stocks, x)
+                )}
                 columns={columns}
                 options={options}
               />

@@ -67,6 +67,15 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         io::stdin().read_line(&mut s_exchange).unwrap();
         let s_exchange: Option<i32> = s_exchange.parse().ok();
 
+        let mut s_exchange_str = String::new();
+        println!("Please enter the exchange name for the transaction (or leave blank)");
+        io::stdin().read_line(&mut s_exchange_str).unwrap();
+        let s_exchange_str: Option<String> = if s_exchange_str.is_empty() {
+            None
+        } else {
+            Some(s_exchange_str.trim().to_owned())
+        };
+
         let mut s_date = String::new();
         println!("Please enter the date for the transaction");
         io::stdin().read_line(&mut s_date).unwrap();
@@ -102,6 +111,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             fees: s_fees,
             onvista_exchange_id: s_exchange,
             comments: s_comments,
+            exchange: s_exchange_str,
         };
 
         let t: Transaction = diesel::insert_into(crate::schema::transactions::table)
