@@ -1,5 +1,5 @@
 import { connect } from 'react-redux';
-import React, { useState } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import MUIDataTable from 'mui-datatables';
 import moment from 'moment';
@@ -21,6 +21,7 @@ import { useLocation, useHistory } from 'react-router';
 
 import { updateTransactions as updateTransactionsAction } from '../actions/transactions';
 import { updateStocks as updateStocksAction } from '../actions/stocks';
+import { updateAccounts as updateAccountsAction } from '../actions/accounts';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
 import TransactionDialog from '../components/TransactionDialog';
 
@@ -43,21 +44,22 @@ function useQuery(key) {
 const Transactions = ({
   stocks,
   transactions,
+  accounts,
   updateStocks,
   updateTransactions,
+  updateAccounts,
 }) => {
   const [transactionId, setTransactionId] = useQuery('id');
   const [page, setPage] = useQuery('page');
-  const [transaction, setTransaction] = useState({});
 
   let initialTransaction = {
     id: null,
-    accountId: null,
+    accountId: accounts.items.length === 1 ? accounts.items[0].id : null,
     isin: null,
     date: moment().format(),
-    units: null,
-    fees: null,
-    amount: null,
+    units: 0,
+    fees: 0,
+    amount: 0,
     comments: '',
     onvistaExchangeId: null,
   };
@@ -114,8 +116,10 @@ const Transactions = ({
 
   updateTransactions();
   updateStocks();
+  updateAccounts();
 
-  const isLoading = transactions.isFetching || stocks.isFetching;
+  const isLoading =
+    transactions.isFetching || stocks.isFetching || accounts.isFetching;
 
   const columns = [
     {
@@ -346,9 +350,9 @@ const Transactions = ({
       </Container>
       <TransactionDialog
         stocks={stocks}
-        transaction={transaction}
-        open={transactionId !== null}
-        onEnter={() => setTransaction(initialTransaction)}
+        accounts={accounts}
+        initialTransaction={initialTransaction}
+        open={transactionId !== null && !isLoading}
         onClose={() => {
           setTransactionId(null);
         }}
@@ -360,6 +364,7 @@ const Transactions = ({
 Transactions.propTypes = {
   updateTransactions: PropTypes.func.isRequired,
   updateStocks: PropTypes.func.isRequired,
+  updateAccounts: PropTypes.func.isRequired,
   transactions: PropTypes.shape({
     items: PropTypes.arrayOf(PropTypes.object),
     lastUpdated: PropTypes.number,
@@ -370,19 +375,26 @@ Transactions.propTypes = {
     lastUpdated: PropTypes.number,
     isFetching: PropTypes.bool,
   }).isRequired,
+  accounts: PropTypes.shape({
+    items: PropTypes.arrayOf(PropTypes.object),
+    lastUpdated: PropTypes.number,
+    isFetching: PropTypes.bool,
+  }).isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
   updateTransactions: () => dispatch(updateTransactionsAction()),
   updateStocks: () => dispatch(updateStocksAction()),
+  updateAccounts: () => dispatch(updateAccountsAction()),
 });
 
 const mapStateToProps = state => {
-  const { transactions, stocks } = state;
+  const { transactions, stocks, accounts } = state;
 
   return {
     transactions,
     stocks,
+    accounts,
   };
 };
 

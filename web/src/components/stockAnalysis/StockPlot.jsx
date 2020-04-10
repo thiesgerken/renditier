@@ -536,6 +536,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                   maxDate={dates[1]}
                   onChange={d => handleDateChange([d, dates[1]])}
                   disableFuture
+                  autoOk
                   disabled={period >= 0}
                   className={classes.formControl}
                 />
@@ -546,6 +547,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                   minDate={dates[0]}
                   onChange={d => handleDateChange([dates[0], d])}
                   disableFuture
+                  autoOk
                   disabled={period >= 0}
                   className={classes.formControl}
                 />
