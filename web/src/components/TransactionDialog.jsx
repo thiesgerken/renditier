@@ -114,6 +114,7 @@ const TransactionDialog = ({
             )
           )
         : t.onvistaExchangeId;
+    else if (t.exchange !== null) ex = t.exchange;
     else ex = '';
 
     return {
