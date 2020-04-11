@@ -1,25 +1,32 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
 import {
-  useTheme,
-  useMediaQuery,
-  Dialog,
   Button,
-  DialogContent,
-  DialogTitle,
-  DialogContentText,
-  TextField,
+  Dialog,
   DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Grid,
+  TextField,
+  useMediaQuery,
+  useTheme,
 } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
-import { find, reverse, sortedUniqBy, sortBy } from 'lodash';
-import { DateTimePicker } from '@material-ui/pickers';
-import * as moment from 'moment';
 import Autocomplete from '@material-ui/lab/Autocomplete';
-import { abbreviateTitle, findStock } from '../selectors/stocks';
+import { DateTimePicker } from '@material-ui/pickers';
+import { find, reverse, sortBy, sortedUniqBy } from 'lodash';
+import * as moment from 'moment';
+import PropTypes from 'prop-types';
+import React, { useState } from 'react';
+import { connect } from 'react-redux';
+
+import {
+  deleteTransaction as deleteTransactionAction,
+  createTransaction as createTransactionAction,
+  updateTransaction as updateTransactionAction,
+} from '../actions/transactions';
+import NumberInput from '../components/NumberInput';
 import { findAccount, findAccountByName } from '../selectors/accounts';
-import NumberInput from './NumberInput';
+import { abbreviateTitle, findStock } from '../selectors/stocks';
 
 const TransactionDialog = ({
   stocks,
@@ -27,6 +34,9 @@ const TransactionDialog = ({
   initialTransaction,
   open,
   onClose,
+  deleteTransaction,
+  createTransaction,
+  updateTransaction,
 }) => {
   const parseISIN = s => {
     if (!s) return null;
@@ -53,14 +63,22 @@ const TransactionDialog = ({
     return ex.name || null;
   };
 
+  const isValidFloat = s => {
+    if (s === null || s === '') return false;
+
+    const x = parseFloat(s);
+    if (Number.isNaN(x) || !Number.isFinite(x)) return false;
+    return true;
+  };
+
   const toTransaction = t => {
     if (
       t.isin === null ||
       t.date === null ||
       !t.date.isValid() ||
-      t.amount === null ||
-      t.fees === null ||
-      t.units === null
+      !isValidFloat(t.amount) ||
+      !isValidFloat(t.fees) ||
+      !isValidFloat(t.units)
     )
       return null;
 
@@ -81,16 +99,16 @@ const TransactionDialog = ({
       exchange: null,
       comments: t.comments,
       units: parseFloat(t.units),
-      amount: Math.round(parseFloat(t.amount) * 100),
+      amount: -1 * Math.round(parseFloat(t.amount) * 100),
       fees: -1 * Math.round(parseFloat(t.fees) * 100),
-      account: tAccount.id,
+      accountId: tAccount.id,
       date: t.date.format(),
     };
 
     if (t.exchange.trim() !== '') {
       const ex = findExchangeByName(tStock, t.exchange);
 
-      if (!ex) {
+      if (ex === null || ex.onvistaExchangeId === null) {
         ret.exchange = t.exchange.trim();
       } else {
         ret.onvistaExchangeId = ex.onvistaExchangeId;
@@ -123,7 +141,7 @@ const TransactionDialog = ({
       exchange: ex,
       comments: t.comments,
       units: t.units,
-      amount: t.amount / 100,
+      amount: (-1 * t.amount) / 100,
       fees: (-1 * t.fees) / 100,
       account: initialAccount !== null ? initialAccount.name : null,
       date: t.date !== null ? moment(t.date) : moment(''),
@@ -137,11 +155,14 @@ const TransactionDialog = ({
 
   let price = '\u2014';
   if (
-    transaction.units !== null &&
-    transaction.amount !== null &&
-    transaction.units !== 0.0
+    isValidFloat(transaction.units) &&
+    isValidFloat(transaction.amount) &&
+    parseFloat(transaction.units) !== 0.0
   )
-    price = `${((-1 * transaction.amount) / transaction.units).toFixed(2)}€`;
+    price = `${(
+      (-1 * parseFloat(transaction.amount)) /
+      parseFloat(transaction.units)
+    ).toFixed(2)}€`;
 
   // console.log(initialTransaction);
   // console.log(transaction);
@@ -159,22 +180,23 @@ const TransactionDialog = ({
 
   const onDelete = () => {
     setConfirmOpen(false);
-
-    // TODO: DELETE transaction
-    console.log(`delete: ${transaction.id}`);
-
+    deleteTransaction(transaction.id);
     onClose();
   };
 
   const onSave = () => {
-    if (toTransaction(transaction) === null) {
+    const t = toTransaction(transaction);
+
+    if (t === null) {
       setTriedToSave(true);
       return;
     }
 
-    // TODO: POST/PUT transaction
-    console.log(`post/put`);
-    console.log(toTransaction(transaction));
+    if (t.id === null) {
+      createTransaction(t);
+    } else {
+      updateTransaction(t);
+    }
 
     onClose();
   };
@@ -327,7 +349,7 @@ const TransactionDialog = ({
             <Grid item xs={6}>
               <TextField
                 margin="dense"
-                label="Betrag"
+                label="Kosten"
                 fullWidth
                 value={transaction.amount}
                 onChange={v => {
@@ -349,7 +371,7 @@ const TransactionDialog = ({
             <Grid item xs={6}>
               <TextField
                 margin="dense"
-                label="Gebühren"
+                label="Gebühren (zzgl.)"
                 fullWidth
                 value={transaction.fees}
                 onChange={v => {
@@ -478,6 +500,24 @@ TransactionDialog.propTypes = {
   }).isRequired,
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  deleteTransaction: PropTypes.func.isRequired,
+  updateTransaction: PropTypes.func.isRequired,
+  createTransaction: PropTypes.func.isRequired,
 };
 
-export default TransactionDialog;
+const mapDispatchToProps = dispatch => ({
+  deleteTransaction: id => dispatch(deleteTransactionAction(id)),
+  createTransaction: t => dispatch(createTransactionAction(t)),
+  updateTransaction: t => dispatch(updateTransactionAction(t)),
+});
+
+const mapStateToProps = state => {
+  const { stocks, accounts } = state;
+
+  return {
+    stocks,
+    accounts,
+  };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(TransactionDialog);

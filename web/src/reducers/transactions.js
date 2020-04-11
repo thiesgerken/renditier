@@ -3,6 +3,9 @@ import {
   FETCH_TRANSACTIONS_REQUEST,
   FETCH_TRANSACTIONS_ERROR,
   FETCH_TRANSACTIONS_SUCCESS,
+  MODIFY_TRANSACTION_REQUEST,
+  MODIFY_TRANSACTION_ERROR,
+  MODIFY_TRANSACTION_SUCCESS,
 } from '../actions/transactions';
 
 const transactions = (
@@ -10,8 +13,10 @@ const transactions = (
     isFetching: false,
     didInvalidate: false,
     items: [],
-    error: null,
+    fetchError: null,
     lastUpdated: null,
+    isModifying: false,
+    modifyError: null,
   },
   action
 ) => {
@@ -27,15 +32,31 @@ const transactions = (
         didInvalidate: false,
         items: action.data,
         lastUpdated: action.receivedAt,
-        error: null,
+        fetchError: null,
       };
     case FETCH_TRANSACTIONS_ERROR:
       return {
         ...state,
         isFetching: false,
         items: [],
-        error: action.error,
+        fetchError: action.error,
         lastUpdated: action.receivedAt,
+      };
+    case MODIFY_TRANSACTION_REQUEST:
+      return { ...state, isModifying: true };
+    case MODIFY_TRANSACTION_SUCCESS:
+      return {
+        ...state,
+        isModifying: false,
+        didInvalidate: true,
+        fetchError: null,
+      };
+    case MODIFY_TRANSACTION_ERROR:
+      return {
+        ...state,
+        isModifying: false,
+        didInvalidate: true,
+        fetchError: action.error,
       };
     default:
       return state;

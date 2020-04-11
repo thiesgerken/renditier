@@ -23,7 +23,8 @@ import { updateTransactions as updateTransactionsAction } from '../actions/trans
 import { updateStocks as updateStocksAction } from '../actions/stocks';
 import { updateAccounts as updateAccountsAction } from '../actions/accounts';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
-import TransactionDialog from '../components/TransactionDialog';
+import TransactionDialog from './TransactionDialog';
+import { useEffect } from 'react';
 
 function useQuery(key) {
   const location = useLocation();
@@ -138,9 +139,11 @@ const Transactions = ({
 
   const history = useHistory();
 
-  updateTransactions();
-  updateStocks();
-  updateAccounts();
+  useEffect(() => {
+    updateTransactions();
+    updateStocks();
+    updateAccounts();
+  });
 
   const isLoading =
     transactions.isFetching || stocks.isFetching || accounts.isFetching;
@@ -375,8 +378,6 @@ const Transactions = ({
         </div>
       </Container>
       <TransactionDialog
-        stocks={stocks}
-        accounts={accounts}
         initialTransaction={initialTransaction}
         open={transactionId !== null && !isLoading}
         onClose={() => {

@@ -123,7 +123,15 @@ pub struct PushSubscription {
 }
 
 #[derive(
-    Debug, Clone, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize,
+    Debug,
+    Clone,
+    Queryable,
+    Insertable,
+    Associations,
+    Identifiable,
+    Serialize,
+    Deserialize,
+    AsChangeset,
 )]
 #[belongs_to(Account, foreign_key = "account_id")]
 #[serde(rename_all = "camelCase")]

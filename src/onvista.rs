@@ -409,7 +409,12 @@ fn get_etc_etn_data_realtime_exchange(
     );
 
     if date.weekday().number_from_monday() >= 6 {
-        return Err("Data not from weekday".into());
+        // just ignore these
+        warn!(
+            "ETC/ETN parse realtime for {}: data is not from a weekday, ignoring.",
+            onvista_record_id
+        );
+        return Ok(None);
     }
 
     Ok(rds

@@ -22,6 +22,30 @@ export const invalidateTransactions = () => ({
   type: INVALIDATE_TRANSACTIONS,
 });
 
+export const MODIFY_TRANSACTION_REQUEST = 'MODIFY_TRANSACTION_REQUEST';
+export const modifyTransactionRequest = (id, method) => ({
+  type: MODIFY_TRANSACTION_REQUEST,
+  id,
+  method,
+});
+
+export const MODIFY_TRANSACTION_SUCCESS = 'MODIFY_TRANSACTION_SUCCESS';
+export const modifyTransactionSuccess = (id, method) => ({
+  type: MODIFY_TRANSACTION_SUCCESS,
+  id,
+  method,
+  receivedAt: Date.now(),
+});
+
+export const MODIFY_TRANSACTION_ERROR = 'MODIFY_TRANSACTION_ERROR';
+export const modifyTransactionError = (id, method, error) => ({
+  type: MODIFY_TRANSACTION_ERROR,
+  id,
+  method,
+  error,
+  receivedAt: Date.now(),
+});
+
 export const fetchTransactions = () => dispatch => {
   dispatch(fetchTransactionsRequest());
   return fetch('/api/transactions')
@@ -37,6 +61,57 @@ export const fetchTransactions = () => dispatch => {
     .catch(e => dispatch(fetchTransactionsError(e)));
 };
 
+export const deleteTransaction = id => dispatch => {
+  dispatch(modifyTransactionRequest(id, 'DELETE'));
+  return fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+    .then(res => {
+      if (!res.ok) throw Error(`${res.status} ${res.statusText}`);
+      return res;
+    })
+    .then(res => {
+      if (res.error) throw res.error;
+
+      dispatch(modifyTransactionSuccess(id, 'DELETE', null));
+    })
+    .catch(e => dispatch(modifyTransactionError(id, 'DELETE', e)));
+};
+
+export const createTransaction = transaction => dispatch => {
+  dispatch(modifyTransactionRequest(null, 'POST'));
+  return fetch(`/api/transactions/`, {
+    method: 'POST',
+    body: JSON.stringify(transaction),
+  })
+    .then(res => {
+      if (!res.ok) throw Error(`${res.status} ${res.statusText}`);
+      return res.json();
+    })
+    .then(res => {
+      if (res.error) throw res.error;
+
+      dispatch(modifyTransactionSuccess(res.id, 'POST', res));
+    })
+    .catch(e => dispatch(modifyTransactionError(null, 'POST', e)));
+};
+
+export const updateTransaction = transaction => dispatch => {
+  dispatch(modifyTransactionRequest(transaction.id, 'PUT'));
+  return fetch(`/api/transactions/${transaction.id}`, {
+    method: 'PUT',
+    body: JSON.stringify(transaction),
+  })
+    .then(res => {
+      if (!res.ok) throw Error(`${res.status} ${res.statusText}`);
+      return res;
+    })
+    .then(res => {
+      if (res.error) throw res.error;
+
+      dispatch(modifyTransactionSuccess(transaction.id, 'PUT', null));
+    })
+    .catch(e => dispatch(modifyTransactionError(transaction.id, 'PUT', e)));
+};
+
 export const updateTransactions = () => (dispatch, getState) => {
   const { transactions } = getState();
 
@@ -48,7 +123,7 @@ export const updateTransactions = () => (dispatch, getState) => {
 
   if (
     !transactions.isFetching &&
-    ((transactions.lastUpdated === null && transactions.error === null) ||
+    ((transactions.lastUpdated === null && transactions.fetchError === null) ||
       transactions.didInvalidate)
   )
     return dispatch(fetchTransactions());

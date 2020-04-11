@@ -5,7 +5,7 @@ use crate::schema::stock_infos::dsl::*;
 
 use chrono::{Duration, Utc};
 use diesel::prelude::*;
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use std::error::Error;
 use std::iter::successors;
 
@@ -23,41 +23,47 @@ pub fn fetch_realtime(
             .filter(|e| e.isin == s.isin)
             .cloned()
             .collect::<Vec<_>>();
-        let data = onvista::get_data_realtime(s, &s_exs)?;
-        let original_len = data.len();
-        let data = data
-            .into_iter()
-            .filter(|d| {
-                exs.iter()
-                    .any(|e| e.onvista_record_id == d.onvista_record_id)
-            })
-            .collect::<Vec<_>>();
+        let data = onvista::get_data_realtime(s, &s_exs);
 
-        if data.len() < original_len {
-            warn!(
-                "Throwing away {} realtime data record(s) (of {}) for {} because they belong to unknown exchanges",
-                original_len - data.len(),
-                original_len,
-                &s.isin
-            );
+        match data {
+            Ok(data) => {
+                let original_len = data.len();
+                let data = data
+                    .into_iter()
+                    .filter(|d| {
+                        exs.iter()
+                            .any(|e| e.onvista_record_id == d.onvista_record_id)
+                    })
+                    .collect::<Vec<_>>();
+
+                if data.len() < original_len {
+                    warn!("Throwing away {} realtime data record(s) (of {}) for {} because they belong to unknown exchanges",
+                        original_len - data.len(),
+                        original_len,
+                        &s.isin);
+                }
+
+                let row_count = diesel::insert_into(crate::schema::realtime_prices::table)
+                    .values(&data)
+                    .on_conflict_do_nothing()
+                    .execute(connection)?;
+
+                info!(
+                    "Inserted {} row(s) of realtime data (of {}) for {}",
+                    row_count,
+                    data.len(),
+                    &s.isin
+                );
+
+                let now = Utc::now();
+                diesel::update(stock_infos.filter(crate::schema::stock_infos::isin.eq(&s.isin)))
+                    .set(crate::schema::stock_infos::last_realtime_update.eq(now))
+                    .execute(connection)?;
+            }
+            Err(e) => {
+                error!("Error obtaining realtime data for {}: {}", &s.isin, e);
+            }
         }
-
-        let row_count = diesel::insert_into(crate::schema::realtime_prices::table)
-            .values(&data)
-            .on_conflict_do_nothing()
-            .execute(connection)?;
-
-        info!(
-            "Inserted {} row(s) of realtime data (of {}) for {}",
-            row_count,
-            data.len(),
-            &s.isin
-        );
-
-        let now = Utc::now();
-        diesel::update(stock_infos.filter(crate::schema::stock_infos::isin.eq(&s.isin)))
-            .set(crate::schema::stock_infos::last_realtime_update.eq(now))
-            .execute(connection)?;
     }
 
     Ok(())
