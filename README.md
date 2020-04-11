@@ -6,12 +6,15 @@
 
 ### Web
 
-- transaction add/remove/update, account add/remove/update
+- transaction add/remove/update (invalidate afterwards)
+- account add/remove/update (invalidate afterwards)
 - server vapid key as the result of an api call, not hard-coded.
 - remove all cached data when the user logs out
 - invalidate user info as soon as a 401 is encountered
 - do not register service worker for api requests?
 - unify formatting and querying functions, subdirectories for components folder
+- Use new daterange component as soon as it works better https://github.com/mui-org/material-ui-pickers
+- only ask for login on a 401, otherwise show loading bars
 
 ## Ideas
 
@@ -20,6 +23,7 @@
 - REST interface
 - watchlist of isins for each user, so that they can be analyzed (and so that notifications can be set for them?)
 - send a test notification as soon as a new device registers
+- StockAnalysis: List of exchanges and current prices (+ dates)
 
 ## Install
 

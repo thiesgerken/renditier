@@ -9,7 +9,7 @@ use diesel::prelude::*;
 use itertools::Itertools;
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
-use std::cmp::max;
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
@@ -52,13 +52,23 @@ pub enum DataSourceSelection {
     Automatic,
 }
 
+fn option_almost_eq(a: Option<f64>, b: Option<f64>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => (b - a).abs() < 0.01,
+        (_, _) => false,
+    }
+}
+
+type MyResult<T> = Result<T, Box<dyn Error>>;
+
 fn choose_and_query_points(
     connection: &diesel::PgConnection,
     exchanges: &[i32],
     start_date: NaiveDate,
     end_date: NaiveDate,
     source_selection: DataSourceSelection,
-) -> Result<(Vec<DateTime<Utc>>, Vec<EitherPrice>), Box<dyn Error>> {
+) -> MyResult<(Vec<DateTime<Utc>>, Vec<EitherPrice>)> {
     if source_selection == DataSourceSelection::Historical
         || (end_date - start_date > Duration::weeks(3)
             && source_selection == DataSourceSelection::Automatic)
@@ -75,6 +85,7 @@ fn choose_and_query_points(
             |x| x.checked_add_signed(interval),
         )
         .take_while(|d| d.date().naive_utc() <= end_date)
+        // .filter(|d| d.date().weekday().number_from_monday() < 6)
         .collect::<Vec<_>>();
 
         dates = if dates.len() < 150 {
@@ -132,7 +143,7 @@ fn choose_and_query_points(
             .from_utc_date(&start_date)
             .and_hms(9, 0, 0)
             .with_timezone(&Utc);
-        let end_time = max(
+        let end_time = min(
             Local
                 .from_utc_date(&end_date)
                 .and_hms(18, 0, 0)
@@ -140,8 +151,8 @@ fn choose_and_query_points(
             Utc::now(),
         );
 
-        // sample many dates between start and end, but at most once every 15min
-        let interval = max((end_time - start_time) / 400, Duration::minutes(15));
+        // sample many dates between start and end, but at most once every 5min
+        let interval = max((end_time - start_time) / 400, Duration::minutes(5));
         // and make sure that its a multiple of 5 minutes.
         let interval = Duration::minutes((interval.num_minutes() / 5) * 5);
 
@@ -282,10 +293,10 @@ pub fn compute_portfolio_plot(
             if let Some(c_price) = current_price {
                 if (p.date - c_price.date()).num_days().abs() < 7 {
                     p.value = p.value.map(|v| v + units * c_price.value());
-                } else {
+                } else if units.abs() > 1e-8 {
                     p.value = None;
                 }
-            } else {
+            } else if units.abs() > 1e-8 {
                 p.value = None;
             }
         }
@@ -299,7 +310,9 @@ pub fn compute_portfolio_plot(
             .collect::<Vec<_>>(),
         points: points
             .into_iter()
-            .dedup_by(|x, y| x.value == y.value && x.invested == y.invested)
+            .dedup_by(|x, y| {
+                option_almost_eq(x.value, y.value) && (x.invested - y.invested).abs() < 0.01
+            })
             .collect::<Vec<_>>(),
     })
 }
@@ -324,7 +337,7 @@ pub fn compute_stock_plot(
     let ts = transactions::table
         .inner_join(accounts::table)
         .filter(accounts::user_id.eq(user_id))
-        .filter(transactions::isin.eq(isin.clone()))
+        .filter(transactions::isin.eq(isin))
         .filter(transactions::date.le(Utc.from_utc_date(&end_date).and_hms(18, 0, 0)))
         .order(transactions::date.asc())
         .load::<(Transaction, Account)>(&*connection)?
@@ -384,10 +397,8 @@ pub fn compute_stock_plot(
                 p.value = Some(units * c_price.value());
                 p.price = Some(c_price.value());
                 p.price_date = Some(c_price.date());
-            } else {
-                p.value = None;
             }
-        } else {
+        } else if units.abs() > 1e-8 {
             p.value = None;
         }
     }
@@ -397,8 +408,8 @@ pub fn compute_stock_plot(
         points: points
             .into_iter()
             .dedup_by(|x, y| {
-                x.value == y.value
-                    && x.invested == y.invested
+                option_almost_eq(x.value, y.value)
+                    && (x.invested - y.invested).abs() < 0.01
                     && x.price == y.price
                     && x.price_date == y.price_date
             })

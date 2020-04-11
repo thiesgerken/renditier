@@ -1,4 +1,3 @@
-use stockdb;
 use stockdb::analysis::{performance, portfolio};
 use stockdb::cli;
 use stockdb::models::*;

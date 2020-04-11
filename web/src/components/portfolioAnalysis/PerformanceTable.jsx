@@ -7,16 +7,11 @@ import TableCell from '@material-ui/core/TableCell';
 import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import Paper from '@material-ui/core/Paper';
-import {
-  CircularProgress,
-  Container,
-  Hidden,
-  useMediaQuery,
-} from '@material-ui/core';
+import { Container, Hidden, useMediaQuery } from '@material-ui/core';
 import { withStyles, useTheme } from '@material-ui/core/styles';
 
 import PerformanceRow from './PerformanceRow';
+import ProgressPaper from '../ProgressPaper';
 
 const PerformanceTable = ({ performance }) => {
   const theme = useTheme();
@@ -30,16 +25,7 @@ const PerformanceTable = ({ performance }) => {
 
   return (
     <Container maxWidth="xl" style={{ padding: '0px' }}>
-      <Paper>
-        {/* <Typography
-          variant="h6"
-          style={{
-            padding: theme.spacing(1),
-            paddingLeft: theme.spacing(2),
-          }}
-        >
-          Performance
-        </Typography> */}
+      <ProgressPaper loading={performance.isFetching}>
         <TableContainer>
           <Table size="small" aria-label="performance">
             <TableHead>
@@ -108,20 +94,7 @@ const PerformanceTable = ({ performance }) => {
             </TableBody>
           </Table>
         </TableContainer>
-        {performance.isFetching && (
-          <div
-            style={{
-              position: 'relative',
-              left: '50%',
-              transform: 'translate(0%, 0%)',
-              width: '100%',
-              padding: '20px',
-            }}
-          >
-            <CircularProgress color="secondary" />
-          </div>
-        )}
-      </Paper>
+      </ProgressPaper>
     </Container>
   );
 };

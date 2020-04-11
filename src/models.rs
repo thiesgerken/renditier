@@ -123,7 +123,15 @@ pub struct PushSubscription {
 }
 
 #[derive(
-    Debug, Clone, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize,
+    Debug,
+    Clone,
+    Queryable,
+    Insertable,
+    Associations,
+    Identifiable,
+    Serialize,
+    Deserialize,
+    AsChangeset,
 )]
 #[belongs_to(Account, foreign_key = "account_id")]
 #[serde(rename_all = "camelCase")]
@@ -137,6 +145,7 @@ pub struct Transaction {
     pub fees: i64,   // sign should be negative
     pub onvista_exchange_id: Option<i32>,
     pub comments: String,
+    pub exchange: Option<String>,
 }
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
@@ -151,4 +160,5 @@ pub struct NewTransaction {
     pub fees: i64,
     pub onvista_exchange_id: Option<i32>,
     pub comments: String,
+    pub exchange: Option<String>,
 }

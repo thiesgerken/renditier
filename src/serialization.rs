@@ -114,11 +114,15 @@ impl MoneyDBFormat {
             .map(|s| (s.id, s.isin.to_string()))
             .collect::<HashMap<_, _>>();
 
+        let exchanges = stock_exchanges::table
+            .load::<StockExchange>(connection)
+            .expect("Error loading stock exchanges from the database");
+
         let transaction_count = diesel::insert_into(transactions::table)
             .values(
                 self.transactions
                     .iter()
-                    .map(|t| t.convert(&account_map, &stock_map))
+                    .map(|t| t.convert(&account_map, &stock_map, &exchanges))
                     .collect::<Vec<_>>(),
             )
             .execute(connection)
@@ -194,16 +198,35 @@ impl MoneyDBTransaction {
         &self,
         account_map: &HashMap<i32, i32>,
         stock_map: &HashMap<i32, String>,
+        exchanges: &[StockExchange],
     ) -> NewTransaction {
-        NewTransaction {
+        let isin = stock_map.get(&self.stock_id).unwrap().to_string();
+
+        let mut t = NewTransaction {
             account_id: *account_map.get(&self.account_id).unwrap(),
-            isin: stock_map.get(&self.stock_id).unwrap().to_string(),
+            isin: isin.clone(),
             amount: (self.amount * -100.0).round() as i64,
             fees: (self.fees * -100.0).round() as i64,
             date: self.date,
             units: self.units,
             onvista_exchange_id: None,
-            comments: format!("Imported from MoneyDB, exchange='{}'", self.exchange),
+            exchange: None,
+            comments: String::new(),
+        };
+
+        let ex = exchanges
+            .iter()
+            .find(|e| e.isin == isin && e.name == self.exchange);
+        if let Some(ex) = ex {
+            t.onvista_exchange_id = ex.onvista_exchange_id;
+        } else if !self.exchange.is_empty() {
+            warn!(
+                "Unknown exchange '{}' for transaction {:?}, assuming OTC",
+                self.exchange, self
+            );
+            t.exchange = Some(self.exchange.clone());
         }
+
+        t
     }
 }

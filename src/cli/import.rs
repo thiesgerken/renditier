@@ -24,9 +24,9 @@ pub fn build() -> App<'static, 'static> {
 
 pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
     if sub_matches.is_present("clean") {
-        diesel::delete(stock_infos::table)
-            .execute(connection)
-            .expect("Unable to delete stocks!");
+        // diesel::delete(stock_infos::table)
+        //     .execute(connection)
+        //     .expect("Unable to delete stocks!");
 
         diesel::delete(users::table)
             .execute(connection)
@@ -36,16 +36,23 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
     }
 
     if sub_matches.is_present("moneydb") {
-        let p: MoneyDBFormat = serde_json::from_reader(io::stdin()).expect("Could not parse input");
+        let p: MoneyDBFormat =
+            serde_json::from_reader(io::stdin()).expect("Could not parse moneydb input");
         debug!("{:?}", p);
 
         p.write_to(connection);
+        warn!(
+            "Successfully imported moneydb data. \
+                If the database was empty, you should run \
+                `stockdb -v stock --fetch && stockdb -v data --fetch` \
+                and run the import again in order to convert transaction exchanges."
+        )
     } else {
-        let p: NativeFormat = serde_json::from_reader(io::stdin()).expect("Could not parse input");
+        let p: NativeFormat =
+            serde_json::from_reader(io::stdin()).expect("Could not parse native input");
         debug!("{:?}", p);
 
         p.write_to(connection);
+        warn!("Imported from backup. You might want to run `stockdb -v stock --fetch && stockdb -v data --fetch` now.")
     }
-
-    warn!("you might want to run `stockdb -v stock --fetch && stockdb -v data --fetch`")
 }

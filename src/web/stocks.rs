@@ -45,13 +45,13 @@ impl Stock {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct Price {
     date: DateTime<Utc>,
     price: f64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct Exchange {
     isin: String,
@@ -104,12 +104,12 @@ pub fn list(
             realtime_prices::onvista_record_id
                 .eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
         )
-        .order_by(realtime_prices::onvista_record_id.asc())
-        .then_order_by(realtime_prices::date.desc())
+        .order_by(realtime_prices::date.desc())
+        .limit(200) // might return nothing if the newest price is very old ...
         .load::<RealtimePrice>(&*connection)
         .ok()?;
 
-    let mut es = exchanges
+    let es = exchanges
         .into_iter()
         .map(|e| {
             Exchange::new(
@@ -120,18 +120,19 @@ pub fn list(
                 e,
             )
         })
-        .peekable();
+        .collect::<Vec<_>>();
 
-    let mut x = Vec::with_capacity(infos.len());
-
-    for s in infos.into_iter() {
-        let mut s_es = Vec::with_capacity(8); // up to 5 exchanges are grabbed in cli/data.rs
-        while es.peek().map(|e| &e.isin) == Some(&s.isin) {
-            s_es.push(es.next().unwrap())
-        }
-
-        x.push(Stock::new(s, s_es));
-    }
+    let x = infos
+        .into_iter()
+        .map(|s| {
+            let s_es = es
+                .iter()
+                .filter(|e| e.isin == s.isin)
+                .cloned()
+                .collect::<Vec<_>>();
+            Stock::new(s, s_es)
+        })
+        .collect::<Vec<_>>();
 
     Some(Json(x))
 }

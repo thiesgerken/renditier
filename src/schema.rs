@@ -77,6 +77,7 @@ table! {
         fees -> Int8,
         onvista_exchange_id -> Nullable<Int4>,
         comments -> Text,
+        exchange -> Nullable<Text>,
     }
 }
 

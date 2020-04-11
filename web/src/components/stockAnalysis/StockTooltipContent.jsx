@@ -115,7 +115,7 @@ const StockTooltipContent = ({
         payload &&
         payload.length &&
         payload[0].payload.priceDate && (
-          <span style={{ paddingTop: 4 }}>
+          <span style={{ paddingTop: 6 }}>
             {`Kursdatum: ${moment(payload[0].payload.priceDate).format(
               'L LT'
             )}`}

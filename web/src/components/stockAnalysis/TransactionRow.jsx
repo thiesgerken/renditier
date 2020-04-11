@@ -11,7 +11,7 @@ const TransactionRow = ({ transaction, currentPrice }) => {
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
 
   const colorize = v =>
-    v === null || v === undefined || v === 0.0
+    v === null || v === undefined || Math.abs(v) < 5e-3
       ? {}
       : {
           color:

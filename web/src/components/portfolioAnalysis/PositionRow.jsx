@@ -12,8 +12,8 @@ import {
   Tooltip,
 } from '@material-ui/core';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
-import { abbreviateTitle } from '../selectors/stocks';
-import OnvistaButton from './OnvistaButton';
+import { abbreviateTitle } from '../../selectors/stocks';
+import OnvistaButton from '../OnvistaButton';
 
 const PositionRow = ({ data, stock, push }) => {
   const theme = useTheme();
@@ -98,6 +98,21 @@ const PositionRow = ({ data, stock, push }) => {
     return s;
   };
 
+  const feesInfo = (
+    <>
+      <span>
+        {`davon Gebühren: ${fromTo(-1 * data.start.fees, -1 * data.end.fees)}`}
+      </span>
+      <br />
+      <span>
+        {`ohne Gebühren: ${fromTo(
+          -1 * data.start.invested + data.start.fees,
+          -1 * data.end.invested + data.end.fees
+        )}`}
+      </span>
+    </>
+  );
+
   return (
     <TableRow>
       <Hidden lgDown>
@@ -150,7 +165,11 @@ const PositionRow = ({ data, stock, push }) => {
           </Tooltip>
         </TableCell>
         <TableCell align="right">
-          {fromTo(-1 * data.start.invested, -1 * data.end.invested)}
+          <Tooltip title={feesInfo}>
+            <span>
+              {fromTo(-1 * data.start.invested, -1 * data.end.invested)}
+            </span>
+          </Tooltip>
         </TableCell>
       </Hidden>
       <TableCell align="right">

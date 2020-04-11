@@ -1,114 +1,428 @@
 import { connect } from 'react-redux';
-import React, { useState, forwardRef } from 'react';
-import MaterialTable from 'material-table';
-// import PropTypes from 'prop-types';
+import React from 'react';
+import PropTypes from 'prop-types';
+import MUIDataTable from 'mui-datatables';
+import moment from 'moment';
+import { find, map } from 'lodash';
+import {
+  ThemeProvider,
+  createMuiTheme,
+  useTheme,
+  useMediaQuery,
+  Container,
+  Button,
+  CircularProgress,
+  Tooltip,
+  IconButton,
+} from '@material-ui/core';
+import ShowChartIcon from '@material-ui/icons/ShowChart';
+import AddIcon from '@material-ui/icons/Add';
+import { useLocation, useHistory } from 'react-router';
 
-import AddBox from '@material-ui/icons/AddBox';
-import ArrowDownward from '@material-ui/icons/ArrowDownward';
-import Check from '@material-ui/icons/Check';
-import ChevronLeft from '@material-ui/icons/ChevronLeft';
-import ChevronRight from '@material-ui/icons/ChevronRight';
-import Clear from '@material-ui/icons/Clear';
-import DeleteOutline from '@material-ui/icons/DeleteOutline';
-import Edit from '@material-ui/icons/Edit';
-import FilterList from '@material-ui/icons/FilterList';
-import FirstPage from '@material-ui/icons/FirstPage';
-import LastPage from '@material-ui/icons/LastPage';
-import Remove from '@material-ui/icons/Remove';
-import SaveAlt from '@material-ui/icons/SaveAlt';
-import Search from '@material-ui/icons/Search';
-import ViewColumn from '@material-ui/icons/ViewColumn';
+import { updateTransactions as updateTransactionsAction } from '../actions/transactions';
+import { updateStocks as updateStocksAction } from '../actions/stocks';
+import { updateAccounts as updateAccountsAction } from '../actions/accounts';
+import { findStock, abbreviateTitle } from '../selectors/stocks';
+import TransactionDialog from './TransactionDialog';
+import { useEffect } from 'react';
 
-const tableIcons = {
-  Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
-  Check: forwardRef((props, ref) => <Check {...props} ref={ref} />),
-  Clear: forwardRef((props, ref) => <Clear {...props} ref={ref} />),
-  Delete: forwardRef((props, ref) => <DeleteOutline {...props} ref={ref} />),
-  DetailPanel: forwardRef((props, ref) => (
-    <ChevronRight {...props} ref={ref} />
-  )),
-  Edit: forwardRef((props, ref) => <Edit {...props} ref={ref} />),
-  Export: forwardRef((props, ref) => <SaveAlt {...props} ref={ref} />),
-  Filter: forwardRef((props, ref) => <FilterList {...props} ref={ref} />),
-  FirstPage: forwardRef((props, ref) => <FirstPage {...props} ref={ref} />),
-  LastPage: forwardRef((props, ref) => <LastPage {...props} ref={ref} />),
-  NextPage: forwardRef((props, ref) => <ChevronRight {...props} ref={ref} />),
-  PreviousPage: forwardRef((props, ref) => (
-    <ChevronLeft {...props} ref={ref} />
-  )),
-  ResetSearch: forwardRef((props, ref) => <Clear {...props} ref={ref} />),
-  Search: forwardRef((props, ref) => <Search {...props} ref={ref} />),
-  SortArrow: forwardRef((props, ref) => <ArrowDownward {...props} ref={ref} />),
-  ThirdStateCheck: forwardRef((props, ref) => <Remove {...props} ref={ref} />),
-  ViewColumn: forwardRef((props, ref) => <ViewColumn {...props} ref={ref} />),
+function useQuery(key) {
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  const history = useHistory();
+
+  const set = value => {
+    if (value === null || value === undefined) query.delete(key);
+    else query.set(key, value);
+
+    const qs = query.toString();
+    history.push(`${location.pathname}${qs.length ? '?' : ''}${qs}`);
+  };
+
+  return [query.get(key), set];
+}
+
+const manipulateExchange = (stocks, x) => {
+  let ex = null;
+  if (x.exchange !== null) ex = x.exchange;
+  if (x.onvistaExchangeId !== null) {
+    ex = `[${x.onvistaExchangeId}]`;
+
+    const stock = findStock(stocks, x.isin);
+    if (stock !== null) {
+      const e = find(
+        stock.exchanges,
+        ee => ee.onvistaExchangeId === x.onvistaExchangeId
+      );
+
+      if (e !== undefined && e !== null) ex = e.name;
+    }
+  }
+
+  return {
+    ...x,
+    exchangeDisplay: ex,
+  };
 };
 
-const Transactions = () => {
-  const [columns] = useState([
-    { title: 'Name', field: 'name' },
-    {
-      title: 'Surname',
-      field: 'surname',
-      initialEditValue: 'initial edit value',
-    },
-    { title: 'Birth Year', field: 'birthYear', type: 'numeric' },
-    {
-      title: 'Birth Place',
-      field: 'birthCity',
-      lookup: { 34: 'İstanbul', 63: 'Şanlıurfa' },
-    },
-  ]);
-  const [data, setData] = useState([
-    { name: 'Mehmet', surname: 'Baran', birthYear: 1987, birthCity: 63 },
-    { name: 'Zerya Betül', surname: 'Baran', birthYear: 2017, birthCity: 34 },
-  ]);
+const Transactions = ({
+  stocks,
+  transactions,
+  accounts,
+  updateStocks,
+  updateTransactions,
+  updateAccounts,
+}) => {
+  const [transactionId, setTransactionId] = useQuery('id');
+  const [page, setPage] = useQuery('page');
 
+  let initialTransaction = {
+    id: null,
+    accountId: accounts.items.length === 1 ? accounts.items[0].id : null,
+    isin: null,
+    date: moment().format(),
+    units: 0,
+    fees: 0,
+    amount: 0,
+    comments: '',
+    onvistaExchangeId: null,
+    exchange: null,
+  };
+  if (
+    transactions.items !== null &&
+    transactionId !== null &&
+    parseInt(transactionId, 10) >= 0
+  ) {
+    const t = find(
+      transactions.items,
+      x => x.id === parseInt(transactionId, 10)
+    );
+    if (t !== undefined) initialTransaction = t;
+  }
+
+  const theme = useTheme();
+  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
+
+  const myTheme = th =>
+    createMuiTheme({
+      ...th,
+      overrides: {
+        ...th.overrides,
+        MuiTableRow: {
+          root: {
+            // '&$selected': {
+            //   backgroundColor: theme.palette.primary.light,
+            // },
+          },
+        },
+        MUIDataTableSelectCell: {
+          root: {
+            display: 'none',
+          },
+        },
+      },
+    });
+
+  const colorize = v =>
+    v === null || v === undefined || v === 0
+      ? {}
+      : {
+          color:
+            v < 0 ? theme.palette.secondary.dark : theme.palette.primary.dark,
+        };
+
+  const formatAmount = value => (
+    <span style={colorize(value)}>
+      {`${(value / 100).toFixed(mdUp ? 2 : 0)}€`}
+    </span>
+  );
+
+  const history = useHistory();
+
+  useEffect(() => {
+    updateTransactions();
+    updateStocks();
+    updateAccounts();
+  });
+
+  const isLoading =
+    transactions.isFetching || stocks.isFetching || accounts.isFetching;
+
+  const columns = [
+    {
+      name: 'id',
+      label: 'ID',
+      options: {
+        filter: false,
+        display: false,
+      },
+    },
+    {
+      name: 'date',
+      label: 'Datum',
+      options: {
+        filter: false,
+        sortDirection: 'desc',
+        customBodyRender: d => moment(d).format(mdUp ? 'L LT' : 'L'),
+      },
+    },
+    {
+      name: 'amount',
+      label: 'Betrag',
+      options: {
+        filter: false,
+        customBodyRender: formatAmount,
+      },
+    },
+    {
+      name: 'fees',
+      label: 'Gebühren',
+      options: {
+        filter: false,
+        customBodyRender: formatAmount,
+        display: mdUp,
+      },
+    },
+    {
+      name: 'isin',
+      label: 'Wertpapier',
+      options: {
+        customBodyRender: isin => {
+          const stock = findStock(stocks, isin);
+          if (stock === null) return isin;
+
+          return (
+            <Button
+              variant="text"
+              color="primary"
+              startIcon={<ShowChartIcon />}
+              style={{
+                margin: theme.spacing(-2),
+              }}
+              onClick={() => history.push(`/stocks/${stock.isin}`)}
+            >
+              <span
+                style={{
+                  wordWrap: 'break-word',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  // wordBreak: 'break-all',
+                  WebkitLineClamp: 2,
+                  textAlign: 'left',
+                }}
+              >
+                {abbreviateTitle(stock.title, !mdUp)}
+              </span>
+            </Button>
+          );
+        },
+      },
+    },
+    {
+      name: 'isin',
+      label: 'ISIN',
+      options: {
+        display: false,
+      },
+    },
+    {
+      name: 'units',
+      label: 'Einheiten',
+      options: {
+        filter: false,
+        display: false,
+        customBodyRender: v => <span style={colorize(v)}>{v}</span>,
+      },
+    },
+    {
+      name: 'accountId',
+      label: 'Konto',
+      options: {
+        display: false,
+      },
+    },
+    {
+      name: 'exchangeDisplay',
+      label: 'Handelsplatz',
+      options: {
+        display: mdUp,
+      },
+    },
+    {
+      name: 'comments',
+      label: 'Kommentare',
+      options: {
+        filter: false,
+        display: mdUp,
+      },
+    },
+  ];
+
+  const options = {
+    selectableRows: 'single',
+    selectableRowsOnClick: true,
+    // expandableRowsOnClick: true,
+    disableToolbarSelect: true,
+    print: false,
+    page: page === null ? 0 : parseInt(page, 10), // https://github.com/gregnb/mui-datatables/issues/957
+    onChangePage: p => {
+      setPage(p === 0 ? null : p);
+    },
+    // pagination: mdUp,
+    // expandableRows: true,
+    // renderExpandableRow: rowData => {
+    //   const colSpan = rowData.length + 1;
+    //   return (
+    //     <TableRow>
+    //       <TableCell colSpan={colSpan}>Custom expandable row option.</TableCell>
+    //     </TableRow>
+    //   );
+    // },
+    onRowsSelect: (_, rows) => {
+      if (rows.length > 0 && rows[0].dataIndex < transactions.items.length)
+        setTransactionId(transactions.items[rows[0].dataIndex].id);
+      else setTransactionId(null);
+    },
+    // onRowClick: (_, { dataIndex }) => {
+    //   if (dataIndex < transactions.items.length) {
+    //     setCurrentTransaction(transactions.items[dataIndex]);
+    //     console.log(transactions.items[dataIndex]);
+    //   } else setCurrentTransaction(null);
+    // },
+    download: false,
+    rowsPerPageOptions: mdUp ? [10, 25, 50] : [10],
+    responsive: 'scrollFullHeight',
+    customToolbar: () => (
+      <Tooltip title="Neue Transaktion">
+        <IconButton onClick={() => setTransactionId(-1)}>
+          <AddIcon />
+        </IconButton>
+      </Tooltip>
+    ),
+    textLabels: {
+      body: {
+        noMatch: 'Keine Transaktionen vorhanden.',
+        toolTip: 'Sortieren',
+        columnHeaderTooltip: column => `Sortiere nach ${column.label}`,
+      },
+      pagination: {
+        next: 'Nächste Seite',
+        previous: 'Vorherige Seite',
+        rowsPerPage: 'Zeilen pro Seite:',
+        displayRows: 'von',
+      },
+      toolbar: {
+        search: 'Suchen',
+        viewColumns: 'Spalten',
+        filterTable: 'Filter',
+      },
+      filter: {
+        all: 'Alle',
+        title: 'FILTER',
+        reset: 'RESET',
+      },
+      viewColumns: {
+        title: 'Angezeigte Spalten',
+        titleAria: 'Zeigen/Ausblenden von Tabellenspalten',
+      },
+      selectedRows: {
+        text: 'Zeile(n) ausgewählt',
+        delete: 'Löschen',
+        deleteAria: 'ausgewählte Zeilen löschen',
+      },
+    },
+  };
   return (
-    <>
-      <div>Transaktionen</div>
-      <MaterialTable
-        icons={tableIcons}
-        title="Editable Preview"
-        columns={columns}
-        data={data}
-        editable={{
-          onRowAdd: newData =>
-            new Promise((resolve, reject) => {
-              setTimeout(() => {
-                data.push(newData);
-                setData(data);
-                resolve();
-              }, 1000);
-            }),
-          onRowUpdate: (newData, oldData) =>
-            new Promise((resolve, reject) => {
-              setTimeout(() => {
-                {
-                  const index = data.indexOf(oldData);
-                  data[index] = newData;
-                  setData(data);
-                }
-                resolve();
-              }, 1000);
-            }),
-          onRowDelete: oldData =>
-            new Promise((resolve, reject) => {
-              setTimeout(() => {
-                {
-                  const index = data.indexOf(oldData);
-                  data.splice(index, 1);
-                  setData(data);
-                }
-                resolve();
-              }, 1000);
-            }),
+    <div style={{ margin: '-4px' }}>
+      <Container maxWidth="xl" style={{ padding: '0px' }}>
+        <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+          {isLoading && (
+            <div
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(0%, -0%)',
+                width: '0%',
+                height: '0%',
+                padding: '0px',
+                margin: 0,
+                zIndex: 9,
+              }}
+            >
+              <CircularProgress color="secondary" />
+            </div>
+          )}
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              left: '0',
+              top: '0',
+            }}
+          >
+            <ThemeProvider theme={myTheme}>
+              <MUIDataTable
+                title="Transaktionen"
+                data={map(transactions.items, x =>
+                  manipulateExchange(stocks, x)
+                )}
+                columns={columns}
+                options={options}
+              />
+            </ThemeProvider>
+          </div>
+        </div>
+      </Container>
+      <TransactionDialog
+        initialTransaction={initialTransaction}
+        open={transactionId !== null && !isLoading}
+        onClose={() => {
+          setTransactionId(null);
         }}
       />
-    </>
+    </div>
   );
 };
-Transactions.propTypes = {};
 
-const mapStateToProps = () => ({});
+Transactions.propTypes = {
+  updateTransactions: PropTypes.func.isRequired,
+  updateStocks: PropTypes.func.isRequired,
+  updateAccounts: PropTypes.func.isRequired,
+  transactions: PropTypes.shape({
+    items: PropTypes.arrayOf(PropTypes.object),
+    lastUpdated: PropTypes.number,
+    isFetching: PropTypes.bool,
+  }).isRequired,
+  stocks: PropTypes.shape({
+    items: PropTypes.arrayOf(PropTypes.object),
+    lastUpdated: PropTypes.number,
+    isFetching: PropTypes.bool,
+  }).isRequired,
+  accounts: PropTypes.shape({
+    items: PropTypes.arrayOf(PropTypes.object),
+    lastUpdated: PropTypes.number,
+    isFetching: PropTypes.bool,
+  }).isRequired,
+};
 
-export default connect(mapStateToProps)(Transactions);
+const mapDispatchToProps = dispatch => ({
+  updateTransactions: () => dispatch(updateTransactionsAction()),
+  updateStocks: () => dispatch(updateStocksAction()),
+  updateAccounts: () => dispatch(updateAccountsAction()),
+});
+
+const mapStateToProps = state => {
+  const { transactions, stocks, accounts } = state;
+
+  return {
+    transactions,
+    stocks,
+    accounts,
+  };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Transactions);

@@ -49,6 +49,7 @@ pub struct PositionPerformance {
 pub struct PortfolioSnapshot {
     pub date: NaiveDate,
     pub invested: f64,
+    pub fees: f64, // these are included in `invested`
     pub value: Option<f64>,
 }
 
@@ -58,6 +59,7 @@ pub struct PositionSnapshot {
     pub date: NaiveDate,
     pub units: f64,
     pub invested: f64,
+    pub fees: f64, // these are included in `invested`
     pub value: Option<f64>,
     pub data_source: Option<DataSource<EitherPrice>>,
 }
@@ -244,21 +246,35 @@ fn compute_position(
         .cloned()
         .partition(|t| t.date.with_timezone(&Local).date().naive_local() <= start);
 
-    let (prior_units, prior_invested) = prior_ts.iter().fold((0.0, 0.0), |(au, ac), t| {
-        (au + t.units, ac + (t.amount + t.fees) as f64 / 100.0)
-    });
+    let (prior_units, prior_invested, prior_fees) =
+        prior_ts.iter().fold((0.0, 0.0, 0.0), |(au, ac, af), t| {
+            (
+                au + t.units,
+                ac + (t.amount + t.fees) as f64 / 100.0,
+                af + t.fees as f64 / 100.0,
+            )
+        });
 
-    let (units, invested) = relevant_ts.iter().fold((0.0, 0.0), |(au, ac), t| {
-        (au + t.units, ac + (t.amount + t.fees) as f64 / 100.0)
+    let (units, invested, fees) = relevant_ts.iter().fold((0.0, 0.0, 0.0), |(au, ac, af), t| {
+        (
+            au + t.units,
+            ac + (t.amount + t.fees) as f64 / 100.0,
+            af + t.fees as f64 / 100.0,
+        )
     });
 
     let end_snapshot = PositionSnapshot {
         date: end,
         units: units + prior_units,
         invested: invested + prior_invested,
-        value: end_price
-            .as_ref()
-            .map(|x| (prior_units + units) * x.price.value()),
+        fees: fees + prior_fees,
+        value: if units + prior_units == 0.0 {
+            Some(0.0)
+        } else {
+            end_price
+                .as_ref()
+                .map(|x| (prior_units + units) * x.price.value())
+        },
         data_source: end_price.as_ref().cloned(),
     };
 
@@ -266,9 +282,15 @@ fn compute_position(
         date: start,
         units: prior_units,
         invested: prior_invested,
-        value: start_price.as_ref().map(|x| prior_units * x.price.value()),
+        fees: prior_fees,
+        value: if prior_units == 0.0 {
+            Some(0.0)
+        } else {
+            start_price.as_ref().map(|x| prior_units * x.price.value())
+        },
         data_source: start_price.clone().map(EitherPrice::wrap_historical),
     };
+
     let (irr_annual, irr_period) = if start_price.is_none() && prior_units != 0.0 {
         (None, None)
     } else if let Some(ep) = end_price {
@@ -382,27 +404,31 @@ fn compute_performance(
             .collect::<HashMap<_, _>>()
     };
 
-    let (p_invested, p_value, invested, value) =
-        positions
-            .values()
-            .fold((0.0, Some(0.0), 0.0, Some(0.0)), |(api, apv, ai, av), p| {
-                (
-                    api + p.start.invested,
-                    apv.and_then(|apv1| p.start.value.map(|v| apv1 + v)),
-                    ai + p.end.invested,
-                    av.and_then(|av1| p.end.value.map(|v| av1 + v)),
-                )
-            });
+    let (p_invested, p_value, p_fees, invested, value, fees) = positions.values().fold(
+        (0.0, Some(0.0), 0.0, 0.0, Some(0.0), 0.0),
+        |(api, apv, apf, ai, av, af), p| {
+            (
+                api + p.start.invested,
+                apv.and_then(|apv1| p.start.value.map(|v| apv1 + v)),
+                apf + p.start.fees,
+                ai + p.end.invested,
+                av.and_then(|av1| p.end.value.map(|v| av1 + v)),
+                af + p.end.fees,
+            )
+        },
+    );
 
     let end_snapshot = PortfolioSnapshot {
         date: end.unwrap_or_else(|| Local::today().naive_local()),
         invested,
+        fees,
         value,
     };
 
     let start_snapshot = PortfolioSnapshot {
         date: start,
         invested: p_invested,
+        fees: p_fees,
         value: p_value,
     };
 

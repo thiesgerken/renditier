@@ -54,7 +54,7 @@ const useStyles = makeStyles(theme => ({
   },
   content: {
     flexGrow: 1,
-    'padding-top': theme.spacing(3),
+    'padding-top': theme.spacing(1),
   },
   title: {
     flexGrow: 1,

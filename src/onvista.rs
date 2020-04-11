@@ -1,6 +1,6 @@
 use crate::models::*;
 
-use chrono::{Date, Local, NaiveDate, TimeZone, Utc};
+use chrono::{Date, Datelike, Local, NaiveDate, TimeZone, Utc};
 use log::{debug, warn};
 use reqwest::blocking::Response;
 use std::error::Error;
@@ -407,6 +407,15 @@ fn get_etc_etn_data_realtime_exchange(
         date_splits[1].parse()?,
         date_splits[0].parse()?,
     );
+
+    if date.weekday().number_from_monday() >= 6 {
+        // just ignore these
+        warn!(
+            "ETC/ETN parse realtime for {}: data is not from a weekday, ignoring.",
+            onvista_record_id
+        );
+        return Ok(None);
+    }
 
     Ok(rds
         .filter_map(|s| parse_etc_etn_realtime_row(onvista_record_id, date, s))
