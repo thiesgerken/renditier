@@ -1,3 +1,5 @@
+import { invalidatePerformance } from './performance';
+
 export const FETCH_TRANSACTIONS_REQUEST = 'FETCH_TRANSACTIONS_REQUEST';
 export const fetchTransactionsRequest = () => ({
   type: FETCH_TRANSACTIONS_REQUEST,
@@ -72,6 +74,7 @@ export const deleteTransaction = id => dispatch => {
       if (res.error) throw res.error;
 
       dispatch(modifyTransactionSuccess(id, 'DELETE', null));
+      dispatch(invalidatePerformance());
     })
     .catch(e => dispatch(modifyTransactionError(id, 'DELETE', e)));
 };
@@ -90,6 +93,7 @@ export const createTransaction = transaction => dispatch => {
       if (res.error) throw res.error;
 
       dispatch(modifyTransactionSuccess(res.id, 'POST', res));
+      dispatch(invalidatePerformance());
     })
     .catch(e => dispatch(modifyTransactionError(null, 'POST', e)));
 };
@@ -108,6 +112,7 @@ export const updateTransaction = transaction => dispatch => {
       if (res.error) throw res.error;
 
       dispatch(modifyTransactionSuccess(transaction.id, 'PUT', null));
+      dispatch(invalidatePerformance());
     })
     .catch(e => dispatch(modifyTransactionError(transaction.id, 'PUT', e)));
 };
