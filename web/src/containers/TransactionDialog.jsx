@@ -82,9 +82,8 @@ const TransactionDialog = ({
     )
       return null;
 
-    const tStock = findStock(stocks, t.isin);
     const tAccount = findAccountByName(accounts, t.account);
-    if (tStock === null || tAccount === null) return null;
+    if (tAccount === null) return null;
 
     if (
       parseFloat(t.units) === 0 &&
@@ -105,6 +104,7 @@ const TransactionDialog = ({
       date: t.date.format(),
     };
 
+    const tStock = findStock(stocks, t.isin) || { exchanges: [] };
     if (t.exchange.trim() !== '') {
       const ex = findExchangeByName(tStock, t.exchange);
 
@@ -160,8 +160,7 @@ const TransactionDialog = ({
     parseFloat(transaction.units) !== 0.0
   )
     price = `${(
-      (-1 * parseFloat(transaction.amount)) /
-      parseFloat(transaction.units)
+      parseFloat(transaction.amount) / parseFloat(transaction.units)
     ).toFixed(2)}€`;
 
   // console.log(initialTransaction);
