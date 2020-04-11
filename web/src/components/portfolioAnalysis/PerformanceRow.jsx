@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
-import { Hidden, useMediaQuery } from '@material-ui/core';
+import { Hidden, useMediaQuery, Tooltip } from '@material-ui/core';
 import { useTheme } from '@material-ui/core/styles';
 import * as moment from 'moment';
 
@@ -50,12 +50,31 @@ const PerformanceRow = ({ data }) => {
     return s;
   };
 
+  const feesInfo = (
+    <>
+      <span>
+        {`davon Gebühren: ${fromTo(-1 * data.start.fees, -1 * data.end.fees)}`}
+      </span>
+      <br />
+      <span>
+        {`ohne Gebühren: ${fromTo(
+          -1 * data.start.invested + data.start.fees,
+          -1 * data.end.invested + data.end.fees
+        )}`}
+      </span>
+    </>
+  );
+
   return (
     <TableRow>
       <TableCell>{getPeriodDescription(data)}</TableCell>
       <Hidden xsDown>
         <TableCell align="right">
-          {fromTo(-1 * data.start.invested, -1 * data.end.invested)}
+          <Tooltip title={feesInfo}>
+            <span>
+              {fromTo(-1 * data.start.invested, -1 * data.end.invested)}
+            </span>
+          </Tooltip>
         </TableCell>
       </Hidden>
       <TableCell align="right">

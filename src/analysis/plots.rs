@@ -293,10 +293,10 @@ pub fn compute_portfolio_plot(
             if let Some(c_price) = current_price {
                 if (p.date - c_price.date()).num_days().abs() < 7 {
                     p.value = p.value.map(|v| v + units * c_price.value());
-                } else {
+                } else if units.abs() > 1e-8 {
                     p.value = None;
                 }
-            } else {
+            } else if units.abs() > 1e-8 {
                 p.value = None;
             }
         }
@@ -397,10 +397,8 @@ pub fn compute_stock_plot(
                 p.value = Some(units * c_price.value());
                 p.price = Some(c_price.value());
                 p.price_date = Some(c_price.date());
-            } else {
-                p.value = None;
             }
-        } else {
+        } else if units.abs() > 1e-8 {
             p.value = None;
         }
     }

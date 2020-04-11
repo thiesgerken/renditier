@@ -161,7 +161,7 @@ const TransactionDialog = ({
   )
     price = `${(
       parseFloat(transaction.amount) / parseFloat(transaction.units)
-    ).toFixed(2)}€`;
+    ).toFixed(4)}€`;
 
   // console.log(initialTransaction);
   // console.log(transaction);

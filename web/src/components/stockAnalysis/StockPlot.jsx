@@ -97,8 +97,10 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
       ).format('YYYY-MM-DD');
       ed = performance.items[period].end.date;
     } else {
-      sd = dates[0].format('YYYY-MM-DD');
-      ed = dates[1].format('YYYY-MM-DD');
+      sd = (dates[0].isValid() ? dates[0] : moment().startOf('year')).format(
+        'YYYY-MM-DD'
+      );
+      ed = (dates[1].isValid() ? dates[1] : moment()).format('YYYY-MM-DD');
     }
 
     plotData = getData(data, isin, sd, ed, source);
