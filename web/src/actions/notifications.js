@@ -6,6 +6,16 @@ export const updateRegistration = registration => ({
   registration,
 });
 
+export const UPDATE_AVAILABLE = 'UPDATE_AVAILABLE';
+export const updateAvailable = () => ({
+  type: UPDATE_AVAILABLE,
+});
+
+export const IGNORE_UPDATE = 'IGNORE_UPDATE';
+export const ignoreUpdate = () => ({
+  type: IGNORE_UPDATE,
+});
+
 export const SUBSCRIBE_REQUEST = 'SUBSCRIBE_REQUEST';
 export const subscribeRequest = () => ({
   type: SUBSCRIBE_REQUEST,
@@ -51,9 +61,16 @@ export const subscribe = () => (dispatch, getState) => {
     return Promise.resolve();
   }
 
-  dispatch(subscribeRequest());
+  const { notifications, authentication } = getState();
 
-  const { notifications } = getState();
+  if (authentication.userInfo.applicationServerKey === '') {
+    dispatch(
+      subscribeError({ message: 'cannot subscribe to push: no server key' })
+    );
+    return Promise.resolve();
+  }
+
+  dispatch(subscribeRequest());
 
   if (notifications.registration === null) {
     dispatch(
@@ -79,13 +96,11 @@ export const subscribe = () => (dispatch, getState) => {
     return outputArray;
   };
 
-  // TODO: obtain the server key upon user login instead
-
   return notifications.registration.pushManager
     .subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(
-        'BP0rUec4RyUpBx8Rq2ZqMAVOrhb04ieT2DDVvFYWP9sdt9jwjTtabRx1KOKRUSuqgbDqgmwyoTZZ0dspxpFE-8Y='
+        authentication.userInfo.applicationServerKey
       ),
     })
     .then(subscription => {

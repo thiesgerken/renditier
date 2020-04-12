@@ -15,6 +15,7 @@ const Settings = ({
   pushSubscribed,
   pushSubscribe,
   pushUnsubscribe,
+  updateAvailable,
 }) => {
   moment.locale('de');
 
@@ -24,7 +25,12 @@ const Settings = ({
         Version #{buildCommit}, gebaut {moment(buildDate).format('LLL')} (
         {moment(buildDate).fromNow()})
       </div>
-
+      {updateAvailable && (
+        <div>
+          Es ist eine Aktualisierung verfügbar, zum Installieren bitte die App
+          neustarten.
+        </div>
+      )}
       <FormGroup row>
         <FormControlLabel
           control={
@@ -48,11 +54,13 @@ Settings.propTypes = {
   pushSubscribed: PropTypes.bool.isRequired,
   pushSubscribe: PropTypes.func.isRequired,
   pushUnsubscribe: PropTypes.func.isRequired,
+  updateAvailable: PropTypes.bool.isRequired,
 };
 
 const mapStateToProps = ({ notifications }) => ({
   workerRegistered: notifications.registration !== null,
   pushSubscribed: notifications.subscription !== null,
+  updateAvailable: notifications.updateAvailable,
 });
 
 const mapDispatchToProps = dispatch => ({

@@ -66,6 +66,7 @@ const authentication = (
           ? formatLoginError(action.error)
           : state.message,
         loginAttempted: true,
+        userInfo: action.error.message === '401' ? null : state.userInfo,
       };
     case LOGOUT_REQUEST:
       return {

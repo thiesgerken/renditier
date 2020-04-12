@@ -1,31 +1,35 @@
-import React from 'react';
+import { Container, Collapse } from '@material-ui/core';
 import AppBar from '@material-ui/core/AppBar';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Divider from '@material-ui/core/Divider';
-import SwipeableDrawer from '@material-ui/core/SwipeableDrawer';
 import Drawer from '@material-ui/core/Drawer';
+import Grid from '@material-ui/core/Grid';
 import Hidden from '@material-ui/core/Hidden';
 import IconButton from '@material-ui/core/IconButton';
-import DashboardIcon from '@material-ui/icons/Dashboard';
-import AssessmentOutlinedIcon from '@material-ui/icons/AssessmentOutlined';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
-import SettingsIcon from '@material-ui/icons/Settings';
-import ReceiptIcon from '@material-ui/icons/Receipt';
-import CreditCardIcon from '@material-ui/icons/CreditCard';
-import MenuIcon from '@material-ui/icons/Menu';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
+import SwipeableDrawer from '@material-ui/core/SwipeableDrawer';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
-import { makeStyles, useTheme } from '@material-ui/core/styles';
-import PropTypes from 'prop-types';
 import AccountCircle from '@material-ui/icons/AccountCircle';
-import MenuItem from '@material-ui/core/MenuItem';
-import Grid from '@material-ui/core/Grid';
-import Menu from '@material-ui/core/Menu';
+import AssessmentOutlinedIcon from '@material-ui/icons/AssessmentOutlined';
+import CreditCardIcon from '@material-ui/icons/CreditCard';
+import DashboardIcon from '@material-ui/icons/Dashboard';
+import MenuIcon from '@material-ui/icons/Menu';
+import ReceiptIcon from '@material-ui/icons/Receipt';
+import SettingsIcon from '@material-ui/icons/Settings';
+import Alert from '@material-ui/lab/Alert';
 import { push as routerPush } from 'connected-react-router';
+import PropTypes from 'prop-types';
+import React from 'react';
 import { connect } from 'react-redux';
+
+import { ignoreUpdate as ignoreUpdateAction } from '../actions/notifications';
 
 const drawerWidth = 240;
 
@@ -62,7 +66,14 @@ const useStyles = makeStyles(theme => ({
 }));
 
 function ResponsiveDrawer(props) {
-  const { children, username, push, pathname } = props;
+  const {
+    children,
+    username,
+    push,
+    pathname,
+    updateAvailable,
+    ignoreUpdate,
+  } = props;
   const classes = useStyles();
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -240,7 +251,17 @@ function ResponsiveDrawer(props) {
       </nav>
       <main className={classes.content}>
         <div className={classes.toolbar} />
-        <div style={{ padding: '12px' }}>{children}</div>
+
+        <div style={{ padding: '12px' }}>
+          <Collapse in={updateAvailable}>
+            <Container maxWidth="md" style={{ marginBottom: theme.spacing(3) }}>
+              <Alert elevation={0} severity="info" onClose={ignoreUpdate}>
+                Aktualisierung verfügbar, bitte die App neustarten!
+              </Alert>
+            </Container>{' '}
+          </Collapse>
+          {children}
+        </div>
       </main>
     </div>
   );
@@ -254,13 +275,18 @@ ResponsiveDrawer.propTypes = {
   push: PropTypes.func.isRequired,
   username: PropTypes.string.isRequired,
   pathname: PropTypes.string.isRequired,
+  updateAvailable: PropTypes.bool.isRequired,
+  ignoreUpdate: PropTypes.func.isRequired,
 };
 
-const mapStateToProps = ({ authentication, router }) => {
-  return {
-    username: authentication.userInfo.full_name,
-    pathname: router.location.pathname,
-  };
-};
-
-export default connect(mapStateToProps, { push: routerPush })(ResponsiveDrawer);
+const mapStateToProps = ({ authentication, router, notifications }) => ({
+  username: authentication.userInfo.full_name,
+  pathname: router.location.pathname,
+  updateAvailable:
+    notifications.updateAvailable && !notifications.updateIgnored,
+});
+const mapDispatchToProps = dispatch => ({
+  push: x => dispatch(routerPush(x)),
+  ignoreUpdate: () => dispatch(ignoreUpdateAction()),
+});
+export default connect(mapStateToProps, mapDispatchToProps)(ResponsiveDrawer);

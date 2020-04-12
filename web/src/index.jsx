@@ -17,7 +17,11 @@ import * as moment from 'moment';
 import rootReducer from './reducers';
 import App from './containers/App';
 import * as serviceWorker from './serviceWorker';
-import { updateRegistration, subscribe } from './actions/notifications';
+import {
+  updateRegistration,
+  subscribe,
+  updateAvailable,
+} from './actions/notifications';
 
 const history = createBrowserHistory();
 
@@ -68,12 +72,11 @@ serviceWorker.register({
     store.dispatch(updateRegistration(registration));
 
     // Set the initial subscription value
-    registration.pushManager.getSubscription().then(subscription => {
-      // might fail if the user is not logged in, but okay ....
-      if (subscription !== null) store.dispatch(subscribe(subscription));
+    registration.pushManager.getSubscription().then(() => {
+      store.dispatch(subscribe());
     });
-
-    // TODO: check for push registration and tell the server as soon as we are logged in
-    // TODO: settings panel with a checkbox for push messages (if state contains a registration)
+  },
+  onUpdate: () => {
+    store.dispatch(updateAvailable());
   },
 });

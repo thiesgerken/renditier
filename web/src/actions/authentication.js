@@ -1,4 +1,5 @@
 import { push } from 'connected-react-router';
+import { subscribe } from './notifications';
 
 export const LOGIN_REQUEST = 'LOGIN_REQUEST';
 export const loginRequest = () => ({
@@ -30,12 +31,13 @@ export const clearAuthMessage = () => ({
   type: CLEAR_AUTH_MESSAGE,
 });
 
-export const login = (user, password) => dispatch => {
+export const login = (userName, password) => dispatch => {
   dispatch(push('/'));
   dispatch(loginRequest());
-  return fetch(
-    encodeURI(`/api/user/login?username=${user}&password=${password}`)
-  )
+  return fetch('/api/user/login', {
+    method: 'POST',
+    body: JSON.stringify({ userName, password }),
+  })
     .then(res => {
       if (!res.ok) throw Error(res.status.toString());
       return res.json();
@@ -44,6 +46,7 @@ export const login = (user, password) => dispatch => {
       if (res.error) throw res.error;
 
       dispatch(loginSuccess(res));
+      dispatch(subscribe());
     })
     .catch(e => dispatch(loginError(e)));
 };
@@ -58,6 +61,7 @@ export const checkLogin = () => dispatch => {
       if (res.error) throw res.error;
 
       dispatch(loginSuccess(res));
+      dispatch(subscribe());
     })
     .catch(e => {
       dispatch(loginError(e, false));
