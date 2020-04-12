@@ -117,6 +117,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
 
         match onvista::get_info(&isin_) {
             Ok((si, exs)) => {
+                // TODO: doesn't this cascade delete?
                 diesel::delete(
                     stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)),
                 )
@@ -140,7 +141,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
                     .filter(|e| exs.iter().any(|e_| e == &e_.onvista_record_id))
                     .collect::<Vec<_>>();
 
-                // .. and delete there price histories
+                // .. and delete their price histories
                 diesel::delete(
                     historical_prices.filter(
                         crate::schema::historical_prices::dsl::onvista_record_id

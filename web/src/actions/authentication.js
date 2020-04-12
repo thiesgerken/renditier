@@ -8,7 +8,7 @@ export const loginRequest = () => ({
 export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
 export const loginSuccess = json => ({
   type: LOGIN_SUCCESS,
-  data: json, // .data.children.map(child => child.data),
+  data: json,
   receivedAt: Date.now(),
 });
 

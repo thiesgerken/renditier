@@ -41,7 +41,6 @@ const authentication = (
       return {
         ...state,
         isFetching: true,
-        didInvalidate: false,
         messageType: null,
         message: null,
       };
@@ -72,7 +71,6 @@ const authentication = (
       return {
         ...state,
         isFetching: true,
-        didInvalidate: false,
         messageType: null,
         message: null,
       };

@@ -19,7 +19,7 @@ const accounts = (
     case INVALIDATE_ACCOUNTS:
       return { ...state, didInvalidate: true };
     case FETCH_ACCOUNTS_REQUEST:
-      return { ...state, isFetching: true, didInvalidate: false };
+      return { ...state, isFetching: true };
     case FETCH_ACCOUNTS_SUCCESS:
       return {
         ...state,

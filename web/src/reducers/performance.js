@@ -19,7 +19,7 @@ const performance = (
     case INVALIDATE_PERFORMANCE:
       return { ...state, didInvalidate: true };
     case FETCH_PERFORMANCE_REQUEST:
-      return { ...state, isFetching: true, didInvalidate: false };
+      return { ...state, isFetching: true };
     case FETCH_PERFORMANCE_SUCCESS:
       return {
         ...state,

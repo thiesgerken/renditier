@@ -41,6 +41,7 @@ export const updateStocks = () => (dispatch, getState) => {
   const { stocks } = getState();
 
   if (
+    !stocks.didInvalidate &&
     stocks.lastUpdated !== null &&
     Date.now() - stocks.lastUpdated > 60 * 60 * 1e3
   )

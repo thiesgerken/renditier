@@ -15,6 +15,7 @@
 - unify formatting and querying functions, subdirectories for components folder
 - Use new daterange component as soon as it works better https://github.com/mui-org/material-ui-pickers
 - only ask for login on a 401, otherwise show loading bars
+- sometimes endless loop involving updatePerformance
 
 ## Ideas
 
@@ -24,6 +25,10 @@
 - watchlist of isins for each user, so that they can be analyzed (and so that notifications can be set for them?)
 - send a test notification as soon as a new device registers
 - StockAnalysis: List of exchanges and current prices (+ dates)
+- compare stock performances
+- proper maintenance of stock data (renew every week, do not delete old prices!)
+- also grab and show ETF description, distribution of countries, corporations and sectors
+- try to find out which index links to each ETF, grab data for those as well
 
 ## Install
 
