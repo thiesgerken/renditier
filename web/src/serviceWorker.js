@@ -108,7 +108,7 @@ function checkValidServiceWorker(swUrl, config) {
 }
 
 export function register(config) {
-  // if (process.env.NODE_ENV !== 'production') return;
+  if (process.env.NODE_ENV !== 'production') return;
 
   if ('serviceWorker' in navigator && 'PushManager' in window) {
     // The URL constructor is available in all browsers that support SW.

@@ -48,6 +48,7 @@ pub struct Config {
     pub secret_key: String,
     pub port: i64,
     pub address: String,
+    pub application_server_key: String,
 }
 
 impl Default for Config {
@@ -56,6 +57,7 @@ impl Default for Config {
             secret_key: String::new(),
             port: 8383,
             address: "localhost".into(),
+            application_server_key: String::new(),
         }
     }
 }
@@ -187,6 +189,6 @@ pub fn handle(
         },
         log_level: level,
         database_url: database,
-        application_server_key: String::new(),
+        application_server_key: config.application_server_key,
     });
 }

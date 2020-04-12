@@ -65,8 +65,6 @@ export const subscribe = () => (dispatch, getState) => {
 
   const { notifications, authentication } = state;
 
-  console.log(authentication.userInfo);
-
   if (authentication.userInfo.applicationServerKey === '') {
     dispatch(
       subscribeError({ message: 'cannot subscribe to push: no server key' })
