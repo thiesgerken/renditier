@@ -17,22 +17,23 @@ pub struct Config {
     pub secret_key: Option<String>,
     pub log_level: LoggingLevel,
     pub database_url: String,
+    pub application_server_key: String,
 }
 
 pub fn handle(config: Config) {
     let mut database_config = HashMap::new();
     let mut databases = HashMap::new();
 
-    database_config.insert("url", Value::from(config.database_url));
+    database_config.insert("url", Value::from(config.database_url.clone()));
     databases.insert("stockdb", Value::from(database_config));
 
     let mut rocket_config = rocket::config::Config::build(Environment::Production)
         .extra("databases", databases)
         .port(config.port)
-        .address(config.address)
+        .address(config.address.clone())
         .log_level(config.log_level);
 
-    if let Some(key) = config.secret_key {
+    if let Some(key) = config.secret_key.clone() {
         rocket_config = rocket_config.secret_key(key);
     }
 
@@ -42,6 +43,7 @@ pub fn handle(config: Config) {
 
     rocket::custom(rocket_config)
         .attach(DbConn::fairing())
+        .manage(config)
         .mount(
             "/api/",
             routes![

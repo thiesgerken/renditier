@@ -187,5 +187,6 @@ pub fn handle(
         },
         log_level: level,
         database_url: database,
+        application_server_key: String::new(),
     });
 }

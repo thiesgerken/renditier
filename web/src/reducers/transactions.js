@@ -24,7 +24,7 @@ const transactions = (
     case INVALIDATE_TRANSACTIONS:
       return { ...state, didInvalidate: true };
     case FETCH_TRANSACTIONS_REQUEST:
-      return { ...state, isFetching: true, didInvalidate: false };
+      return { ...state, isFetching: true };
     case FETCH_TRANSACTIONS_SUCCESS:
       return {
         ...state,

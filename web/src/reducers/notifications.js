@@ -6,6 +6,8 @@ import {
   UNSUBSCRIBE_REQUEST,
   UNSUBSCRIBE_SUCCESS,
   UNSUBSCRIBE_ERROR,
+  UPDATE_AVAILABLE,
+  IGNORE_UPDATE,
 } from '../actions/notifications';
 
 const notifications = (
@@ -16,6 +18,8 @@ const notifications = (
     subscription: null,
     unsubscribing: false,
     unsubscribeError: null,
+    updateAvailable: false,
+    updateIgnored: false,
   },
   action
 ) => {
@@ -24,6 +28,16 @@ const notifications = (
       return {
         ...state,
         registration: action.registration,
+      };
+    case UPDATE_AVAILABLE:
+      return {
+        ...state,
+        updateAvailable: true,
+      };
+    case IGNORE_UPDATE:
+      return {
+        ...state,
+        updateIgnored: true,
       };
     case SUBSCRIBE_REQUEST:
       return {

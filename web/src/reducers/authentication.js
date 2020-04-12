@@ -41,7 +41,6 @@ const authentication = (
       return {
         ...state,
         isFetching: true,
-        didInvalidate: false,
         messageType: null,
         message: null,
       };
@@ -67,12 +66,12 @@ const authentication = (
           ? formatLoginError(action.error)
           : state.message,
         loginAttempted: true,
+        userInfo: action.error.message === '401' ? null : state.userInfo,
       };
     case LOGOUT_REQUEST:
       return {
         ...state,
         isFetching: true,
-        didInvalidate: false,
         messageType: null,
         message: null,
       };

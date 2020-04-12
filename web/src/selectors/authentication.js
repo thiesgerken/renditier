@@ -1,7 +1,7 @@
 export function isAuthenticated(state) {
   const { authentication } = state;
 
-  return authentication.userInfo !== null && !authentication.didInvalidate;
+  return authentication.userInfo !== null; // && !authentication.didInvalidate;
 }
 
 export function isAuthenticationInitialized(state) {
