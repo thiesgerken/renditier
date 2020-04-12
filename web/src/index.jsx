@@ -16,12 +16,7 @@ import * as moment from 'moment';
 
 import rootReducer from './reducers';
 import App from './containers/App';
-import * as serviceWorker from './serviceWorker';
-import {
-  updateRegistration,
-  subscribe,
-  updateAvailable,
-} from './actions/notifications';
+import ServiceWorker from './containers/ServiceWorker';
 
 const history = createBrowserHistory();
 
@@ -59,6 +54,7 @@ render(
           dateAdapter={MomentUtils}
           dateLibInstance={moment}
         >
+          <ServiceWorker />
           <App />
         </LocalizationProvider>
       </ThemeProvider>
@@ -66,17 +62,3 @@ render(
   </Provider>,
   document.getElementById('root')
 );
-
-serviceWorker.register({
-  onInit: registration => {
-    store.dispatch(updateRegistration(registration));
-
-    // Set the initial subscription value
-    registration.pushManager.getSubscription().then(() => {
-      store.dispatch(subscribe());
-    });
-  },
-  onUpdate: () => {
-    store.dispatch(updateAvailable());
-  },
-});

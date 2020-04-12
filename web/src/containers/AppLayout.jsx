@@ -280,13 +280,15 @@ ResponsiveDrawer.propTypes = {
 };
 
 const mapStateToProps = ({ authentication, router, notifications }) => ({
-  username: authentication.userInfo.full_name,
+  username: authentication.userInfo.fullName,
   pathname: router.location.pathname,
   updateAvailable:
     notifications.updateAvailable && !notifications.updateIgnored,
 });
+
 const mapDispatchToProps = dispatch => ({
   push: x => dispatch(routerPush(x)),
   ignoreUpdate: () => dispatch(ignoreUpdateAction()),
 });
+
 export default connect(mapStateToProps, mapDispatchToProps)(ResponsiveDrawer);

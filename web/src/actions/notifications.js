@@ -54,14 +54,18 @@ export const unsubscribeError = e => ({
 });
 
 export const subscribe = () => (dispatch, getState) => {
-  if (!isAuthenticated(getState())) {
+  const state = getState();
+
+  if (!isAuthenticated(state)) {
     dispatch(
       subscribeError({ message: 'cannot subscribe to push: not logged in' })
     );
     return Promise.resolve();
   }
 
-  const { notifications, authentication } = getState();
+  const { notifications, authentication } = state;
+
+  console.log(authentication.userInfo);
 
   if (authentication.userInfo.applicationServerKey === '') {
     dispatch(
