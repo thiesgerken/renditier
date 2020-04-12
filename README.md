@@ -9,7 +9,6 @@
 - account add/remove/update (invalidate afterwards)
 - remove all cached data when the user logs out
 - invalidate user info as soon as a 401 is encountered anywhere
-- do not register service worker for api requests?
 - unify formatting and querying functions
 - Use new daterange component as soon as it works better https://github.com/mui-org/material-ui-pickers
 
@@ -18,7 +17,6 @@
 - set alerts for high drops / increases in values
 - push notifications [weekly summary, daily only on huge sudden changes]
 - watchlist of isins for each user, so that they can be analyzed (and so that notifications can be set for them?)
-- send a test notification as soon as a new device registers
 - StockAnalysis: List of exchanges and current prices (+ dates)
 - compare stock performances
 - proper maintenance of stock data (renew every week, do not delete old prices!)
