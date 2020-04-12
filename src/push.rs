@@ -89,7 +89,7 @@ pub fn send_welcome_notifications(
         .execute(&*connection)?;
 
     for (_, group) in &subs.iter().group_by(|s| s.user_id) {
-        let body = "Erfolgreich für Push-Benachrichtigungen registriert!";
+        let body = "{text: 'Erfolgreich für Push-Benachrichtigungen registriert!'}";
         for sub in group {
             if let Err(e) = send(private_key, sub.clone(), body.to_owned()) {
                 error!(
