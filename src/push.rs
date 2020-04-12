@@ -7,9 +7,15 @@ use chrono::{Datelike, Local, Utc};
 use diesel::prelude::*;
 use itertools::Itertools;
 use log::{error, info};
+use serde::Serialize;
 use std::collections::HashMap;
 use std::error::Error;
 use web_push::*;
+
+#[derive(Serialize)]
+struct TextPayload {
+    text: String,
+}
 
 fn daily_notification_body(
     connection: &PgConnection,
@@ -72,33 +78,20 @@ pub async fn send(
 }
 
 pub fn send_welcome_notifications(
-    connection: &PgConnection,
+    subs: &[PushSubscription],
     private_key: &[u8],
 ) -> Result<(), Box<dyn Error>> {
-    let subs = push_subscriptions
-        .filter(last_notification.is_null())
-        .load::<PushSubscription>(connection)?
-        .into_iter()
-        .sorted_by_key(|s| s.user_id)
-        .collect::<Vec<_>>();
-
-    // update last_notification of all subscriptions, even those that will fail
-    let endpoints = subs.iter().map(|s| s.endpoint.clone()).collect::<Vec<_>>();
-    diesel::update(push_subscriptions.filter(endpoint.eq_any(endpoints)))
-        .set(last_notification.eq(Utc::now()))
-        .execute(&*connection)?;
-
-    for (_, group) in &subs.iter().group_by(|s| s.user_id) {
-        let body = "{text: 'Erfolgreich für Push-Benachrichtigungen registriert!'}";
-        for sub in group {
-            if let Err(e) = send(private_key, sub.clone(), body.to_owned()) {
-                error!(
-                    "Failed to send welcome notification to device {}: {:?}",
-                    sub.endpoint, e
-                );
-            } else {
-                info!("Sent welcome notification to device {}", sub.endpoint);
-            }
+    let body = serde_json::to_string(&TextPayload {
+        text: "Erfolgreich für Push-Benachrichtigungen registriert!".to_string(),
+    })?;
+    for sub in subs.iter().filter(|s| s.last_notification.is_none()) {
+        if let Err(e) = send(private_key, sub.clone(), body.clone()) {
+            error!(
+                "Failed to send welcome notification to device {}: {:?}",
+                sub.endpoint, e
+            );
+        } else {
+            info!("Sent welcome notification to device {}", sub.endpoint);
         }
     }
 
@@ -112,12 +105,6 @@ pub fn send_daily_notifications(
     private_key: &[u8],
 ) -> Result<(), Box<dyn Error>> {
     let notification_time = Local::now().date().and_hms(20, 0, 0).with_timezone(&Utc);
-
-    if Utc::now() < notification_time {
-        // only send a welcome notification to new devices
-        return send_welcome_notifications(connection, private_key);
-    }
-
     let subs = push_subscriptions
         .filter(
             last_notification
@@ -128,6 +115,9 @@ pub fn send_daily_notifications(
         .into_iter()
         .sorted_by_key(|s| s.user_id)
         .collect::<Vec<_>>();
+
+    // might result in some devices getting two notifications
+    send_welcome_notifications(&subs, private_key)?;
 
     // update last_notification of all subscriptions, even those that will fail
     let endpoints = subs.iter().map(|s| s.endpoint.clone()).collect::<Vec<_>>();
@@ -148,6 +138,7 @@ pub fn send_daily_notifications(
                     info!("Sent daily notification to device {}", sub.endpoint);
                 }
             }
+        } else {
         }
     }
 

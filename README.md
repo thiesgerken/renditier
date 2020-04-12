@@ -11,7 +11,6 @@
 - invalidate user info as soon as a 401 is encountered anywhere
 - unify formatting and querying functions
 - Use new daterange component as soon as it works better https://github.com/mui-org/material-ui-pickers
-- Welcome notification does not work
 
 ## Ideas
 
