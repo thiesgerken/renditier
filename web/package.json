@@ -52,7 +52,7 @@
   },
   "scripts": {
     "start": "yarn run git && react-scripts start && cra-append-sw ./src/custom-sw.js ",
-    "build": "yarn run git && GENERATE_SOURCEMAP=false react-scripts build && cra-append-sw ./src/custom-sw.js",
+    "build": "yarn run git && react-scripts build && cra-append-sw ./src/custom-sw.js",
     "test": "react-scripts test",
     "test:lint:js": "eslint --ext=js --ext=jsx src",
     "eject": "react-scripts eject",
