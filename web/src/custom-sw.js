@@ -57,7 +57,8 @@ self.addEventListener('push', e => {
       2
     )}€`;
   } else {
-    // console.error('unknown payload format in the push message');
+    console.error('unknown payload format in the push message');
+    console.error(data);
     return;
   }
 
