@@ -40,6 +40,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for UserId {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserInfo {
     id: i32,
     name: String,

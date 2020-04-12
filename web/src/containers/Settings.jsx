@@ -57,8 +57,11 @@ Settings.propTypes = {
   updateAvailable: PropTypes.bool.isRequired,
 };
 
-const mapStateToProps = ({ notifications }) => ({
-  workerRegistered: notifications.registration !== null,
+const mapStateToProps = ({ notifications, authentication }) => ({
+  workerRegistered:
+    notifications.registration !== null &&
+    authentication.userInfo !== null &&
+    authentication.userInfo.applicationServerKey !== '',
   pushSubscribed: notifications.subscription !== null,
   updateAvailable: notifications.updateAvailable,
 });
