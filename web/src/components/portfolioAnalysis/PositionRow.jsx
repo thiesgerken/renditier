@@ -44,7 +44,7 @@ const PositionRow = ({ data, stock, push }) => {
   };
 
   const getPrice = dataSource => {
-    if (dataSource === null) return '\u2014';
+    if (dataSource === null) return null;
 
     if (dataSource.price.price !== undefined) return dataSource.price.price;
     return dataSource.price.closing;
