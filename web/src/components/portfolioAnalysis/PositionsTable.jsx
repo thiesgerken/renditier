@@ -48,9 +48,9 @@ const PositionsTable = ({ performance, stocks, push }) => {
   };
 
   const tp =
-    performance.items === null || period >= performance.items.length
+    performance.data === null || period >= performance.data.length
       ? undefined
-      : performance.items[period];
+      : performance.data[period];
 
   const positions =
     tp === undefined
@@ -113,17 +113,18 @@ const PositionsTable = ({ performance, stocks, push }) => {
                 id="period-select"
                 autoWidth
                 value={
-                  performance.items === null || performance.items.length === 0
+                  performance.data === null || performance.data.length === 0
                     ? ''
                     : period
                 }
                 onChange={handlePeriodChange}
               >
-                {performance.items.map((item, i) => (
-                  <MenuItem value={i} key={i}>
-                    {getPeriodDescription(item)}
-                  </MenuItem>
-                ))}
+                {performance.data !== null &&
+                  performance.data.map((item, i) => (
+                    <MenuItem value={i} key={i}>
+                      {getPeriodDescription(item)}
+                    </MenuItem>
+                  ))}
               </Select>
             </FormControl>
           </Grid>
@@ -135,13 +136,11 @@ const PositionsTable = ({ performance, stocks, push }) => {
 
 PositionsTable.propTypes = {
   performance: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
   }).isRequired,
   stocks: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
   }).isRequired,
   push: PropTypes.func.isRequired,

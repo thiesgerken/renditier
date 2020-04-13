@@ -15,7 +15,7 @@ import React from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import { push as routerPush } from 'connected-react-router';
 
-import { updateStocks as updateStocksAction } from '../actions/stocks';
+import { updateStocks as updateStocksAction } from '../actions/api';
 import StockRow from '../components/StockRow';
 import ProgressPaper from '../components/ProgressPaper';
 
@@ -56,9 +56,10 @@ const StockTable = ({ stocks, updateStocks, push }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {map(stocks.items, d => (
-                <StockRow data={d} key={d.isin} push={push} />
-              ))}
+              {stocks.data !== null &&
+                map(stocks.data, d => (
+                  <StockRow data={d} key={d.isin} push={push} />
+                ))}
             </TableBody>
           </Table>
         </TableContainer>
@@ -69,9 +70,8 @@ const StockTable = ({ stocks, updateStocks, push }) => {
 
 StockTable.propTypes = {
   stocks: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
-    lastUpdated: PropTypes.number,
   }).isRequired,
   updateStocks: PropTypes.func.isRequired,
   push: PropTypes.func.isRequired,

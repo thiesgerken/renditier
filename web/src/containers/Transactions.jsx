@@ -1,5 +1,5 @@
 import { connect } from 'react-redux';
-import React from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import MUIDataTable from 'mui-datatables';
 import moment from 'moment';
@@ -20,11 +20,10 @@ import AddIcon from '@material-ui/icons/Add';
 import { useLocation, useHistory } from 'react-router';
 
 import { updateTransactions as updateTransactionsAction } from '../actions/transactions';
-import { updateStocks as updateStocksAction } from '../actions/stocks';
+import { updateStocks as updateStocksAction } from '../actions/api';
 import { updateAccounts as updateAccountsAction } from '../actions/accounts';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
 import TransactionDialog from './TransactionDialog';
-import { useEffect } from 'react';
 
 function useQuery(key) {
   const location = useLocation();
@@ -394,17 +393,14 @@ Transactions.propTypes = {
   updateAccounts: PropTypes.func.isRequired,
   transactions: PropTypes.shape({
     items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
     isFetching: PropTypes.bool,
   }).isRequired,
   stocks: PropTypes.shape({
     items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
     isFetching: PropTypes.bool,
   }).isRequired,
   accounts: PropTypes.shape({
     items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
     isFetching: PropTypes.bool,
   }).isRequired,
 };

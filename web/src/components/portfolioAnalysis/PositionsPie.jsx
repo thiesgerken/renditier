@@ -38,8 +38,6 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-// TODO: add stock name as info
-
 const PositionsPie = ({ performance, stocks }) => {
   const classes = useStyles();
   const theme = useTheme();
@@ -81,9 +79,9 @@ const PositionsPie = ({ performance, stocks }) => {
   );
 
   const tp =
-    performance.items === null
+    performance.data === null
       ? undefined
-      : find(performance.items, p => p.kind === 'Total');
+      : find(performance.data, p => p.kind === 'Total');
   let data = [];
   let valueSum = 0;
 
@@ -208,13 +206,11 @@ const PositionsPie = ({ performance, stocks }) => {
 
 PositionsPie.propTypes = {
   performance: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
   }).isRequired,
   stocks: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
   }).isRequired,
 };

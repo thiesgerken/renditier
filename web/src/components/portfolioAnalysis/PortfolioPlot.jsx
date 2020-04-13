@@ -88,12 +88,12 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
   let sd = null;
   let ed = null;
 
-  if (period < performance.items.length) {
+  if (performance.data !== null && period < performance.data.length) {
     if (period >= 0) {
       sd = nextWeekDay(
-        moment(performance.items[period].start.date).add(1, 'days')
+        moment(performance.data[period].start.date).add(1, 'days')
       ).format('YYYY-MM-DD');
-      ed = performance.items[period].end.date;
+      ed = performance.data[period].end.date;
     } else {
       sd = (dates[0].isValid() ? dates[0] : moment().startOf('year')).format(
         'YYYY-MM-DD'
@@ -399,17 +399,18 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                 id="period-select"
                 autoWidth
                 value={
-                  performance.items === null || performance.items.length === 0
+                  performance.data === null || performance.data.length === 0
                     ? -1
                     : period
                 }
                 onChange={handlePeriodChange}
               >
-                {performance.items.map((item, i) => (
-                  <MenuItem value={i} key={i}>
-                    {getPeriodDescription(item)}
-                  </MenuItem>
-                ))}
+                {performance.data !== null &&
+                  performance.data.map((item, i) => (
+                    <MenuItem value={i} key={i}>
+                      {getPeriodDescription(item)}
+                    </MenuItem>
+                  ))}
                 <MenuItem value={-1} key={-1}>
                   Benutzerdefiniert
                 </MenuItem>
@@ -460,8 +461,7 @@ PortfolioPlot.propTypes = {
   data: PropTypes.arrayOf(PropTypes.object).isRequired,
   updateData: PropTypes.func.isRequired,
   performance: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
   }).isRequired,
 };

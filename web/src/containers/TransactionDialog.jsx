@@ -223,7 +223,7 @@ const TransactionDialog = ({
             <Grid item xs={12}>
               <Autocomplete
                 freeSolo
-                options={stocks.items}
+                options={stocks.data !== null ? stocks.data : []}
                 getOptionLabel={option => {
                   if (typeof option === 'string') return option;
                   return option.isin;
@@ -490,12 +490,11 @@ TransactionDialog.propTypes = {
     isin: PropTypes.string,
   }).isRequired,
   stocks: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
+    data: PropTypes.arrayOf(PropTypes.object),
+    lastRequest: PropTypes.number,
   }).isRequired,
   accounts: PropTypes.shape({
     items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
   }).isRequired,
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,

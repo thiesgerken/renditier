@@ -1,4 +1,4 @@
-import { invalidatePerformance } from './performance';
+import { invalidatePerformance } from './api';
 
 export const FETCH_TRANSACTIONS_REQUEST = 'FETCH_TRANSACTIONS_REQUEST';
 export const fetchTransactionsRequest = () => ({

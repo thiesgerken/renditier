@@ -56,9 +56,9 @@ const StockPerformanceTable = ({ performance }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {performance.items !== null && (
+              {performance.data !== null && (
                 <>
-                  {performance.items.map(
+                  {performance.data.map(
                     item =>
                       ['Today', 'WeekToDate'].includes(item.kind) && (
                         <StockPerformanceRow
@@ -76,7 +76,7 @@ const StockPerformanceTable = ({ performance }) => {
                         </TableCell>
                       ))}
                   </TableRow>
-                  {performance.items.map(
+                  {performance.data.map(
                     item =>
                       ['Total', 'YearToYear', 'YearToDate'].includes(
                         item.kind
@@ -96,7 +96,7 @@ const StockPerformanceTable = ({ performance }) => {
                         </TableCell>
                       ))}
                   </TableRow>
-                  {performance.items.map(
+                  {performance.data.map(
                     item =>
                       ['MonthToMonth', 'MonthToDate'].includes(item.kind) && (
                         <StockPerformanceRow
@@ -130,8 +130,7 @@ const StockPerformanceTable = ({ performance }) => {
 
 StockPerformanceTable.propTypes = {
   performance: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
   }).isRequired,
 };

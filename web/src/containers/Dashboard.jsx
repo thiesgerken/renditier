@@ -13,9 +13,11 @@ import { find, filter, max, min, map } from 'lodash';
 import * as moment from 'moment';
 import { push as routerPush } from 'connected-react-router';
 
-import { updatePerformance as updatePerformanceAction } from '../actions/performance';
+import {
+  updateStocks as updateStocksAction,
+  updatePerformance as updatePerformanceAction,
+} from '../actions/api';
 import { updatePortfolioPlot as updatePortfolioPlotAction } from '../actions/portfolioPlot';
-import { updateStocks as updateStocksAction } from '../actions/stocks';
 import PerformanceTable from '../components/portfolioAnalysis/PerformanceTable';
 import PortfolioPlot from '../components/portfolioAnalysis/PortfolioPlot';
 import PositionsTable from '../components/portfolioAnalysis/PositionsTable';
@@ -37,8 +39,8 @@ const Dashboard = ({
 
   let oldestTodayData = null;
   let newestTodayData = null;
-  if (performance.items !== null) {
-    const tp = find(performance.items, p => p.kind === 'Total');
+  if (performance.data !== null) {
+    const tp = find(performance.data, p => p.kind === 'Total');
 
     if (tp !== undefined) {
       const dates = filter(
@@ -84,7 +86,7 @@ const Dashboard = ({
               <Typography variant="caption">
                 <div style={{ marginTop: '1em', marginLeft: '0.5em' }}>
                   {`Die Performance-Berechnungen wurden ${moment(
-                    performance.lastUpdated
+                    performance.lastRequest
                   ).fromNow()} aktualisiert. Alle Echtzeit-Preisberechnungen basieren auf Daten vom`}
                   {oldestTodayData !== newestTodayData
                     ? ` ${oldestTodayData} bis ${newestTodayData}.`
@@ -101,13 +103,12 @@ const Dashboard = ({
 
 Dashboard.propTypes = {
   performance: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
+    data: PropTypes.arrayOf(PropTypes.object),
+    lastRequest: PropTypes.number,
   }).isRequired,
   updatePerformance: PropTypes.func.isRequired,
   stocks: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
-    lastUpdated: PropTypes.number,
+    data: PropTypes.arrayOf(PropTypes.object),
   }).isRequired,
   updateStocks: PropTypes.func.isRequired,
   portfolioPlotData: PropTypes.arrayOf(PropTypes.object).isRequired,

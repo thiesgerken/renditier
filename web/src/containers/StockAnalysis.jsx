@@ -18,8 +18,10 @@ import {
 import Alert from '@material-ui/lab/Alert';
 import * as moment from 'moment';
 
-import { updateStocks as updateStocksAction } from '../actions/stocks';
-import { updatePerformance as updatePerformanceAction } from '../actions/performance';
+import {
+  updateStocks as updateStocksAction,
+  updatePerformance as updatePerformanceAction,
+} from '../actions/api';
 import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
 import { findStock, capitalizeTitle } from '../selectors/stocks';
 import StockPerformanceTable from '../components/stockAnalysis/StockPerformanceTable';
@@ -64,40 +66,40 @@ const StockAnalysis = ({
   updateStocks();
 
   const stock = findStock(stocks, isin);
-  if (stock === null || performance.items.length === 0) {
-    if (stocks.isFetching || performance.isFetching) {
-      return (
-        <Container maxWidth="lg">
-          <div
-            style={{
-              position: 'relative',
-              left: '50%',
-              transform: 'translate(0%, 50%)',
-              width: '100%',
-              height: '13em',
-              padding: '20px',
-            }}
-          >
-            <CircularProgress color="secondary" />
-          </div>
-        </Container>
-      );
-    }
+  if (stocks.isFetching || performance.isFetching) {
+    return (
+      <Container maxWidth="lg">
+        <div
+          style={{
+            position: 'relative',
+            left: '50%',
+            transform: 'translate(0%, 50%)',
+            width: '100%',
+            height: '13em',
+            padding: '20px',
+          }}
+        >
+          <CircularProgress color="secondary" />
+        </div>
+      </Container>
+    );
+  }
 
+  if (stock === null || performance.data === null) {
     return (
       <Container maxWidth="lg">
         <Alert elevation={5} variant="filled" severity="error">
           {stock === null &&
             `Die Datenbank enthält kein Wertpapier mit ISIN '${isin}'!`}
-          {performance.items === null && `Keine Performance-Daten verfügbar!`}
+          {performance.data === null && `Keine Performance-Daten verfügbar!`}
         </Alert>
       </Container>
     );
   }
 
   const stockPerformance = { ...performance };
-  stockPerformance.items = filter(
-    map(performance.items, item => {
+  stockPerformance.data = filter(
+    map(performance.data, item => {
       const pos = item.positions[isin];
       if (pos === undefined) return null;
 
@@ -106,15 +108,9 @@ const StockAnalysis = ({
     x => x !== null
   );
 
-  const totalPerformance = find(
-    stockPerformance.items,
-    p => p.kind === 'Total'
-  );
+  const totalPerformance = find(stockPerformance.data, p => p.kind === 'Total');
 
-  const todayPerformance = find(
-    stockPerformance.items,
-    p => p.kind === 'Today'
-  );
+  const todayPerformance = find(stockPerformance.data, p => p.kind === 'Today');
 
   const currentPrice = todayPerformance.end.dataSource;
   let currentPriceInfo;
@@ -250,15 +246,13 @@ const StockAnalysis = ({
 StockAnalysis.propTypes = {
   isin: PropTypes.string.isRequired,
   stocks: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
-    lastUpdated: PropTypes.number,
   }).isRequired,
   updateStocks: PropTypes.func.isRequired,
   performance: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
-    lastUpdated: PropTypes.number,
   }).isRequired,
   updatePerformance: PropTypes.func.isRequired,
   stockPlotData: PropTypes.arrayOf(PropTypes.object).isRequired,

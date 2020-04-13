@@ -15,7 +15,9 @@ build-web:
     - docker
   image: git.thiesgerken.de:5005/thies/stockdb/web
   script:
-    - cd web && yarn install && yarn run build && yarn run analyze
+    - cd web && yarn install
+    - cd web && CI=true yarn test --all && yarn test:lint:js
+    - cd web && yarn run build && yarn run analyze
   before_script:
     - mkdir -p .yarn-registry
     - ln -s $(pwd)/.yarn-cache ~/.yarn-cache
