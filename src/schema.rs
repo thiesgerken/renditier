@@ -63,6 +63,16 @@ table! {
         onvista_url -> Text,
         last_historical_update -> Nullable<Timestamptz>,
         last_realtime_update -> Nullable<Timestamptz>,
+        industry_breakdown -> Nullable<Text>,
+        instrument_breakdown -> Nullable<Text>,
+        country_breakdown -> Nullable<Text>,
+        currency_breakdown -> Nullable<Text>,
+        holdings -> Nullable<Text>,
+        launch_date -> Nullable<Timestamptz>,
+        currency -> Nullable<Text>,
+        management_type -> Nullable<Text>,
+        payout_type -> Nullable<Text>,
+        ter -> Nullable<Float8>,
     }
 }
 

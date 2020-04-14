@@ -125,6 +125,10 @@ pub fn send_daily_notifications(
         .set(last_notification.eq(Utc::now()))
         .execute(&*connection)?;
 
+    if notification_time > Local::now() {
+        return Ok(());
+    }
+
     for (uid, group) in &subs.iter().group_by(|s| s.user_id) {
         let body = daily_notification_body(connection, uid, PerformanceKind::Today)?;
         if !body.is_empty() {

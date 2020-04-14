@@ -23,6 +23,16 @@ pub struct Stock {
     onvista_url: String,
     last_historical_update: Option<DateTime<Utc>>,
     last_realtime_update: Option<DateTime<Utc>>,
+    industry_breakdown: Option<String>, // serialized Array of Arrays, containing a industry name and a percentage
+    instrument_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
+    country_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
+    currency_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
+    holdings: Option<String>,           // serialized Vec<Holding>
+    launch_date: Option<DateTime<Utc>>,
+    currency: Option<String>,
+    management_type: Option<String>,
+    payout_type: Option<String>,
+    ter: Option<f64>,
     exchanges: Vec<Exchange>,
 }
 
@@ -40,6 +50,16 @@ impl Stock {
             onvista_url: s.onvista_url,
             last_historical_update: s.last_historical_update,
             last_realtime_update: s.last_realtime_update,
+            industry_breakdown: s.industry_breakdown,
+            instrument_breakdown: s.instrument_breakdown,
+            country_breakdown: s.country_breakdown,
+            currency_breakdown: s.currency_breakdown,
+            holdings: s.holdings,
+            launch_date: s.launch_date,
+            currency: s.currency,
+            management_type: s.management_type,
+            payout_type: s.payout_type,
+            ter: s.ter,
             exchanges,
         }
     }

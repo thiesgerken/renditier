@@ -18,7 +18,7 @@
 - push notifications [weekly summary, daily only on huge sudden changes]
 - watchlist of isins for each user, so that they can be analyzed (and so that notifications can be set for them?)
 - StockAnalysis: List of exchanges and current prices (+ dates)
-- compare stock performances
+- compare stock performances (overlay some/all of them)
 - proper maintenance of stock data (renew every week, do not delete old prices!)
 - also grab and show ETF description, distribution of countries, corporations and sectors
 - try to find out which index links to each ETF, grab data for those as well

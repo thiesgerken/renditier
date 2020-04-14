@@ -4,7 +4,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
 // grabbed periodically for relevant ISINs
-#[derive(Debug, Clone, Queryable, Insertable, Identifiable, Serialize, Deserialize)]
+#[derive(Debug, Clone, Queryable, Insertable, Identifiable, Serialize, Deserialize, AsChangeset)]
 #[primary_key("isin")]
 #[serde(rename_all = "camelCase")]
 pub struct StockInfo {
@@ -19,6 +19,25 @@ pub struct StockInfo {
     pub onvista_url: String,
     pub last_historical_update: Option<DateTime<Utc>>,
     pub last_realtime_update: Option<DateTime<Utc>>,
+    pub industry_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
+    pub instrument_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
+    pub country_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
+    pub currency_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
+    pub holdings: Option<String>,           // serialized Vec<Holding>
+    pub launch_date: Option<DateTime<Utc>>,
+    pub currency: Option<String>,
+    pub management_type: Option<String>,
+    pub payout_type: Option<String>,
+    pub ter: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Holding {
+    pub name: String,
+    pub share: f64,
+    pub wkn: Option<String>,
+    pub url: Option<String>,
+    pub kind: Option<String>,
 }
 
 #[derive(
