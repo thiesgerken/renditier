@@ -107,6 +107,9 @@ pub fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box
     let management_type = get_td_text(tds.next());
     let payout_type = get_td_text(tds.next());
 
+    let description_selector = Selector::parse("html body.body-seiteLinksbuendig1400ODEV-1068.removeSuperBannerODEV-964.full-width div#ONVISTA.ui.raised.segment.container-seiteLinksbuendig1400ODEV-1068.full-width.no-margin div.container-wrapper main#etf-snapshot.snapshot div.ui.grid div.ten.wide.column div.ui.segment p").unwrap();
+    let description = get_td_text(fragment.select(&description_selector).next());
+
     let ter_selector = Selector::parse(
         "table.ui:nth-child(4) > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(2)",
     )
@@ -149,6 +152,7 @@ pub fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box
             management_type,
             payout_type,
             ter,
+            description,
         },
         exchanges,
     ))

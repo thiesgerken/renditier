@@ -29,6 +29,7 @@ pub struct StockInfo {
     pub management_type: Option<String>,
     pub payout_type: Option<String>,
     pub ter: Option<f64>,
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

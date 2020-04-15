@@ -94,6 +94,7 @@ pub fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box
             management_type: None,
             payout_type: None,
             ter: None,
+            description: None,
         },
         exchanges,
     ))

@@ -73,6 +73,7 @@ table! {
         management_type -> Nullable<Text>,
         payout_type -> Nullable<Text>,
         ter -> Nullable<Float8>,
+        description -> Nullable<Text>,
     }
 }
 

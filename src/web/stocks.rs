@@ -33,6 +33,7 @@ pub struct Stock {
     management_type: Option<String>,
     payout_type: Option<String>,
     ter: Option<f64>,
+    description: Option<String>,
     exchanges: Vec<Exchange>,
 }
 
@@ -60,6 +61,7 @@ impl Stock {
             management_type: s.management_type,
             payout_type: s.payout_type,
             ter: s.ter,
+            description: s.description,
             exchanges,
         }
     }
