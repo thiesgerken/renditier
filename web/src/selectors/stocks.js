@@ -14,6 +14,8 @@ export const capitalizeTitle = title => {
 };
 
 export const abbreviateTitle = (title, shorten) => {
+  if (title === null || title === undefined) return '';
+
   if (shorten !== undefined && shorten !== null && !shorten)
     return capitalizeTitle(title);
 

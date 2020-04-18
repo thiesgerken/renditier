@@ -18,15 +18,19 @@ fn main() {
         .load::<StockInfo>(&connection)
         .expect("error querying infos");
 
+    let re = Regex::new(r"(MSCI|iSTOXX|STOXX|S&P|Dow Jones)[^ ]*(:? [^a-z(][\w]*)+").unwrap();
+
     for info in infos.iter() {
         println!("{}: {:?}", info.isin, info.description);
 
         if let Some(desc) = &info.description {
-            let re =
-                Regex::new(r"(MSCI|iSTOXX|STOXX|S&P|Dow Jones)[^ ]*(:? [^a-z(][\w]*)+").unwrap();
-            for cap in re.captures_iter(&desc) {
-                println!("{}: {:?}", info.isin, cap[0].to_owned());
-            }
+            println!(
+                "{}: {:?}",
+                info.isin,
+                re.find_iter(&desc)
+                    .map(|m| m.as_str())
+                    .find(|m| !m.contains("ETF"))
+            );
         }
     }
 }

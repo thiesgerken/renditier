@@ -217,6 +217,9 @@ const StockAnalysis = ({
                         <StyledListItem>
                           Auflagedatum: {moment(stock.launchDate).format('L')}
                         </StyledListItem>
+                      )}{' '}
+                      {stock.index !== null && (
+                        <StyledListItem>Index: {stock.index}</StyledListItem>
                       )}
                     </List>
                   </Grid>

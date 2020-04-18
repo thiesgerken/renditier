@@ -115,6 +115,21 @@ const StockPerformanceRow = ({ data }) => {
     return value.toFixed(xsDown ? 0 : 2);
   };
 
+  const feesInfo = (
+    <>
+      <span>
+        {`davon Gebühren: ${fromTo(-1 * data.start.fees, -1 * data.end.fees)}`}
+      </span>
+      <br />
+      <span>
+        {`ohne Gebühren: ${fromTo(
+          -1 * data.start.invested + data.start.fees,
+          -1 * data.end.invested + data.end.fees
+        )}`}
+      </span>
+    </>
+  );
+
   return (
     <TableRow>
       <TableCell>{getPeriodDescription(data)}</TableCell>
@@ -139,7 +154,11 @@ const StockPerformanceRow = ({ data }) => {
       </Hidden>
       <Hidden xsDown>
         <TableCell align="right">
-          {fromTo(-1 * data.start.invested, -1 * data.end.invested)}
+          <Tooltip title={feesInfo}>
+            <span>
+              {fromTo(-1 * data.start.invested, -1 * data.end.invested)}
+            </span>
+          </Tooltip>
         </TableCell>
       </Hidden>
       <TableCell align="right">

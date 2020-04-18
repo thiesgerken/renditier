@@ -12,6 +12,7 @@
 - unify formatting and querying functions
 - unify api access functions
 - Use new daterange component as soon as it works better https://github.com/mui-org/material-ui-pickers
+- "Today" plot is broken, maybe only if no historical data available yet for today
 
 ## Ideas
 
@@ -21,7 +22,7 @@
 - StockAnalysis: List of exchanges and current prices (+ dates)
 - compare stock performances (overlay some/all of them)
 - proper maintenance of stock data (renew every week?)
-- try to find out which index links to each ETF, grab data for those as well
+- try to find out which index links to each ETF, grab data for those as well. Maybe the user has to make the connection ... -> save link in different table to avoid overwriting it on update; maybe only allow this via CLI
 
 ## Install
 
