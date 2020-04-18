@@ -20,7 +20,6 @@
 - push notifications [weekly summary, daily only on huge sudden changes]
 - watchlist of isins for each user, so that they can be analyzed (and so that notifications can be set for them?)
 - StockAnalysis: List of exchanges and current prices (+ dates)
-- compare stock performances (overlay some/all of them)
 - proper maintenance of stock data (renew every week?)
 - try to find out which index links to each ETF, grab data for those as well. Maybe the user has to make the connection ... -> save link in different table to avoid overwriting it on update; maybe only allow this via CLI
 

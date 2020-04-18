@@ -14,7 +14,7 @@ import {
 } from '@material-ui/core';
 import { DatePicker } from '@material-ui/pickers';
 import * as moment from 'moment';
-import { map, every, mapValues } from 'lodash';
+import { map, every, mapValues, sortBy } from 'lodash';
 import PropTypes from 'prop-types';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
@@ -131,9 +131,12 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
   const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
   const [period, setPeriod] = useState(0);
   const [source, setSource] = useState('auto');
-  const [dates, setDates] = useState([moment().startOf('year'), moment()]);
+  const [dates, setDates] = useState([
+    moment().subtract(2, 'years').startOf('year'),
+    moment(),
+  ]);
   const [prevRange, setPrevRange] = useState(null);
-  const [isins, setIsins] = useState(['IE00BK5BQT80']); // TODO: default to highest invested?
+  let [isins, setIsins] = useState(null); // eslint-disable-line prefer-const
 
   const handlePeriodChange = useCallback(event => {
     setPeriod(event.target.value);
@@ -172,6 +175,26 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
   const colorsAccent = colorNames.map(c => c['500']);
 
   const plotData = {};
+
+  if (isins === null) {
+    isins = [];
+
+    if (performance.data !== null && performance.data.length > 0) {
+      isins = map(
+        sortBy(
+          map(performance.data[0].positions, (p, isin) => ({
+            perf: p,
+            isin,
+          })),
+          p => p.perf.end.invested
+        ),
+        'isin'
+      );
+
+      if (isins.length > 3) isins = isins.slice(0, 3);
+      setIsins(isins);
+    }
+  }
 
   isins.forEach(isin => {
     plotData[isin] = null;
@@ -308,9 +331,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                     />
                   );
                 })}
-
                 <Legend />
-
                 <Tooltip
                   formatter={v => v.toFixed(2)}
                   labelFormatter={d => moment(d).format('LLLL')}
@@ -318,75 +339,100 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
               </AreaChart>
             </ResponsiveContainer>
           </Grid>
-          <Grid item xs={9}>
-            <FormControl className={classes.formControl}>
-              <InputLabel id="isin-checkbox-label">Tag</InputLabel>
-              <Select
-                labelId="isin-checkbox-label"
-                id="isin-checkbox"
-                multiple
-                value={isins}
-                onChange={handleIsinChange}
-                input={<Input />}
-                renderValue={selected =>
-                  map(selected, isin => {
-                    const s = findStock(stocks, isin);
-                    if (s !== null) return abbreviateTitle(s.title, true);
-                    return isin;
-                  }).join(', ')
-                }
-                MenuProps={MenuProps}
+          <Grid container item xs={9}>
+            <Grid item xs={3}>
+              <FormControl
+                className={classes.formControl}
+                style={{
+                  width: '100%',
+                  paddingRight: theme.spacing(2),
+                }}
               >
-                {stocks.data !== null &&
-                  stocks.data.map(s => (
-                    <MenuItem key={s.isin} value={s.isin}>
-                      <Checkbox checked={isins.indexOf(s.isin) > -1} />
-                      <ListItemText primary={abbreviateTitle(s.title, true)} />
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-            <FormControl className={classes.formControl}>
-              <InputLabel id="source-select-label">Datenquelle</InputLabel>
-              <Select
-                labelId="source-select-label"
-                id="source-select"
-                value={source}
-                fullWidth
-                onChange={handleSourceChange}
-              >
-                <MenuItem value="auto">Automatisch</MenuItem>
-                <MenuItem value="historical">Historisch</MenuItem>
-                <MenuItem value="realtime">Echtzeit</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl className={classes.formControl}>
-              <InputLabel id="period-select-label">Zeit</InputLabel>
-              <Select
-                labelId="period-select-label"
-                id="period-select"
-                autoWidth
-                value={
-                  performance.data === null || performance.data.length === 0
-                    ? -1
-                    : period
-                }
-                onChange={handlePeriodChange}
-              >
-                {performance.data !== null &&
-                  performance.data.map((item, i) => (
-                    <MenuItem value={i} key={i}>
-                      {getPeriodDescription(item)}
-                    </MenuItem>
-                  ))}
-                <MenuItem value={-1} key={-1}>
-                  Benutzerdefiniert
-                </MenuItem>
-              </Select>
-            </FormControl>
-            {period < 0 && (
-              <>
-                {/* <DateRangePicker
+                <InputLabel id="isin-checkbox-label">Wertpapiere</InputLabel>
+                <Select
+                  labelId="isin-checkbox-label"
+                  id="isin-checkbox"
+                  multiple
+                  value={isins}
+                  onChange={handleIsinChange}
+                  input={
+                    <Input
+                      fullWidth
+                      style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    />
+                  }
+                  renderValue={selected => {
+                    const selIsins = map(selected, isin => {
+                      const s = findStock(stocks, isin);
+                      if (s !== null) return abbreviateTitle(s.title, true);
+                      return isin;
+                    });
+
+                    if (selIsins.length === 0) return '(keine)';
+                    if (selIsins.length === 1) return selIsins[0];
+                    if (selIsins.length === 2) return selIsins.join(', ');
+
+                    return `${selIsins[0]} und ${selIsins.length - 1} weitere`;
+                  }}
+                  MenuProps={MenuProps}
+                >
+                  {stocks.data !== null &&
+                    stocks.data.map(s => (
+                      <MenuItem key={s.isin} value={s.isin}>
+                        <Checkbox checked={isins.indexOf(s.isin) > -1} />
+                        <ListItemText
+                          primary={abbreviateTitle(s.title, true)}
+                        />
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>{' '}
+            </Grid>
+            <Grid item xs={9}>
+              <FormControl className={classes.formControl}>
+                <InputLabel id="source-select-label">Datenquelle</InputLabel>
+                <Select
+                  labelId="source-select-label"
+                  id="source-select"
+                  value={source}
+                  fullWidth
+                  onChange={handleSourceChange}
+                >
+                  <MenuItem value="auto">Automatisch</MenuItem>
+                  <MenuItem value="historical">Historisch</MenuItem>
+                  <MenuItem value="realtime">Echtzeit</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl className={classes.formControl}>
+                <InputLabel id="period-select-label">Zeit</InputLabel>
+                <Select
+                  labelId="period-select-label"
+                  id="period-select"
+                  autoWidth
+                  value={
+                    performance.data === null || performance.data.length === 0
+                      ? -1
+                      : period
+                  }
+                  onChange={handlePeriodChange}
+                >
+                  {performance.data !== null &&
+                    performance.data.map((item, i) => (
+                      <MenuItem value={i} key={i}>
+                        {getPeriodDescription(item)}
+                      </MenuItem>
+                    ))}
+                  <MenuItem value={-1} key={-1}>
+                    Benutzerdefiniert
+                  </MenuItem>
+                </Select>
+              </FormControl>
+              {period < 0 && (
+                <>
+                  {/* <DateRangePicker
                   startText="Start"
                   endText="Ende"
                   value={dates}
@@ -394,30 +440,31 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                   disableFuture
                   className={classes.formControl}
                 /> */}
-                <DatePicker
-                  label="Start"
-                  value={dates[0]}
-                  inputFormat="DD/MM/YYYY"
-                  maxDate={dates[1]}
-                  onChange={d => handleDateChange([d, dates[1]])}
-                  disableFuture
-                  autoOk
-                  disabled={period >= 0}
-                  className={classes.formControl}
-                />
-                <DatePicker
-                  label="Ende"
-                  value={dates[1]}
-                  inputFormat="DD/MM/YYYY"
-                  minDate={dates[0]}
-                  onChange={d => handleDateChange([dates[0], d])}
-                  disableFuture
-                  autoOk
-                  disabled={period >= 0}
-                  className={classes.formControl}
-                />
-              </>
-            )}
+                  <DatePicker
+                    label="Start"
+                    value={dates[0]}
+                    inputFormat="DD/MM/YYYY"
+                    maxDate={dates[1]}
+                    onChange={d => handleDateChange([d, dates[1]])}
+                    disableFuture
+                    autoOk
+                    disabled={period >= 0}
+                    className={classes.formControl}
+                  />
+                  <DatePicker
+                    label="Ende"
+                    value={dates[1]}
+                    inputFormat="DD/MM/YYYY"
+                    minDate={dates[0]}
+                    onChange={d => handleDateChange([dates[0], d])}
+                    disableFuture
+                    autoOk
+                    disabled={period >= 0}
+                    className={classes.formControl}
+                  />
+                </>
+              )}
+            </Grid>
           </Grid>
         </Grid>
       </ProgressPaper>
