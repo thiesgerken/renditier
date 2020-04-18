@@ -5,6 +5,7 @@ use crate::web::DbConn;
 
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
+use regex::Regex;
 use rocket_contrib::databases::diesel;
 use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
@@ -23,11 +24,23 @@ pub struct Stock {
     onvista_url: String,
     last_historical_update: Option<DateTime<Utc>>,
     last_realtime_update: Option<DateTime<Utc>>,
+    industry_breakdown: Option<String>, // serialized Array of Arrays, containing a industry name and a percentage
+    instrument_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
+    country_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
+    currency_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
+    holdings: Option<String>,           // serialized Vec<Holding>
+    launch_date: Option<DateTime<Utc>>,
+    currency: Option<String>,
+    management_type: Option<String>,
+    payout_type: Option<String>,
+    ter: Option<f64>,
+    description: Option<String>,
     exchanges: Vec<Exchange>,
+    index: Option<String>,
 }
 
 impl Stock {
-    fn new(s: StockInfo, exchanges: Vec<Exchange>) -> Self {
+    fn new(s: StockInfo, exchanges: Vec<Exchange>, index: Option<String>) -> Self {
         Self {
             isin: s.isin,
             wkn: s.wkn,
@@ -40,7 +53,19 @@ impl Stock {
             onvista_url: s.onvista_url,
             last_historical_update: s.last_historical_update,
             last_realtime_update: s.last_realtime_update,
+            industry_breakdown: s.industry_breakdown,
+            instrument_breakdown: s.instrument_breakdown,
+            country_breakdown: s.country_breakdown,
+            currency_breakdown: s.currency_breakdown,
+            holdings: s.holdings,
+            launch_date: s.launch_date,
+            currency: s.currency,
+            management_type: s.management_type,
+            payout_type: s.payout_type,
+            ter: s.ter,
+            description: s.description,
             exchanges,
+            index,
         }
     }
 }
@@ -130,11 +155,24 @@ pub fn list(
                 .filter(|e| e.isin == s.isin)
                 .cloned()
                 .collect::<Vec<_>>();
-            Stock::new(s, s_es)
+            let idx = find_index(&s);
+            Stock::new(s, s_es, idx)
         })
         .collect::<Vec<_>>();
 
     Some(Json(x))
+}
+
+fn find_index(s: &StockInfo) -> Option<String> {
+    let re = Regex::new(r"(MSCI|iSTOXX|STOXX|S&P|Dow Jones)[^ ]*(:? [^a-z(][\w]*)+").unwrap();
+    s.description
+        .as_ref()
+        .map(|desc| {
+            re.find_iter(&desc)
+                .map(|m| m.as_str().to_owned())
+                .find(|m| !m.contains("ETF"))
+        })
+        .flatten()
 }
 
 #[get("/stocks/<isin>")]
@@ -173,5 +211,6 @@ pub fn get(_uid: UserId, connection: DbConn, isin: String) -> Option<Json<Stock>
         })
         .collect();
 
-    Some(Json(Stock::new(info, es)))
+    let idx = find_index(&info);
+    Some(Json(Stock::new(info, es, idx)))
 }

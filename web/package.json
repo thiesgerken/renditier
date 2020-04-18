@@ -51,8 +51,8 @@
     "typescript": "^3.8.3"
   },
   "scripts": {
-    "start": "yarn run git && react-scripts start && cra-append-sw ./src/custom-sw.js ",
-    "build": "yarn run git && react-scripts build && cra-append-sw ./src/custom-sw.js",
+    "start": "yarn run git && react-scripts start && cra-append-sw ./src/serviceWorkerCustomizations.js ",
+    "build": "yarn run git && react-scripts build && cra-append-sw ./src/serviceWorkerCustomizations.js",
     "test": "react-scripts test",
     "test:lint:js": "eslint --ext=js --ext=jsx src",
     "eject": "react-scripts eject",

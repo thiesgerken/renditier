@@ -1,8 +1,8 @@
 import { find } from 'lodash';
 
 export const findStock = (stocks, isin) => {
-  if (stocks.items === null) return null;
-  return find(stocks.items, x => x.isin === isin) || null;
+  if (stocks.data === null) return null;
+  return find(stocks.data, x => x.isin === isin) || null;
 };
 
 export const capitalizeTitle = title => {
@@ -14,6 +14,8 @@ export const capitalizeTitle = title => {
 };
 
 export const abbreviateTitle = (title, shorten) => {
+  if (title === null || title === undefined) return '';
+
   if (shorten !== undefined && shorten !== null && !shorten)
     return capitalizeTitle(title);
 

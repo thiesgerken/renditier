@@ -1,9 +1,6 @@
 use crate::add_missing_stocks;
 use crate::models::*;
 use crate::onvista;
-use crate::schema::historical_prices::dsl::*;
-use crate::schema::realtime_prices::dsl::*;
-use crate::schema::stock_exchanges::dsl::*;
 use crate::schema::stock_infos::dsl::*;
 
 use chrono::{DateTime, NaiveDate, Utc};
@@ -43,8 +40,7 @@ pub fn build() -> App<'static, 'static> {
         .arg(
             Arg::with_name("update")
                 .long("update")
-                .value_name("isin")
-                .help("set stock as persistent"),
+                .help("update stock infos"),
         )
         .group(
             ArgGroup::with_name("action")
@@ -101,83 +97,20 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
                 Err(e) => error!("Error obtaining stock infos: {}", e),
             }
         }
-    } else if let Some(isin_) = sub_matches.value_of("update") {
-        let isin_ = isin_.to_uppercase();
-        assert!(isin_.len() == 12, "ISINs always have a length of 12");
-
-        let exists = stock_infos
-            .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
+    } else if sub_matches.is_present("update") {
+        let infos = stock_infos
             .load::<StockInfo>(connection)
-            .expect("Error loading stock infos")
-            .iter()
-            .next()
-            .is_some();
+            .expect("error querying infos");
 
-        assert!(exists, "Unknown ISINs!");
+        for info in infos.iter() {
+            let (new_info, _) = onvista::get_info(&info.isin).expect("error obtaining stock info");
 
-        match onvista::get_info(&isin_) {
-            Ok((si, exs)) => {
-                // TODO: doesn't this cascade delete?
-                diesel::delete(
-                    stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)),
-                )
+            diesel::update(stock_infos.filter(isin.eq(info.isin.clone())))
+                .set(new_info)
                 .execute(connection)
-                .unwrap_or_else(|_| panic!("Unable to delete old infos for {}", &isin_));
+                .expect("error updating stock info");
 
-                diesel::insert_into(crate::schema::stock_infos::table)
-                    .values(&si)
-                    .execute(connection)
-                    .expect("Error saving new stock info");
-
-                let exs_old = stock_exchanges
-                    .filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_))
-                    .load::<StockExchange>(connection)
-                    .expect("Error loading stock exchanges")
-                    .into_iter()
-                    .map(|e| e.onvista_record_id);
-
-                // find out which exchanges do not exist anymore
-                let deleted = exs_old
-                    .filter(|e| exs.iter().any(|e_| e == &e_.onvista_record_id))
-                    .collect::<Vec<_>>();
-
-                // .. and delete their price histories
-                diesel::delete(
-                    historical_prices.filter(
-                        crate::schema::historical_prices::dsl::onvista_record_id
-                            .eq_any(deleted.clone()),
-                    ),
-                )
-                .execute(connection)
-                .expect("Unable to delete price information of deleted exchanges");
-
-                diesel::delete(realtime_prices.filter(
-                    crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(deleted.clone()),
-                ))
-                .execute(connection)
-                .expect("Unable to delete price information of deleted exchanges");
-
-                // delete all exchange data
-                diesel::delete(
-                    stock_exchanges.filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_)),
-                )
-                .execute(connection)
-                .expect("Unable to delete old exchange data");
-
-                // and replace with the new data
-                diesel::insert_into(crate::schema::stock_exchanges::table)
-                    .values(&exs)
-                    .execute(connection)
-                    .expect("Error saving new exchange data");
-
-                info!(
-                    "Updated stock {} and {} exchanges, deleted {} exchanges",
-                    &isin_,
-                    exs.len(),
-                    deleted.len()
-                );
-            }
-            Err(e) => error!("Error obtaining stock infos: {}", e),
+            info!("updated stock info for {}", &info.isin);
         }
     } else if let Some(isin_) = sub_matches.value_of("remove") {
         let isin_ = isin_.to_uppercase();

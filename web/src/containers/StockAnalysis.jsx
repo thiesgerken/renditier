@@ -18,14 +18,18 @@ import {
 import Alert from '@material-ui/lab/Alert';
 import * as moment from 'moment';
 
-import { updateStocks as updateStocksAction } from '../actions/stocks';
-import { updatePerformance as updatePerformanceAction } from '../actions/performance';
+import {
+  updateStocks as updateStocksAction,
+  updatePerformance as updatePerformanceAction,
+} from '../actions/api';
 import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
 import { findStock, capitalizeTitle } from '../selectors/stocks';
 import StockPerformanceTable from '../components/stockAnalysis/StockPerformanceTable';
 import OnvistaButton from '../components/OnvistaButton';
 import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
 import StockPlot from '../components/stockAnalysis/StockPlot';
+import HoldingsPie from '../components/stockAnalysis/HoldingsPie';
+import BreakdownPie from '../components/stockAnalysis/BreakdownPie';
 
 const StockAnalysis = ({
   isin,
@@ -64,40 +68,40 @@ const StockAnalysis = ({
   updateStocks();
 
   const stock = findStock(stocks, isin);
-  if (stock === null || performance.items.length === 0) {
-    if (stocks.isFetching || performance.isFetching) {
-      return (
-        <Container maxWidth="lg">
-          <div
-            style={{
-              position: 'relative',
-              left: '50%',
-              transform: 'translate(0%, 50%)',
-              width: '100%',
-              height: '13em',
-              padding: '20px',
-            }}
-          >
-            <CircularProgress color="secondary" />
-          </div>
-        </Container>
-      );
-    }
+  if (stocks.isFetching || performance.isFetching) {
+    return (
+      <Container maxWidth="lg">
+        <div
+          style={{
+            position: 'relative',
+            left: '50%',
+            transform: 'translate(0%, 50%)',
+            width: '100%',
+            height: '13em',
+            padding: '20px',
+          }}
+        >
+          <CircularProgress color="secondary" />
+        </div>
+      </Container>
+    );
+  }
 
+  if (stock === null || performance.data === null) {
     return (
       <Container maxWidth="lg">
         <Alert elevation={5} variant="filled" severity="error">
           {stock === null &&
             `Die Datenbank enthält kein Wertpapier mit ISIN '${isin}'!`}
-          {performance.items === null && `Keine Performance-Daten verfügbar!`}
+          {performance.data === null && `Keine Performance-Daten verfügbar!`}
         </Alert>
       </Container>
     );
   }
 
   const stockPerformance = { ...performance };
-  stockPerformance.items = filter(
-    map(performance.items, item => {
+  stockPerformance.data = filter(
+    map(performance.data, item => {
       const pos = item.positions[isin];
       if (pos === undefined) return null;
 
@@ -106,15 +110,9 @@ const StockAnalysis = ({
     x => x !== null
   );
 
-  const totalPerformance = find(
-    stockPerformance.items,
-    p => p.kind === 'Total'
-  );
+  const totalPerformance = find(stockPerformance.data, p => p.kind === 'Total');
 
-  const todayPerformance = find(
-    stockPerformance.items,
-    p => p.kind === 'Today'
-  );
+  const todayPerformance = find(stockPerformance.data, p => p.kind === 'Today');
 
   const currentPrice = todayPerformance.end.dataSource;
   let currentPriceInfo;
@@ -151,6 +149,15 @@ const StockAnalysis = ({
       height: '2em',
     },
   }))(ListItem);
+
+  const holdings = stock.holdings !== null ? JSON.parse(stock.holdings) : [];
+  const industryBreakdown =
+    stock.industryBreakdown !== null ? JSON.parse(stock.industryBreakdown) : [];
+  const currencyBreakdown =
+    stock.currencyBreakdown !== null ? JSON.parse(stock.currencyBreakdown) : [];
+  const countryBreakdown =
+    stock.countryBreakdown !== null ? JSON.parse(stock.countryBreakdown) : [];
+  // const instrumentBreakdown = stock.instrumentBreakdown !== null ? JSON.parse(stock.instrumentBreakdown) : [];
 
   return (
     <Grid container spacing={3}>
@@ -201,6 +208,19 @@ const StockAnalysis = ({
                       </StyledListItem>
                       <StyledListItem>{typeInfo}</StyledListItem>
                       <StyledListItem>{`Herausgeber: ${stock.company}`}</StyledListItem>
+                      {stock.currency !== null && (
+                        <StyledListItem>
+                          Währung: {stock.currency}
+                        </StyledListItem>
+                      )}
+                      {stock.launchDate !== null && (
+                        <StyledListItem>
+                          Auflagedatum: {moment(stock.launchDate).format('L')}
+                        </StyledListItem>
+                      )}{' '}
+                      {stock.index !== null && (
+                        <StyledListItem>Index: {stock.index}</StyledListItem>
+                      )}
                     </List>
                   </Grid>
                   <Grid item xs={12} md={6}>
@@ -215,6 +235,16 @@ const StockAnalysis = ({
                       </StyledListItem>
                       {currentPrice !== null && (
                         <StyledListItem>{currentPriceInfo}</StyledListItem>
+                      )}
+                      {stock.payoutType !== null && (
+                        <StyledListItem>
+                          Auschüttungsart: {stock.payoutType}
+                        </StyledListItem>
+                      )}
+                      {stock.ter !== null && (
+                        <StyledListItem>
+                          {`Kosten: ${(stock.ter * 100).toFixed(2)}% p.a.`}
+                        </StyledListItem>
                       )}
                     </List>
                   </Grid>
@@ -243,6 +273,46 @@ const StockAnalysis = ({
           currentPrice={currentPrice}
         />
       </Grid>
+      <Hidden xsDown>
+        {(holdings.length > 0 ||
+          industryBreakdown.length > 0 ||
+          currencyBreakdown.length > 0 ||
+          countryBreakdown.length > 0) && (
+          <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+            <Container maxWidth="xl" style={{ padding: '0px' }}>
+              <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
+                <Grid container style={{ width: '100%' }}>
+                  {holdings.length > 0 && (
+                    <Grid item xs={12} xl={6}>
+                      <HoldingsPie holdings={holdings} />
+                    </Grid>
+                  )}
+                  {industryBreakdown.length > 0 && (
+                    <Grid item xs={12} xl={6}>
+                      <BreakdownPie breakdown={industryBreakdown} />
+                    </Grid>
+                  )}
+                  {currencyBreakdown.length > 0 && (
+                    <Grid item xs={12} xl={6}>
+                      <BreakdownPie breakdown={currencyBreakdown} />
+                    </Grid>
+                  )}
+                  {countryBreakdown.length > 0 && (
+                    <Grid item xs={12} xl={6}>
+                      <BreakdownPie breakdown={countryBreakdown} />
+                    </Grid>
+                  )}
+                  {/* {instrumentBreakdown.length > 0 && (
+                <Grid item xs={12} xl={4}>
+                  <BreakdownPie breakdown={instrumentBreakdown} />
+                </Grid>
+              )} */}
+                </Grid>
+              </Paper>
+            </Container>
+          </Grid>
+        )}
+      </Hidden>
     </Grid>
   );
 };
@@ -250,15 +320,13 @@ const StockAnalysis = ({
 StockAnalysis.propTypes = {
   isin: PropTypes.string.isRequired,
   stocks: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
-    lastUpdated: PropTypes.number,
   }).isRequired,
   updateStocks: PropTypes.func.isRequired,
   performance: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
-    lastUpdated: PropTypes.number,
   }).isRequired,
   updatePerformance: PropTypes.func.isRequired,
   stockPlotData: PropTypes.arrayOf(PropTypes.object).isRequired,

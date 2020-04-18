@@ -23,7 +23,7 @@ self.addEventListener('push', e => {
   const data = e.data.json();
   let body = null;
 
-  // console.log(`[Service Worker] Push received; data="${e.data.text()}"`);
+  // console.log(`[Service Worker] Push received"`);
   // console.log(data);
 
   if (Object.keys(data).includes('text')) {
@@ -58,6 +58,7 @@ self.addEventListener('push', e => {
     )}€`;
   } else {
     // console.error('unknown payload format in the push message');
+    // console.error(data);
     return;
   }
 
