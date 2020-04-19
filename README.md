@@ -22,6 +22,9 @@
 - StockAnalysis: List of exchanges and current prices (+ dates)
 - proper maintenance of stock data (renew every week?)
 - try to find out which index links to each ETF, grab data for those as well. Maybe the user has to make the connection ... -> save link in different table to avoid overwriting it on update; maybe only allow this via CLI
+- CLI interface for receipt parsing
+- drag and drop for pdfs in web, parse them and add transaction
+- receipt parsing: parse each page on its own, include "außerbörslich", add comment with receipt id (detect duplicates through this)
 
 ## Install
 

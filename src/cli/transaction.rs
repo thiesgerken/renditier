@@ -1,13 +1,16 @@
 use crate::models::*;
-use crate::schema::transactions::dsl::*;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, TimeZone, Utc};
 use clap::ArgMatches;
 use clap::{App, Arg, ArgGroup, SubCommand};
 use diesel::prelude::*;
 use log::info;
 use prettytable::{cell, row, Table};
+use regex::Regex;
+use std::error::Error;
 use std::io;
+use std::path::Path;
+use std::str::FromStr;
 
 pub fn build() -> App<'static, 'static> {
     SubCommand::with_name("transaction")
@@ -20,9 +23,15 @@ pub fn build() -> App<'static, 'static> {
                 .help("remove transaction"),
         )
         .arg(
+            Arg::with_name("receipt")
+                .long("receipt")
+                .value_name("filename")
+                .help("import an onvista receipt"),
+        )
+        .arg(
             Arg::with_name("account")
                 .long("account")
-                .help("filter transaction listing by account")
+                .help("account id for --list and --receipt")
                 .conflicts_with_all(&["add", "remove"]),
         )
         .arg(
@@ -32,7 +41,7 @@ pub fn build() -> App<'static, 'static> {
         )
         .group(
             ArgGroup::with_name("action")
-                .args(&["add", "remove", "list"])
+                .args(&["add", "remove", "list", "receipt"])
                 .required(true),
         )
 }
@@ -142,22 +151,28 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         let confirmation = confirmation.trim_end(); // Remove the trailing newline
         assert_eq!(confirmation, s_tid.to_string(), "Confirmation failed");
 
-        diesel::delete(transactions.find(&s_tid))
+        diesel::delete(crate::schema::transactions::table.find(&s_tid))
             .execute(connection)
             .unwrap_or_else(|_| panic!("Unable to delete transaction {}", &s_tid));
 
         info!("deleted transaction '{}'", s_tid);
+    } else if let Some(file_name) = sub_matches.value_of("receipt") {
+        // TODO: import file_name; somehow the accountId has to be input as well.
+        let account_id = 1;
+        let t = parse_receipt(Path::new(&file_name), account_id);
+        println!("{:?}", t);
+    // TODO: after parsing, search in database for a similar entry and also replace the exchange
     } else if sub_matches.is_present("list") {
         let ts = if let Some(s_aid) = sub_matches.value_of("account") {
             let s_aid: i32 = s_aid.parse().expect("Could not parse account id!");
 
-            transactions
-                .filter(account_id.eq(s_aid))
-                .order(date.desc())
+            crate::schema::transactions::table
+                .filter(crate::schema::transactions::dsl::account_id.eq(s_aid))
+                .order(crate::schema::transactions::dsl::date.desc())
                 .load::<Transaction>(connection)
         } else {
-            transactions
-                .order(date.desc())
+            crate::schema::transactions::table
+                .order(crate::schema::transactions::dsl::date.desc())
                 .load::<Transaction>(connection)
         }
         .expect("Error loading transactions");
@@ -202,4 +217,82 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
     } else {
         panic!("unexpected options for subcommand 'transaction'");
     }
+}
+
+pub fn parse_receipt(path: &Path, account_id: i32) -> Result<NewTransaction, Box<dyn Error>> {
+    let mut buffer = Vec::<u8>::new();
+    let doc = lopdf::Document::load(path)?;
+    pdf_extract::output_doc(
+        &doc,
+        Box::new(pdf_extract::PlainTextOutput::new(
+            &mut buffer as &mut dyn std::io::Write,
+        ))
+        .as_mut(),
+    )?;
+    let s = std::str::from_utf8(&buffer)?.to_owned();
+
+    // TODO: split by page
+    println!("{}", s);
+
+    let re_type =
+        Regex::new(r"Wertpapierabrechnung\s+(Kauf|Kauf Sparplan)\s+Kommissionsgeschäft").unwrap();
+    re_type
+        .captures_iter(&s)
+        .next()
+        .ok_or("no receipt type match")?;
+
+    let re_isin = Regex::new(r"ISIN\s+([A-Z]{2}[A-Z0-9]{10})\s").unwrap();
+    let isin = re_isin.captures_iter(&s).next().ok_or("no isin match")?[1].to_owned();
+
+    let re_units_price = Regex::new(r"Nominal\s+STK (\d+,\d+)\s+Kurs\s+EUR (\d+,\d+)").unwrap();
+    let cpt = re_units_price
+        .captures_iter(&s)
+        .next()
+        .ok_or("no units/price match")?;
+    let units = parse_float(&cpt[1])?;
+    // let price = parse_float(&cpt[2])?;
+
+    let re = Regex::new(r"Kurswert\sEUR (\d+,\d{2})").unwrap();
+    let amount_no_fees = (parse_float(&re.captures_iter(&s).next().ok_or("no amount match")?[1])?
+        * 100.0)
+        .round() as i64;
+
+    let re = Regex::new(r"Betrag zu Ihren Lasten\s+EUR (\d+,\d{2})").unwrap();
+    let amount = (parse_float(&re.captures_iter(&s).next().ok_or("no amount match")?[1])? * 100.0)
+        .round() as i64;
+
+    let re =
+    Regex::new(r"Handelstag\s(\d\d)\.(\d\d)\.(\d{4})\s+Handelszeit\s(\d\d):(\d\d)\s+Handelsplatz\s(Börse|außerbörslich)\s(.+?)\s*\n").unwrap();
+    let cpt = re
+        .captures_iter(&s)
+        .next()
+        .ok_or("no date and place match")?;
+    let d = cpt[1].parse()?;
+    let m = cpt[2].parse()?;
+    let y = cpt[3].parse()?;
+    let hour = cpt[4].parse()?;
+    let minute = cpt[5].parse()?;
+    // let ex_type = cpt[6].to_owned();
+    let ex = cpt[7].to_owned();
+
+    let date = Local
+        .ymd(y, m, d)
+        .and_hms(hour, minute, 0)
+        .with_timezone(&Utc);
+
+    Ok(NewTransaction {
+        account_id,
+        isin,
+        date,
+        units,
+        amount: -1 * amount_no_fees, // -units*price in cents (or simply the amount in case of dividends); does not include fees; negative sign -> gave money away.
+        fees: amount_no_fees - amount, // sign should be negative
+        onvista_exchange_id: None,
+        comments: String::new(),
+        exchange: Some(ex),
+    })
+}
+
+fn parse_float(s: &str) -> Result<f64, <f64 as FromStr>::Err> {
+    s.replace(".", "").replace(",", ".").parse()
 }
