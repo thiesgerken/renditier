@@ -89,6 +89,7 @@ table! {
         onvista_exchange_id -> Nullable<Int4>,
         comments -> Text,
         exchange -> Nullable<Text>,
+        receipt_number -> Nullable<Int8>,
     }
 }
 

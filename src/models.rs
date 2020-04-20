@@ -166,6 +166,7 @@ pub struct Transaction {
     pub onvista_exchange_id: Option<i32>,
     pub comments: String,
     pub exchange: Option<String>,
+    pub receipt_number: Option<i64>,
 }
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
@@ -181,4 +182,5 @@ pub struct NewTransaction {
     pub onvista_exchange_id: Option<i32>,
     pub comments: String,
     pub exchange: Option<String>,
+    pub receipt_number: Option<i64>,
 }

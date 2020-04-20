@@ -211,6 +211,7 @@ impl MoneyDBTransaction {
             units: self.units,
             onvista_exchange_id: None,
             exchange: None,
+            receipt_number: None,
             comments: String::new(),
         };
 
