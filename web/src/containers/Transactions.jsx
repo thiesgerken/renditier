@@ -17,11 +17,13 @@ import {
 } from '@material-ui/core';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
 import AddIcon from '@material-ui/icons/Add';
+import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 import { useLocation, useHistory } from 'react-router';
 
 import { updateTransactions as updateTransactionsAction } from '../actions/transactions';
 import { updateStocks as updateStocksAction } from '../actions/api';
 import { updateAccounts as updateAccountsAction } from '../actions/accounts';
+import { uploadReceipts as uploadReceiptsAction } from '../actions/receipts';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
 import TransactionDialog from './TransactionDialog';
 
@@ -71,6 +73,7 @@ const Transactions = ({
   updateStocks,
   updateTransactions,
   updateAccounts,
+  uploadReceipts,
 }) => {
   const [transactionId, setTransactionId] = useQuery('id');
   const [page, setPage] = useQuery('page');
@@ -294,11 +297,25 @@ const Transactions = ({
     rowsPerPageOptions: mdUp ? [10, 25, 50] : [10],
     responsive: 'scrollFullHeight',
     customToolbar: () => (
-      <Tooltip title="Neue Transaktion">
-        <IconButton onClick={() => setTransactionId(-1)}>
-          <AddIcon />
-        </IconButton>
-      </Tooltip>
+      <>
+        <Tooltip title="Abrechnungen hochladen">
+          <IconButton component="label">
+            <input
+              type="file"
+              hidden
+              accept="application/pdf"
+              multiple
+              onChange={e => uploadReceipts(e.target.files)} // TODO: show upload dialog with progress and success/error message, then clear the error
+            />
+            <CloudUploadIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Neue Transaktion">
+          <IconButton onClick={() => setTransactionId(-1)}>
+            <AddIcon />
+          </IconButton>
+        </Tooltip>
+      </>
     ),
     textLabels: {
       body: {
@@ -391,6 +408,7 @@ Transactions.propTypes = {
   updateTransactions: PropTypes.func.isRequired,
   updateStocks: PropTypes.func.isRequired,
   updateAccounts: PropTypes.func.isRequired,
+  uploadReceipts: PropTypes.func.isRequired,
   transactions: PropTypes.shape({
     items: PropTypes.arrayOf(PropTypes.object),
     isFetching: PropTypes.bool,
@@ -409,6 +427,7 @@ const mapDispatchToProps = dispatch => ({
   updateTransactions: () => dispatch(updateTransactionsAction()),
   updateStocks: () => dispatch(updateStocksAction()),
   updateAccounts: () => dispatch(updateAccountsAction()),
+  uploadReceipts: inputFiles => dispatch(uploadReceiptsAction(inputFiles)),
 });
 
 const mapStateToProps = state => {

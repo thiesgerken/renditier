@@ -113,7 +113,9 @@ const unifyPoints = (points, isins) => {
             if (d === date) {
               rec[isins[i]] = points[isins[i]][idx[i]].priceRelStart;
               idx[i] += 1;
-            } else rec[isins[i]] = null;
+            } // else if (unifiedPoints.length > 0)
+            //   rec[isins[i]] = unifiedPoints[unifiedPoints.length - 1][isins[i]];
+            else rec[isins[i]] = null;
           }
 
         unifiedPoints.push(rec);
@@ -328,6 +330,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                       strokeWidth={1.4}
                       fill={colors[colorIdx % colors.length]}
                       fillOpacity={0.2}
+                      connectNulls
                     />
                   );
                 })}

@@ -117,7 +117,7 @@ pub fn send_daily_notifications(
         .collect::<Vec<_>>();
 
     // might result in some devices getting two notifications
-    send_welcome_notifications(&subs, private_key)?;
+    // send_welcome_notifications(&subs, private_key)?;
 
     // update last_notification of all subscriptions, even those that will fail
     let endpoints = subs.iter().map(|s| s.endpoint.clone()).collect::<Vec<_>>();

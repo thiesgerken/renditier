@@ -24,7 +24,7 @@
 - try to find out which index links to each ETF, grab data for those as well. Maybe the user has to make the connection ... -> save link in different table to avoid overwriting it on update; maybe only allow this via CLI
 - CLI interface for receipt parsing
 - drag and drop for pdfs in web, parse them and add transaction
-- receipt parsing: parse each page on its own, include "außerbörslich", add comment with receipt id (detect duplicates through this)
+- receipt parsing: also parse tax infos as soon as this is relevant? (units=0, amount=0, fees=...)
 
 ## Install
 
