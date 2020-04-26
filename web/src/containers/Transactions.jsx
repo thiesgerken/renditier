@@ -26,6 +26,7 @@ import { updateAccounts as updateAccountsAction } from '../actions/accounts';
 import { uploadReceipts as uploadReceiptsAction } from '../actions/receipts';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
 import TransactionDialog from './TransactionDialog';
+import ReceiptUploadDialog from './ReceiptUploadDialog';
 
 function useQuery(key) {
   const location = useLocation();
@@ -76,6 +77,7 @@ const Transactions = ({
   uploadReceipts,
 }) => {
   const [transactionId, setTransactionId] = useQuery('id');
+  const [uploading, setUploading] = useQuery('upload');
   const [page, setPage] = useQuery('page');
 
   let initialTransaction = {
@@ -305,7 +307,10 @@ const Transactions = ({
               hidden
               accept="application/pdf"
               multiple
-              onChange={e => uploadReceipts(e.target.files)} // TODO: show upload dialog with progress and success/error message, then clear the error
+              onChange={e => {
+                setUploading(true);
+                uploadReceipts(e.target.files);
+              }}
             />
             <CloudUploadIcon />
           </IconButton>
@@ -398,6 +403,12 @@ const Transactions = ({
         open={transactionId !== null && !isLoading}
         onClose={() => {
           setTransactionId(null);
+        }}
+      />
+      <ReceiptUploadDialog
+        open={uploading !== null}
+        onClose={() => {
+          setUploading(null);
         }}
       />
     </div>
