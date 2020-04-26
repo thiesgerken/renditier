@@ -424,7 +424,6 @@ const TransactionDialog = ({
                 label="Kommentare"
                 fullWidth
                 multiline
-                test="dd"
                 rows={3}
                 value={transaction.comments}
                 onChange={v =>

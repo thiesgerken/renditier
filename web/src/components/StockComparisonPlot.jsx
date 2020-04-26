@@ -192,9 +192,11 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
         ),
         'isin'
       );
+      if (isins.length === 0 && stocks.data !== null)
+        isins = map(stocks.data, x => x.isin);
 
       if (isins.length > 3) isins = isins.slice(0, 3);
-      setIsins(isins);
+      if (isins.length > 0) setIsins(isins);
     }
   }
 
@@ -205,8 +207,8 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
   let sd = null;
   let ed = null;
 
-  if (performance.data !== null && period < performance.data.length) {
-    if (period >= 0) {
+  if (performance.data !== null) {
+    if (period >= 0 && period < performance.data.length) {
       sd = nextWeekDay(
         moment(performance.data[period].start.date).add(1, 'days')
       ).format('YYYY-MM-DD');

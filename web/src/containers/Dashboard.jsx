@@ -40,6 +40,8 @@ const Dashboard = ({
 
   let oldestTodayData = null;
   let newestTodayData = null;
+  let hasStuff = true;
+
   if (performance.data !== null) {
     const tp = find(performance.data, p => p.kind === 'Total');
 
@@ -51,6 +53,8 @@ const Dashboard = ({
         d => d !== null
       );
 
+      hasStuff = tp.positions.length > 0;
+
       if (dates.length > 0) {
         oldestTodayData = min(dates).format('LLL');
         newestTodayData = max(dates).format('LLL');
@@ -60,31 +64,41 @@ const Dashboard = ({
 
   return (
     <Grid container spacing={3}>
-      <Hidden xsDown implementation="js">
-        <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
-          <PortfolioPlot
-            data={portfolioPlotData}
-            updateData={updatePortfolioPlotData}
-            performance={performance}
-          />
-        </Grid>
-      </Hidden>
+      {hasStuff && (
+        <Hidden xsDown implementation="js">
+          <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+            <PortfolioPlot
+              data={portfolioPlotData}
+              updateData={updatePortfolioPlotData}
+              performance={performance}
+            />
+          </Grid>
+        </Hidden>
+      )}
       <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
         <PerformanceTable performance={performance} />
       </Grid>
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
-        <PositionsTable stocks={stocks} performance={performance} push={push} />
-      </Grid>
-      <Hidden xsDown implementation="js">
-        <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
-          <PositionsPie stocks={stocks} performance={performance} />
-        </Grid>
-      </Hidden>
-      <Hidden xsDown implementation="js">
-        <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
-          <Breakdowns stocks={stocks} performance={performance} />
-        </Grid>
-      </Hidden>
+      {hasStuff && (
+        <>
+          <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+            <PositionsTable
+              stocks={stocks}
+              performance={performance}
+              push={push}
+            />
+          </Grid>
+          <Hidden xsDown implementation="js">
+            <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+              <PositionsPie stocks={stocks} performance={performance} />
+            </Grid>
+          </Hidden>
+          <Hidden xsDown implementation="js">
+            <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+              <Breakdowns stocks={stocks} performance={performance} />
+            </Grid>
+          </Hidden>
+        </>
+      )}
       {oldestTodayData !== null && (
         <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
           <Container maxWidth="xl" style={{ padding: '0px' }}>

@@ -111,15 +111,16 @@ const StockAnalysis = ({
   );
 
   const totalPerformance = find(stockPerformance.data, p => p.kind === 'Total');
-
   const todayPerformance = find(stockPerformance.data, p => p.kind === 'Today');
 
-  const currentPrice = todayPerformance.end.dataSource;
+  const currentPrice = todayPerformance
+    ? todayPerformance.end.dataSource
+    : null;
   let currentPriceInfo;
   if (currentPrice !== null)
     currentPriceInfo = `Aktueller Kurs: ${formatDataSource(currentPrice)}`;
 
-  const { transactions } = totalPerformance;
+  const transactions = totalPerformance ? totalPerformance.transactions : [];
   const transactionVolume = sumBy(transactions, t => Math.abs(t.amount));
   const transactionFees = sumBy(transactions, t => Math.abs(t.fees));
   const firstTransaction = min(map(transactions, t => moment(t.date)));

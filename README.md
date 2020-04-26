@@ -23,6 +23,8 @@
 - proper maintenance of stock data (renew every week?)
 - try to find out which index links to each ETF, grab data for those as well. Maybe the user has to make the connection ... -> save link in different table to avoid overwriting it on update; maybe only allow this via CLI
 - receipt parsing: also parse tax infos as soon as this is relevant? (units=0, amount=0, fees=...)
+- transaction and account dialog: only highlight invalid input after "triedtosave". TransactionDialog: highlight boxes if all of amount, fees and units are zero.
+- backend for account editing (replace userid)
 
 ## Install
 

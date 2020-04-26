@@ -96,7 +96,7 @@ pub fn compute(
         price::find(connection, &isins, date, 4 * 24, 4 * 24)?;
 
     // assemble dates for which we need to get HistoricalPrices
-    let current_day = current_prices
+    let mut current_day = current_prices
         .values()
         .map(|d| d.price.date)
         .max()
@@ -104,6 +104,10 @@ pub fn compute(
         .with_timezone(&Local)
         .date()
         .naive_local();
+    while current_day.weekday().number_from_monday() > 5 {
+        current_day = current_day.pred();
+    }
+
     let mut prev_day = current_day.pred();
     while prev_day.weekday().number_from_monday() > 5 {
         prev_day = prev_day.pred();
@@ -113,10 +117,8 @@ pub fn compute(
         .iter()
         .map(|t| t.date)
         .min()
-        .unwrap_or_else(Utc::now)
-        .with_timezone(&Local)
-        .date()
-        .naive_local();
+        .map(|d| d.with_timezone(&Local).date().naive_local())
+        .unwrap_or_else(|| NaiveDate::from_ymd(prev_day.year(), 1, 1));
 
     let mut jobs = Vec::new();
     jobs.push((PerformanceKind::Total, first_transaction_date.pred(), None));
