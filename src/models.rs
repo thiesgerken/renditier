@@ -106,7 +106,15 @@ pub struct NewUser {
 }
 
 #[derive(
-    Debug, Clone, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize,
+    Debug,
+    Clone,
+    Queryable,
+    Insertable,
+    Associations,
+    Identifiable,
+    Serialize,
+    Deserialize,
+    AsChangeset,
 )]
 #[belongs_to(User, foreign_key = "user_id")]
 #[serde(rename_all = "camelCase")]

@@ -8,7 +8,7 @@ pub mod stocks;
 pub mod transactions;
 pub mod user;
 
-use rocket::config::{Environment, LoggingLevel, Value};
+use rocket::config::{Environment, Limits, LoggingLevel, Value};
 use rocket_contrib::databases::diesel;
 use std::collections::HashMap;
 
@@ -28,10 +28,15 @@ pub fn handle(config: Config) {
     database_config.insert("url", Value::from(config.database_url.clone()));
     databases.insert("stockdb", Value::from(database_config));
 
+    let limits = Limits::new()
+        .limit("forms", 64 * 1024)
+        .limit("json", 10 * 1024 * 1024);
+
     let mut rocket_config = rocket::config::Config::build(Environment::Production)
         .extra("databases", databases)
         .port(config.port)
         .address(config.address.clone())
+        .limits(limits)
         .log_level(config.log_level);
 
     if let Some(key) = config.secret_key.clone() {
@@ -53,6 +58,9 @@ pub fn handle(config: Config) {
                 user::info,
                 accounts::list,
                 accounts::get,
+                accounts::delete,
+                accounts::update,
+                accounts::create,
                 transactions::list,
                 transactions::get,
                 transactions::delete,

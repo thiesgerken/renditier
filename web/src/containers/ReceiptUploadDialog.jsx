@@ -55,7 +55,7 @@ const ReceiptUploadDialog = ({ receipts, stocks, open, onClose }) => {
         {!receipts.isUploading && receipts.uploadError !== null && (
           <Alert severity="error">
             <AlertTitle>Fehler beim Upload</AlertTitle>
-            {receipts.uploadError}
+            {receipts.uploadError.toString()}
           </Alert>
         )}
         {!receipts.isUploading && receipts.data !== null && (
@@ -76,7 +76,7 @@ const ReceiptUploadDialog = ({ receipts, stocks, open, onClose }) => {
                     <ListItemText
                       primary={`${moment(x.date).format(
                         'L'
-                      )}: ${x.units.toFixed(2)} Einheiten von ${stock} für ${(
+                      )}: ${x.units.toFixed(2)} von ${stock} für ${(
                         x.amount / 100
                       ).toFixed(2)}€`}
                     />

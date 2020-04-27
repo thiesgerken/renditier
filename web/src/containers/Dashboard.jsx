@@ -53,7 +53,7 @@ const Dashboard = ({
         d => d !== null
       );
 
-      hasStuff = tp.positions.length > 0;
+      hasStuff = Object.keys(tp.positions).length > 0;
 
       if (dates.length > 0) {
         oldestTodayData = min(dates).format('LLL');
