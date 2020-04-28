@@ -49,7 +49,9 @@ const accumulateHoldings = (stocks, performance, nameFormatter) => {
 
     if (stock !== null) {
       const data = map(
-        stock.holdings !== null ? JSON.parse(stock.holdings) : [],
+        stock.holdings !== null
+          ? JSON.parse(stock.holdings)
+          : [{ name: stock.title, share: 1.0 }],
         x => ({
           name: nameFormatter ? nameFormatter(x.name) : x.name,
           share: x.share,

@@ -7,6 +7,7 @@ pub mod data;
 pub mod models;
 pub mod onvista;
 pub mod push;
+pub mod receipts;
 pub mod schema;
 pub mod serialization;
 pub mod web;
@@ -103,9 +104,9 @@ pub fn add_missing_stocks(connection: &PgConnection) {
 
 pub fn initialize_logging(verbosity: u32) {
     let level = match verbosity {
-        0 => LevelFilter::Warn,
-        1 => LevelFilter::Info,
-        2 => LevelFilter::Debug,
+        // 0 => LevelFilter::Warn,
+        0 => LevelFilter::Info,
+        1 => LevelFilter::Debug,
         _ => LevelFilter::Trace,
     };
 

@@ -3,7 +3,7 @@ Description=stockdb daemon
 After=network.target postgresql.service
 
 [Service]
-ExecStart=/usr/bin/stockdb -v serve
+ExecStart=/usr/bin/stockdb serve
 ExecReload=/bin/kill -INT $MAINPID
 StandardOutput=syslog
 StandardError=syslog

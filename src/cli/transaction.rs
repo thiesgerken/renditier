@@ -1,5 +1,5 @@
 use crate::models::*;
-use crate::schema::transactions::dsl::*;
+use crate::receipts;
 
 use chrono::{DateTime, Utc};
 use clap::ArgMatches;
@@ -20,10 +20,26 @@ pub fn build() -> App<'static, 'static> {
                 .help("remove transaction"),
         )
         .arg(
+            Arg::with_name("receipts")
+                .long("receipts")
+                .value_name("filename")
+                .min_values(1)
+                .requires("user")
+                .help("import onvista receipt(s)"),
+        )
+        .arg(
             Arg::with_name("account")
                 .long("account")
-                .help("filter transaction listing by account")
-                .conflicts_with_all(&["add", "remove"]),
+                .value_name("id")
+                .help("account id for --list")
+                .conflicts_with_all(&["add", "remove", "receipts"]),
+        )
+        .arg(
+            Arg::with_name("user")
+                .long("user")
+                .value_name("id")
+                .help("user id for --receipts")
+                .conflicts_with_all(&["add", "remove", "list"]),
         )
         .arg(
             Arg::with_name("list")
@@ -32,7 +48,7 @@ pub fn build() -> App<'static, 'static> {
         )
         .group(
             ArgGroup::with_name("action")
-                .args(&["add", "remove", "list"])
+                .args(&["add", "remove", "list", "receipts"])
                 .required(true),
         )
 }
@@ -112,6 +128,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             onvista_exchange_id: s_exchange,
             comments: s_comments,
             exchange: s_exchange_str,
+            receipt_number: None,
         };
 
         let t: Transaction = diesel::insert_into(crate::schema::transactions::table)
@@ -142,22 +159,32 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         let confirmation = confirmation.trim_end(); // Remove the trailing newline
         assert_eq!(confirmation, s_tid.to_string(), "Confirmation failed");
 
-        diesel::delete(transactions.find(&s_tid))
+        diesel::delete(crate::schema::transactions::table.find(&s_tid))
             .execute(connection)
             .unwrap_or_else(|_| panic!("Unable to delete transaction {}", &s_tid));
 
         info!("deleted transaction '{}'", s_tid);
+    } else if let Some(file_names) = sub_matches.values_of("receipts") {
+        let file_names = file_names.collect::<Vec<_>>();
+        let uid: i32 = sub_matches
+            .value_of("user")
+            .unwrap()
+            .parse()
+            .expect("Could not parse user id!");
+
+        receipts::parse_files(connection, uid, &file_names)
+            .unwrap_or_else(|e| panic!("Error adding receipts: {:?}", e));
     } else if sub_matches.is_present("list") {
         let ts = if let Some(s_aid) = sub_matches.value_of("account") {
             let s_aid: i32 = s_aid.parse().expect("Could not parse account id!");
 
-            transactions
-                .filter(account_id.eq(s_aid))
-                .order(date.desc())
+            crate::schema::transactions::table
+                .filter(crate::schema::transactions::dsl::account_id.eq(s_aid))
+                .order(crate::schema::transactions::dsl::date.desc())
                 .load::<Transaction>(connection)
         } else {
-            transactions
-                .order(date.desc())
+            crate::schema::transactions::table
+                .order(crate::schema::transactions::dsl::date.desc())
                 .load::<Transaction>(connection)
         }
         .expect("Error loading transactions");

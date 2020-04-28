@@ -113,7 +113,9 @@ const unifyPoints = (points, isins) => {
             if (d === date) {
               rec[isins[i]] = points[isins[i]][idx[i]].priceRelStart;
               idx[i] += 1;
-            } else rec[isins[i]] = null;
+            } // else if (unifiedPoints.length > 0)
+            //   rec[isins[i]] = unifiedPoints[unifiedPoints.length - 1][isins[i]];
+            else rec[isins[i]] = null;
           }
 
         unifiedPoints.push(rec);
@@ -190,9 +192,11 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
         ),
         'isin'
       );
+      if (isins.length === 0 && stocks.data !== null)
+        isins = map(stocks.data, x => x.isin);
 
       if (isins.length > 3) isins = isins.slice(0, 3);
-      setIsins(isins);
+      if (isins.length > 0) setIsins(isins);
     }
   }
 
@@ -203,8 +207,8 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
   let sd = null;
   let ed = null;
 
-  if (performance.data !== null && period < performance.data.length) {
-    if (period >= 0) {
+  if (performance.data !== null) {
+    if (period >= 0 && period < performance.data.length) {
       sd = nextWeekDay(
         moment(performance.data[period].start.date).add(1, 'days')
       ).format('YYYY-MM-DD');
@@ -328,6 +332,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                       strokeWidth={1.4}
                       fill={colors[colorIdx % colors.length]}
                       fillOpacity={0.2}
+                      connectNulls
                     />
                   );
                 })}

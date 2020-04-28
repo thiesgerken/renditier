@@ -3,6 +3,9 @@ import {
   FETCH_ACCOUNTS_REQUEST,
   FETCH_ACCOUNTS_ERROR,
   FETCH_ACCOUNTS_SUCCESS,
+  MODIFY_ACCOUNT_REQUEST,
+  MODIFY_ACCOUNT_ERROR,
+  MODIFY_ACCOUNT_SUCCESS,
 } from '../actions/accounts';
 
 const accounts = (
@@ -10,8 +13,10 @@ const accounts = (
     isFetching: false,
     didInvalidate: false,
     items: [],
-    error: null,
+    fetchError: null,
     lastUpdated: null,
+    isModifying: false,
+    modifyError: null,
   },
   action
 ) => {
@@ -27,15 +32,31 @@ const accounts = (
         didInvalidate: false,
         items: action.data,
         lastUpdated: action.receivedAt,
-        error: null,
+        fetchError: null,
       };
     case FETCH_ACCOUNTS_ERROR:
       return {
         ...state,
         isFetching: false,
         items: [],
-        error: action.error,
+        fetchError: action.error,
         lastUpdated: action.receivedAt,
+      };
+    case MODIFY_ACCOUNT_REQUEST:
+      return { ...state, isModifying: true };
+    case MODIFY_ACCOUNT_SUCCESS:
+      return {
+        ...state,
+        isModifying: false,
+        didInvalidate: true,
+        fetchError: null,
+      };
+    case MODIFY_ACCOUNT_ERROR:
+      return {
+        ...state,
+        isModifying: false,
+        didInvalidate: true,
+        fetchError: action.error,
       };
     default:
       return state;

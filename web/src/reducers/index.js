@@ -6,6 +6,7 @@ import authentication from './authentication';
 import notifications from './notifications';
 import portfolioPlot from './portfolioPlot';
 import transactions from './transactions';
+import receipts from './receipts';
 import stockPlot from './stockPlot';
 
 import {
@@ -23,6 +24,7 @@ const root = history =>
     stockPlot,
     accounts,
     transactions,
+    receipts,
     performance: resourceReducer(performanceResource),
     stocks: resourceReducer(stockResource),
   });

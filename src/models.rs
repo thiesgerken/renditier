@@ -106,7 +106,15 @@ pub struct NewUser {
 }
 
 #[derive(
-    Debug, Clone, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize,
+    Debug,
+    Clone,
+    Queryable,
+    Insertable,
+    Associations,
+    Identifiable,
+    Serialize,
+    Deserialize,
+    AsChangeset,
 )]
 #[belongs_to(User, foreign_key = "user_id")]
 #[serde(rename_all = "camelCase")]
@@ -166,6 +174,7 @@ pub struct Transaction {
     pub onvista_exchange_id: Option<i32>,
     pub comments: String,
     pub exchange: Option<String>,
+    pub receipt_number: Option<i64>,
 }
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
@@ -181,4 +190,5 @@ pub struct NewTransaction {
     pub onvista_exchange_id: Option<i32>,
     pub comments: String,
     pub exchange: Option<String>,
+    pub receipt_number: Option<i64>,
 }
