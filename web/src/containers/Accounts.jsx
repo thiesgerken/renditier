@@ -81,12 +81,15 @@ const Accounts = ({ accounts, updateAccounts }) => {
       name: 'id',
       label: 'ID',
       options: {
-        sortDirection: 'asc',
+        display: false,
       },
     },
     {
       name: 'name',
       label: 'Name',
+      options: {
+        sortDirection: 'asc',
+      },
     },
     {
       name: 'iban',

@@ -18,6 +18,7 @@ import * as moment from 'moment';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { connect } from 'react-redux';
+import DeleteIcon from '@material-ui/icons/Delete';
 
 import {
   deleteTransaction as deleteTransactionAction,
@@ -200,6 +201,15 @@ const TransactionDialog = ({
     onClose();
   };
 
+  const badCombination =
+    isValidFloat(transaction.amount) &&
+    isValidFloat(transaction.fees) &&
+    isValidFloat(transaction.units) &&
+    parseFloat(transaction.units) === 0 &&
+    Math.abs(parseFloat(transaction.amount)) +
+      Math.abs(parseFloat(transaction.fees)) <
+      0.01;
+
   return (
     <>
       <Dialog
@@ -250,7 +260,7 @@ const TransactionDialog = ({
                     {...params}
                     label="ISIN"
                     fullWidth
-                    error={parseISIN(transaction.isin) === null}
+                    error={triedToSave && parseISIN(transaction.isin) === null}
                   />
                 )}
               />
@@ -320,8 +330,9 @@ const TransactionDialog = ({
                       label="Depot"
                       fullWidth
                       error={
+                        triedToSave &&
                         findAccountByName(accounts, transaction.account) ===
-                        null
+                          null
                       }
                       margin="normal"
                     />
@@ -365,6 +376,10 @@ const TransactionDialog = ({
                     fixedDecimalScale: true,
                   },
                 }}
+                error={
+                  triedToSave &&
+                  (!isValidFloat(transaction.amount) || badCombination)
+                }
               />
             </Grid>
             <Grid item xs={6}>
@@ -388,6 +403,10 @@ const TransactionDialog = ({
                     fixedDecimalScale: true,
                   },
                 }}
+                error={
+                  triedToSave &&
+                  (!isValidFloat(transaction.fees) || badCombination)
+                }
               />
             </Grid>
             <Grid item xs={6}>
@@ -406,6 +425,10 @@ const TransactionDialog = ({
                   inputComponent: NumberInput,
                   inputProps: {},
                 }}
+                error={
+                  triedToSave &&
+                  (!isValidFloat(transaction.units) || badCombination)
+                }
               />
             </Grid>
             <Grid item xs={6}>
@@ -441,7 +464,12 @@ const TransactionDialog = ({
         </DialogContent>
         <DialogActions>
           {transaction.id !== null && (
-            <Button color="primary" onClick={() => setConfirmOpen(true)}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<DeleteIcon />}
+              onClick={() => setConfirmOpen(true)}
+            >
               Löschen
             </Button>
           )}
