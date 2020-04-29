@@ -1,12 +1,14 @@
 use crate::data::*;
 use crate::models::*;
 use crate::schema::stock_infos::dsl::*;
+use crate::serialization::*;
 
 use chrono::{Duration, Utc};
 use clap::ArgMatches;
 use clap::{App, Arg, ArgGroup, SubCommand};
 use diesel::prelude::*;
 use log::{error, info};
+use std::io;
 
 pub fn build() -> App<'static, 'static> {
     SubCommand::with_name("data")
@@ -21,9 +23,19 @@ pub fn build() -> App<'static, 'static> {
                 .long("fetch")
                 .help("update realtime and historic data for all stocks"),
         )
+        .arg(
+            Arg::with_name("export")
+                .long("export")
+                .help("write realtime and historic data for all stocks to stdout"),
+        )
+        .arg(
+            Arg::with_name("import")
+                .long("import")
+                .help("read realtime and historic data from stdin"),
+        )
         .group(
             ArgGroup::with_name("action")
-                .args(&["clean", "fetch"])
+                .args(&["clean", "fetch", "export", "import"])
                 .required(true),
         )
 }
@@ -64,6 +76,17 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         if let Err(e) = fetch_historical(connection, &stocks_hist_update) {
             error!("Could not update realtime data: {}", e)
         }
+    } else if sub_matches.is_present("export") {
+        let p = DataFormat::new(connection);
+        println!(
+            "{}",
+            serde_json::to_string(&p).expect("Could not serialize data")
+        );
+    } else if sub_matches.is_present("import") {
+        let p: DataFormat =
+            serde_json::from_reader(io::stdin()).expect("Could not parse data input");
+
+        p.write_to(connection);
     } else if sub_matches.is_present("clean") {
         use crate::schema::realtime_prices::dsl::*;
         let now = Utc::now();

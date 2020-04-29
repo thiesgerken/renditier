@@ -3,6 +3,7 @@ use crate::schema::*;
 
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
+use itertools::Itertools;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -12,6 +13,60 @@ pub struct NativeFormat {
     users: Vec<User>,
     accounts: Vec<Account>,
     transactions: Vec<Transaction>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DataFormat {
+    realtime_prices: Vec<RealtimePrice>,
+    historical_prices: Vec<HistoricalPrice>,
+}
+
+impl DataFormat {
+    pub fn new(connection: &PgConnection) -> Self {
+        let realtime_prices = realtime_prices::table
+            .load::<RealtimePrice>(connection)
+            .expect("Error loading realtime prices");
+        let historical_prices = historical_prices::table
+            .load::<HistoricalPrice>(connection)
+            .expect("Error loading historical prices");
+
+        DataFormat {
+            historical_prices,
+            realtime_prices,
+        }
+    }
+
+    pub fn write_to(self, connection: &PgConnection) {
+        for chunk in &self.historical_prices.into_iter().chunks(5000) {
+            let chunk = chunk.collect::<Vec<_>>();
+
+            let historical_prices_count = diesel::insert_into(historical_prices::table)
+                .values(&chunk)
+                .on_conflict_do_nothing()
+                .execute(connection)
+                .expect("Error writing historical prices into the database");
+            info!(
+                "imported {} of {} historical prices into the database",
+                historical_prices_count,
+                chunk.len()
+            );
+        }
+
+        for chunk in &self.realtime_prices.into_iter().chunks(5000) {
+            let chunk = chunk.collect::<Vec<_>>();
+
+            let realtime_prices_count = diesel::insert_into(realtime_prices::table)
+                .values(&chunk)
+                .on_conflict_do_nothing()
+                .execute(connection)
+                .expect("Error writing realtime prices into the database");
+            info!(
+                "imported {} of {} realtime prices into the database",
+                realtime_prices_count,
+                chunk.len()
+            );
+        }
+    }
 }
 
 impl NativeFormat {

@@ -4,7 +4,7 @@ use crate::serialization::*;
 use clap::ArgMatches;
 use clap::{App, Arg, SubCommand};
 use diesel::prelude::*;
-use log::{debug, warn};
+use log::warn;
 use std::io;
 
 pub fn build() -> App<'static, 'static> {
@@ -38,7 +38,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
     if sub_matches.is_present("moneydb") {
         let p: MoneyDBFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse moneydb input");
-        debug!("{:?}", p);
+        // debug!("{:?}", p);
 
         p.write_to(connection);
         warn!(
@@ -50,7 +50,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
     } else {
         let p: NativeFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse native input");
-        debug!("{:?}", p);
+        // debug!("{:?}", p);
 
         p.write_to(connection);
         warn!("Imported from backup. You might want to run `stockdb -v stock --fetch && stockdb -v data --fetch` now.")
