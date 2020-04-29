@@ -39,7 +39,7 @@ build-web:
     - target/x86_64-unknown-linux-gnu/release/generate --zsh > zsh-completions
   before_script:
     - export LANG=C.UTF-8
-    # - rustup update
+    - rustup update
     - mkdir -p .cargo-registry ~/.cargo
     - ln -s $(pwd)/.cargo-registry ~/.cargo/registry
     - cargo --version

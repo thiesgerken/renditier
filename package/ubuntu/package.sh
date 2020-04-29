@@ -12,6 +12,9 @@ chmod 755 build/stockdb/DEBIAN/postinst
 cp deb-prerm.sh build/stockdb/DEBIAN/prerm
 chmod 755 build/stockdb/DEBIAN/prerm
 
+cp deb-preinst.sh build/stockdb/DEBIAN/preinst
+chmod 755 build/stockdb/DEBIAN/preinst
+
 mkdir -p build/stockdb/usr/bin
 cp ../../stockdb build/stockdb/usr/bin
 chmod 755 build/stockdb/usr/bin/stockdb
