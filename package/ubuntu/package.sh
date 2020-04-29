@@ -28,7 +28,7 @@ cp ../stockdb-backup.service build/stockdb/etc/systemd/system/
 cp ../stockdb-backup.timer build/stockdb/etc/systemd/system/
 
 mkdir -p build/stockdb/var/backups
-cp ../backup.sh build/stockdb/var/backups/backup-stockdb.sh
+cp backup.sh build/stockdb/var/backups/backup-stockdb.sh
 
 mkdir -p build/stockdb/usr/lib/sysusers.d
 cp ../sysusers.d build/stockdb/usr/lib/sysusers.d/stockdb.conf
