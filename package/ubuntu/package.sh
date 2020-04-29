@@ -24,6 +24,11 @@ cp ../../config-dist.toml build/stockdb/etc/stockdb/config-dist.toml
 
 mkdir -p build/stockdb/etc/systemd/system
 cp ../stockdb.service build/stockdb/etc/systemd/system/
+cp ../stockdb-backup.service build/stockdb/etc/systemd/system/
+cp ../stockdb-backup.timer build/stockdb/etc/systemd/system/
+
+mkdir -p build/stockdb/var/backups
+cp ../backup.sh build/stockdb/var/backups/backup-stockdb.sh
 
 mkdir -p build/stockdb/usr/lib/sysusers.d
 cp ../sysusers.d build/stockdb/usr/lib/sysusers.d/stockdb.conf

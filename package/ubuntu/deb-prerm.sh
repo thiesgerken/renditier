@@ -1,4 +1,4 @@
 #!/bin/sh
 
-systemctl stop stockdb
-systemctl disable stockdb
+systemctl stop stockdb.service
+systemctl stop stockdb-backup.timer
