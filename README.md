@@ -10,6 +10,7 @@
 - unify api access functions
 - Use new daterange component as soon as it works better https://github.com/mui-org/material-ui-pickers
 - "Today" plot is broken, maybe only if no historical data available yet for today
+- show percentages over all, not only IRR (at least on hover as tooltip)
 
 ## Ideas
 
