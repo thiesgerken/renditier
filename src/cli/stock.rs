@@ -94,7 +94,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
 
                     info!("Added stock {} and {} exchanges", &isin_, exs.len());
                 }
-                Err(e) => error!("Error obtaining stock infos: {}", e),
+                Err(e) => error!("Error obtaining stock infos for {}: {}", isin_, e),
             }
         }
     } else if sub_matches.is_present("update") {
