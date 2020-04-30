@@ -37,7 +37,19 @@ impl DataFormat {
     }
 
     pub fn write_to(self, connection: &PgConnection) {
-        for chunk in &self.historical_prices.into_iter().chunks(5000) {
+        let known_exchanges = stock_exchanges::table
+            .load::<StockExchange>(connection)
+            .expect("Error loading stock exchanges")
+            .into_iter()
+            .map(|e| e.onvista_record_id)
+            .collect::<Vec<_>>();
+
+        for chunk in &self
+            .historical_prices
+            .into_iter()
+            .filter(|p| known_exchanges.contains(&p.onvista_record_id))
+            .chunks(5000)
+        {
             let chunk = chunk.collect::<Vec<_>>();
 
             let historical_prices_count = diesel::insert_into(historical_prices::table)
@@ -52,7 +64,12 @@ impl DataFormat {
             );
         }
 
-        for chunk in &self.realtime_prices.into_iter().chunks(5000) {
+        for chunk in &self
+            .realtime_prices
+            .into_iter()
+            .filter(|p| known_exchanges.contains(&p.onvista_record_id))
+            .chunks(5000)
+        {
             let chunk = chunk.collect::<Vec<_>>();
 
             let realtime_prices_count = diesel::insert_into(realtime_prices::table)

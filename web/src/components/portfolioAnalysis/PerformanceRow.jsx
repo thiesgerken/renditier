@@ -65,6 +65,11 @@ const PerformanceRow = ({ data }) => {
     </>
   );
 
+  const safeAdd = (x, y) => {
+    if (x === null || y === null) return null;
+    return x + y;
+  };
+
   return (
     <TableRow>
       <TableCell>{getPeriodDescription(data)}</TableCell>
@@ -89,8 +94,8 @@ const PerformanceRow = ({ data }) => {
         )}
       >
         {fromTo(
-          data.start.value + data.start.invested,
-          data.end.value + data.end.invested,
+          safeAdd(data.start.value, data.start.invested),
+          safeAdd(data.end.value, data.end.invested),
           true
         )}
       </TableCell>
