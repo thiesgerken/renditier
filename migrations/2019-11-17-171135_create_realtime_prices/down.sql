@@ -1,1 +1,1 @@
-drop table realtime_prices
+DROP TABLE realtime_prices

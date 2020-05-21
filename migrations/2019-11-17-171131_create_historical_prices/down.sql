@@ -1,1 +1,1 @@
-drop table historical_prices
+DROP TABLE historical_prices

@@ -1,1 +1,1 @@
-drop table transactions
+DROP TABLE transactions

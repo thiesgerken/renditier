@@ -1,1 +1,1 @@
-drop table stock_infos
+DROP TABLE stock_infos
