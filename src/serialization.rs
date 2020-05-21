@@ -141,7 +141,7 @@ impl NativeFormat {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct MoneyDBFormat {
     users: Vec<MoneyDBUser>,
     #[serde(rename = "securitiesAccounts")]
@@ -208,9 +208,9 @@ impl MoneyDBFormat {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct MoneyDBUser {
-    #[serde(rename = "fullName")]
     full_name: String,
     name: String,
     id: i32,
@@ -226,10 +226,10 @@ impl MoneyDBUser {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct MoneyDBSecurityAccount {
     id: i32,
-    #[serde(rename = "ownerId")]
     user_id: i32,
     iban: String,
     title: String,
@@ -246,17 +246,16 @@ impl MoneyDBSecurityAccount {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 struct MoneyDBStock {
     id: i32,
     isin: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct MoneyDBTransaction {
-    #[serde(rename = "accountId")]
     account_id: i32,
-    #[serde(rename = "stockId")]
     stock_id: i32,
     amount: f64,
     fees: f64,
