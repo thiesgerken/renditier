@@ -38,10 +38,7 @@ embed_migrations!();
 
 pub fn connect(database_url: &str) -> Result<PgConnection, Box<dyn Error>> {
     let conn = PgConnection::establish(&database_url)?;
-
-    // embedded_migrations::run(&conn);
     embedded_migrations::run_with_output(&conn, &mut std::io::stdout())?;
-
     Ok(conn)
 }
 
