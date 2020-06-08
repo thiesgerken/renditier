@@ -16,7 +16,7 @@ build-web:
   script:
     - cd web
     - yarn install
-    - yarn test --all && yarn test:lint:js
+    - yarn run git && yarn test --all && yarn test:lint:js
     - yarn run build && yarn run analyze
   before_script:
     - mkdir -p .yarn-registry

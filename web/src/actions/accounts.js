@@ -74,8 +74,6 @@ export const updateAccounts = () => (dispatch, getState) => {
   )
     dispatch(invalidateAccounts());
 
-  console.log('helloooo');
-
   if (
     !accounts.isFetching &&
     ((accounts.lastUpdated === null && accounts.fetchError === null) ||
