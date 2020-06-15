@@ -166,7 +166,7 @@ const Transactions = ({
       label: 'Datum',
       options: {
         filter: false,
-        sortDirection: 'desc',
+        sortOrder: 'desc',
         customBodyRender: d => moment(d).format(mdUp ? 'L LT' : 'L'),
       },
     },
@@ -265,10 +265,11 @@ const Transactions = ({
   ];
 
   const options = {
+    selectToolbarPlacement: 'none',
+    enableNestedDataAccess: '.',
     selectableRows: 'single',
     selectableRowsOnClick: true,
     // expandableRowsOnClick: true,
-    disableToolbarSelect: true,
     print: false,
     page: page === null ? 0 : parseInt(page, 10), // https://github.com/gregnb/mui-datatables/issues/957
     onChangePage: p => {
@@ -284,7 +285,7 @@ const Transactions = ({
     //     </TableRow>
     //   );
     // },
-    onRowsSelect: (_, rows) => {
+    onRowSelectionChange: (_, rows) => {
       if (rows.length > 0 && rows[0].dataIndex < transactions.items.length)
         setTransactionId(transactions.items[rows[0].dataIndex].id);
       else setTransactionId(null);
@@ -297,7 +298,7 @@ const Transactions = ({
     // },
     download: false,
     rowsPerPageOptions: mdUp ? [10, 25, 50] : [10],
-    responsive: 'scrollFullHeight',
+    responsive: 'standard',
     customToolbar: () => (
       <>
         <Tooltip title="Abrechnungen hochladen">

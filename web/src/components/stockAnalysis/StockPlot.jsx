@@ -8,6 +8,7 @@ import {
   Select,
   useMediaQuery,
   useTheme,
+  TextField,
 } from '@material-ui/core';
 import { DatePicker } from '@material-ui/pickers';
 import * as moment from 'moment';
@@ -534,6 +535,11 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                 /> */}
                 <DatePicker
                   label="Start"
+                  renderInput={props => (
+                    <TextField /* eslint-disable react/jsx-props-no-spreading */
+                      {...props}
+                    />
+                  )}
                   value={dates[0]}
                   inputFormat="DD/MM/YYYY"
                   maxDate={dates[1]}
@@ -545,6 +551,11 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                 />
                 <DatePicker
                   label="Ende"
+                  renderInput={props => (
+                    <TextField /* eslint-disable react/jsx-props-no-spreading */
+                      {...props}
+                    />
+                  )}
                   value={dates[1]}
                   inputFormat="DD/MM/YYYY"
                   minDate={dates[0]}

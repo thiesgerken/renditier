@@ -11,6 +11,7 @@ import {
   Input,
   ListItemText,
   Checkbox,
+  TextField,
 } from '@material-ui/core';
 import { DatePicker } from '@material-ui/pickers';
 import * as moment from 'moment';
@@ -447,6 +448,14 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                 /> */}
                   <DatePicker
                     label="Start"
+                    renderInput={props => (
+                      <FormControl className={classes.formControl}>
+                        <TextField /* eslint-disable react/jsx-props-no-spreading */
+                          {...props}
+                          helperText={null}
+                        />
+                      </FormControl>
+                    )}
                     value={dates[0]}
                     inputFormat="DD/MM/YYYY"
                     maxDate={dates[1]}
@@ -454,10 +463,17 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                     disableFuture
                     autoOk
                     disabled={period >= 0}
-                    className={classes.formControl}
                   />
                   <DatePicker
                     label="Ende"
+                    renderInput={props => (
+                      <FormControl className={classes.formControl}>
+                        <TextField /* eslint-disable react/jsx-props-no-spreading */
+                          {...props}
+                          helperText={null}
+                        />
+                      </FormControl>
+                    )}
                     value={dates[1]}
                     inputFormat="DD/MM/YYYY"
                     minDate={dates[0]}
@@ -465,7 +481,6 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                     disableFuture
                     autoOk
                     disabled={period >= 0}
-                    className={classes.formControl}
                   />
                 </>
               )}

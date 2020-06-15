@@ -343,6 +343,11 @@ const TransactionDialog = ({
             <Grid item xs={12}>
               <DateTimePicker
                 label="Datum"
+                renderInput={props => (
+                  <TextField /* eslint-disable react/jsx-props-no-spreading */
+                    {...props}
+                  />
+                )}
                 fullWidth
                 inputFormat="DD/MM/YYYY HH:mm"
                 value={transaction.date}
