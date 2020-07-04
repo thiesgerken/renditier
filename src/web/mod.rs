@@ -7,6 +7,7 @@ pub mod static_files;
 pub mod stocks;
 pub mod transactions;
 pub mod user;
+mod util;
 
 use rocket::config::{Environment, Limits, LoggingLevel, Value};
 use rocket_contrib::databases::diesel;
