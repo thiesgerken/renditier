@@ -1,5 +1,3 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
 pub mod analysis;
 pub mod cli;
 pub mod data;

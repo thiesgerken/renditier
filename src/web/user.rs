@@ -23,10 +23,11 @@ impl Deref for UserId {
 
 pub struct UserId(i32);
 
+#[rocket::async_trait]
 impl<'a, 'r> FromRequest<'a, 'r> for UserId {
     type Error = ();
 
-    fn from_request(request: &'a Request<'r>) -> Outcome<Self, Self::Error> {
+    async fn from_request(request: &'a Request<'r>) -> Outcome<Self, Self::Error> {
         let id = request
             .cookies()
             .get_private("user_id")
