@@ -210,8 +210,20 @@ PositionRow.propTypes = {
   data: PropTypes.shape({
     isin: PropTypes.string,
     units: PropTypes.number,
-    end: PropTypes.object,
-    start: PropTypes.object,
+    start: PropTypes.shape({
+      value: PropTypes.number,
+      invested: PropTypes.number,
+      fees: PropTypes.number,
+      units: PropTypes.number,
+      dataSource: PropTypes.shape({}),
+    }),
+    end: PropTypes.shape({
+      value: PropTypes.number,
+      invested: PropTypes.number,
+      fees: PropTypes.number,
+      units: PropTypes.number,
+      dataSource: PropTypes.shape({}),
+    }),
     irrAnnual: PropTypes.number,
   }).isRequired,
   stock: PropTypes.shape({

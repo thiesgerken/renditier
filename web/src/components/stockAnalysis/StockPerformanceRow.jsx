@@ -195,8 +195,20 @@ const StockPerformanceRow = ({ data }) => {
 StockPerformanceRow.propTypes = {
   data: PropTypes.shape({
     kind: PropTypes.string,
-    start: PropTypes.object,
-    end: PropTypes.object,
+    start: PropTypes.shape({
+      value: PropTypes.number,
+      invested: PropTypes.number,
+      fees: PropTypes.number,
+      units: PropTypes.number,
+      dataSource: PropTypes.shape({}),
+    }),
+    end: PropTypes.shape({
+      value: PropTypes.number,
+      invested: PropTypes.number,
+      fees: PropTypes.number,
+      units: PropTypes.number,
+      dataSource: PropTypes.shape({}),
+    }),
     irrAnnual: PropTypes.number,
     irrPeriod: PropTypes.number,
   }).isRequired,

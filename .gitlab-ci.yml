@@ -28,6 +28,7 @@ build-web:
 
 .build-server:
   stage: build-server
+  needs: ["build-web"]
   dependencies:
     - build-web
   script:
@@ -70,6 +71,7 @@ build-server-ubuntu:
 
 package-server-ubuntu:
   stage: package
+  needs: ["build-server-ubuntu"]
   tags:
     - docker
   image: git.thiesgerken.de:5005/thies/stockdb/package
@@ -101,6 +103,7 @@ package-server-ubuntu:
 
 .deploy-thiesgerken-de:
   stage: deploy
+  needs: ["package-server-ubuntu"]
   dependencies:
     - package-server-ubuntu
   script:
