@@ -29,8 +29,6 @@ build-web:
 .build-server:
   stage: build-server
   needs: ["build-web"]
-  dependencies:
-    - build-web
   script:
     - cargo build --target=x86_64-unknown-linux-gnu --release
     - cp target/x86_64-unknown-linux-gnu/release/stockdb .
@@ -75,8 +73,6 @@ package-server-ubuntu:
   tags:
     - docker
   image: git.thiesgerken.de:5005/thies/stockdb/package
-  dependencies:
-    - build-server-ubuntu
   script:
     - (cd package/ubuntu && ./package.sh)
     - mv package/ubuntu/build/stockdb.deb .
@@ -90,7 +86,7 @@ package-server-ubuntu:
 #   tags:
 #     - docker
 #   image: git.thiesgerken.de:5005/thies/stockdb/package
-#   dependencies:
+#   needs:
 #     - build-server-arch
 #   script:
 #     - chmod -R 777 package/arch # makepkg must not be run as root
@@ -104,8 +100,6 @@ package-server-ubuntu:
 .deploy-thiesgerken-de:
   stage: deploy
   needs: ["package-server-ubuntu"]
-  dependencies:
-    - package-server-ubuntu
   script:
     - echo "$RSA_THIESGERKEN_DE" > id_rsa
     - chmod 500 id_rsa
