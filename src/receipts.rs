@@ -137,8 +137,10 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
             Regex::new(r"Wertpapierabrechnung\s+(Kauf|Kauf Sparplan)\s+Kommissionsgeschäft")
                 .unwrap();
         if s.contains("Erträgnisgutschrift") {
+            debug!("Parsing as dividends");
             ts.push(parse_dividends(&s)?);
         } else if re_purchase.is_match(&s) {
+            debug!("Parsing as purchase");
             ts.push(parse_purchase(&s)?);
         } else if s.contains("Steuerbelastung\naus Wertpapieren") {
             debug!("Ignoring page with tax information");
@@ -175,10 +177,14 @@ fn parse_dividends(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let cpt = re.captures_iter(&s).next().ok_or("no units match")?;
     let units = parse_float(&cpt[1])?;
 
-    let re = Regex::new(r"Ausschüttungsbetrag pro Stück\s((EUR|USD) [\d\.]+,\d+)").unwrap();
-    let amount_per_unit = re.captures_iter(&s).next().ok_or("no amount match")?[1].to_owned();
+    let re = Regex::new(r"Ausschüttungsbetrag pro Stück\s+((EUR|USD) [\d\.]+,\d+)").unwrap();
+    let amount_per_unit = re
+        .captures_iter(&s)
+        .next()
+        .ok_or("no amount per unit match")?[1]
+        .to_owned();
 
-    let re = Regex::new(r"Ausschüttung für\s([\d\.]{10}\s-\s[\d\.]{10})").unwrap();
+    let re = Regex::new(r"Ausschüttung für\s+([\d\.]{10}\s-\s[\d\.]{10})").unwrap();
     let period = &re.captures_iter(&s).next().ok_or("no period match")?[1];
 
     let comments = format!(
