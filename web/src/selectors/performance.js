@@ -1,5 +1,3 @@
-/* eslint-disable import/prefer-default-export */
-
 import * as moment from 'moment';
 
 export const getPeriodDescription = item => {

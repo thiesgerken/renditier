@@ -1,0 +1,6 @@
+[Unit]
+Description=Backup StockDB
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /var/backups/backup-stockdb.sh

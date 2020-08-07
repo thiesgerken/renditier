@@ -218,7 +218,7 @@ function ResponsiveDrawer(props) {
           </div>
         </Toolbar>
       </AppBar>
-      <nav className={classes.drawer} aria-label="mailbox folders">
+      <nav className={classes.drawer}>
         <Hidden mdUp>
           <SwipeableDrawer
             variant="temporary"
@@ -258,7 +258,7 @@ function ResponsiveDrawer(props) {
               <Alert elevation={0} severity="info" onClose={ignoreUpdate}>
                 Aktualisierung verfügbar, bitte die App neustarten!
               </Alert>
-            </Container>{' '}
+            </Container>
           </Collapse>
           {children}
         </div>

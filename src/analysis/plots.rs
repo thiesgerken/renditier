@@ -164,8 +164,8 @@ fn choose_and_query_points(
         // for these Exchanges, grab all realtime prices from start_date to end_date
         let prices = realtime_prices::table
             .filter(realtime_prices::onvista_record_id.eq_any(exchanges))
-            .filter(realtime_prices::date.ge(start_date.and_hms(9, 0, 0)))
-            .filter(realtime_prices::date.le(end_date.and_hms(18, 0, 0)))
+            .filter(realtime_prices::date.ge(start_time))
+            .filter(realtime_prices::date.le(end_time))
             .order(realtime_prices::date.asc())
             .load::<RealtimePrice>(&*connection)?
             .into_iter()

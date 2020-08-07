@@ -1,6 +1,7 @@
 use crate::models::*;
 use crate::schema::*;
 use crate::web::user::UserId;
+use crate::web::util::log_error_and_500;
 use crate::web::DbConn;
 
 use diesel::prelude::*;
@@ -43,7 +44,7 @@ pub fn delete(uid: UserId, connection: DbConn, id: i32) -> Result<(), Status> {
     let accs = accounts::table
         .filter(accounts::user_id.eq(*uid))
         .load::<Account>(&*connection)
-        .map_err(|_| Status::InternalServerError)?
+        .map_err(|e| log_error_and_500(Box::new(e)))?
         .into_iter()
         .map(|a| a.id)
         .collect::<Vec<_>>();
@@ -54,7 +55,7 @@ pub fn delete(uid: UserId, connection: DbConn, id: i32) -> Result<(), Status> {
             .filter(transactions::id.eq(id)),
     )
     .execute(&*connection)
-    .map_err(|_| Status::InternalServerError)?;
+    .map_err(|e| log_error_and_500(Box::new(e)))?;
 
     if row_count == 0 {
         Err(Status::NotFound)
@@ -74,7 +75,7 @@ pub fn update(
     let accs = accounts::table
         .filter(accounts::user_id.eq(*uid))
         .load::<Account>(&*connection)
-        .map_err(|_| Status::InternalServerError)?
+        .map_err(|e| log_error_and_500(Box::new(e)))?
         .into_iter()
         .map(|a| a.id)
         .collect::<Vec<_>>();
@@ -86,7 +87,7 @@ pub fn update(
     let row_count = diesel::update(transactions::table.filter(transactions::id.eq(id)))
         .set(transaction.0)
         .execute(&*connection)
-        .map_err(|_| Status::InternalServerError)?;
+        .map_err(|e| log_error_and_500(Box::new(e)))?;
 
     if row_count == 0 {
         Err(Status::NotFound)
@@ -105,7 +106,7 @@ pub fn create(
     let accs = accounts::table
         .filter(accounts::user_id.eq(*uid))
         .load::<Account>(&*connection)
-        .map_err(|_| Status::InternalServerError)?
+        .map_err(|e| log_error_and_500(Box::new(e)))?
         .into_iter()
         .map(|a| a.id)
         .collect::<Vec<_>>();
@@ -117,7 +118,7 @@ pub fn create(
     let t: Transaction = diesel::insert_into(crate::schema::transactions::table)
         .values(&transaction.0)
         .get_result(&*connection)
-        .map_err(|_| Status::InternalServerError)?;
+        .map_err(|e| log_error_and_500(Box::new(e)))?;
 
     Ok(Json(t))
 }

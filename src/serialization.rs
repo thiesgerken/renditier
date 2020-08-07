@@ -3,6 +3,7 @@ use crate::schema::*;
 
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
+use itertools::Itertools;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -12,6 +13,77 @@ pub struct NativeFormat {
     users: Vec<User>,
     accounts: Vec<Account>,
     transactions: Vec<Transaction>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DataFormat {
+    realtime_prices: Vec<RealtimePrice>,
+    historical_prices: Vec<HistoricalPrice>,
+}
+
+impl DataFormat {
+    pub fn new(connection: &PgConnection) -> Self {
+        let realtime_prices = realtime_prices::table
+            .load::<RealtimePrice>(connection)
+            .expect("Error loading realtime prices");
+        let historical_prices = historical_prices::table
+            .load::<HistoricalPrice>(connection)
+            .expect("Error loading historical prices");
+
+        DataFormat {
+            historical_prices,
+            realtime_prices,
+        }
+    }
+
+    pub fn write_to(self, connection: &PgConnection) {
+        let known_exchanges = stock_exchanges::table
+            .load::<StockExchange>(connection)
+            .expect("Error loading stock exchanges")
+            .into_iter()
+            .map(|e| e.onvista_record_id)
+            .collect::<Vec<_>>();
+
+        for chunk in &self
+            .historical_prices
+            .into_iter()
+            .filter(|p| known_exchanges.contains(&p.onvista_record_id))
+            .chunks(5000)
+        {
+            let chunk = chunk.collect::<Vec<_>>();
+
+            let historical_prices_count = diesel::insert_into(historical_prices::table)
+                .values(&chunk)
+                .on_conflict_do_nothing()
+                .execute(connection)
+                .expect("Error writing historical prices into the database");
+            info!(
+                "imported {} of {} historical prices into the database",
+                historical_prices_count,
+                chunk.len()
+            );
+        }
+
+        for chunk in &self
+            .realtime_prices
+            .into_iter()
+            .filter(|p| known_exchanges.contains(&p.onvista_record_id))
+            .chunks(5000)
+        {
+            let chunk = chunk.collect::<Vec<_>>();
+
+            let realtime_prices_count = diesel::insert_into(realtime_prices::table)
+                .values(&chunk)
+                .on_conflict_do_nothing()
+                .execute(connection)
+                .expect("Error writing realtime prices into the database");
+            info!(
+                "imported {} of {} realtime prices into the database",
+                realtime_prices_count,
+                chunk.len()
+            );
+        }
+    }
 }
 
 impl NativeFormat {
@@ -69,7 +141,7 @@ impl NativeFormat {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct MoneyDBFormat {
     users: Vec<MoneyDBUser>,
     #[serde(rename = "securitiesAccounts")]
@@ -136,9 +208,9 @@ impl MoneyDBFormat {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct MoneyDBUser {
-    #[serde(rename = "fullName")]
     full_name: String,
     name: String,
     id: i32,
@@ -154,10 +226,10 @@ impl MoneyDBUser {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct MoneyDBSecurityAccount {
     id: i32,
-    #[serde(rename = "ownerId")]
     user_id: i32,
     iban: String,
     title: String,
@@ -174,17 +246,16 @@ impl MoneyDBSecurityAccount {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 struct MoneyDBStock {
     id: i32,
     isin: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct MoneyDBTransaction {
-    #[serde(rename = "accountId")]
     account_id: i32,
-    #[serde(rename = "stockId")]
     stock_id: i32,
     amount: f64,
     fees: f64,

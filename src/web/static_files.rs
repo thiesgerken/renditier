@@ -28,7 +28,7 @@ pub fn serve<'r>(file: PathBuf) -> response::Result<'r> {
         response::Response::build()
             .header(content_type)
             .raw_header("Cache-control", caching)
-            .sized_body(Cursor::new(d))
+            .sized_body(None, Cursor::new(d))
             .ok()
     } else if filename != "index.html" {
         // Routing is done client-side;

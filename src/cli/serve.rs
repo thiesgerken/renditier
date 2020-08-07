@@ -45,10 +45,10 @@ pub fn build() -> App<'static, 'static> {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct Config {
-    pub secret_key: String,
+    pub secret_key: String, // for cookie encryption
     pub port: i64,
     pub address: String,
-    pub application_server_key: String,
+    pub application_server_key: String, // for push notifications
 }
 
 impl Default for Config {

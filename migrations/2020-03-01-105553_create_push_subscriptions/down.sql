@@ -1,1 +1,1 @@
-drop table push_subscriptions
+DROP TABLE push_subscriptions

@@ -130,6 +130,11 @@ const StockPerformanceRow = ({ data }) => {
     </>
   );
 
+  const safeAdd = (x, y) => {
+    if (x === null || y === null) return null;
+    return x + y;
+  };
+
   return (
     <TableRow>
       <TableCell>{getPeriodDescription(data)}</TableCell>
@@ -173,8 +178,8 @@ const StockPerformanceRow = ({ data }) => {
         )}
       >
         {fromTo(
-          data.start.value + data.start.invested,
-          data.end.value + data.end.invested,
+          safeAdd(data.start.value, data.start.invested),
+          safeAdd(data.end.value, data.end.invested),
           true
         )}
       </TableCell>
@@ -190,8 +195,20 @@ const StockPerformanceRow = ({ data }) => {
 StockPerformanceRow.propTypes = {
   data: PropTypes.shape({
     kind: PropTypes.string,
-    start: PropTypes.object,
-    end: PropTypes.object,
+    start: PropTypes.shape({
+      value: PropTypes.number,
+      invested: PropTypes.number,
+      fees: PropTypes.number,
+      units: PropTypes.number,
+      dataSource: PropTypes.shape({}),
+    }),
+    end: PropTypes.shape({
+      value: PropTypes.number,
+      invested: PropTypes.number,
+      fees: PropTypes.number,
+      units: PropTypes.number,
+      dataSource: PropTypes.shape({}),
+    }),
     irrAnnual: PropTypes.number,
     irrPeriod: PropTypes.number,
   }).isRequired,

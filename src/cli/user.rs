@@ -66,13 +66,6 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             "Password has to be at least 8 characters long!"
         );
 
-        let mut password_repeat = String::new();
-        println!("Please repeat the password");
-        io::stdin().read_line(&mut password_repeat).unwrap();
-        let password_repeat = password_repeat.trim_end(); // Remove the trailing newline
-
-        assert_eq!(password, password_repeat, "Passwords do not match!");
-
         let u = NewUser {
             name: uname.to_string(),
             full_name: fname.to_string(),
@@ -100,13 +93,6 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             password.len() >= 8,
             "Password has to be at least 8 characters long!"
         );
-
-        let mut password_repeat = String::new();
-        println!("Please repeat the password");
-        io::stdin().read_line(&mut password_repeat).unwrap();
-        let password_repeat = password_repeat.trim_end(); // Remove the trailing newline
-
-        assert_eq!(password, password_repeat, "Passwords do not match!");
 
         let u = diesel::update(users.filter(name.eq(uname)))
             .set((full_name.eq(fname), hash.eq(hash_password(password))))

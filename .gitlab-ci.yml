@@ -16,7 +16,7 @@ build-web:
   script:
     - cd web
     - yarn install
-    - yarn test --all && yarn test:lint:js
+    - yarn run git && yarn test --all && yarn test:lint:js
     - yarn run build && yarn run analyze
   before_script:
     - mkdir -p .yarn-registry
@@ -28,8 +28,7 @@ build-web:
 
 .build-server:
   stage: build-server
-  dependencies:
-    - build-web
+  needs: ["build-web"]
   script:
     - cargo build --target=x86_64-unknown-linux-gnu --release
     - cp target/x86_64-unknown-linux-gnu/release/stockdb .
@@ -39,7 +38,7 @@ build-web:
     - target/x86_64-unknown-linux-gnu/release/generate --zsh > zsh-completions
   before_script:
     - export LANG=C.UTF-8
-    # - rustup update
+    - rustup update
     - mkdir -p .cargo-registry ~/.cargo
     - ln -s $(pwd)/.cargo-registry ~/.cargo/registry
     - cargo --version
@@ -70,11 +69,10 @@ build-server-ubuntu:
 
 package-server-ubuntu:
   stage: package
+  needs: ["build-server-ubuntu"]
   tags:
     - docker
   image: git.thiesgerken.de:5005/thies/stockdb/package
-  dependencies:
-    - build-server-ubuntu
   script:
     - (cd package/ubuntu && ./package.sh)
     - mv package/ubuntu/build/stockdb.deb .
@@ -88,7 +86,7 @@ package-server-ubuntu:
 #   tags:
 #     - docker
 #   image: git.thiesgerken.de:5005/thies/stockdb/package
-#   dependencies:
+#   needs:
 #     - build-server-arch
 #   script:
 #     - chmod -R 777 package/arch # makepkg must not be run as root
@@ -101,8 +99,7 @@ package-server-ubuntu:
 
 .deploy-thiesgerken-de:
   stage: deploy
-  dependencies:
-    - package-server-ubuntu
+  needs: ["package-server-ubuntu"]
   script:
     - echo "$RSA_THIESGERKEN_DE" > id_rsa
     - chmod 500 id_rsa

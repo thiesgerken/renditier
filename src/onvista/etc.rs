@@ -56,8 +56,19 @@ pub fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box
         .to_string();
 
     let mut kind = fragment
-        .select(&Selector::parse("#snapshot > div:nth-child(3) > div:nth-child(1) > table:nth-child(3) > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(2)").unwrap()).next().ok_or("error obtaining kind fragment")?.text().next() .ok_or("error parsing kind")?
-        .trim().to_string();
+        .select(
+            &Selector::parse(
+                "table.ui:nth-child(4) > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(2)",
+            )
+            .unwrap(),
+        )
+        .next()
+        .ok_or("error obtaining kind fragment")?
+        .text()
+        .next()
+        .ok_or("error parsing kind")?
+        .trim()
+        .to_string();
 
     if kind.len() != 4 {
         return Err(format!("'{}' is not an ETC or ETN, it is {}", title, kind).into());

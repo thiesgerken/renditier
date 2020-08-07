@@ -14,6 +14,7 @@ import Alert from '@material-ui/lab/Alert';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { connect } from 'react-redux';
+import DeleteIcon from '@material-ui/icons/Delete';
 
 import {
   deleteAccount as deleteAccountAction,
@@ -120,7 +121,7 @@ const AccountDialog = ({
                     name: v.target.value,
                   })
                 }
-                error={account.name.trim() === ''}
+                error={account.name.trim() === '' && triedToSave}
               />
             </Grid>
             <Grid item xs={12}>
@@ -135,7 +136,7 @@ const AccountDialog = ({
                     iban: v.target.value,
                   })
                 }
-                error={toIBAN(account.iban) === null}
+                error={toIBAN(account.iban) === null && triedToSave}
               />
             </Grid>
           </Grid>
@@ -145,7 +146,12 @@ const AccountDialog = ({
         </DialogContent>
         <DialogActions>
           {account.id !== null && (
-            <Button color="primary" onClick={() => setConfirmOpen(true)}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<DeleteIcon />}
+              onClick={() => setConfirmOpen(true)}
+            >
               Löschen
             </Button>
           )}

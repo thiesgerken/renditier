@@ -1,6 +1,7 @@
 use crate::models::*;
 use crate::schema::*;
 use crate::web::user::UserId;
+use crate::web::util::log_error_and_500;
 use crate::web::DbConn;
 
 use diesel::prelude::*;
@@ -44,7 +45,7 @@ pub fn delete(uid: UserId, connection: DbConn, id: i32) -> Result<(), Status> {
             .filter(accounts::id.eq(id)),
     )
     .execute(&*connection)
-    .map_err(|_| Status::InternalServerError)?;
+    .map_err(|e| log_error_and_500(Box::new(e)))?;
 
     if row_count == 0 {
         Err(Status::NotFound)
@@ -71,7 +72,7 @@ pub fn update(
     )
     .set(acc)
     .execute(&*connection)
-    .map_err(|_| Status::InternalServerError)?;
+    .map_err(|e| log_error_and_500(Box::new(e)))?;
 
     if row_count == 0 {
         Err(Status::NotFound)
@@ -93,7 +94,7 @@ pub fn create(
     let t: Account = diesel::insert_into(crate::schema::accounts::table)
         .values(&acc)
         .get_result(&*connection)
-        .map_err(|_| Status::InternalServerError)?;
+        .map_err(|e| log_error_and_500(Box::new(e)))?;
 
     Ok(Json(t))
 }
