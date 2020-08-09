@@ -9,7 +9,8 @@ pub mod transactions;
 pub mod user;
 mod util;
 
-use rocket::config::{Environment, Limits, LoggingLevel, Value};
+use rocket::config::{Environment, LoggingLevel, Value};
+use rocket::data::{Limits, ToByteUnit};
 use rocket_contrib::databases::diesel;
 use std::collections::HashMap;
 
@@ -31,8 +32,8 @@ pub async fn handle(config: Config) {
     databases.insert("stockdb", Value::from(database_config));
 
     let limits = Limits::new()
-        .limit("forms", 64 * 1024)
-        .limit("json", 10 * 1024 * 1024);
+        .limit("forms", 64.kibibytes())
+        .limit("json", 10.mebibytes());
 
     let mut rocket_config = rocket::config::Config::build(Environment::Production)
         .extra("databases", databases)
