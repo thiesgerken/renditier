@@ -8,6 +8,7 @@ use diesel::prelude::*;
 use log::{debug, error, info, warn};
 use std::error::Error;
 use std::iter::successors;
+use std::{thread, time};
 
 pub fn fetch_realtime(
     connection: &PgConnection,
@@ -97,6 +98,7 @@ pub fn fetch_historical(
                 );
 
                 let batch = onvista::get_data_historical(
+                    s,
                     ex.onvista_record_id,
                     t.with_timezone(&chrono::Local).date(),
                 )?;
@@ -113,6 +115,8 @@ pub fn fetch_historical(
                     &s.isin,
                     ex.code
                 );
+
+                thread::sleep(time::Duration::from_millis(250));
             }
         }
 

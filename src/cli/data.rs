@@ -74,7 +74,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             stocks_hist_update.len()
         );
         if let Err(e) = fetch_historical(connection, &stocks_hist_update) {
-            error!("Could not update realtime data: {}", e)
+            error!("Could not update historical data: {}", e)
         }
     } else if sub_matches.is_present("export") {
         let p = DataFormat::new(connection);

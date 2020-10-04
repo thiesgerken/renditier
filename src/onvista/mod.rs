@@ -1,5 +1,6 @@
 pub mod etc;
 pub mod etf;
+pub mod stock;
 
 use crate::models::*;
 
@@ -19,6 +20,9 @@ pub fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn
     if url.starts_with("https://www.onvista.de/etf/") {
         debug!("recognized {} as an ETF", needle);
         etf::parse_info(resp)
+    } else if url.starts_with("https://www.onvista.de/aktien/") {
+        debug!("recognized {} as a stock", needle);
+        stock::parse_info(resp)
     } else if url.starts_with("https://www.onvista.de/derivate/etc-etn/") {
         debug!("recognized {} as an ETC or ETN", needle);
         etc::parse_info(resp)
@@ -34,19 +38,30 @@ pub fn get_data_realtime(
     match stock.kind.as_str() {
         "ETF" => etf::get_data_realtime(&stock.isin),
         "ETC" | "ETN" => etc::get_data_realtime(exchanges),
+        "Aktie" => stock::get_data_realtime(stock, exchanges),
         s => Err(format!("unrecognized stock type: {}", s).into()),
     }
 }
 
 pub fn get_data_historical(
+    stock: &StockInfo,
     onvista_record_id: i32,
     start: Date<Local>,
 ) -> Result<Vec<HistoricalPrice>, Box<dyn Error>> {
-    let resp = reqwest::blocking::get(&format!("https://www.onvista.de/etf/snapshotHistoryCSV?kag=false&timeSpan=5Y&datetimeTzStartRange={}&idNotation={}",
-    start.format("%d.%m.%Y"), onvista_record_id))
-  ?;
+    let url = if stock.kind == "Aktie" {
+        format!("https://www.onvista.de/onvista/boxes/historicalquote/export.csv?interval=Y5&dateStart={}&notationId={}",
+        start.format("%d.%m.%Y"),
+        onvista_record_id)
+    } else {
+        format!("https://www.onvista.de/etf/snapshotHistoryCSV?kag=false&timeSpan=5Y&datetimeTzStartRange={}&idNotation={}",
+        start.format("%d.%m.%Y"),
+        onvista_record_id)
+    };
 
+    debug!("{}", url);
+    let resp = reqwest::blocking::get(&url)?;
     if !resp.status().is_success() {
+        println!("{:?}", resp.status());
         return Err("Data request unsuccessful".into());
     }
 
@@ -57,7 +72,10 @@ pub fn get_data_historical(
         .from_reader(body.as_bytes());
 
     let headers = rdr.headers()?;
-    if headers != vec!["Datum", "Eröffnung", "Hoch", "Tief", "Schluss", "Volumen"] {
+    if headers != vec!["Datum", "Eröffnung", "Hoch", "Tief", "Schluss", "Volumen"]
+        && headers != vec!["Datum", "Eroeffnung", "Hoch", "Tief", "Schluss", "Volumen"]
+    {
+        // println!("{:?}", headers);
         return Err("Unexpected CSV headers".into());
     }
 
@@ -73,7 +91,7 @@ fn parse_historical_row(
 ) -> Option<HistoricalPrice> {
     let record = s.ok()?;
 
-    let date_splits = record.get(0)?.split('.').collect::<Vec<_>>();
+    let date_splits = record.get(0)?.trim().split('.').collect::<Vec<_>>();
     let date = NaiveDate::from_ymd(
         date_splits[2].parse().ok()?,
         date_splits[1].parse().ok()?,
