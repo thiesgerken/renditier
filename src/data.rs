@@ -86,7 +86,7 @@ pub fn fetch_historical(
             let grab_dates = successors(
                 s.last_historical_update
                     .unwrap_or_else(|| now.checked_sub_signed(Duration::weeks(15 * 52)).unwrap())
-                    .checked_sub_signed(Duration::weeks(2)),
+                    .checked_sub_signed(Duration::weeks(2 * 52)),
                 |t| t.checked_add_signed(Duration::weeks(4 * 52)),
             )
             .take_while(|&t| t < now);
