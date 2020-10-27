@@ -23,7 +23,6 @@ pub struct Config {
     pub application_server_key: String,
 }
 
-#[tokio::main]
 pub async fn handle(config: Config) {
     let mut database_config = HashMap::new();
     let mut databases = HashMap::new();

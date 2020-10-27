@@ -124,7 +124,7 @@ fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn handle(
+pub async fn handle(
     sub_matches: &ArgMatches<'_>,
     mut config: Config,
     push_config: PushConfig,
@@ -190,5 +190,6 @@ pub fn handle(
         log_level: level,
         database_url: database,
         application_server_key: config.application_server_key,
-    });
+    })
+    .await;
 }

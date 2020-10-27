@@ -4,7 +4,8 @@ use stockdb::*;
 
 use log::debug;
 
-fn main() {
+#[rocket::main]
+async fn main() {
     let matches = cli::build(true).get_matches();
     initialize_logging(matches.occurrences_of("v") as u32);
 
@@ -47,7 +48,8 @@ fn main() {
             config.push,
             config.database,
             config.verbosity,
-        );
+        )
+        .await;
     } else {
         cli::build(true)
             .print_long_help()
