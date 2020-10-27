@@ -69,7 +69,8 @@ pub fn get_data_historical(
 
     let mut rdr = csv::ReaderBuilder::new()
         .delimiter(b';')
-        .from_reader(body.as_bytes());
+        .trim(csv::Trim::All)
+        .from_reader(body.trim().as_bytes());
 
     let headers = rdr.headers()?;
     if headers != vec!["Datum", "Eröffnung", "Hoch", "Tief", "Schluss", "Volumen"]
@@ -79,17 +80,27 @@ pub fn get_data_historical(
         return Err("Unexpected CSV headers".into());
     }
 
-    Ok(rdr
-        .records()
-        .filter_map(|s| parse_historical_row(onvista_record_id, s))
-        .collect())
+    let mut res = Vec::new();
+    for s in rdr.records() {
+        let r = s?;
+
+        if let Some(x) = parse_historical_row(onvista_record_id, &r) {
+            res.push(x);
+        } else {
+            return Err(format!("Could not parse csv row '{:?}'", r).into());
+        }
+    }
+
+    Ok(res)
 }
 
 fn parse_historical_row(
     onvista_record_id: i32,
-    s: std::result::Result<csv::StringRecord, csv::Error>,
+    record: &csv::StringRecord,
 ) -> Option<HistoricalPrice> {
-    let record = s.ok()?;
+    if record.len() != 6 {
+        return None;
+    }
 
     let date_splits = record.get(0)?.trim().split('.').collect::<Vec<_>>();
     let date = NaiveDate::from_ymd(
@@ -122,7 +133,7 @@ fn parse_historical_row(
         .replace(",", ".")
         .parse()
         .ok()?;
-    let volume = record.get(5)?.parse().ok()?;
+    let volume = record.get(5)?.replace(".", "").parse().ok()?;
 
     Some(HistoricalPrice {
         date,

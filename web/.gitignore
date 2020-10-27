@@ -9,3 +9,4 @@ yarn-error.log
 /build
 /public/custom-sw.js
 /src/git.js
+/public/serviceWorkerCustomizations.js
