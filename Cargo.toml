@@ -17,8 +17,9 @@ diesel_migrations = "1.4"
 futures = "0.3"
 itertools = "0.9"
 log = "0.4"
-lopdf = "0.24" # cannot upgrade due to 'pdf-extract'
-pdf-extract = "0.6"
+lopdf = "0.26"
+# pdf-extract = "0.6"
+pdf-extract = { git = "https://github.com/thiesgerken/pdf-extract" }
 prettytable-rs = "0.8"
 qstring = "0.7"
 regex = "1.4"
