@@ -9,6 +9,7 @@
     "@material-ui/icons": "^4.9.1",
     "@material-ui/lab": "^4.0.0-alpha.46",
     "@material-ui/pickers": "^4.0.0-alpha.5",
+    "babel-loader": "8.1.0",
     "classnames": "^2.2.6",
     "connected-react-router": "^6.6.1",
     "d3-shape": "^2.0.0",

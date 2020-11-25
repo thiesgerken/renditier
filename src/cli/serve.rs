@@ -11,7 +11,7 @@ use clap::ArgMatches;
 use clap::{App, Arg, SubCommand};
 use diesel::prelude::*;
 use log::{error, info, warn};
-use rocket::config::LoggingLevel;
+use rocket::config::LogLevel;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
@@ -144,9 +144,9 @@ pub async fn handle(
     }
 
     let level = match verbosity {
-        0 => LoggingLevel::Critical,
-        1 => LoggingLevel::Normal,
-        _ => LoggingLevel::Debug,
+        0 => LogLevel::Critical,
+        1 => LogLevel::Normal,
+        _ => LogLevel::Debug,
     };
 
     let db_str = database.clone();

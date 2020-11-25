@@ -106,61 +106,65 @@ impl Exchange {
 }
 
 #[get("/stocks?<offset>&<count>")]
-pub fn list(
+pub async fn list(
     _uid: UserId,
     connection: DbConn,
     offset: Option<i64>,
     count: Option<i64>,
 ) -> Option<Json<Vec<Stock>>> {
-    let infos = stock_infos::table
-        .order(stock_infos::isin.asc())
-        .limit(count.unwrap_or(i64::max_value()))
-        .offset(offset.unwrap_or(0))
-        .load::<StockInfo>(&*connection)
-        .ok()?;
+    connection
+        .run(move |c| {
+            let infos = stock_infos::table
+                .order(stock_infos::isin.asc())
+                .limit(count.unwrap_or(i64::max_value()))
+                .offset(offset.unwrap_or(0))
+                .load::<StockInfo>(c)
+                .ok()?;
 
-    let exchanges = stock_exchanges::table
-        .filter(stock_exchanges::isin.eq_any(infos.iter().map(|s| &s.isin)))
-        .load::<StockExchange>(&*connection)
-        .ok()?;
+            let exchanges = stock_exchanges::table
+                .filter(stock_exchanges::isin.eq_any(infos.iter().map(|s| &s.isin)))
+                .load::<StockExchange>(c)
+                .ok()?;
 
-    let prices = realtime_prices::table
-        .filter(
-            realtime_prices::onvista_record_id
-                .eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
-        )
-        .order_by(realtime_prices::date.desc())
-        .limit(200) // might return nothing if the newest price is very old ...
-        .load::<RealtimePrice>(&*connection)
-        .ok()?;
+            let prices = realtime_prices::table
+                .filter(
+                    realtime_prices::onvista_record_id
+                        .eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
+                )
+                .order_by(realtime_prices::date.desc())
+                .limit(200) // might return nothing if the newest price is very old ...
+                .load::<RealtimePrice>(c)
+                .ok()?;
 
-    let es = exchanges
-        .into_iter()
-        .map(|e| {
-            Exchange::new(
-                prices
-                    .iter()
-                    .find(|p| p.onvista_record_id == e.onvista_record_id)
-                    .cloned(),
-                e,
-            )
-        })
-        .collect::<Vec<_>>();
-
-    let x = infos
-        .into_iter()
-        .map(|s| {
-            let s_es = es
-                .iter()
-                .filter(|e| e.isin == s.isin)
-                .cloned()
+            let es = exchanges
+                .into_iter()
+                .map(|e| {
+                    Exchange::new(
+                        prices
+                            .iter()
+                            .find(|p| p.onvista_record_id == e.onvista_record_id)
+                            .cloned(),
+                        e,
+                    )
+                })
                 .collect::<Vec<_>>();
-            let idx = find_index(&s);
-            Stock::new(s, s_es, idx)
-        })
-        .collect::<Vec<_>>();
 
-    Some(Json(x))
+            let x = infos
+                .into_iter()
+                .map(|s| {
+                    let s_es = es
+                        .iter()
+                        .filter(|e| e.isin == s.isin)
+                        .cloned()
+                        .collect::<Vec<_>>();
+                    let idx = find_index(&s);
+                    Stock::new(s, s_es, idx)
+                })
+                .collect::<Vec<_>>();
+
+            Some(Json(x))
+        })
+        .await
 }
 
 fn find_index(s: &StockInfo) -> Option<String> {
@@ -176,41 +180,42 @@ fn find_index(s: &StockInfo) -> Option<String> {
 }
 
 #[get("/stocks/<isin>")]
-pub fn get(_uid: UserId, connection: DbConn, isin: String) -> Option<Json<Stock>> {
-    let isin = isin.to_uppercase();
-    let info = stock_infos::table
-        .find(&isin)
-        .first::<StockInfo>(&*connection)
-        .ok()?;
+pub async fn get(_uid: UserId, connection: DbConn, isin: String) -> Option<Json<Stock>> {
+    connection
+        .run(move |c| {
+            let isin = isin.to_uppercase();
+            let info = stock_infos::table.find(&isin).first::<StockInfo>(c).ok()?;
 
-    let exchanges = stock_exchanges::table
-        .filter(stock_exchanges::isin.eq(isin))
-        .load::<StockExchange>(&*connection)
-        .ok()?;
+            let exchanges = stock_exchanges::table
+                .filter(stock_exchanges::isin.eq(isin))
+                .load::<StockExchange>(c)
+                .ok()?;
 
-    let prices = realtime_prices::table
-        .filter(
-            realtime_prices::onvista_record_id
-                .eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
-        )
-        .order_by(realtime_prices::onvista_record_id.asc())
-        .then_order_by(realtime_prices::date.desc())
-        .load::<RealtimePrice>(&*connection)
-        .ok()?;
+            let prices = realtime_prices::table
+                .filter(
+                    realtime_prices::onvista_record_id
+                        .eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
+                )
+                .order_by(realtime_prices::onvista_record_id.asc())
+                .then_order_by(realtime_prices::date.desc())
+                .load::<RealtimePrice>(c)
+                .ok()?;
 
-    let es = exchanges
-        .into_iter()
-        .map(|e| {
-            Exchange::new(
-                prices
-                    .iter()
-                    .find(|p| p.onvista_record_id == e.onvista_record_id)
-                    .cloned(),
-                e,
-            )
+            let es = exchanges
+                .into_iter()
+                .map(|e| {
+                    Exchange::new(
+                        prices
+                            .iter()
+                            .find(|p| p.onvista_record_id == e.onvista_record_id)
+                            .cloned(),
+                        e,
+                    )
+                })
+                .collect();
+
+            let idx = find_index(&info);
+            Some(Json(Stock::new(info, es, idx)))
         })
-        .collect();
-
-    let idx = find_index(&info);
-    Some(Json(Stock::new(info, es, idx)))
+        .await
 }
