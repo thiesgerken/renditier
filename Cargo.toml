@@ -12,7 +12,7 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = "2.33"
 config = "0.10"
 csv = "1.1"
-diesel = { version = "1.4", features = ["postgres", "chrono"] }
+diesel = { version = "1.4", features = ["postgres", "chrono", "r2d2"] }
 diesel_migrations = "1.4"
 futures = "0.3"
 itertools = "0.9"

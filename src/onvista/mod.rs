@@ -8,9 +8,9 @@ use chrono::{Date, Local, NaiveDate};
 use log::debug;
 use std::error::Error;
 
-pub fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
+pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
     let params = qstring::QString::new(vec![("searchValue", needle)]);
-    let resp = reqwest::blocking::get(&format!("https://www.onvista.de/suche/?{}", params))?;
+    let resp = reqwest::get(&format!("https://www.onvista.de/suche/?{}", params)).await?;
 
     if !resp.status().is_success() {
         return Err("Data request unsuccessful".into());
@@ -19,31 +19,31 @@ pub fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn
     let url = resp.url().as_str().to_owned();
     if url.starts_with("https://www.onvista.de/etf/") {
         debug!("recognized {} as an ETF", needle);
-        etf::parse_info(resp)
+        etf::parse_info(resp).await
     } else if url.starts_with("https://www.onvista.de/aktien/") {
         debug!("recognized {} as a stock", needle);
-        stock::parse_info(resp)
+        stock::parse_info(resp).await
     } else if url.starts_with("https://www.onvista.de/derivate/etc-etn/") {
         debug!("recognized {} as an ETC or ETN", needle);
-        etc::parse_info(resp)
+        etc::parse_info(resp).await
     } else {
         Err(format!("unrecognized url type: {}", url).into())
     }
 }
 
-pub fn get_data_realtime(
+pub async fn get_data_realtime(
     stock: &StockInfo,
     exchanges: &[StockExchange],
 ) -> Result<Vec<RealtimePrice>, Box<dyn Error>> {
     match stock.kind.as_str() {
-        "ETF" => etf::get_data_realtime(&stock.isin),
-        "ETC" | "ETN" => etc::get_data_realtime(exchanges),
-        "Aktie" => stock::get_data_realtime(stock, exchanges),
+        "ETF" => etf::get_data_realtime(&stock.isin).await,
+        "ETC" | "ETN" => etc::get_data_realtime(exchanges).await,
+        "Aktie" => stock::get_data_realtime(stock, exchanges).await,
         s => Err(format!("unrecognized stock type: {}", s).into()),
     }
 }
 
-pub fn get_data_historical(
+pub async fn get_data_historical(
     stock: &StockInfo,
     onvista_record_id: i32,
     start: Date<Local>,
@@ -59,13 +59,13 @@ pub fn get_data_historical(
     };
 
     debug!("{}", url);
-    let resp = reqwest::blocking::get(&url)?;
+    let resp = reqwest::get(&url).await?;
     if !resp.status().is_success() {
         println!("{:?}", resp.status());
         return Err("Data request unsuccessful".into());
     }
 
-    let body = resp.text()?;
+    let body = resp.text().await?;
 
     let mut rdr = csv::ReaderBuilder::new()
         .delimiter(b';')

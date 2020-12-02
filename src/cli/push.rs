@@ -55,7 +55,7 @@ pub struct Config {
     pub key_file: String,
 }
 
-pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>, config: Config) {
+pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>, config: Config) {
     if let Some(s_pid) = sub_matches.value_of("test") {
         let sub = crate::schema::push_subscriptions::table
             .find(&s_pid)
@@ -75,6 +75,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>, config: C
             sub,
             format!("{{text: \"test payload, sent at {:?}\"}}", Utc::now()),
         )
+        .await
         .expect("failed to send push message");
     } else if let Some(s_pid) = sub_matches.value_of("remove") {
         crate::schema::push_subscriptions::table

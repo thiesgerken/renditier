@@ -4,19 +4,22 @@ use crate::schema::stock_exchanges::dsl::*;
 use crate::schema::stock_infos::dsl::*;
 
 use chrono::{Duration, Utc};
-use diesel::prelude::*;
+use diesel::{
+    prelude::*,
+    r2d2::{ConnectionManager, Pool},
+};
 use log::{debug, error, info, warn};
 use std::error::Error;
 use std::iter::successors;
-use std::{thread, time};
 
-pub fn fetch_realtime(
-    connection: &PgConnection,
+pub async fn fetch_realtime(
+    pool: Pool<ConnectionManager<PgConnection>>,
     stocks: &[&StockInfo],
 ) -> Result<(), Box<dyn Error>> {
+    let connection = pool.get()?;
     let exs = stock_exchanges
         .filter(crate::schema::stock_exchanges::dsl::isin.eq_any(stocks.iter().map(|s| &s.isin)))
-        .load::<StockExchange>(connection)?;
+        .load::<StockExchange>(&connection)?;
 
     for s in stocks {
         let s_exs = exs
@@ -24,7 +27,7 @@ pub fn fetch_realtime(
             .filter(|e| e.isin == s.isin)
             .cloned()
             .collect::<Vec<_>>();
-        let data = onvista::get_data_realtime(s, &s_exs);
+        let data = onvista::get_data_realtime(s, &s_exs).await;
 
         match data {
             Ok(data) => {
@@ -47,7 +50,7 @@ pub fn fetch_realtime(
                 let row_count = diesel::insert_into(crate::schema::realtime_prices::table)
                     .values(&data)
                     .on_conflict_do_nothing()
-                    .execute(connection)?;
+                    .execute(&connection)?;
 
                 info!(
                     "Inserted {} row(s) of realtime data (of {}) for {}",
@@ -59,7 +62,7 @@ pub fn fetch_realtime(
                 let now = Utc::now();
                 diesel::update(stock_infos.filter(crate::schema::stock_infos::isin.eq(&s.isin)))
                     .set(crate::schema::stock_infos::last_realtime_update.eq(now))
-                    .execute(connection)?;
+                    .execute(&connection)?;
             }
             Err(e) => {
                 error!("Error obtaining realtime data for {}: {}", &s.isin, e);
@@ -70,13 +73,15 @@ pub fn fetch_realtime(
     Ok(())
 }
 
-pub fn fetch_historical(
-    connection: &PgConnection,
+pub async fn fetch_historical(
+    pool: Pool<ConnectionManager<PgConnection>>,
     stocks: &[&StockInfo],
 ) -> Result<(), Box<dyn Error>> {
+    let connection = pool.get()?;
+
     let mut exs = stock_exchanges
         .filter(crate::schema::stock_exchanges::dsl::isin.eq_any(stocks.iter().map(|s| &s.isin)))
-        .load::<StockExchange>(connection)?;
+        .load::<StockExchange>(&connection)?;
     exs.sort_by(exchange_comparison);
 
     for s in stocks {
@@ -101,12 +106,13 @@ pub fn fetch_historical(
                     s,
                     ex.onvista_record_id,
                     t.with_timezone(&chrono::Local).date(),
-                )?;
+                )
+                .await?;
 
                 let row_count = diesel::insert_into(crate::schema::historical_prices::table)
                     .values(&batch)
                     .on_conflict_do_nothing()
-                    .execute(connection)?;
+                    .execute(&connection)?;
 
                 info!(
                     "inserted {} row(s) of historical data (of {}) for {} @ {}",
@@ -116,13 +122,13 @@ pub fn fetch_historical(
                     ex.code
                 );
 
-                thread::sleep(time::Duration::from_millis(250));
+                tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
             }
         }
 
         diesel::update(stock_infos.filter(crate::schema::stock_infos::isin.eq(&s.isin)))
             .set(crate::schema::stock_infos::last_historical_update.eq(now))
-            .execute(connection)?;
+            .execute(&connection)?;
     }
 
     Ok(())
