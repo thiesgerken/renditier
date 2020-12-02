@@ -122,7 +122,7 @@ pub async fn fetch_historical(
                     ex.code
                 );
 
-                tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+                tokio::time::delay_for(tokio::time::Duration::from_millis(200)).await;
             }
         }
 

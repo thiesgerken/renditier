@@ -153,7 +153,7 @@ pub async fn handle(
     };
 
     tokio::spawn(async move {
-        tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+        tokio::time::delay_for(tokio::time::Duration::from_secs(10)).await;
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(15));
 
         let private_key_file = File::open(push_config.key_file);

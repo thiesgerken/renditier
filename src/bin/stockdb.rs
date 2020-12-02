@@ -9,12 +9,11 @@ use diesel::{
 use log::debug;
 use tokio::runtime::Builder;
 
-#[rocket::main]
-async fn main() {
-    // second runtime seems to be needed for own async tasks (that are unrelated to rocket)
-    let runtime = Builder::new_multi_thread()
+fn main() {
+    let mut runtime = Builder::new()
+        .threaded_scheduler()
         .thread_name("stockdb-main")
-        .enable_time()
+        .enable_all()
         .build()
         .unwrap();
 
@@ -38,7 +37,6 @@ async fn main() {
         let connection = connect(&config.database).expect("error connecting and migrating to db");
 
         let manager = ConnectionManager::<PgConnection>::new(&config.database);
-        // let manager = PostgresConnectionManager::new(&config.database, NoTls);
         let pool = r2d2::Pool::builder().max_size(10).build(manager).unwrap();
 
         if let Some(sub_matches) = matches.subcommand_matches("user") {
