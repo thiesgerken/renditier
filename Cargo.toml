@@ -18,8 +18,7 @@ futures = "0.3"
 itertools = "0.9"
 log = "0.4"
 lopdf = "0.26"
-# pdf-extract = "0.6"
-pdf-extract = { git = "https://github.com/thiesgerken/pdf-extract" }
+pdf-extract = { git = "https://github.com/thiesgerken/pdf-extract" } # needed until the upstream pdf-extract updates lopdf
 prettytable-rs = "0.8"
 qstring = "0.7"
 regex = "1.4"

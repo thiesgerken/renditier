@@ -12,7 +12,6 @@ use tokio::runtime::Builder;
 fn main() {
     let mut runtime = Builder::new()
         .threaded_scheduler()
-        .thread_name("stockdb-main")
         .enable_all()
         .build()
         .unwrap();
