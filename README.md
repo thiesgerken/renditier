@@ -2,8 +2,6 @@
 
 ## TODO
 
-- introduce another update time for realtime and historical updates for the last update attempt => no DOS on onvista, request times are still correct
-
 ### Web
 
 - remove all cached data when the user logs out
