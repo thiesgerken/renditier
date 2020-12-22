@@ -2,164 +2,178 @@ use crate::models::*;
 
 use chrono::{DateTime, Local, TimeZone, Utc};
 use regex::Regex;
-use reqwest::blocking::Response;
+use reqwest::Response;
 use scraper::{ElementRef, Html, Selector};
 use std::collections::HashMap;
 use std::error::Error;
 
-pub fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
-    let body = resp.text()?;
-    let fragment = Html::parse_document(&body);
+pub async fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
+    // scope is needed to fix problems with async/.await and non-sendable borrows
+    let (info, exchanges) = {
+        let body = resp.text().await?;
+        let fragment = Html::parse_document(&body);
 
-    // title and url
-    let title_a = fragment
+        // title and url
+        let title_a = fragment
     .select(&Selector::parse("#snapshot-header > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > a:nth-child(1)").unwrap()).next().ok_or("error obtaining title fragment")?.value();
-    let title = title_a
-        .attr("title")
-        .ok_or("error parsing title")?
-        .to_string();
-    let url = title_a.attr("href").ok_or("error parsing url")?.to_string();
+        let title = title_a
+            .attr("title")
+            .ok_or("error parsing title")?
+            .to_string();
+        let url = title_a.attr("href").ok_or("error parsing url")?.to_string();
 
-    // type
-    let kind = fragment
-        .select(&Selector::parse("div.ui.mini.label").unwrap())
-        .next()
-        .ok_or("error parsing type")?
-        .text()
-        .next()
-        .ok_or("error parsing type")?
-        .to_string();
-
-    if kind != "ETF" {
-        return Err(format!("'{}' is not an ETF, it is {}", title, kind).into());
-    }
-
-    let td_selector = Selector::parse(".very > tbody:nth-child(1) > tr > td").unwrap();
-    let mut tds = fragment.select(&td_selector).skip(1).step_by(2);
-
-    // wkn and country code
-    let td_wkn_country = tds.next().ok_or("error parsing wkn and country code")?;
-    let wkn = td_wkn_country
-        .text()
-        .next()
-        .ok_or("error parsing wkn")?
-        .trim()
-        .to_uppercase();
-
-    // other infos
-    let td_fonds_type = tds.next().ok_or("fonds type")?;
-    let fonds_type = Some(
-        td_fonds_type
-            .select(&Selector::parse("span").unwrap())
+        // type
+        let kind = fragment
+            .select(&Selector::parse("div.ui.mini.label").unwrap())
             .next()
-            .ok_or("error parsing fonds type")?
+            .ok_or("error parsing type")?
+            .text()
+            .next()
+            .ok_or("error parsing type")?
+            .to_string();
+
+        if kind != "ETF" {
+            return Err(format!("'{}' is not an ETF, it is {}", title, kind).into());
+        }
+
+        let td_selector = Selector::parse(".very > tbody:nth-child(1) > tr > td").unwrap();
+        let mut tds = fragment.select(&td_selector).skip(1).step_by(2);
+
+        // wkn and country code
+        let td_wkn_country = tds.next().ok_or("error parsing wkn and country code")?;
+        let wkn = td_wkn_country
+            .text()
+            .next()
+            .ok_or("error parsing wkn")?
+            .trim()
+            .to_uppercase();
+
+        // other infos
+        let td_fonds_type = tds.next().ok_or("fonds type")?;
+        let fonds_type = Some(
+            td_fonds_type
+                .select(&Selector::parse("span").unwrap())
+                .next()
+                .ok_or("error parsing fonds type")?
+                .value()
+                .attr("title")
+                .ok_or("error parsing fonds type")?
+                .to_string(),
+        );
+
+        let td_isin = tds.next().ok_or("error parsing ISIN")?;
+        let isin = td_isin
+            .text()
+            .next()
+            .ok_or("error parsing ISIN")?
+            .trim()
+            .to_uppercase();
+
+        let td_focus = tds.next().ok_or("error parsing focus")?;
+        let focus = Some(
+            td_focus
+                .select(&Selector::parse("span").unwrap())
+                .next()
+                .ok_or("error parsing focus")?
+                .value()
+                .attr("title")
+                .ok_or("error parsing focus")?
+                .to_string(),
+        );
+
+        let td_company = tds.next().ok_or("error parsing company")?;
+        let company = td_company
+            .select(&Selector::parse("a").unwrap())
+            .next()
+            .ok_or("error parsing company")?
             .value()
             .attr("title")
-            .ok_or("error parsing fonds type")?
-            .to_string(),
-    );
+            .ok_or("error parsing company")?
+            .to_string();
 
-    let td_isin = tds.next().ok_or("error parsing ISIN")?;
-    let isin = td_isin
-        .text()
-        .next()
-        .ok_or("error parsing ISIN")?
-        .trim()
-        .to_uppercase();
+        // exchanges
+        let exchanges = fragment
+            .select(&Selector::parse("#select-exchange div.item").unwrap())
+            .map(|s| s.value())
+            .map(|s| parse_exchange(&isin, s))
+            .filter_map(|x| x)
+            .collect::<Vec<_>>();
 
-    let td_focus = tds.next().ok_or("error parsing focus")?;
-    let focus = Some(
-        td_focus
-            .select(&Selector::parse("span").unwrap())
-            .next()
-            .ok_or("error parsing focus")?
-            .value()
-            .attr("title")
-            .ok_or("error parsing focus")?
-            .to_string(),
-    );
+        // other infos
+        let td_selector =
+            Selector::parse("table.ui:nth-child(2) > tbody:nth-child(1) > tr > td").unwrap();
+        let mut tds = fragment.select(&td_selector).skip(1).step_by(2);
 
-    let td_company = tds.next().ok_or("error parsing company")?;
-    let company = td_company
-        .select(&Selector::parse("a").unwrap())
-        .next()
-        .ok_or("error parsing company")?
-        .value()
-        .attr("title")
-        .ok_or("error parsing company")?
-        .to_string();
+        let launch_date = parse_launch_date(tds.next());
+        let currency = get_td_text(tds.next());
+        let management_type = get_td_text(tds.next());
+        let payout_type = get_td_text(tds.next());
 
-    // exchanges
-    let exchanges = fragment
-        .select(&Selector::parse("#select-exchange div.item").unwrap())
-        .map(|s| s.value())
-        .map(|s| parse_exchange(&isin, s))
-        .filter_map(|x| x)
-        .collect::<Vec<_>>();
+        let description_selector = Selector::parse("html body.body-seiteLinksbuendig1400ODEV-1068.removeSuperBannerODEV-964.full-width div#ONVISTA.ui.raised.segment.container-seiteLinksbuendig1400ODEV-1068.full-width.no-margin div.container-wrapper main#etf-snapshot.snapshot div.ui.grid div.ten.wide.column div.ui.segment p").unwrap();
+        let description = get_td_text(fragment.select(&description_selector).next());
 
-    // other infos
-    let td_selector =
-        Selector::parse("table.ui:nth-child(2) > tbody:nth-child(1) > tr > td").unwrap();
-    let mut tds = fragment.select(&td_selector).skip(1).step_by(2);
+        let ter_selector = Selector::parse(
+            "table.ui:nth-child(4) > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(2)",
+        )
+        .unwrap();
+        let ter = parse_percentage(fragment.select(&ter_selector).next());
 
-    let launch_date = parse_launch_date(tds.next());
-    let currency = get_td_text(tds.next());
-    let management_type = get_td_text(tds.next());
-    let payout_type = get_td_text(tds.next());
-
-    let description_selector = Selector::parse("html body.body-seiteLinksbuendig1400ODEV-1068.removeSuperBannerODEV-964.full-width div#ONVISTA.ui.raised.segment.container-seiteLinksbuendig1400ODEV-1068.full-width.no-margin div.container-wrapper main#etf-snapshot.snapshot div.ui.grid div.ten.wide.column div.ui.segment p").unwrap();
-    let description = get_td_text(fragment.select(&description_selector).next());
-
-    let ter_selector = Selector::parse(
-        "table.ui:nth-child(4) > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(2)",
-    )
-    .unwrap();
-    let ter = parse_percentage(fragment.select(&ter_selector).next());
-
-    let holdings_selector =
+        let holdings_selector =
         Selector::parse("html body.body-seiteLinksbuendig1400ODEV-1068.removeSuperBannerODEV-964.full-width div#ONVISTA.ui.raised.segment.container-seiteLinksbuendig1400ODEV-1068.full-width.no-margin div.container-wrapper main#etf-snapshot.snapshot div.ui.grid div.six.wide.column table.ui.compact.table > tbody > tr").unwrap();
-    let holdings = fragment
-        .select(&holdings_selector)
-        .flat_map(parse_holding)
-        .collect::<Vec<Holding>>();
-    let holdings = serde_json::to_string(&holdings).ok();
+        let holdings = fragment
+            .select(&holdings_selector)
+            .flat_map(parse_holding)
+            .collect::<Vec<Holding>>();
+        let holdings = serde_json::to_string(&holdings).ok();
 
-    let industry_breakdown = get_breakdown(isin.clone(), "industries").ok();
-    let instrument_breakdown = get_breakdown(isin.clone(), "instruments").ok();
-    let country_breakdown = get_breakdown(isin.clone(), "countries").ok();
-    let currency_breakdown = get_breakdown(isin.clone(), "currencies").ok();
+        (
+            StockInfo {
+                isin,
+                wkn,
+                onvista_url: url,
+                kind,
+                fonds_type,
+                focus,
+                company,
+                title,
+                persistent: false,
+                last_historical_update: None,
+                last_realtime_update: None,
+                holdings,
+                industry_breakdown: None,
+                instrument_breakdown: None,
+                country_breakdown: None,
+                currency_breakdown: None,
+                launch_date,
+                currency,
+                management_type,
+                payout_type,
+                ter,
+                description,
+            },
+            exchanges,
+        )
+    };
+
+    let industry_breakdown = get_breakdown(info.isin.clone(), "industries").await.ok();
+    let instrument_breakdown = get_breakdown(info.isin.clone(), "instruments").await.ok();
+    let country_breakdown = get_breakdown(info.isin.clone(), "countries").await.ok();
+    let currency_breakdown = get_breakdown(info.isin.clone(), "currencies").await.ok();
 
     Ok((
         StockInfo {
-            isin,
-            wkn,
-            onvista_url: url,
-            kind,
-            fonds_type,
-            focus,
-            company,
-            title,
-            persistent: false,
-            last_historical_update: None,
-            last_realtime_update: None,
-            holdings,
             industry_breakdown,
             instrument_breakdown,
             country_breakdown,
             currency_breakdown,
-            launch_date,
-            currency,
-            management_type,
-            payout_type,
-            ter,
-            description,
+            ..info
         },
         exchanges,
     ))
 }
 
-pub fn get_breakdown(isin: String, kind: &str) -> Result<String, Box<dyn Error>> {
-    let client = reqwest::blocking::Client::new();
+pub async fn get_breakdown(isin: String, kind: &str) -> Result<String, Box<dyn Error>> {
+    let client = reqwest::Client::new();
 
     let mut params = HashMap::new();
     params.insert("type".to_owned(), kind.to_owned());
@@ -168,14 +182,14 @@ pub fn get_breakdown(isin: String, kind: &str) -> Result<String, Box<dyn Error>>
     let resp = client
         .post("https://www.onvista.de/etf/ajax/etfBreakdownList")
         .form(&params)
-        .send()?;
+        .send()
+        .await?;
 
     if !resp.status().is_success() {
-        return Err("Data request unsuccessful".into());
+        return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
     }
 
-    let body = resp.text()?;
-
+    let body = resp.text().await?;
     Ok(body)
 }
 
@@ -266,17 +280,18 @@ fn parse_exchange(isin: &str, s: &scraper::node::Element) -> Option<StockExchang
     })
 }
 
-pub fn get_data_realtime(isin: &str) -> Result<Vec<RealtimePrice>, Box<dyn Error>> {
-    let resp = reqwest::blocking::get(&format!(
+pub async fn get_data_realtime(isin: &str) -> Result<Vec<RealtimePrice>, Box<dyn Error>> {
+    let resp = reqwest::get(&format!(
         "https://www.onvista.de/etf/handelsplaetze/{}",
         isin
-    ))?;
+    ))
+    .await?;
 
     if !resp.status().is_success() {
-        return Err("Data request unsuccessful".into());
+        return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
     }
 
-    let body = resp.text()?;
+    let body = resp.text().await?;
     let fragment = Html::parse_document(&body);
 
     let tr_selector = Selector::parse("tr.stock-exchange-row").unwrap();

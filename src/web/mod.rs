@@ -9,45 +9,37 @@ pub mod transactions;
 pub mod user;
 mod util;
 
-use rocket::config::{Environment, LoggingLevel, Value};
+use rocket::config::LogLevel;
 use rocket::data::{Limits, ToByteUnit};
+use rocket::figment::util::map;
 use rocket_contrib::databases::diesel;
-use std::collections::HashMap;
 
 pub struct Config {
     pub port: u16,
     pub address: String,
     pub secret_key: Option<String>,
-    pub log_level: LoggingLevel,
+    pub log_level: LogLevel,
     pub database_url: String,
     pub application_server_key: String,
 }
 
 pub async fn handle(config: Config) {
-    let mut database_config = HashMap::new();
-    let mut databases = HashMap::new();
-
-    database_config.insert("url", Value::from(config.database_url.clone()));
-    databases.insert("stockdb", Value::from(database_config));
+    let database_config = map! {"url" => config.database_url.clone()};
 
     let limits = Limits::new()
         .limit("forms", 64.kibibytes())
         .limit("json", 10.mebibytes());
 
-    let mut rocket_config = rocket::config::Config::build(Environment::Production)
-        .extra("databases", databases)
-        .port(config.port)
-        .address(config.address.clone())
-        .limits(limits)
-        .log_level(config.log_level);
+    let mut rocket_config = rocket::config::Config::figment()
+        .merge(("databases", map!["stockdb" => database_config]))
+        .merge(("port", config.port))
+        .merge(("address", config.address.clone()))
+        .merge(("limits", limits))
+        .merge(("log_level", config.log_level));
 
     if let Some(key) = config.secret_key.clone() {
-        rocket_config = rocket_config.secret_key(key);
+        rocket_config = rocket_config.merge(("secret_key", key));
     }
-
-    let rocket_config = rocket_config
-        .finalize()
-        .expect("Cannot create web server config");
 
     rocket::custom(rocket_config)
         .attach(DbConn::fairing())

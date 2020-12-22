@@ -2,12 +2,12 @@ use crate::models::*;
 
 use chrono::{Local, NaiveDate, NaiveTime, TimeZone, Utc};
 use regex::Regex;
-use reqwest::blocking::Response;
+use reqwest::Response;
 use scraper::{ElementRef, Html, Selector};
 use std::error::Error;
 
-pub fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
-    let body = resp.text()?;
+pub async fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
+    let body = resp.text().await?;
     let fragment = Html::parse_document(&body);
 
     // title and url
@@ -139,17 +139,17 @@ fn parse_exchange_name_and_code(s: &ElementRef) -> Option<(String, String)> {
     Some((name, code))
 }
 
-pub fn get_data_realtime(
+pub async fn get_data_realtime(
     stock: &StockInfo,
     exchanges: &[StockExchange],
 ) -> Result<Vec<RealtimePrice>, Box<dyn Error>> {
-    let resp = reqwest::blocking::get(&format!("https://www.onvista.de{}", &stock.onvista_url))?;
+    let resp = reqwest::get(&format!("https://www.onvista.de{}", &stock.onvista_url)).await?;
 
     if !resp.status().is_success() {
         return Err("Data request unsuccessful".into());
     }
 
-    let body = resp.text()?;
+    let body = resp.text().await?;
     let fragment = Html::parse_document(&body);
 
     let tr_selector = Selector::parse(".HANDELSPLAETZE tbody > tr").unwrap();

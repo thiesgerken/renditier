@@ -55,12 +55,6 @@ build-web:
       - bash-completions
       - zsh-completions
 
-# build-server-arch:
-#   extends: .build-server
-#   tags:
-#     - docker
-#   image: git.thiesgerken.de:5005/thies/stockdb/server-arch
-
 build-server-ubuntu:
   extends: .build-server
   tags:
@@ -72,7 +66,7 @@ package-server-ubuntu:
   needs: ["build-server-ubuntu"]
   tags:
     - docker
-  image: git.thiesgerken.de:5005/thies/stockdb/package
+  image: git.thiesgerken.de:5005/thies/stockdb/build-ubuntu
   script:
     - (cd package/ubuntu && ./package.sh)
     - mv package/ubuntu/build/stockdb.deb .
@@ -80,22 +74,6 @@ package-server-ubuntu:
     expire_in: 1 month
     paths:
       - stockdb.deb
-
-# package-server-arch:
-#   stage: package
-#   tags:
-#     - docker
-#   image: git.thiesgerken.de:5005/thies/stockdb/package
-#   needs:
-#     - build-server-arch
-#   script:
-#     - chmod -R 777 package/arch # makepkg must not be run as root
-#     - su nobody -s /usr/bin/bash -c "cd package/arch && ./package.sh"
-#     - mv package/arch/build/stockdb-0.1.0-0-x86_64.pkg.tar.xz .
-#   artifacts:
-#     expire_in: 1 month
-#     paths:
-#       - stockdb-0.1.0-0-x86_64.pkg.tar.xz
 
 .deploy-thiesgerken-de:
   stage: deploy
@@ -112,7 +90,8 @@ package-server-ubuntu:
     name: thiesgerken.de
     url: https://stocks.thiesgerken.de
   tags:
-    - build-tools
+    - docker
+  image: git.thiesgerken.de:5005/thies/stockdb/build-ubuntu
 
 deploy-thiesgerken-de:
   extends: .deploy-thiesgerken-de

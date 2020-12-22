@@ -122,7 +122,7 @@ fn choose_and_query_points(
             .filter(historical_prices::date.ge(start_date))
             .filter(historical_prices::date.le(end_date))
             .order(historical_prices::date.asc())
-            .load::<HistoricalPrice>(&*connection)?
+            .load::<HistoricalPrice>(connection)?
             .into_iter()
             .flat_map(|p| {
                 vec![
@@ -167,7 +167,7 @@ fn choose_and_query_points(
             .filter(realtime_prices::date.ge(start_time))
             .filter(realtime_prices::date.le(end_time))
             .order(realtime_prices::date.asc())
-            .load::<RealtimePrice>(&*connection)?
+            .load::<RealtimePrice>(connection)?
             .into_iter()
             .map(EitherPrice::RealtimePrice)
             .collect::<Vec<_>>();
@@ -207,7 +207,7 @@ pub fn compute_portfolio_plot(
         .filter(accounts::user_id.eq(user_id))
         .filter(transactions::date.le(Utc.from_utc_date(&end_date).and_hms(18, 0, 0)))
         .order(transactions::date.asc())
-        .load::<(Transaction, Account)>(&*connection)?
+        .load::<(Transaction, Account)>(connection)?
         .into_iter()
         .map(|(a, _)| a)
         .collect::<Vec<_>>();
@@ -219,7 +219,7 @@ pub fn compute_portfolio_plot(
     let mut exs = stock_exchanges::table
         .filter(stock_exchanges::isin.eq_any(isins.clone()))
         .order(stock_exchanges::isin.asc())
-        .load::<StockExchange>(&*connection)?
+        .load::<StockExchange>(connection)?
         .into_iter()
         .group_by(|se| se.isin.clone())
         .into_iter()
@@ -328,7 +328,7 @@ pub fn compute_stock_plot(
     // for this ISIN, grab all exchanges and select the preferred one
     let ex = stock_exchanges::table
         .filter(stock_exchanges::isin.eq(isin.clone()))
-        .load::<StockExchange>(&*connection)?
+        .load::<StockExchange>(connection)?
         .into_iter()
         .min_by(exchange_comparison)
         .ok_or("No exchanges found for isin")?;
@@ -340,7 +340,7 @@ pub fn compute_stock_plot(
         .filter(transactions::isin.eq(isin))
         .filter(transactions::date.le(Utc.from_utc_date(&end_date).and_hms(18, 0, 0)))
         .order(transactions::date.asc())
-        .load::<(Transaction, Account)>(&*connection)?
+        .load::<(Transaction, Account)>(connection)?
         .into_iter()
         .map(|(a, _)| a)
         .collect::<Vec<_>>();

@@ -13,69 +13,85 @@ use chrono::{NaiveDate, Utc};
 use rocket_contrib::json::Json;
 
 #[get("/analysis/portfolio?<date>")]
-pub fn compute_historic_portfolio(
+pub async fn compute_historic_portfolio(
     uid: UserId,
     connection: DbConn,
     date: String, // DateTime<Utc> not possible
 ) -> Option<Json<Portfolio<HistoricalPrice>>> {
-    let date = Utc
-        .datetime_from_str(&format!("{} 17:30:00", &date), "%Y-%m-%d %H:%M:%S")
-        .ok()?;
+    connection
+        .run(move |c| {
+            let date = Utc
+                .datetime_from_str(&format!("{} 17:30:00", &date), "%Y-%m-%d %H:%M:%S")
+                .ok()?;
 
-    portfolio::compute(&*connection, *uid, date).ok().map(Json)
+            portfolio::compute(c, *uid, date).ok().map(Json)
+        })
+        .await
 }
 
 #[get("/analysis/portfolio")]
-pub fn compute_realtime_portfolio(
+pub async fn compute_realtime_portfolio(
     uid: UserId,
     connection: DbConn,
 ) -> Option<Json<Portfolio<RealtimePrice>>> {
-    let now = Utc::now();
-    portfolio::compute(&*connection, *uid, now).ok().map(Json)
+    connection
+        .run(move |c| {
+            let now = Utc::now();
+            portfolio::compute(c, *uid, now).ok().map(Json)
+        })
+        .await
 }
 
 #[get("/analysis/performance")]
-pub fn compute_performance(
+pub async fn compute_performance(
     uid: UserId,
     connection: DbConn,
 ) -> Option<Json<Vec<PortfolioPerformance>>> {
-    let now = Utc::now();
-    performance::compute(&*connection, *uid, now).ok().map(Json)
+    connection
+        .run(move |c| {
+            let now = Utc::now();
+            performance::compute(c, *uid, now).ok().map(Json)
+        })
+        .await
 }
 
 #[get("/analysis/plots/portfolio?<start>&<end>&<source>")]
-pub fn compute_portfolio_plot(
+pub async fn compute_portfolio_plot(
     uid: UserId,
     connection: DbConn,
     start: String,
     end: String,
     source: Option<String>,
 ) -> Option<Json<PortfolioPlot>> {
-    let start = NaiveDate::parse_from_str(&start, "%Y-%m-%d").ok()?;
-    let end = NaiveDate::parse_from_str(&end, "%Y-%m-%d").ok()?;
+    connection
+        .run(move |c| {
+            let start = NaiveDate::parse_from_str(&start, "%Y-%m-%d").ok()?;
+            let end = NaiveDate::parse_from_str(&end, "%Y-%m-%d").ok()?;
 
-    let source = if let Some(s) = source {
-        let s = s.to_lowercase();
-        if s == "realtime" {
-            Some(DataSourceSelection::Realtime)
-        } else if s == "historical" {
-            Some(DataSourceSelection::Historical)
-        } else if s == "auto" || s == "automatic" {
-            Some(DataSourceSelection::Automatic)
-        } else {
-            None
-        }
-    } else {
-        Some(DataSourceSelection::Automatic)
-    };
+            let source = if let Some(s) = source {
+                let s = s.to_lowercase();
+                if s == "realtime" {
+                    Some(DataSourceSelection::Realtime)
+                } else if s == "historical" {
+                    Some(DataSourceSelection::Historical)
+                } else if s == "auto" || s == "automatic" {
+                    Some(DataSourceSelection::Automatic)
+                } else {
+                    None
+                }
+            } else {
+                Some(DataSourceSelection::Automatic)
+            };
 
-    plots::compute_portfolio_plot(&*connection, *uid, start, end, source?)
-        .ok()
-        .map(Json)
+            plots::compute_portfolio_plot(c, *uid, start, end, source?)
+                .ok()
+                .map(Json)
+        })
+        .await
 }
 
 #[get("/analysis/plots/<isin>?<start>&<end>&<source>")]
-pub fn compute_stock_plot(
+pub async fn compute_stock_plot(
     uid: UserId,
     connection: DbConn,
     isin: String,
@@ -83,25 +99,29 @@ pub fn compute_stock_plot(
     end: String,
     source: Option<String>,
 ) -> Option<Json<StockPlot>> {
-    let start = NaiveDate::parse_from_str(&start, "%Y-%m-%d").ok()?;
-    let end = NaiveDate::parse_from_str(&end, "%Y-%m-%d").ok()?;
+    connection
+        .run(move |c| {
+            let start = NaiveDate::parse_from_str(&start, "%Y-%m-%d").ok()?;
+            let end = NaiveDate::parse_from_str(&end, "%Y-%m-%d").ok()?;
 
-    let source = if let Some(s) = source {
-        let s = s.to_lowercase();
-        if s == "realtime" {
-            Some(DataSourceSelection::Realtime)
-        } else if s == "historical" {
-            Some(DataSourceSelection::Historical)
-        } else if s == "auto" || s == "automatic" {
-            Some(DataSourceSelection::Automatic)
-        } else {
-            None
-        }
-    } else {
-        Some(DataSourceSelection::Automatic)
-    };
+            let source = if let Some(s) = source {
+                let s = s.to_lowercase();
+                if s == "realtime" {
+                    Some(DataSourceSelection::Realtime)
+                } else if s == "historical" {
+                    Some(DataSourceSelection::Historical)
+                } else if s == "auto" || s == "automatic" {
+                    Some(DataSourceSelection::Automatic)
+                } else {
+                    None
+                }
+            } else {
+                Some(DataSourceSelection::Automatic)
+            };
 
-    plots::compute_stock_plot(&*connection, *uid, isin, start, end, source?)
-        .ok()
-        .map(Json)
+            plots::compute_stock_plot(c, *uid, isin, start, end, source?)
+                .ok()
+                .map(Json)
+        })
+        .await
 }

@@ -2,10 +2,10 @@ use crate::models::*;
 
 use chrono::{Date, Datelike, Local, TimeZone, Utc};
 use log::{debug, warn};
-use reqwest::blocking::Response;
+use reqwest::Response;
 use std::error::Error;
 
-pub fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
+pub async fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
     let url = resp
         .url()
         .as_str()
@@ -15,7 +15,7 @@ pub fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box
         .to_owned();
 
     use scraper::{Html, Selector};
-    let body = resp.text()?;
+    let body = resp.text().await?;
     let fragment = Html::parse_document(&body);
 
     // title
@@ -126,7 +126,7 @@ fn parse_exchange(isin: &str, s: &scraper::element_ref::ElementRef) -> Option<St
     })
 }
 
-pub fn get_data_realtime(
+pub async fn get_data_realtime(
     exchanges: &[StockExchange],
 ) -> Result<Vec<RealtimePrice>, Box<dyn Error>> {
     let mut res = Vec::with_capacity(exchanges.len());
@@ -140,7 +140,7 @@ pub fn get_data_realtime(
                 "fetching realtime data for exchange {}, attempt {}",
                 e.onvista_record_id, attempt
             );
-            price = get_data_realtime_exchange(e.onvista_record_id, attempt)?;
+            price = get_data_realtime_exchange(e.onvista_record_id, attempt).await?;
 
             attempt += 1;
         }
@@ -158,20 +158,21 @@ pub fn get_data_realtime(
     Ok(res)
 }
 
-fn get_data_realtime_exchange(
+async fn get_data_realtime_exchange(
     onvista_record_id: i32,
     offset: i32,
 ) -> Result<Option<RealtimePrice>, Box<dyn Error>> {
-    let resp = reqwest::blocking::get(&format!(
+    let resp = reqwest::get(&format!(
         "https://www.onvista.de/derivative/bond/snapshotTimesSalesCSV?idNotation={}&offset=-{}",
         onvista_record_id, offset
-    ))?;
+    ))
+    .await?;
 
     if !resp.status().is_success() {
         return Err("Data request unsuccessful".into());
     }
 
-    let body = resp.text()?;
+    let body = resp.text().await?;
 
     let mut rdr = csv::ReaderBuilder::new()
         .delimiter(b';')

@@ -22,26 +22,29 @@ fn wrap_string(e: String) -> Json<ErrString> {
 }
 
 #[post("/receipts", data = "<receipts>")]
-pub fn upload(
+pub async fn upload(
     uid: UserId,
     connection: DbConn,
     receipts: Json<Vec<FileContents>>,
 ) -> Result<Json<Vec<Transaction>>, Json<ErrString>> {
-    let files = receipts
-        .0
-        .into_iter()
-        .map(|fc| {
-            let name = fc.name;
-            let buf = base64::decode(fc.bytes).map_err(|e| {
-                wrap_string(format!("{}: error decoding base64: {}", name.clone(), e))
-            })?;
+    connection
+        .run(move |c| {
+            let files = receipts
+                .0
+                .into_iter()
+                .map(|fc| {
+                    let name = fc.name;
+                    let buf = base64::decode(fc.bytes).map_err(|e| {
+                        wrap_string(format!("{}: error decoding base64: {}", name.clone(), e))
+                    })?;
 
-            Ok((name, buf))
+                    Ok((name, buf))
+                })
+                .collect::<Result<Vec<_>, Json<ErrString>>>()?;
+
+            Ok(Json(
+                receipts::parse_mem(c, *uid, &files).map_err(|e| wrap_string(format!("{}", e)))?,
+            ))
         })
-        .collect::<Result<Vec<_>, Json<ErrString>>>()?;
-
-    Ok(Json(
-        receipts::parse_mem(&*connection, *uid, &files)
-            .map_err(|e| wrap_string(format!("{}", e)))?,
-    ))
+        .await
 }

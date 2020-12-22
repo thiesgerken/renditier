@@ -1,12 +1,16 @@
 #!/bin/bash
-mkdir -p /var/backups
+mkdir -p /var/backups/stockdb
 
 if [ -x /usr/bin/stockdb ]; then
   DATE=$(date +%Y-%m-%d-%H%M%S)
 
-  sudo -u stockdb bash -c "stockdb export" > /var/backups/stockdb-$DATE.json
-  echo "Exported database to /var/backups/stockdb-$DATE.json"
+  UF=/var/backups/stockdb/$DATE-userdata.json.xz
+  sudo -u stockdb bash -c "stockdb export" | xz -z > $UF
+  chmod 777 $UF
+  echo "Exported database to $UF"
 
-  sudo -u stockdb bash -c "stockdb data --export" > /var/backups/stockdb-prices-$DATE.json
-  echo "Exported database to /var/backups/stockdb-prices-$DATE.json"
+  DF=/var/backups/stockdb/$DATE-prices.json.xz
+  sudo -u stockdb bash -c "stockdb data --export" | xz -z > $DF
+  chmod 777 $DF
+  echo "Exported database to $DF"
 fi

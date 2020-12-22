@@ -75,7 +75,7 @@ pub fn compute(
         .filter(accounts::user_id.eq(user_id))
         .filter(transactions::date.le(date))
         .order(transactions::date.asc())
-        .load::<(Transaction, Account)>(&*connection)?
+        .load::<(Transaction, Account)>(connection)?
         .into_iter()
         .map(|(a, _)| a)
         .collect::<Vec<_>>();

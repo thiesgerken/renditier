@@ -68,12 +68,22 @@ impl UserInfo {
 }
 
 #[get("/user")]
-pub fn info(config: State<Config>, uid: UserId, connection: DbConn) -> Option<Json<UserInfo>> {
-    users::table
-        .find(*uid)
-        .first(&*connection)
-        .map(|u| Json(UserInfo::new(u, config.application_server_key.clone())))
-        .ok()
+pub async fn info(
+    config: State<'_, Config>,
+    uid: UserId,
+    connection: DbConn,
+) -> Option<Json<UserInfo>> {
+    let key = config.application_server_key.clone();
+
+    connection
+        .run(move |c| {
+            users::table
+                .find(*uid)
+                .first(c)
+                .map(|u| Json(UserInfo::new(u, key)))
+                .ok()
+        })
+        .await
 }
 
 #[get("/user/logout")]
@@ -83,14 +93,17 @@ pub fn logout(cookies: &CookieJar) -> Status {
 }
 
 #[post("/user/login", data = "<login>")]
-pub fn login(
-    config: State<Config>,
+pub async fn login(
+    config: State<'_, Config>,
     connection: DbConn,
-    cookies: &CookieJar,
+    cookies: &CookieJar<'_>,
     login: Json<LoginData>,
 ) -> Result<Json<UserInfo>, Status> {
     use crate::schema::users::dsl::*;
-    let u: Result<User, _> = users.filter(name.eq(&login.user_name)).first(&*connection);
+    let user_name = login.user_name.clone();
+    let u: Result<User, _> = connection
+        .run(|c| users.filter(name.eq(user_name)).first(c))
+        .await;
 
     match u {
         Ok(u) => {

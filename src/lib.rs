@@ -25,8 +25,11 @@ extern crate rocket;
 extern crate rust_embed;
 
 use argonautica::{Hasher, Verifier};
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::{
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
+};
 use log::{error, info};
 use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode};
 use std::error::Error;
@@ -62,9 +65,11 @@ struct StockDummy {
     isin: String,
 }
 
-pub fn add_missing_stocks(connection: &PgConnection) {
+pub async fn add_missing_stocks(pool: Pool<ConnectionManager<PgConnection>>) {
+    let connection = pool.get().unwrap();
+
     let isins = diesel::sql_query("SELECT isin FROM missing_stocks")
-        .load::<StockDummy>(connection)
+        .load::<StockDummy>(&connection)
         .expect("Unable to find missing stocks")
         .into_iter()
         .map(|sd| sd.isin)
@@ -77,16 +82,16 @@ pub fn add_missing_stocks(connection: &PgConnection) {
     info!("Trying to obtain stock infos for {} stocks", isins.len());
 
     for isin in isins.into_iter() {
-        match onvista::get_info(&isin) {
+        match onvista::get_info(&isin).await {
             Ok((si, exs)) => {
                 diesel::insert_into(crate::schema::stock_infos::table)
                     .values(&si)
-                    .execute(connection)
+                    .execute(&connection)
                     .expect("Error saving stock info");
 
                 diesel::insert_into(crate::schema::stock_exchanges::table)
                     .values(&exs)
-                    .execute(connection)
+                    .execute(&connection)
                     .expect("Error saving exchanges");
 
                 info!("Added stock {} and {} exchanges", &isin, exs.len());

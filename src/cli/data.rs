@@ -6,7 +6,10 @@ use crate::serialization::*;
 use chrono::{Duration, Utc};
 use clap::ArgMatches;
 use clap::{App, Arg, ArgGroup, SubCommand};
-use diesel::prelude::*;
+use diesel::{
+    prelude::*,
+    r2d2::{ConnectionManager, Pool},
+};
 use log::{error, info};
 use std::io;
 
@@ -40,11 +43,13 @@ pub fn build() -> App<'static, 'static> {
         )
 }
 
-pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
+pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches<'_>) {
+    let connection = pool.get().unwrap();
+
     if sub_matches.is_present("fetch") {
         let now = Utc::now();
         let stocks = stock_infos
-            .load::<StockInfo>(connection)
+            .load::<StockInfo>(&connection)
             .expect("Error loading stock infos");
 
         let stocks_rt_update = stocks
@@ -58,7 +63,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             "Updating realtime data for {} stocks",
             stocks_rt_update.len()
         );
-        if let Err(e) = fetch_realtime(connection, &stocks_rt_update) {
+        if let Err(e) = fetch_realtime(pool.clone(), &stocks_rt_update).await {
             error!("Could not update realtime data: {}", e)
         }
 
@@ -73,11 +78,11 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
             "Updating historical data for {} stocks",
             stocks_hist_update.len()
         );
-        if let Err(e) = fetch_historical(connection, &stocks_hist_update) {
+        if let Err(e) = fetch_historical(pool.clone(), &stocks_hist_update).await {
             error!("Could not update historical data: {}", e)
         }
     } else if sub_matches.is_present("export") {
-        let p = DataFormat::new(connection);
+        let p = DataFormat::new(&connection);
         println!(
             "{}",
             serde_json::to_string(&p).expect("Could not serialize data")
@@ -86,7 +91,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         let p: DataFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse data input");
 
-        p.write_to(connection);
+        p.write_to(&connection);
     } else if sub_matches.is_present("clean") {
         use crate::schema::realtime_prices::dsl::*;
         let now = Utc::now();
@@ -97,7 +102,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
                     .lt(now.checked_sub_signed(Duration::weeks(1)).unwrap()),
             ),
         )
-        .execute(connection)
+        .execute(&connection)
         .expect("Unable to delete old realtime prices");
 
         info!(
@@ -106,7 +111,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
         );
 
         let cnt = diesel::sql_query("DELETE FROM superfluous_stocks")
-            .execute(connection)
+            .execute(&connection)
             .expect("Unable to delete superfluous stocks");
         info!("found and deleted {} superfluous stocks", cnt);
     } else {

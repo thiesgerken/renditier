@@ -1,5 +1,4 @@
 use crate::cli::push::Config as PushConfig;
-use crate::connect;
 use crate::data::*;
 use crate::models::*;
 use crate::push;
@@ -10,13 +9,14 @@ use chrono::{Datelike, Duration, Local, Timelike, Utc};
 use clap::ArgMatches;
 use clap::{App, Arg, SubCommand};
 use diesel::prelude::*;
+use diesel::r2d2::{ConnectionManager, Pool};
 use log::{error, info, warn};
-use rocket::config::LoggingLevel;
+use rocket::config::LogLevel;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
-use std::thread;
+use tokio;
 
 pub fn build() -> App<'static, 'static> {
     SubCommand::with_name("serve")
@@ -56,16 +56,18 @@ impl Default for Config {
         Self {
             secret_key: String::new(),
             port: 8383,
-            address: "localhost".into(),
+            address: "127.0.0.1".into(),
             application_server_key: String::new(),
         }
     }
 }
 
-fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
+async fn fetch_data(pool: Pool<ConnectionManager<PgConnection>>) -> Result<(), Box<dyn Error>> {
     let now = Utc::now();
     let now_local = now.with_timezone(&Local);
-    let stocks = stock_infos.load::<StockInfo>(connection)?;
+
+    let connection = pool.get()?;
+    let stocks = stock_infos.load::<StockInfo>(&connection)?;
 
     // do not update data as often in the night and on weekends
     let rt_interval = if now.date().weekday().number_from_monday() >= 6
@@ -89,7 +91,7 @@ fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
             "Updating realtime data for {} stocks",
             stocks_rt_update.len()
         );
-        if let Err(e) = fetch_realtime(connection, &stocks_rt_update) {
+        if let Err(e) = fetch_realtime(pool.clone(), &stocks_rt_update).await {
             error!("Could not update realtime data: {}", e)
         }
     }
@@ -116,7 +118,7 @@ fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
             "Updating historical data for {} stocks",
             stocks_hist_update.len()
         );
-        if let Err(e) = fetch_historical(connection, &stocks_hist_update) {
+        if let Err(e) = fetch_historical(pool.clone(), &stocks_hist_update).await {
             error!("Could not update historical data: {}", e)
         }
     }
@@ -126,6 +128,7 @@ fn fetch_data(connection: &PgConnection) -> Result<(), Box<dyn Error>> {
 
 pub async fn handle(
     sub_matches: &ArgMatches<'_>,
+    pool: Pool<ConnectionManager<PgConnection>>,
     mut config: Config,
     push_config: PushConfig,
     database: String,
@@ -144,15 +147,14 @@ pub async fn handle(
     }
 
     let level = match verbosity {
-        0 => LoggingLevel::Critical,
-        1 => LoggingLevel::Normal,
-        _ => LoggingLevel::Debug,
+        0 => LogLevel::Critical,
+        1 => LogLevel::Normal,
+        _ => LogLevel::Debug,
     };
 
-    let db_str = database.clone();
-    thread::spawn(move || {
-        thread::sleep(std::time::Duration::from_secs(10));
-        let connection = connect(&db_str).expect("error connecting to db");
+    tokio::spawn(async move {
+        tokio::time::delay_for(tokio::time::Duration::from_secs(10)).await;
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
 
         let private_key_file = File::open(push_config.key_file);
         let mut private_key = Vec::new();
@@ -166,16 +168,19 @@ pub async fn handle(
         }
 
         loop {
-            add_missing_stocks(&connection);
-            fetch_data(&connection)
+            interval.tick().await;
+
+            add_missing_stocks(pool.clone()).await;
+
+            fetch_data(pool.clone())
+                .await
                 .unwrap_or_else(|e| error!("Error fetching new price data: {}", e));
 
             if !private_key.is_empty() {
-                push::send_daily_notifications(&connection, &private_key)
+                push::send_daily_notifications(pool.clone(), &private_key)
+                    .await
                     .unwrap_or_else(|e| error!("Error sending notifications: {}", e));
             }
-
-            thread::sleep(std::time::Duration::from_secs(30));
         }
     });
 
