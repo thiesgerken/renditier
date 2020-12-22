@@ -186,7 +186,7 @@ pub async fn get_breakdown(isin: String, kind: &str) -> Result<String, Box<dyn E
         .await?;
 
     if !resp.status().is_success() {
-        return Err("Data request unsuccessful".into());
+        return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
     }
 
     let body = resp.text().await?;
@@ -288,7 +288,7 @@ pub async fn get_data_realtime(isin: &str) -> Result<Vec<RealtimePrice>, Box<dyn
     .await?;
 
     if !resp.status().is_success() {
-        return Err("Data request unsuccessful".into());
+        return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
     }
 
     let body = resp.text().await?;

@@ -154,7 +154,7 @@ pub async fn handle(
 
     tokio::spawn(async move {
         tokio::time::delay_for(tokio::time::Duration::from_secs(10)).await;
-        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(15));
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
 
         let private_key_file = File::open(push_config.key_file);
         let mut private_key = Vec::new();

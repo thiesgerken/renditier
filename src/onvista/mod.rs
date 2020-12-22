@@ -13,7 +13,7 @@ pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), B
     let resp = reqwest::get(&format!("https://www.onvista.de/suche/?{}", params)).await?;
 
     if !resp.status().is_success() {
-        return Err("Data request unsuccessful".into());
+        return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
     }
 
     let url = resp.url().as_str().to_owned();
@@ -61,8 +61,7 @@ pub async fn get_data_historical(
     debug!("{}", url);
     let resp = reqwest::get(&url).await?;
     if !resp.status().is_success() {
-        println!("{:?}", resp.status());
-        return Err("Data request unsuccessful".into());
+        return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
     }
 
     let body = resp.text().await?;
