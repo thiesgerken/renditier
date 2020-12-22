@@ -9,7 +9,7 @@ use diesel::{
     prelude::*,
     r2d2::{ConnectionManager, Pool},
 };
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use std::error::Error;
 use std::iter::successors;
 
@@ -104,8 +104,8 @@ pub async fn fetch_historical(
 
             for t in grab_dates {
                 info!(
-                    "Requesting 5 years of data for exchange {} for {} starting from {}",
-                    ex.code, ex.isin, t
+                    "Requesting 5 years of data for {} @ {} starting from {}",
+                    ex.isin, ex.code, t
                 );
 
                 match onvista::get_data_historical(
