@@ -150,7 +150,7 @@ pub async fn fetch_historical(
 
 pub fn exchange_comparison(a: &StockExchange, b: &StockExchange) -> std::cmp::Ordering {
     let exchange_favorites = [
-        "GER", "QUO", "GAT", "FRA", "LUSG", "STU", "HAM", "MUN", "BER", "DUS",
+        "GER", "QUO", "FRA", "LUSG", "STU", "HAM", "MUN", "BER", "GAT", "DUS",
     ];
 
     let idx_a = exchange_favorites.iter().position(|&e| a.code == e);
