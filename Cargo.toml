@@ -15,24 +15,24 @@ csv = "1.1"
 diesel = { version = "1.4", features = ["postgres", "chrono", "r2d2"] }
 diesel_migrations = "1.4"
 futures = "0.3"
-itertools = "0.9"
+itertools = "0.10"
 log = "0.4"
 lopdf = "0.26"
-pdf-extract = { git = "https://github.com/thiesgerken/pdf-extract" } # needed until the upstream pdf-extract updates lopdf
+pdf-extract = { git = "https://github.com/jrmuizel/pdf-extract.git", rev="e03d6637e84c39cb798389a81d1f71f26a1f09df" }
 prettytable-rs = "0.8"
 qstring = "0.7"
 regex = "1.4"
-reqwest = "0.10"
-rocket = { git = "https://github.com/SergioBenitez/Rocket", rev = "1f1f44f336e5a172361fc1860461bb03667b1ed2", features=["secrets"] }
-rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket",  rev = "1f1f44f336e5a172361fc1860461bb03667b1ed2", features = ["diesel_postgres_pool"] }
+reqwest = "0.11"
+rocket = { git = "https://github.com/SergioBenitez/Rocket", rev = "e4c2324bab3141355f175e1ad11a6ed7cb5af234", features=["secrets"] }
+rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket",  rev = "e4c2324bab3141355f175e1ad11a6ed7cb5af234", features = ["diesel_postgres_pool"] }
 # rocket = "0.4"
 # rocket_contrib = { version = "0.4", features = ["diesel_postgres_pool"] }
 rust-embed = "5.6"
 scraper = "0.12"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-simplelog = "0.8"
-tokio = { version = "0.2.23", features= ["full"] } # needs to be synced to the version rocket and reqwest use!
+simplelog = "0.9"
+tokio = { version = "1.0", features= ["full"] } # needs to be synced to the version rocket and reqwest use!
 toml = "0.5"
 web-push = "0.7"
 

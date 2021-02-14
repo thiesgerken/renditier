@@ -135,7 +135,7 @@ pub async fn fetch_historical(
                     }
                 }
 
-                tokio::time::delay_for(tokio::time::Duration::from_millis(500)).await;
+                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
             }
         }
 

@@ -3,15 +3,15 @@ use stockdb::initialize_logging;
 use stockdb::*;
 
 use diesel::{
-    r2d2::{self, ConnectionManager},
+    r2d2::{ConnectionManager, Pool},
     PgConnection,
 };
 use log::debug;
 use tokio::runtime::Builder;
 
 fn main() {
-    let mut runtime = Builder::new()
-        .threaded_scheduler()
+    let runtime = Builder::new_multi_thread()
+        .thread_name("stockdb-main")
         .enable_all()
         .build()
         .unwrap();
@@ -36,7 +36,7 @@ fn main() {
         let connection = connect(&config.database).expect("error connecting and migrating to db");
 
         let manager = ConnectionManager::<PgConnection>::new(&config.database);
-        let pool = r2d2::Pool::builder().max_size(10).build(manager).unwrap();
+        let pool = Pool::builder().max_size(10).build(manager).unwrap();
 
         if let Some(sub_matches) = matches.subcommand_matches("user") {
             cli::user::handle(&connection, sub_matches);
