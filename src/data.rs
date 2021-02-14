@@ -2,13 +2,14 @@ use crate::models::*;
 use crate::onvista;
 use crate::schema::stock_exchanges::dsl::*;
 use crate::schema::stock_infos::dsl::*;
+use crate::schema::*;
 
-use chrono::{Duration, Utc};
+use chrono::{Duration, TimeZone, Utc};
 use diesel::{
     prelude::*,
     r2d2::{ConnectionManager, Pool},
 };
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use std::error::Error;
 use std::iter::successors;
 
@@ -27,9 +28,8 @@ pub async fn fetch_realtime(
             .filter(|e| e.isin == s.isin)
             .cloned()
             .collect::<Vec<_>>();
-        let data = onvista::get_data_realtime(s, &s_exs).await;
 
-        match data {
+        match onvista::get_data_realtime(s, &s_exs).await {
             Ok(data) => {
                 let original_len = data.len();
                 let data = data
@@ -58,16 +58,16 @@ pub async fn fetch_realtime(
                     data.len(),
                     &s.isin
                 );
-
-                let now = Utc::now();
-                diesel::update(stock_infos.filter(crate::schema::stock_infos::isin.eq(&s.isin)))
-                    .set(crate::schema::stock_infos::last_realtime_update.eq(now))
-                    .execute(&connection)?;
             }
             Err(e) => {
                 error!("Error obtaining realtime data for {}: {}", &s.isin, e);
             }
         }
+
+        let now = Utc::now();
+        diesel::update(stock_infos.filter(crate::schema::stock_infos::isin.eq(&s.isin)))
+            .set(crate::schema::stock_infos::last_realtime_update.eq(now))
+            .execute(&connection)?;
     }
 
     Ok(())
@@ -88,44 +88,58 @@ pub async fn fetch_historical(
         let now = Utc::now();
 
         for ex in exs.iter().filter(|&e| e.isin == s.isin).take(5) {
+            let latest_datum = historical_prices::table
+                .filter(historical_prices::dsl::onvista_record_id.eq(ex.onvista_record_id))
+                .order_by(historical_prices::dsl::date.asc())
+                .first::<HistoricalPrice>(&connection)
+                .optional()?
+                .map(|x| Utc.from_utc_datetime(&x.date.and_hms(0, 0, 0)))
+                .unwrap_or_else(|| now.checked_sub_signed(Duration::weeks(15 * 52)).unwrap());
+
             let grab_dates = successors(
-                s.last_historical_update
-                    .unwrap_or_else(|| now.checked_sub_signed(Duration::weeks(15 * 52)).unwrap())
-                    .checked_sub_signed(Duration::weeks(2 * 52)),
+                latest_datum.checked_sub_signed(Duration::weeks(2 * 52)),
                 |t| t.checked_add_signed(Duration::weeks(4 * 52)),
             )
             .take_while(|&t| t < now);
 
             for t in grab_dates {
-                debug!(
-                    "Requesting 5 years of data for exchange {} for {} starting from {}",
-                    ex.code, ex.isin, t
+                info!(
+                    "Requesting 5 years of data for {} @ {} starting from {}",
+                    ex.isin, ex.code, t
                 );
 
-                let batch = onvista::get_data_historical(
+                match onvista::get_data_historical(
                     s,
                     ex.onvista_record_id,
                     t.with_timezone(&chrono::Local).date(),
                 )
-                .await?;
+                .await
+                {
+                    Ok(batch) => {
+                        let row_count =
+                            diesel::insert_into(crate::schema::historical_prices::table)
+                                .values(&batch)
+                                .on_conflict_do_nothing()
+                                .execute(&connection)?;
 
-                let row_count = diesel::insert_into(crate::schema::historical_prices::table)
-                    .values(&batch)
-                    .on_conflict_do_nothing()
-                    .execute(&connection)?;
+                        info!(
+                            "Inserted {} row(s) of historical data (of {}) for {} @ {}",
+                            row_count,
+                            batch.len(),
+                            &s.isin,
+                            ex.code
+                        );
+                    }
+                    Err(x) => {
+                        error!("Error updating data for {} @ {}: {:?}", &s.isin, ex.code, x)
+                    }
+                }
 
-                info!(
-                    "inserted {} row(s) of historical data (of {}) for {} @ {}",
-                    row_count,
-                    batch.len(),
-                    &s.isin,
-                    ex.code
-                );
-
-                tokio::time::delay_for(tokio::time::Duration::from_millis(500)).await;
+                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
             }
         }
 
+        // note that this is set in any case, even if the request fails.
         diesel::update(stock_infos.filter(crate::schema::stock_infos::isin.eq(&s.isin)))
             .set(crate::schema::stock_infos::last_historical_update.eq(now))
             .execute(&connection)?;
@@ -136,7 +150,7 @@ pub async fn fetch_historical(
 
 pub fn exchange_comparison(a: &StockExchange, b: &StockExchange) -> std::cmp::Ordering {
     let exchange_favorites = [
-        "GER", "QUO", "GAT", "FRA", "LUSG", "STU", "HAM", "MUN", "BER", "DUS",
+        "GER", "QUO", "FRA", "LUSG", "STU", "HAM", "MUN", "BER", "GAT", "DUS",
     ];
 
     let idx_a = exchange_favorites.iter().position(|&e| a.code == e);
