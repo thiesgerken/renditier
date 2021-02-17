@@ -93,15 +93,13 @@ const StockPerformanceRow = ({ data }) => {
     ).format('L')} (${dataSource.exchange.name})`;
   };
 
-  const getPriceTooltip = (dsStart, dsEnd) => {
-    return (
-      <>
-        {formatDataSource(dsStart)}
-        {dsStart !== null && dsEnd !== null && <br />}
-        {formatDataSource(dsEnd)}
-      </>
-    );
-  };
+  const getPriceTooltip = (dsStart, dsEnd) => (
+    <>
+      {formatDataSource(dsStart)}
+      {dsStart !== null && dsEnd !== null && <br />}
+      {formatDataSource(dsEnd)}
+    </>
+  );
 
   let priceDiff = null;
   const priceStart = getPrice(data.start.dataSource);

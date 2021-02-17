@@ -51,8 +51,8 @@ export const login = (userName, password) => dispatch => {
     .catch(e => dispatch(loginError(e)));
 };
 
-export const checkLogin = () => dispatch => {
-  return fetch('/api/user')
+export const checkLogin = () => dispatch =>
+  fetch('/api/user')
     .then(res => {
       if (!res.ok) throw Error(res.status.toString());
       return res.json();
@@ -66,7 +66,6 @@ export const checkLogin = () => dispatch => {
     .catch(e => {
       dispatch(loginError(e, false));
     });
-};
 
 export const LOGOUT_REQUEST = 'LOGOUT_REQUEST';
 export const logoutRequest = () => ({
