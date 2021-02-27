@@ -30,15 +30,8 @@ pub struct StockInfo {
     pub payout_type: Option<String>,
     pub ter: Option<f64>,
     pub description: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Holding {
-    pub name: String,
-    pub share: f64,
-    pub wkn: Option<String>,
-    pub url: Option<String>,
-    pub kind: Option<String>,
+    pub benchmark_index: Option<String>,
+    pub instrument_id: Option<String>,
 }
 
 #[derive(

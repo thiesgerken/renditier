@@ -24,20 +24,24 @@ const accumulateBreakdowns = (
       const data = map(
         stock[breakKind] !== null ? JSON.parse(stock[breakKind]) : [],
         x => ({
-          name: nameFormatter ? nameFormatter(x[0]) : x[0],
-          percentage: x[1],
+          nameBreakdown: nameFormatter
+            ? nameFormatter(x.nameBreakdown)
+            : x.nameBreakdown,
+          investmentPct: x.investmentPct,
         })
       );
 
       forEach(data, x => {
-        if (!(x.name in result)) result[x.name] = 0;
-        result[x.name] +=
-          (-1 * p.end.invested * x.percentage) / 100 / performance.end.invested;
+        if (!(x.nameBreakdown in result)) result[x.nameBreakdown] = 0;
+        result[x.nameBreakdown] +=
+          (-1 * p.end.invested * x.investmentPct) /
+          100 /
+          performance.end.invested;
       });
     }
   });
 
-  return map(result, (v, k) => [k, -100 * v]);
+  return map(result, (v, k) => ({ nameBreakdown: k, investmentPct: -100 * v }));
 };
 
 const accumulateHoldings = (stocks, performance, nameFormatter) => {
@@ -51,22 +55,29 @@ const accumulateHoldings = (stocks, performance, nameFormatter) => {
       const data = map(
         stock.holdings !== null
           ? JSON.parse(stock.holdings)
-          : [{ name: stock.title, share: 1.0 }],
+          : [{ instrument: { name: stock.title }, investmentPct: 100.0 }],
         x => ({
-          name: nameFormatter ? nameFormatter(x.name) : x.name,
-          share: x.share,
+          instrument: {
+            name: nameFormatter
+              ? nameFormatter(x.instrument.name)
+              : x.instrument.name,
+          },
+          investmentPct: x.investmentPct,
         })
       );
 
       forEach(data, x => {
-        if (!(x.name in result)) result[x.name] = 0;
-        result[x.name] +=
-          (-1 * p.end.invested * x.share) / performance.end.invested;
+        if (!(x.instrument.name in result)) result[x.instrument.name] = 0;
+        result[x.instrument.name] +=
+          (-1 * p.end.invested * x.investmentPct) / performance.end.invested;
       });
     }
   });
 
-  return map(result, (v, k) => ({ name: k, share: -1 * v }));
+  return map(result, (v, k) => ({
+    instrument: { name: k },
+    investmentPct: -1 * v,
+  }));
 };
 
 const Breakdowns = ({ stocks, performance }) => {
