@@ -35,24 +35,34 @@ const HoldingsPie = ({ holdings }) => {
 
   const data = map(holdings, h => ({
     ...h,
-    name: unescape(h.name).replace('/The', ''),
+    name: unescape(h.instrument.name).replace('/The', ''),
   }));
 
   if (data.length === 0) return null;
 
-  const shareSum = sumBy(data, 'share');
-  if (shareSum <= 0.99) data.push({ name: 'Unbekannt', share: 1 - shareSum });
-  data.sort((x, y) => y.share - x.share);
+  let shareSum = sumBy(data, 'investmentPct');
+  if (shareSum <= 99)
+    data.push({ name: 'Unbekannt', investmentPct: 100 - shareSum });
+  data.sort((x, y) => y.investmentPct - x.investmentPct);
 
-  let threshold = 0.0;
-  const count = 20;
-  if (data.length > count) threshold = data[count].share;
+  let labelThreshold = 0.0;
+  const labelCount = 20;
+  if (data.length > labelCount) {
+    labelThreshold = data[labelCount].investmentPct;
+  }
+
+  const displayCount = 20;
+  if (data.length > displayCount) {
+    data.splice(displayCount);
+    shareSum = sumBy(data, 'investmentPct');
+    data.push({ name: 'Sonstige', investmentPct: 100 - shareSum });
+  }
 
   return (
     <ResponsiveContainer aspect={xsDown ? 5 : 2.8} width="100%">
       <PieChart>
         <Pie
-          dataKey="share"
+          dataKey="investmentPct"
           nameKey="name"
           animationDuration={500}
           animationBegin={100}
@@ -64,7 +74,11 @@ const HoldingsPie = ({ holdings }) => {
           innerRadius="40%"
           outerRadius="80%"
           fill="#8884d8"
-          label={xsDown ? null : x => (x.share >= threshold ? x.name : null)}
+          label={
+            xsDown
+              ? null
+              : x => (x.investmentPct >= labelThreshold ? x.name : null)
+          }
           paddingAngle={3}
         >
           {data.map((_, index) => (
@@ -76,7 +90,7 @@ const HoldingsPie = ({ holdings }) => {
             />
           ))}
         </Pie>
-        <Tooltip formatter={(v, name) => [`${(v * 100).toFixed(2)}%`, name]} />
+        <Tooltip formatter={(v, name) => [`${v.toFixed(2)}%`, name]} />
       </PieChart>
     </ResponsiveContainer>
   );

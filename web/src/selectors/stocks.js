@@ -5,13 +5,12 @@ export const findStock = (stocks, isin) => {
   return find(stocks.data, x => x.isin === isin) || null;
 };
 
-export const capitalizeTitle = title => {
-  return title
+export const capitalizeTitle = title =>
+  title
     .replace(/ISHARES/, 'iShares')
     .replace(/LYXOR/, 'Lyxor')
     .replace(/AMUNDI/, 'Amundi')
     .trim();
-};
 
 export const abbreviateTitle = (title, shorten) => {
   if (title === null || title === undefined) return '';

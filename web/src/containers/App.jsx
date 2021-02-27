@@ -50,20 +50,16 @@ App.propTypes = {
   onInitAuthentication: PropTypes.func.isRequired,
 };
 
-const mapStateToProps = state => {
-  return {
-    loggedIn: isAuthenticated(state),
-    initialized: isAuthenticationInitialized(state),
-  };
-};
+const mapStateToProps = state => ({
+  loggedIn: isAuthenticated(state),
+  initialized: isAuthenticationInitialized(state),
+});
 
-const mapDispatchToProps = dispatch => {
-  return {
-    onLogout: () => {
-      dispatch(logout());
-    },
-    onInitAuthentication: () => dispatch(checkLogin()),
-  };
-};
+const mapDispatchToProps = dispatch => ({
+  onLogout: () => {
+    dispatch(logout());
+  },
+  onInitAuthentication: () => dispatch(checkLogin()),
+});
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);

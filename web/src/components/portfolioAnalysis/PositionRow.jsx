@@ -64,15 +64,13 @@ const PositionRow = ({ data, stock, push }) => {
     ).format('L')} (${dataSource.exchange.name})`;
   };
 
-  const getPriceTooltip = (dsStart, dsEnd) => {
-    return (
-      <>
-        {formatDataSource(dsStart)}
-        {dsStart !== null && dsEnd !== null && <br />}
-        {formatDataSource(dsEnd)}
-      </>
-    );
-  };
+  const getPriceTooltip = (dsStart, dsEnd) => (
+    <>
+      {formatDataSource(dsStart)}
+      {dsStart !== null && dsEnd !== null && <br />}
+      {formatDataSource(dsEnd)}
+    </>
+  );
 
   const chooseIrr = x => {
     if (moment(x.end.date).diff(moment(x.start.date), 'days') < 32) {

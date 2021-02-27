@@ -25,23 +25,25 @@ export const uploadReceipts = inputFiles => dispatch => {
   dispatch(uploadReceiptsRequest());
 
   return Promise.all(
-    map(inputFiles, file => {
-      return new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onerror = reject;
-        fr.onload = () => {
-          resolve({ name: file.name, bytes: window.btoa(fr.result) });
-        };
-        fr.readAsBinaryString(file);
-      });
-    })
+    map(
+      inputFiles,
+      file =>
+        new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onerror = reject;
+          fr.onload = () => {
+            resolve({ name: file.name, bytes: window.btoa(fr.result) });
+          };
+          fr.readAsBinaryString(file);
+        })
+    )
   )
-    .then(urls => {
-      return fetch(`/api/receipts`, {
+    .then(urls =>
+      fetch(`/api/receipts`, {
         method: 'POST',
         body: JSON.stringify(urls),
-      });
-    })
+      })
+    )
     .then(res => {
       if (!res.ok) throw Error(`${res.status} ${res.statusText}`);
       return res.json();

@@ -52,9 +52,7 @@ const AccountDialog = ({
     return ret;
   };
 
-  const toEditable = t => {
-    return { ...t };
-  };
+  const toEditable = t => ({ ...t });
 
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));

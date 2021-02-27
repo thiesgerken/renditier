@@ -34,8 +34,8 @@ const BreakdownPie = ({ breakdown }) => {
   const colorsAccent = colorNames.map(c => c['500']);
 
   const data = map(breakdown, x => ({
-    name: x[0],
-    percentage: x[1],
+    name: x.nameBreakdown,
+    percentage: x.investmentPct,
   }));
   if (data.length === 0) return null;
 
@@ -85,7 +85,7 @@ const BreakdownPie = ({ breakdown }) => {
 };
 
 BreakdownPie.propTypes = {
-  breakdown: PropTypes.arrayOf(PropTypes.array).isRequired,
+  breakdown: PropTypes.arrayOf(PropTypes.object).isRequired,
 };
 
 export default BreakdownPie;

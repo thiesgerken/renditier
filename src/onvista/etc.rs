@@ -106,6 +106,8 @@ pub async fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>
             payout_type: None,
             ter: None,
             description: None,
+            benchmark_index: None,
+            instrument_id: None,
         },
         exchanges,
     ))

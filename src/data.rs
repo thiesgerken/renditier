@@ -96,10 +96,9 @@ pub async fn fetch_historical(
                 .map(|x| Utc.from_utc_datetime(&x.date.and_hms(0, 0, 0)))
                 .unwrap_or_else(|| now.checked_sub_signed(Duration::weeks(15 * 52)).unwrap());
 
-            let grab_dates = successors(
-                latest_datum.checked_sub_signed(Duration::weeks(2 * 52)),
-                |t| t.checked_add_signed(Duration::weeks(4 * 52)),
-            )
+            let grab_dates = successors(latest_datum.checked_sub_signed(Duration::weeks(2)), |t| {
+                t.checked_add_signed(Duration::weeks(4 * 52))
+            })
             .take_while(|&t| t < now);
 
             for t in grab_dates {

@@ -108,16 +108,18 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
             .expect("error querying infos");
 
         for info in infos.iter() {
+            debug!("updating stock info for {}", &info.isin);
+
             let (new_info, _) = onvista::get_info(&info.isin)
                 .await
                 .expect("error obtaining stock info");
-
             diesel::update(stock_infos.filter(isin.eq(info.isin.clone())))
-                .set(new_info)
+                .set(new_info.clone())
                 .execute(&connection)
                 .expect("error updating stock info");
 
             info!("updated stock info for {}", &info.isin);
+            debug!("new info: {:?}", &new_info);
         }
     } else if let Some(isin_) = sub_matches.value_of("remove") {
         let isin_ = isin_.to_uppercase();
@@ -141,36 +143,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         let confirmation = confirmation.trim_end(); // Remove the trailing newline
         assert_eq!(confirmation, isin_, "Confirmation failed");
 
-        // delete relevant prices and exchanges
-        // not needed because of ON DELETE CASCADE pragmas in *_prices and stock_exchanges tables
-        // let exs = stock_exchanges
-        //   .filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_))
-        //   .load::<StockExchange>(&connection)
-        //   .expect("Error loading stock exchanges")
-        //   .into_iter()
-        //   .map(|e| e.onvista_record_id)
-        //   .collect::<Vec<_>>();
-
-        // diesel::delete(
-        //   historical_prices
-        //     .filter(crate::schema::historical_prices::dsl::onvista_record_id.eq_any(exs.clone())),
-        // )
-        // .execute(&connection)
-        // .expect("Unable to delete price information");
-
-        // diesel::delete(
-        //   realtime_prices
-        //     .filter(crate::schema::realtime_prices::dsl::onvista_record_id.eq_any(exs.clone())),
-        // )
-        // .execute(&connection)
-        // .expect("Unable to delete price information");
-
-        // delete all exchange data
-        // diesel::delete(stock_exchanges.filter(crate::schema::stock_exchanges::dsl::isin.eq(&isin_)))
-        //   .execute(&connection)
-        //   .expect("Unable to delete exchange data");
-
-        // delete stock info
+        // delete stock info, deletes prices and so on because of ON DELETE CASCADE
         diesel::delete(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
             .execute(&connection)
             .unwrap_or_else(|_| panic!("Unable to delete stock {}", &isin_));

@@ -74,6 +74,8 @@ table! {
         payout_type -> Nullable<Text>,
         ter -> Nullable<Float8>,
         description -> Nullable<Text>,
+        benchmark_index -> Nullable<Text>,
+        instrument_id -> Nullable<Text>,
     }
 }
 
