@@ -2,6 +2,8 @@
 
 ## TODO
 
+- web push not working because of tokio version mismatch
+
 ### Web
 
 - remove all cached data when the user logs out

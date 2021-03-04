@@ -176,11 +176,11 @@ pub async fn handle(
                 .await
                 .unwrap_or_else(|e| error!("Error fetching new price data: {}", e));
 
-            if !private_key.is_empty() {
-                push::send_daily_notifications(pool.clone(), &private_key)
-                    .await
-                    .unwrap_or_else(|e| error!("Error sending notifications: {}", e));
-            }
+            // if !private_key.is_empty() {
+            //     push::send_daily_notifications(pool.clone(), &private_key)
+            //         .await
+            //         .unwrap_or_else(|e| error!("Error sending notifications: {}", e));
+            // }
         }
     });
 
