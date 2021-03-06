@@ -87,9 +87,6 @@ const Accounts = ({ accounts, updateAccounts }) => {
     {
       name: 'name',
       label: 'Name',
-      options: {
-        sortOrder: 'asc',
-      },
     },
     {
       name: 'iban',
@@ -111,6 +108,10 @@ const Accounts = ({ accounts, updateAccounts }) => {
       if (rows.length > 0 && rows[0].dataIndex < accounts.items.length)
         setAccountId(accounts.items[rows[0].dataIndex].id);
       else setAccountId(null);
+    },
+    sortOrder: {
+      name: 'name',
+      direction: 'asc',
     },
     download: false,
     filter: false,

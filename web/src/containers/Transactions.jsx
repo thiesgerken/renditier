@@ -166,7 +166,6 @@ const Transactions = ({
       label: 'Datum',
       options: {
         filter: false,
-        sortOrder: 'desc',
         customBodyRender: d => moment(d).format(mdUp ? 'L LT' : 'L'),
       },
     },
@@ -270,6 +269,10 @@ const Transactions = ({
     selectableRows: 'single',
     selectableRowsOnClick: true,
     // expandableRowsOnClick: true,
+    sortOrder: {
+      name: 'date',
+      direction: 'desc',
+    },
     print: false,
     page: page === null ? 0 : parseInt(page, 10), // https://github.com/gregnb/mui-datatables/issues/957
     onChangePage: p => {
