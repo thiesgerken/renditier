@@ -152,6 +152,22 @@ pub async fn handle(
         _ => LogLevel::Debug,
     };
 
+    let data_pool = pool.clone();
+    tokio::spawn(async move {
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
+
+        loop {
+            interval.tick().await;
+
+            add_missing_stocks(data_pool.clone()).await;
+
+            fetch_data(data_pool.clone())
+                .await
+                .unwrap_or_else(|e| error!("Error fetching new price data: {}", e));
+        }
+    });
+
     tokio::spawn(async move {
         tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
@@ -170,17 +186,11 @@ pub async fn handle(
         loop {
             interval.tick().await;
 
-            add_missing_stocks(pool.clone()).await;
-
-            fetch_data(pool.clone())
-                .await
-                .unwrap_or_else(|e| error!("Error fetching new price data: {}", e));
-
-            // if !private_key.is_empty() {
-            //     push::send_daily_notifications(pool.clone(), &private_key)
-            //         .await
-            //         .unwrap_or_else(|e| error!("Error sending notifications: {}", e));
-            // }
+            if !private_key.is_empty() {
+                push::send_daily_notifications(pool.clone(), &private_key)
+                    .await
+                    .unwrap_or_else(|e| error!("Error sending notifications: {}", e));
+            }
         }
     });
 
