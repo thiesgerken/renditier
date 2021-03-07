@@ -119,9 +119,6 @@ pub async fn send_daily_notifications(
         .sorted_by_key(|s| s.user_id)
         .collect::<Vec<_>>();
 
-    // might result in some devices getting two notifications
-    // send_welcome_notifications(&subs, private_key)?;
-
     // update last_notification of all subscriptions, even those that will fail
     let endpoints = subs.iter().map(|s| s.endpoint.clone()).collect::<Vec<_>>();
     diesel::update(push_subscriptions.filter(endpoint.eq_any(endpoints)))
@@ -131,22 +128,6 @@ pub async fn send_daily_notifications(
     if notification_time > Local::now() {
         return Ok(());
     }
-
-    // for (uid, group) in &subs.iter().group_by(|s| s.user_id) {
-    //     let body = daily_notification_body(&connection, uid, PerformanceKind::Today)?;
-    //     if !body.is_empty() {
-    //         for sub in group {
-    //             if let Err(e) = send(private_key, sub.clone(), body.clone()).await {
-    //                 error!(
-    //                     "Failed to send daily notification to device {}: {:?}",
-    //                     sub.endpoint, e
-    //                 );
-    //             } else {
-    //                 info!("Sent daily notification to device {}", sub.endpoint);
-    //             }
-    //         }
-    //     }
-    // }
 
     let mut pending_notifications = Vec::new();
 
@@ -160,13 +141,14 @@ pub async fn send_daily_notifications(
     }
 
     for (sub, body) in pending_notifications {
+        info!("Attempting to send daily notification to {}", sub.endpoint);
         if let Err(e) = send(private_key, sub.clone(), body.clone()).await {
             error!(
-                "Failed to send daily notification to device {}: {:?}",
+                "Failed to send daily notification to {}: {:?}",
                 sub.endpoint, e
             );
         } else {
-            info!("Sent daily notification to device {}", sub.endpoint);
+            info!("Sent daily notification to {}", sub.endpoint);
         }
     }
 
