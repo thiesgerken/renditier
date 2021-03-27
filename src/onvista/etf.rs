@@ -29,8 +29,13 @@ pub async fn parse_info(
         return Err("Could not obtain snapshot from JSON".into());
     }
 
-    let launch_date = get_timestamp(&snapshot["fundsBaseData"]["dateEmission"])
-        .ok_or("error parsing launch date")?;
+    let launch_date =
+        get_timestamp(&snapshot["fundsBaseData"]["dateEmission"]).ok_or_else(|| {
+            format!(
+                "error parsing launch date {}",
+                &snapshot["fundsBaseData"]["dateEmission"]
+            )
+        })?;
     let currency = get_string(&snapshot["fundsBaseData"]["isoCurrencyFund"])
         .ok_or("error parsing currency")?;
     let ter = get_f64(&snapshot["fundsBaseData"]["ongoingCharges"]).ok_or("error parsing TER")?;

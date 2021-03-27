@@ -36,7 +36,9 @@ pub fn get_array(x: &Value) -> Option<&Vec<Value>> {
 pub fn get_timestamp(x: &Value) -> Option<DateTime<Utc>> {
     get_string(x).and_then(|mut d| {
         // date has the time zone as +0000, which chrono cannot parse
-        d.insert(d.len() - 2, ':');
+        if d.ends_with("+0000") {
+            d.insert(d.len() - 2, ':');
+        }
 
         DateTime::parse_from_rfc3339(&d)
             .ok()
