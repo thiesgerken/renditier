@@ -31,7 +31,7 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
 };
 use log::{error, info};
-use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode};
+use simplelog::{ColorChoice, LevelFilter, SimpleLogger, TermLogger, TerminalMode};
 use std::error::Error;
 
 embed_migrations!();
@@ -119,7 +119,12 @@ pub fn initialize_logging(verbosity: u32) {
 
     // log_config.add_filter_allow_str("stockdb");
 
-    if let Err(e) = TermLogger::init(level, log_config.build(), TerminalMode::Mixed) {
+    if let Err(e) = TermLogger::init(
+        level,
+        log_config.build(),
+        TerminalMode::Mixed,
+        ColorChoice::Auto,
+    ) {
         SimpleLogger::init(level, log_config.build())
             .expect("TermLogger and SimpleLogger failed to init!?");
         info!(
