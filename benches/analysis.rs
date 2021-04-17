@@ -5,17 +5,22 @@ use stockdb::models::*;
 use chrono::Utc;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use log::debug;
-use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode};
+use simplelog::{ColorChoice, LevelFilter, SimpleLogger, TermLogger, TerminalMode};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     let mut log_config = simplelog::ConfigBuilder::new();
     log_config.set_time_format_str("");
 
     let level = LevelFilter::Info;
-    TermLogger::init(level, log_config.build(), TerminalMode::Mixed)
-        .ok()
-        .or_else(|| SimpleLogger::init(level, log_config.build()).ok())
-        .unwrap();
+    TermLogger::init(
+        level,
+        log_config.build(),
+        TerminalMode::Mixed,
+        ColorChoice::Auto,
+    )
+    .ok()
+    .or_else(|| SimpleLogger::init(level, log_config.build()).ok())
+    .unwrap();
 
     let settings = cli::initialize_settings(Some("stockdb.toml")).unwrap();
     let config = settings.try_into::<cli::Config>().unwrap();
