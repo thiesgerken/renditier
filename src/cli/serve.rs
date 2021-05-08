@@ -26,7 +26,7 @@ pub fn build() -> App<'static, 'static> {
         .long("port")
         .short("p")
         .value_name("port")
-        .help("customize listening port [default: 'postgres://localhost/stocks']"),
+        .help("customize listening port [default: 8383]"),
     )
     .arg(
       Arg::with_name("address")
