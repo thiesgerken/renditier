@@ -4,7 +4,10 @@ use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
 // grabbed periodically for relevant ISINs
-#[derive(Debug, Clone, Queryable, Insertable, Identifiable, Serialize, Deserialize, AsChangeset)]
+#[derive(
+    Debug, Clone, Queryable, Insertable, Identifiable, Serialize, Deserialize, AsChangeset,
+)]
+#[changeset_options(treat_none_as_null = "true")]
 #[primary_key("isin")]
 #[serde(rename_all = "camelCase")]
 pub struct StockInfo {

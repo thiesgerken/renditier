@@ -58,7 +58,7 @@ pub async fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>
     let mut kind = fragment
         .select(
             &Selector::parse(
-                "#snapshot > div:nth-child(3) > div:nth-child(1) > table:nth-child(3) > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(2)",
+                "table.ui:nth-child(4) > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(2)",
             )
             .unwrap(),
         )
