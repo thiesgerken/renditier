@@ -1,7 +1,7 @@
 use crate::add_missing_stocks;
 use crate::models::*;
 use crate::onvista;
-use crate::schema::stock_infos::dsl::*;
+use crate::schema::stock_infos::dsl::{isin, persistent, stock_infos};
 
 use chrono::{DateTime, NaiveDate, Utc};
 use clap::ArgMatches;

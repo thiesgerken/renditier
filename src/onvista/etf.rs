@@ -21,9 +21,10 @@ pub async fn parse_info(
         .text()
         .next()
         .ok_or("error obtaining json")?;
+    debug!("{}", redux_json);
     let redux_json: Value = serde_json::from_str(redux_json).map_err(|e| e.to_string())?;
 
-    let snapshot = &redux_json["props"]["pageProps"]["snapshot"];
+    let snapshot = &redux_json["props"]["pageProps"]["data"]["snapshot"];
     debug!("{:?}", snapshot);
     if let Value::Null = snapshot {
         return Err("Could not obtain snapshot from JSON".into());
@@ -64,7 +65,7 @@ pub async fn parse_info(
         .map(|s| parse_exchange(&isin, s).ok_or_else(|| format!("error parsing {:?}", s)))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let breakdowns = &redux_json["props"]["pageProps"]["breakdowns"];
+    let breakdowns = &redux_json["props"]["pageProps"]["data"]["breakdowns"];
     debug!("{:?}", breakdowns);
     if let Value::Null = breakdowns {
         return Err("Could not obtain breakdowns from JSON".into());
@@ -140,9 +141,10 @@ pub async fn get_data_realtime(stock: &StockInfo) -> Result<Vec<RealtimePrice>, 
         .text()
         .next()
         .ok_or("error obtaining json")?;
+    debug!("{}", redux_json);
     let redux_json: Value = serde_json::from_str(redux_json).map_err(|e| e.to_string())?;
 
-    let snapshot = &redux_json["props"]["pageProps"]["snapshot"];
+    let snapshot = &redux_json["props"]["pageProps"]["data"]["snapshot"];
     debug!("{:?}", snapshot);
     if let Value::Null = snapshot {
         return Err("Could not obtain snapshot from JSON".into());
