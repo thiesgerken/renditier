@@ -136,9 +136,13 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
         let re_purchase =
             Regex::new(r"Wertpapierabrechnung\s+(Kauf|Kauf Sparplan)\s+Kommissionsgeschäft")
                 .unwrap();
-        if s.contains("Erträgnisgutschrift") {
+
+        if s.contains("Dividendengutschrift") {
             debug!("Parsing as dividends");
             ts.push(parse_dividends(&s)?);
+        } else if s.contains("Erträgnisgutschrift") {
+            debug!("Parsing as payout");
+            ts.push(parse_payout(&s)?);
         } else if re_purchase.is_match(&s) {
             debug!("Parsing as purchase");
             ts.push(parse_purchase(&s)?);
@@ -159,6 +163,7 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
         }
     }
 
+    debug!("{:?}", ts);
     Ok(ts)
 }
 
@@ -177,7 +182,68 @@ fn parse_dividends(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let cpt = re.captures_iter(&s).next().ok_or("no units match")?;
     let units = parse_float(&cpt[1])?;
 
-    let re = Regex::new(r"Ausschüttungsbetrag pro Stück\s+((EUR|USD) [\d\.]+,\d+)").unwrap();
+    let re = Regex::new(r"Dividenden-Betrag pro Stück\s+([A-Z]+ [\d\.]+,\d+)").unwrap();
+    let amount_per_unit = re
+        .captures_iter(&s)
+        .next()
+        .ok_or("no amount per unit match")?[1]
+        .to_owned();
+
+    let comments = format!(
+        "Dividendenzahlung von {} pro Stück, {:.3} Stück im Besitz",
+        amount_per_unit, units
+    );
+
+    let re = Regex::new(r"Konto-Nr\.\s+(\d+)\s").unwrap();
+    let account_number = re.captures_iter(&s).next().ok_or("no account match")?[1].parse()?;
+
+    let re = Regex::new(r"Betrag zu Ihren Gunsten\s+EUR ([\d\.]+,\d{2})").unwrap();
+    let amount = (parse_float(&re.captures_iter(&s).next().ok_or("no amount match")?[1])? * 100.0)
+        .round() as i64;
+
+    let re = Regex::new(r"Wert\s+(\d\d)\.(\d\d)\.(\d{4})\s").unwrap();
+    let cpt = re.captures_iter(&s).next().ok_or("no date match")?;
+    let date = Local
+        .ymd(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?)
+        .and_hms(0, 0, 0)
+        .with_timezone(&Utc);
+
+    let t = NewTransaction {
+        account_id: -1,
+        isin,
+        date,
+        units: 0.0,
+        amount,
+        fees: 0,
+        onvista_exchange_id: None,
+        comments,
+        exchange: None,
+        receipt_number: Some(receipt_number),
+    };
+
+    Ok(ParsedTransaction {
+        content: t,
+        over_the_counter: true,
+        account_number,
+    })
+}
+
+fn parse_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+    let re = Regex::new(r"ISIN\s+([A-Z]{2}[A-Z0-9]{10})\s").unwrap();
+    let isin = re.captures_iter(&s).next().ok_or("no isin match")?[1].to_owned();
+
+    let re = Regex::new(r"Abrechnungs-Nr\.\s+(\d+)\s").unwrap();
+    let receipt_number = re
+        .captures_iter(&s)
+        .next()
+        .ok_or("no receipt number match")?[1]
+        .parse()?;
+
+    let re = Regex::new(r"Nominal\s+STK ([\d\.]+,\d+)\s").unwrap();
+    let cpt = re.captures_iter(&s).next().ok_or("no units match")?;
+    let units = parse_float(&cpt[1])?;
+
+    let re = Regex::new(r"Ausschüttungsbetrag pro Stück\s+([A-Z]+ [\d\.]+,\d+)").unwrap();
     let amount_per_unit = re
         .captures_iter(&s)
         .next()
