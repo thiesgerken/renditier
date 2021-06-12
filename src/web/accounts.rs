@@ -7,8 +7,8 @@ use crate::web::DbConn;
 use diesel::prelude::*;
 use log::info;
 use rocket::http::Status;
-use rocket_contrib::databases::diesel;
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
+use rocket_sync_db_pools::diesel;
 
 #[get("/accounts?<offset>&<count>")]
 pub async fn list(

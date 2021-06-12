@@ -12,7 +12,7 @@ mod util;
 use rocket::config::LogLevel;
 use rocket::data::{Limits, ToByteUnit};
 use rocket::figment::util::map;
-use rocket_contrib::databases::diesel;
+use rocket_sync_db_pools::{database, diesel};
 
 pub struct Config {
     pub port: u16,

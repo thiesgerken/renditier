@@ -10,7 +10,7 @@ use crate::web::DbConn;
 
 use chrono::offset::TimeZone;
 use chrono::{NaiveDate, Utc};
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
 
 #[get("/analysis/portfolio?<date>")]
 pub async fn compute_historic_portfolio(

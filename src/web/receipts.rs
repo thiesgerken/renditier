@@ -3,7 +3,7 @@ use crate::receipts;
 use crate::web::user::UserId;
 use crate::web::DbConn;
 
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
