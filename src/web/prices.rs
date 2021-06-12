@@ -5,8 +5,8 @@ use crate::web::DbConn;
 
 use chrono::NaiveDate;
 use diesel::prelude::*;
-use rocket_contrib::databases::diesel;
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
+use rocket_sync_db_pools::diesel;
 
 #[get("/stocks/prices/historical/<record>?<offset>&<count>&<from>&<to>")]
 pub async fn list(

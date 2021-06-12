@@ -7,9 +7,9 @@ use diesel::prelude::*;
 use log::{info, warn};
 use rocket::http::{Cookie, CookieJar, Status};
 use rocket::request::{FromRequest, Outcome};
+use rocket::serde::json::Json;
 use rocket::{Request, State};
-use rocket_contrib::databases::diesel;
-use rocket_contrib::json::Json;
+use rocket_sync_db_pools::diesel;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
@@ -24,10 +24,10 @@ impl Deref for UserId {
 pub struct UserId(i32);
 
 #[rocket::async_trait]
-impl<'a, 'r> FromRequest<'a, 'r> for UserId {
+impl<'r> FromRequest<'r> for UserId {
     type Error = ();
 
-    async fn from_request(request: &'a Request<'r>) -> Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let id = request
             .cookies()
             .get_private("user_id")
@@ -69,7 +69,7 @@ impl UserInfo {
 
 #[get("/user")]
 pub async fn info(
-    config: State<'_, Config>,
+    config: &State<Config>,
     uid: UserId,
     connection: DbConn,
 ) -> Option<Json<UserInfo>> {
@@ -87,14 +87,14 @@ pub async fn info(
 }
 
 #[get("/user/logout")]
-pub fn logout(cookies: &CookieJar) -> Status {
+pub fn logout(cookies: &CookieJar<'_>) -> Status {
     cookies.remove_private(Cookie::named("user_id"));
     Status::Ok
 }
 
 #[post("/user/login", data = "<login>")]
 pub async fn login(
-    config: State<'_, Config>,
+    config: &State<Config>,
     connection: DbConn,
     cookies: &CookieJar<'_>,
     login: Json<LoginData>,

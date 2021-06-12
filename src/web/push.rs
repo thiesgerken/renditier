@@ -7,7 +7,7 @@ use chrono::Utc;
 use diesel::prelude::*;
 use log::{info, warn};
 use rocket::http::Status;
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
 use web_push::SubscriptionInfo;
 
 #[post("/push/subscribe", data = "<subscription>")]

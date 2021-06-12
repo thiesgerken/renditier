@@ -6,8 +6,8 @@ use crate::web::DbConn;
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use regex::Regex;
-use rocket_contrib::databases::diesel;
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
+use rocket_sync_db_pools::diesel;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
