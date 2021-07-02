@@ -126,6 +126,7 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
     let body = std::str::from_utf8(&buffer)?
         .to_owned()
         .replace("Depot-Nr.", "Depot-Nr.Depot-Nr."); // Lookaheads are not supported by the regex engine
+    debug!("body of PDF: {}", &body);
 
     let mut ts = Vec::new();
     let re_page = Regex::new(r"Depot-Nr\.[\s\S]+?(Depot-Nr\.|\z)").unwrap();
@@ -312,7 +313,7 @@ fn parse_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let units = parse_float(&cpt[1])?;
     // let price = parse_float(&cpt[2])?;
 
-    let re = Regex::new(r"Kurswert\sEUR ([\d\.]+,\d{2})").unwrap();
+    let re = Regex::new(r"Kurswert\s+EUR ([\d\.]+,\d{2})").unwrap();
     let amount_no_fees = (parse_float(&re.captures_iter(&s).next().ok_or("no amount match")?[1])?
         * 100.0)
         .round() as i64;
@@ -321,11 +322,11 @@ fn parse_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let account_number = re.captures_iter(&s).next().ok_or("no account match")?[1].parse()?;
 
     let re = Regex::new(r"Betrag zu Ihren Lasten\s+EUR ([\d\.]+,\d{2})").unwrap();
-    let amount = (parse_float(&re.captures_iter(&s).next().ok_or("no amount match")?[1])? * 100.0)
+    let amount = (parse_float(&re.captures_iter(&s).next().ok_or("no total amount match")?[1])?
+        * 100.0)
         .round() as i64;
 
-    let re =
-Regex::new(r"Handelstag\s(\d\d)\.(\d\d)\.(\d{4})\s+Handelszeit\s(\d\d):(\d\d)\s+Handelsplatz\s(Börse|außerbörslich)\s(.+?)\s*\n").unwrap();
+    let re = Regex::new(r"Handelstag\s+(\d\d)\.(\d\d)\.(\d{4})\s+Handelszeit\s+(\d\d):(\d\d)\s+Handelsplatz\s+(Börse|außerbörslich)\s+(.+?)\s*\n").unwrap();
     let cpt = re
         .captures_iter(&s)
         .next()
