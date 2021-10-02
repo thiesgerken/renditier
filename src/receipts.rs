@@ -134,9 +134,10 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
     for page in re_page.find_iter(&body) {
         let s = page.as_str();
 
-        let re_purchase =
-            Regex::new(r"Wertpapierabrechnung\s+(Kauf|Kauf Sparplan)\s+Kommissionsgeschäft")
-                .unwrap();
+        let re_purchase = Regex::new(
+            r"Wertpapierabrechnung\s+(Verkauf|Kauf|Kauf Sparplan)\s+Kommissionsgeschäft",
+        )
+        .unwrap();
 
         if s.contains("Dividendengutschrift") {
             debug!("Parsing as dividends");
@@ -152,6 +153,7 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
         } else if !s.contains("SEITENNUMMER=1\n") {
             debug!("Ignoring page that does not have page number 1");
         } else {
+            info!("{}", s);
             return Err("unknown receipt type".into());
         }
     }
@@ -310,21 +312,34 @@ fn parse_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
         .captures_iter(&s)
         .next()
         .ok_or("no units/price match")?;
-    let units = parse_float(&cpt[1])?;
+    let mut units = parse_float(&cpt[1])?;
     // let price = parse_float(&cpt[2])?;
 
     let re = Regex::new(r"Kurswert\s+EUR ([\d\.]+,\d{2})").unwrap();
-    let amount_no_fees = (parse_float(&re.captures_iter(&s).next().ok_or("no amount match")?[1])?
-        * 100.0)
-        .round() as i64;
+    let mut amount_no_fees =
+        (parse_float(&re.captures_iter(&s).next().ok_or("no amount match")?[1])? * 100.0).round()
+            as i64;
 
     let re = Regex::new(r"Konto-Nr\.\s+(\d+)\s").unwrap();
     let account_number = re.captures_iter(&s).next().ok_or("no account match")?[1].parse()?;
 
-    let re = Regex::new(r"Betrag zu Ihren Lasten\s+EUR ([\d\.]+,\d{2})").unwrap();
-    let amount = (parse_float(&re.captures_iter(&s).next().ok_or("no total amount match")?[1])?
-        * 100.0)
-        .round() as i64;
+    let re_purchase = Regex::new(r"Betrag zu Ihren Lasten\s+EUR ([\d\.]+,\d{2})").unwrap();
+    let re_sale = Regex::new(r"Betrag zu Ihren Gunsten\s+EUR ([\d\.]+,\d{2})").unwrap();
+    let amount = if re_purchase.is_match(&s) {
+        (parse_float(&re.captures_iter(&s).next().ok_or("no total amount match")?[1])? * 100.0)
+            .round() as i64
+    } else {
+        amount_no_fees *= -1;
+        units *= -1.;
+
+        (parse_float(
+            &re_sale
+                .captures_iter(&s)
+                .next()
+                .ok_or("no total amount match")?[1],
+        )? * -100.0)
+            .round() as i64
+    };
 
     let re = Regex::new(r"Handelstag\s+(\d\d)\.(\d\d)\.(\d{4})\s+Handelszeit\s+(\d\d):(\d\d)\s+Handelsplatz\s+(Börse|außerbörslich)\s+(.+?)\s*\n").unwrap();
     let cpt = re
