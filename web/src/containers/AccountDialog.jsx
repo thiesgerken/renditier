@@ -42,7 +42,7 @@ const AccountDialog = ({
 
   const toAccount = t => {
     const iban = toIBAN(t.iban);
-    if (t.name.trim() === '' || iban === null) return null;
+    if (t.name.trim() === '') return null;
 
     const ret = {
       userId: -1,
@@ -129,14 +129,18 @@ const AccountDialog = ({
                 margin="dense"
                 label="IBAN"
                 fullWidth
-                value={account.iban}
+                value={account.iban || ''}
                 onChange={v =>
                   setAccount({
                     ...account,
-                    iban: v.target.value,
+                    iban: v.target.value !== '' ? v.target.value : null,
                   })
                 }
-                error={toIBAN(account.iban) === null && triedToSave}
+                error={
+                  toIBAN(account.iban) === null &&
+                  account.iban !== null &&
+                  triedToSave
+                }
               />
             </Grid>
           </Grid>
