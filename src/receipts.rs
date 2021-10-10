@@ -326,7 +326,12 @@ fn parse_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let re_purchase = Regex::new(r"Betrag zu Ihren Lasten\s+EUR ([\d\.]+,\d{2})").unwrap();
     let re_sale = Regex::new(r"Betrag zu Ihren Gunsten\s+EUR ([\d\.]+,\d{2})").unwrap();
     let amount = if re_purchase.is_match(&s) {
-        (parse_float(&re.captures_iter(&s).next().ok_or("no total amount match")?[1])? * 100.0)
+        (parse_float(
+            &re_purchase
+                .captures_iter(&s)
+                .next()
+                .ok_or("no total amount match")?[1],
+        )? * 100.0)
             .round() as i64
     } else {
         amount_no_fees *= -1;
