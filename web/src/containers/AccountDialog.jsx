@@ -31,6 +31,8 @@ const AccountDialog = ({
   updateAccount,
 }) => {
   const toIBAN = s => {
+    if (s === null) return null;
+
     const iban = s.trim().toUpperCase();
     if (iban === '' || /^[A-Z]{2}[0-9]{2}[0-9A-Z]{12,30}$/.test(iban))
       return iban;
