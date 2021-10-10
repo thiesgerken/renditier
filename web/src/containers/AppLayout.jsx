@@ -66,14 +66,8 @@ const useStyles = makeStyles(theme => ({
 }));
 
 function ResponsiveDrawer(props) {
-  const {
-    children,
-    username,
-    push,
-    pathname,
-    updateAvailable,
-    ignoreUpdate,
-  } = props;
+  const { children, username, push, pathname, updateAvailable, ignoreUpdate } =
+    props;
   const classes = useStyles();
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);

@@ -14,6 +14,12 @@ pub async fn parse_info(
     let body = resp.text().await?;
     let fragment = Html::parse_document(&body);
 
+    let expected_prefix = "https://www.onvista.de";
+    if !url.starts_with(expected_prefix) {
+        return Err(format!("ETF url does not begin with '{}'", &expected_prefix).into());
+    }
+    let url = url[expected_prefix.len()..].to_string();
+
     let redux_json = fragment
         .select(&Selector::parse("html.ov-client--web body script#__NEXT_DATA__").unwrap())
         .next()

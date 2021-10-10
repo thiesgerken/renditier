@@ -71,11 +71,11 @@ pub async fn send(
 
     let sig_builder = VapidSignatureBuilder::from_pem(private_key, &subscription_info)?;
     builder.set_vapid_signature(sig_builder.build()?);
-    builder.set_payload(ContentEncoding::AesGcm, content.as_bytes());
+    builder.set_payload(ContentEncoding::Aes128Gcm, content.as_bytes());
 
     let message = builder.build()?;
 
-    let client = WebPushClient::new();
+    let client = WebPushClient::new()?;
     client.send(message).await.map_err(|e| e.into())
 }
 

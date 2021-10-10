@@ -35,7 +35,7 @@ impl<'r> Responder<'r, 'static> for FileResponder {
             response::Response::build()
                 .header(content_type)
                 .raw_header("Cache-control", caching)
-                .sized_body(None, Cursor::new(d))
+                .sized_body(None, Cursor::new(d.data))
                 .ok()
         } else if filename != "index.html" {
             // Routing is done client-side;

@@ -90,22 +90,20 @@ export const fetchPortfolioPlot = (startDate, endDate, source) => dispatch => {
     );
 };
 
-export const updatePortfolioPlot = (startDate, endDate, source) => (
-  dispatch,
-  getState
-) => {
-  if (startDate === null || endDate === null || source === null)
+export const updatePortfolioPlot =
+  (startDate, endDate, source) => (dispatch, getState) => {
+    if (startDate === null || endDate === null || source === null)
+      return Promise.resolve();
+
+    const data = getPlotData(getState(), startDate, endDate, source);
+
+    if (
+      data === null ||
+      (!data.isFetching &&
+        (data.lastUpdated === null ||
+          Date.now() - data.lastUpdated >= 60 * 60 * 1e3))
+    )
+      return dispatch(fetchPortfolioPlot(startDate, endDate, source));
+
     return Promise.resolve();
-
-  const data = getPlotData(getState(), startDate, endDate, source);
-
-  if (
-    data === null ||
-    (!data.isFetching &&
-      (data.lastUpdated === null ||
-        Date.now() - data.lastUpdated >= 60 * 60 * 1e3))
-  )
-    return dispatch(fetchPortfolioPlot(startDate, endDate, source));
-
-  return Promise.resolve();
-};
+  };
