@@ -348,7 +348,7 @@ fn parse_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
 
     let re = Regex::new(r"Handelstag\s+(\d\d)\.(\d\d)\.(\d{4})\s+Handelszeit\s+(\d\d):(\d\d)\s+Handelsplatz\s+(Börse|außerbörslich)\s+(.+?)\s*\n").unwrap();
     let cpt = re
-        .captures_iter(&s)
+        .captures_iter(s)
         .next()
         .ok_or("no date and place match")?;
 

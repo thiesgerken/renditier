@@ -86,15 +86,14 @@ pub async fn update(
 ) -> Result<(), Status> {
     connection
         .run(move |c| {
-            let accs = accounts::table
+            let mut accs = accounts::table
                 .filter(accounts::user_id.eq(*uid))
                 .load::<Account>(c)
                 .map_err(|e| log_error_and_500(Box::new(e)))?
                 .into_iter()
-                .map(|a| a.id)
-                .collect::<Vec<_>>();
+                .map(|a| a.id)                ;
 
-            if !accs.contains(&transaction.account_id) {
+            if !accs.any(|i| i == transaction.account_id) {
                 return Err(Status::Unauthorized);
             }
 
@@ -121,15 +120,14 @@ pub async fn create(
 ) -> Result<Json<Transaction>, Status> {
     connection
         .run(move |c| {
-            let accs = accounts::table
+            let mut accs = accounts::table
                 .filter(accounts::user_id.eq(*uid))
                 .load::<Account>(c)
                 .map_err(|e| log_error_and_500(Box::new(e)))?
                 .into_iter()
-                .map(|a| a.id)
-                .collect::<Vec<_>>();
+                .map(|a| a.id);
 
-            if !accs.contains(&transaction.account_id) {
+            if !accs.any(|i| i == transaction.account_id) {
                 return Err(Status::Unauthorized);
             }
 
