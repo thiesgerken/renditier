@@ -1,7 +1,12 @@
 use stockdb::cli;
 
-use clap::{crate_authors, crate_name, crate_version, App, Arg, ArgGroup, Shell};
+use clap::{crate_authors, crate_name, crate_version, App, Arg, ArgGroup};
+use clap_complete::{generate, Generator, Shell};
 use std::io;
+
+fn print_completions<G: Generator>(gen: G, app: &mut App) {
+    generate(gen, app, app.get_name().to_string(), &mut io::stdout());
+}
 
 fn main() {
     let matches = App::new(crate_name!())
@@ -9,32 +14,24 @@ fn main() {
         .author(crate_authors!())
         .about("Generator of useful files for the distribution of stockdb")
         .arg(
-            Arg::with_name("bash")
-                .long("bash")
-                .help("Outputs suitable completions for bash"),
+            Arg::new("generator")
+                .long("shell")
+                .help("Generate autocompletion files for the specified shell")
+                .possible_values(Shell::possible_values()),
         )
         .arg(
-            Arg::with_name("zsh")
-                .long("zsh")
-                .help("Outputs suitable completions for zsh"),
-        )
-        .arg(
-            Arg::with_name("config")
+            Arg::new("config")
                 .long("config")
                 .help("Outputs the default config in toml format"),
         )
         .group(
-            ArgGroup::with_name("req-flags")
+            ArgGroup::new("req-flags")
                 .required(true)
-                .args(&["bash", "zsh", "config"]),
+                .args(&["generator", "config"]),
         )
         .get_matches();
 
-    if matches.is_present("bash") {
-        cli::build(false).gen_completions_to(crate_name!(), Shell::Bash, &mut io::stdout());
-    } else if matches.is_present("zsh") {
-        cli::build(false).gen_completions_to(crate_name!(), Shell::Zsh, &mut io::stdout());
-    } else if matches.is_present("config") {
+    if matches.is_present("config") {
         let config: cli::Config = Default::default();
 
         println!(
@@ -42,6 +39,10 @@ fn main() {
             toml::to_string(&config).expect("unable to serialize default config")
         );
 
-        println!("# [web]\n# secret_key = ")
+        println!("# [web]\n# secret_key = ");
+    } else if let Ok(generator) = matches.value_of_t::<Shell>("generator") {
+        let mut app = cli::build();
+        eprintln!("Generating completion file for {}...", generator);
+        print_completions(generator, &mut app);
     }
 }

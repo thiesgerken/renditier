@@ -120,8 +120,7 @@ pub fn compute(
         .map(|d| d.with_timezone(&Local).date().naive_local())
         .unwrap_or_else(|| NaiveDate::from_ymd(prev_day.year(), 1, 1));
 
-    let mut jobs = Vec::new();
-    jobs.push((PerformanceKind::Total, first_transaction_date.pred(), None));
+    let mut jobs = vec![(PerformanceKind::Total, first_transaction_date.pred(), None)];
 
     /*
       EOD prices <-> current_prices:
@@ -203,7 +202,7 @@ pub fn compute(
         .iter()
         .map(|(_, x, _)| Some(*x))
         .chain(jobs.iter().map(|(_, _, y)| *y))
-        .filter_map(|x| x)
+        .flatten()
         .collect::<HashSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
@@ -361,8 +360,8 @@ fn compute_performance(
     end: Option<NaiveDate>,
 ) -> PortfolioPerformance {
     let empty = HashMap::new();
-    let end_historical_prices = end.map(|x| prices.get(&x).unwrap_or_else(|| &empty));
-    let start_prices = prices.get(&start).unwrap_or_else(|| &empty);
+    let end_historical_prices = end.map(|x| prices.get(&x).unwrap_or(&empty));
+    let start_prices = prices.get(&start).unwrap_or(&empty);
 
     // possible way of optimizing performance: filter for 'transactions <= end' here, and not in compute_position ?
 
@@ -374,7 +373,7 @@ fn compute_performance(
                     isin.clone(),
                     compute_position(
                         isin.clone(),
-                        &ts,
+                        ts,
                         start_prices.get(isin).cloned(),
                         end_historical_prices
                             .and_then(|p| p.get(isin).cloned().map(EitherPrice::wrap_historical)),
@@ -392,7 +391,7 @@ fn compute_performance(
                     isin.clone(),
                     compute_position(
                         isin.clone(),
-                        &ts,
+                        ts,
                         start_prices.get(isin).cloned(),
                         current_prices
                             .get(isin)

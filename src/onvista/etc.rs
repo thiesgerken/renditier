@@ -79,7 +79,7 @@ pub async fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>
     let exchanges = fragment
         .select(&Selector::parse(".item > .selectExchange > option").unwrap())
         .map(|s| parse_exchange(&isin, &s))
-        .filter_map(|x| x)
+        .flatten()
         .collect::<Vec<_>>();
 
     Ok((

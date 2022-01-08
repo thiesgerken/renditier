@@ -34,8 +34,8 @@ build-web:
     - cp target/x86_64-unknown-linux-gnu/release/stockdb .
     - strip -s stockdb
     - target/x86_64-unknown-linux-gnu/release/generate --config > config-dist.toml
-    - target/x86_64-unknown-linux-gnu/release/generate --bash > bash-completions
-    - target/x86_64-unknown-linux-gnu/release/generate --zsh > zsh-completions
+    - target/x86_64-unknown-linux-gnu/release/generate --shell bash > bash-completions
+    - target/x86_64-unknown-linux-gnu/release/generate --shell zsh > zsh-completions
   before_script:
     - export LANG=C.UTF-8
     - rustup update

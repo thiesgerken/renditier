@@ -2,37 +2,37 @@ use crate::models::*;
 use crate::schema::accounts::dsl::*;
 
 use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup, SubCommand};
+use clap::{App, Arg, ArgGroup};
 use diesel::prelude::*;
 use log::info;
 use prettytable::{cell, row, Table};
 use std::io;
 
-pub fn build() -> App<'static, 'static> {
-    SubCommand::with_name("account")
+pub fn build() -> App<'static> {
+    App::new("account")
         .about("Account Management")
-        .arg(Arg::with_name("add").long("add").help("add account"))
+        .arg(Arg::new("add").long("add").help("add account"))
         .arg(
-            Arg::with_name("remove")
+            Arg::new("remove")
                 .long("remove")
                 .value_name("id")
                 .help("remove account"),
         )
         .arg(
-            Arg::with_name("update")
+            Arg::new("update")
                 .long("update")
                 .value_name("id")
                 .help("update account details"),
         )
-        .arg(Arg::with_name("list").long("list").help("list accounts"))
+        .arg(Arg::new("list").long("list").help("list accounts"))
         .group(
-            ArgGroup::with_name("action")
+            ArgGroup::new("action")
                 .args(&["add", "update", "remove", "list"])
                 .required(true),
         )
 }
 
-pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
+pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
     if sub_matches.is_present("add") {
         let mut s_uid = String::new();
         println!("Please enter the user id for the new account");

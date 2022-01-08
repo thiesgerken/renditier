@@ -1,14 +1,14 @@
 use crate::serialization::*;
 
+use clap::App;
 use clap::ArgMatches;
-use clap::{App, SubCommand};
 use diesel::prelude::*;
 
-pub fn build() -> App<'static, 'static> {
-    SubCommand::with_name("export").about("exporting of data to stdout")
+pub fn build() -> App<'static> {
+    App::new("export").about("exporting of data to stdout")
 }
 
-pub fn handle(connection: &PgConnection, _sub_matches: &ArgMatches<'_>) {
+pub fn handle(connection: &PgConnection, _sub_matches: &ArgMatches) {
     let p = NativeFormat::new(connection);
     println!(
         "{}",

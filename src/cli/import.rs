@@ -2,27 +2,27 @@ use crate::schema::*;
 use crate::serialization::*;
 
 use clap::ArgMatches;
-use clap::{App, Arg, SubCommand};
+use clap::{App, Arg};
 use diesel::prelude::*;
 use log::warn;
 use std::io;
 
-pub fn build() -> App<'static, 'static> {
-    SubCommand::with_name("import")
+pub fn build() -> App<'static> {
+    App::new("import")
         .about("Importing of data via stdin")
         .arg(
-            Arg::with_name("moneydb")
+            Arg::new("moneydb")
                 .long("moneydb")
                 .help("import from moneydb json data"),
         )
         .arg(
-            Arg::with_name("clean")
+            Arg::new("clean")
                 .long("clean")
                 .help("clean database contents before importing (use with caution!)"),
         )
 }
 
-pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
+pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
     if sub_matches.is_present("clean") {
         // diesel::delete(stock_infos::table)
         //     .execute(connection)

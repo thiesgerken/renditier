@@ -3,42 +3,42 @@ use crate::models::*;
 use crate::schema::users::dsl::*;
 
 use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup, SubCommand};
+use clap::{App, Arg, ArgGroup};
 use diesel::prelude::*;
 use log::info;
 use prettytable::{cell, row, Table};
 use std::io;
 
-pub fn build() -> App<'static, 'static> {
-    SubCommand::with_name("user")
+pub fn build() -> App<'static> {
+    App::new("user")
         .about("User Management")
         .arg(
-            Arg::with_name("add")
+            Arg::new("add")
                 .long("add")
                 .value_name("name")
                 .help("add user"),
         )
         .arg(
-            Arg::with_name("remove")
+            Arg::new("remove")
                 .long("remove")
                 .value_name("name")
                 .help("remove user"),
         )
         .arg(
-            Arg::with_name("update")
+            Arg::new("update")
                 .long("update")
                 .value_name("name")
                 .help("update user name and password"),
         )
-        .arg(Arg::with_name("list").long("list").help("list users"))
+        .arg(Arg::new("list").long("list").help("list users"))
         .group(
-            ArgGroup::with_name("action")
+            ArgGroup::new("action")
                 .args(&["add", "update", "remove", "list"])
                 .required(true),
         )
 }
 
-pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
+pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
     if let Some(uname) = sub_matches.value_of("add") {
         // check if this username is taken
         assert!(

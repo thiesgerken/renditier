@@ -172,7 +172,7 @@ fn find_index(s: &StockInfo) -> Option<String> {
     s.description
         .as_ref()
         .map(|desc| {
-            re.find_iter(&desc)
+            re.find_iter(desc)
                 .map(|m| m.as_str().to_owned())
                 .find(|m| !m.contains("ETF"))
         })
