@@ -91,7 +91,7 @@ pub async fn update(
                 .load::<Account>(c)
                 .map_err(|e| log_error_and_500(Box::new(e)))?
                 .into_iter()
-                .map(|a| a.id)                ;
+                .map(|a| a.id);
 
             if !accs.any(|i| i == transaction.account_id) {
                 return Err(Status::Unauthorized);

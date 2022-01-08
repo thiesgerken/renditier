@@ -130,9 +130,10 @@ fn parse_exchange_name_and_code(s: &ElementRef) -> Option<(String, String)> {
     let name = s
         .select(&Selector::parse("td:nth-child(1) > a").unwrap())
         .next()
-        .or_else(||s
-            .select(&Selector::parse("td:nth-child(1) > span").unwrap())
-            .next())?
+        .or_else(|| {
+            s.select(&Selector::parse("td:nth-child(1) > span").unwrap())
+                .next()
+        })?
         .text()
         .next()?
         .trim()
