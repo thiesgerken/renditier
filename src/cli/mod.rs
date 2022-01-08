@@ -14,26 +14,25 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 // build a clap::App interface
-// multiple: -v can be used multiple times, but this seems to hinder generation of completions for zsh
-pub fn build(multiple: bool) -> App<'static, 'static> {
+pub fn build() -> App<'static> {
     App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
         .about("Stock database and analysis tool")
-        .arg(Arg::with_name("config")
-                .short("c")
+        .arg(Arg::new("config")
+                .short('c')
                 .long("config")
                 .value_name("file")
                 .help("read configuration from this file (instead of config.* in '/etc/stockdb' and stockdb.* in '.')"))
-        .arg(Arg::with_name("v")
-                .short("v")
+        .arg(Arg::new("v")
+                .short('v')
                 .long("verbose")
-                .multiple(multiple)
+                .multiple_occurrences(true)
                 .help("specify multiple times (up to three) to increase verbosity level"))
-        .arg(Arg::with_name("database")
+        .arg(Arg::new("database")
                 .long("database")
                 .help("database url [default: 'postgres://localhost/stocks']")
-                .value_name("url")) 
+                .value_name("url"))
         .subcommand(user::build())
         .subcommand(account::build())
         .subcommand(transaction::build())
@@ -90,8 +89,8 @@ pub fn initialize_settings(additional_file: Option<&str>) -> Result<config::Conf
 }
 
 // parse the command line flags and add them as overrides to settings
-pub fn merge_settings<'a>(
-    opts: &clap::ArgMatches<'a>,
+pub fn merge_settings(
+    opts: &clap::ArgMatches,
     settings: &mut config::Config,
 ) -> Result<(), ConfigError> {
     let ov = vec!["database"];

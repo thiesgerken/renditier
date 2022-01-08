@@ -5,7 +5,7 @@ use crate::schema::stock_infos::dsl::{isin, persistent, stock_infos};
 
 use chrono::{DateTime, NaiveDate, Utc};
 use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup, SubCommand};
+use clap::{App, Arg, ArgGroup};
 use diesel::{
     prelude::*,
     r2d2::{ConnectionManager, Pool},
@@ -15,44 +15,40 @@ use prettytable::{cell, row, Row, Table};
 use std::error::Error;
 use std::io;
 
-pub fn build() -> App<'static, 'static> {
-    SubCommand::with_name("stock")
+pub fn build() -> App<'static> {
+    App::new("stock")
         .about("Stock Management")
         .arg(
-            Arg::with_name("list")
+            Arg::new("list")
                 .long("list")
                 .help("overview over collected stock data"),
         )
         .arg(
-            Arg::with_name("fetch")
+            Arg::new("fetch")
                 .long("fetch")
                 .help("try to fetch missing stocks"),
         )
         .arg(
-            Arg::with_name("add")
+            Arg::new("add")
                 .long("add")
                 .value_name("isin")
                 .help("add (persistent) stock"),
         )
         .arg(
-            Arg::with_name("remove")
+            Arg::new("remove")
                 .long("remove")
                 .value_name("isin")
                 .help("remove stock from watchlist (might be re-added automatically!)"),
         )
-        .arg(
-            Arg::with_name("update")
-                .long("update")
-                .help("update stock infos"),
-        )
+        .arg(Arg::new("update").long("update").help("update stock infos"))
         .group(
-            ArgGroup::with_name("action")
+            ArgGroup::new("action")
                 .args(&["add", "update", "remove", "list", "fetch"])
                 .required(true),
         )
 }
 
-pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches<'_>) {
+pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches) {
     let connection = pool.get().unwrap();
 
     if let Some(isin_) = sub_matches.value_of("add") {

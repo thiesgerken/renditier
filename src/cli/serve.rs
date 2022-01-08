@@ -7,7 +7,7 @@ use crate::{add_missing_stocks, web};
 
 use chrono::{Datelike, Duration, Local, Timelike, Utc};
 use clap::ArgMatches;
-use clap::{App, Arg, SubCommand};
+use clap::{App, Arg};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use log::{error, info, warn};
@@ -18,24 +18,24 @@ use std::fs::File;
 use std::io::Read;
 use tokio;
 
-pub fn build() -> App<'static, 'static> {
-    SubCommand::with_name("serve")
+pub fn build() -> App<'static> {
+    App::new("serve")
     .about("serve web interface")
     .arg(
-      Arg::with_name("port")
+      Arg::new("port")
         .long("port")
-        .short("p")
+        .short('p')
         .value_name("port")
         .help("customize listening port [default: 8383]"),
     )
     .arg(
-      Arg::with_name("address")
+      Arg::new("address")
         .long("address")
         .value_name("address")
         .help("customize listening address [default: 'localhost']"),
     )
     .arg(
-      Arg::with_name("secret")
+      Arg::new("secret")
         .long("secret")
         .value_name("key")
         .help("secret key for cookie encryption [default: randomly generated]; use `openssl rand -base64 32` to create one"),
@@ -127,7 +127,7 @@ async fn fetch_data(pool: Pool<ConnectionManager<PgConnection>>) -> Result<(), B
 }
 
 pub async fn handle(
-    sub_matches: &ArgMatches<'_>,
+    sub_matches: &ArgMatches,
     pool: Pool<ConnectionManager<PgConnection>>,
     mut config: Config,
     push_config: PushConfig,

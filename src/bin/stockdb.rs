@@ -17,7 +17,7 @@ fn main() {
         .unwrap();
 
     runtime.block_on(async {
-        let matches = cli::build(true).get_matches();
+        let matches = cli::build().get_matches();
         initialize_logging(matches.occurrences_of("v") as u32);
 
         // setup default settings and parse overrides from config files
@@ -66,7 +66,7 @@ fn main() {
             )
             .await;
         } else {
-            cli::build(true)
+            cli::build()
                 .print_long_help()
                 .expect("unable to print help");
             println!();

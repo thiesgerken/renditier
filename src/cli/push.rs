@@ -4,7 +4,7 @@ use crate::schema::push_subscriptions::dsl::*;
 
 use chrono::Utc;
 use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup, SubCommand};
+use clap::{App, Arg, ArgGroup};
 use diesel::prelude::*;
 use log::info;
 use prettytable::{cell, row, Table};
@@ -12,38 +12,34 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
 
-pub fn build() -> App<'static, 'static> {
-    SubCommand::with_name("push")
+pub fn build() -> App<'static> {
+    App::new("push")
         .about("Push Subscription Management")
         .arg(
-            Arg::with_name("remove")
+            Arg::new("remove")
                 .long("remove")
                 .value_name("endpoint")
                 .help("remove subscription"),
         )
         .arg(
-            Arg::with_name("clear")
+            Arg::new("clear")
                 .long("clear")
                 .help("remove all subscriptions"),
         )
         .arg(
-            Arg::with_name("test")
+            Arg::new("test")
                 .long("test")
                 .value_name("endpoint")
                 .help("send a test notification"),
         )
+        .arg(Arg::new("list").long("list").help("list subscriptions"))
         .arg(
-            Arg::with_name("list")
-                .long("list")
-                .help("list subscriptions"),
-        )
-        .arg(
-            Arg::with_name("full")
+            Arg::new("full")
                 .long("full")
                 .help("do not abbreviate endpoints"),
         )
         .group(
-            ArgGroup::with_name("action")
+            ArgGroup::new("action")
                 .args(&["test", "remove", "list", "clear"])
                 .required(true),
         )
@@ -55,7 +51,7 @@ pub struct Config {
     pub key_file: String,
 }
 
-pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>, config: Config) {
+pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches, config: Config) {
     if let Some(s_pid) = sub_matches.value_of("test") {
         let sub = crate::schema::push_subscriptions::table
             .find(&s_pid)

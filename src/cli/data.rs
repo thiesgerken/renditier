@@ -5,7 +5,7 @@ use crate::serialization::*;
 
 use chrono::{Duration, Utc};
 use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup, SubCommand};
+use clap::{App, Arg, ArgGroup};
 use diesel::{
     prelude::*,
     r2d2::{ConnectionManager, Pool},
@@ -13,37 +13,37 @@ use diesel::{
 use log::{error, info};
 use std::io;
 
-pub fn build() -> App<'static, 'static> {
-    SubCommand::with_name("data")
+pub fn build() -> App<'static> {
+    App::new("data")
         .about("Data Management")
         .arg(
-            Arg::with_name("clean")
+            Arg::new("clean")
                 .long("clean")
                 .help("delete old realtime prices, keeping only the latest data"),
         )
         .arg(
-            Arg::with_name("fetch")
+            Arg::new("fetch")
                 .long("fetch")
                 .help("update realtime and historic data for all stocks"),
         )
         .arg(
-            Arg::with_name("export")
+            Arg::new("export")
                 .long("export")
                 .help("write realtime and historic data for all stocks to stdout"),
         )
         .arg(
-            Arg::with_name("import")
+            Arg::new("import")
                 .long("import")
                 .help("read realtime and historic data from stdin"),
         )
         .group(
-            ArgGroup::with_name("action")
+            ArgGroup::new("action")
                 .args(&["clean", "fetch", "export", "import"])
                 .required(true),
         )
 }
 
-pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches<'_>) {
+pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches) {
     let connection = pool.get().unwrap();
 
     if sub_matches.is_present("fetch") {

@@ -3,24 +3,24 @@ use crate::receipts;
 
 use chrono::{DateTime, Utc};
 use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup, SubCommand};
+use clap::{App, Arg, ArgGroup};
 use diesel::prelude::*;
 use log::info;
 use prettytable::{cell, row, Table};
 use std::io;
 
-pub fn build() -> App<'static, 'static> {
-    SubCommand::with_name("transaction")
+pub fn build() -> App<'static> {
+    App::new("transaction")
         .about("Transaction Management")
-        .arg(Arg::with_name("add").long("add").help("add transaction"))
+        .arg(Arg::new("add").long("add").help("add transaction"))
         .arg(
-            Arg::with_name("remove")
+            Arg::new("remove")
                 .long("remove")
                 .value_name("id")
                 .help("remove transaction"),
         )
         .arg(
-            Arg::with_name("receipts")
+            Arg::new("receipts")
                 .long("receipts")
                 .value_name("filename")
                 .min_values(1)
@@ -28,32 +28,28 @@ pub fn build() -> App<'static, 'static> {
                 .help("import onvista receipt(s)"),
         )
         .arg(
-            Arg::with_name("account")
+            Arg::new("account")
                 .long("account")
                 .value_name("id")
                 .help("account id for --list")
                 .conflicts_with_all(&["add", "remove", "receipts"]),
         )
         .arg(
-            Arg::with_name("user")
+            Arg::new("user")
                 .long("user")
                 .value_name("id")
                 .help("user id for --receipts")
                 .conflicts_with_all(&["add", "remove", "list"]),
         )
-        .arg(
-            Arg::with_name("list")
-                .long("list")
-                .help("list transactions"),
-        )
+        .arg(Arg::new("list").long("list").help("list transactions"))
         .group(
-            ArgGroup::with_name("action")
+            ArgGroup::new("action")
                 .args(&["add", "remove", "list", "receipts"])
                 .required(true),
         )
 }
 
-pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches<'_>) {
+pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
     if sub_matches.is_present("add") {
         let mut s_aid = String::new();
         println!("Please enter the account id for the transaction");

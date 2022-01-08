@@ -120,8 +120,7 @@ pub fn compute(
         .map(|d| d.with_timezone(&Local).date().naive_local())
         .unwrap_or_else(|| NaiveDate::from_ymd(prev_day.year(), 1, 1));
 
-    let mut jobs = Vec::new();
-    jobs.push((PerformanceKind::Total, first_transaction_date.pred(), None));
+    let mut jobs = vec![(PerformanceKind::Total, first_transaction_date.pred(), None)];
 
     /*
       EOD prices <-> current_prices:

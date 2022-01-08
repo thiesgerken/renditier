@@ -9,7 +9,8 @@ default-run = "stockdb"
 argonautica = "0.2"
 base64 = "0.13"
 chrono = { version = "0.4", features = ["serde"] }
-clap = "2.34"
+clap ={ version = "3.0", features = ["cargo"] }
+clap_complete = "3.0"
 config = "0.11"
 csv = "1.1"
 diesel = { version = "1.4", features = ["postgres", "chrono", "r2d2"] }
