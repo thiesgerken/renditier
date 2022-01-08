@@ -62,9 +62,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         let exists = stock_infos
             .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
             .load::<StockInfo>(&connection)
-            .expect("Error loading stock infos")
-            .iter()
-            .next()
+            .expect("Error loading stock infos").get(0)
             .is_some();
 
         if exists {
@@ -129,9 +127,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         stock_infos
             .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
             .load::<StockInfo>(&connection)
-            .expect("Error loading stock infos")
-            .iter()
-            .next()
+            .expect("Error loading stock infos").get(0)
             .expect("Stock is not watched");
 
         let mut confirmation = String::new();

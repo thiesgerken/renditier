@@ -184,7 +184,7 @@ pub async fn get_data_historical(
         Ok(res)
     } else {
         debug!("{:?}", headers);
-        return Err("Unexpected CSV headers".into());
+        Err("Unexpected CSV headers".into())
     }
 }
 

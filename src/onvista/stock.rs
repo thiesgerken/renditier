@@ -57,13 +57,13 @@ pub async fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>
     let exchange_names_and_codes = fragment
         .select(&Selector::parse(".HANDELSPLAETZE tbody > tr").unwrap())
         .map(|s| parse_exchange_name_and_code(&s))
-        .filter_map(|x| x)
+        .flatten()
         .collect::<Vec<_>>();
 
     let exchanges = fragment
         .select(&Selector::parse("#chartExchangesLayer > ul:nth-child(2) > li > a").unwrap())
         .map(|s| parse_exchange(&isin, &exchange_names_and_codes, &s))
-        .filter_map(|x| x)
+        .flatten()
         .collect::<Vec<_>>();
 
     Ok((
