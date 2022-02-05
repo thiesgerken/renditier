@@ -1,94 +1,66 @@
 use crate::models::*;
+use crate::onvista::json_utils::*;
 
-use chrono::{Date, Datelike, Local, TimeZone, Utc};
-use log::{debug, warn};
+use chrono::{Utc, Local, Date, TimeZone, Datelike};
 use reqwest::Response;
+use scraper::{Html, Selector};
+use serde_json::Value;
 use std::error::Error;
 
-pub async fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
-    let url = resp
-        .url()
-        .as_str()
-        .to_owned()
-        .strip_prefix("https://www.onvista.de")
-        .ok_or("url wrong prefix")?
-        .to_owned();
-
-    use scraper::{Html, Selector};
+pub async fn parse_info(
+    url: String,
+    resp: Response,
+) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
+    // scope is needed to fix problems with async/.await and non-sendable borrows
     let body = resp.text().await?;
     let fragment = Html::parse_document(&body);
 
-    // title
-    let title_a = fragment
-    .select(&Selector::parse("#snapshot-header > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > a:nth-child(1)").unwrap()).next().ok_or("error obtaining title fragment")?.value();
-    let title = title_a
-        .attr("data-tooltip")
-        .ok_or("error parsing title")?
-        .to_string();
-
-    let td_selector = Selector::parse(".very > tbody:nth-child(1) > tr > td").unwrap();
-    let mut tds = fragment.select(&td_selector).skip(1).step_by(2);
-
-    // wkn
-    let td_wkn = tds.next().ok_or("error parsing wkn")?;
-    let wkn = td_wkn
-        .text()
-        .next()
-        .ok_or("error parsing wkn")?
-        .trim()
-        .to_uppercase();
-
-    let td_isin = tds.next().ok_or("error parsing ISIN")?;
-    let isin = td_isin
-        .text()
-        .next()
-        .ok_or("error parsing ISIN")?
-        .trim()
-        .to_uppercase();
-
-    // other infos
-    let td_company = tds.next().ok_or("error parsing company")?;
-    let company = td_company
-        .text()
-        .next()
-        .ok_or("error parsing company")?
-        .trim()
-        .to_string();
-
-    let mut kind = fragment
-        .select(
-            &Selector::parse(
-                "table.ui:nth-child(4) > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(2)",
-            )
-            .unwrap(),
-        )
-        .next()
-        .ok_or("error obtaining kind fragment")?
-        .text()
-        .next()
-        .ok_or("error parsing kind")?
-        .trim()
-        .to_string();
-
-    if kind.len() != 4 {
-        return Err(format!("'{}' is not an ETC or ETN, it is {}", title, kind).into());
+    let expected_prefix = "https://www.onvista.de";
+    if !url.starts_with(expected_prefix) {
+        return Err(format!("ETC url does not begin with '{}'", &expected_prefix).into());
     }
-    kind = kind[0..3].to_string();
+    let url = url[expected_prefix.len()..].to_string();
 
-    // exchanges
-    let exchanges = fragment
-        .select(&Selector::parse(".item > .selectExchange > option").unwrap())
-        .map(|s| parse_exchange(&isin, &s))
-        .flatten()
-        .collect::<Vec<_>>();
+    let redux_json = fragment
+        .select(&Selector::parse("html.ov-client--web body script#__NEXT_DATA__").unwrap())
+        .next()
+        .ok_or("error obtaining json")?
+        .text()
+        .next()
+        .ok_or("error obtaining json")?;
+    debug!("{}", redux_json);
+    let redux_json: Value = serde_json::from_str(redux_json).map_err(|e| e.to_string())?;
+
+    let snapshot = &redux_json["props"]["pageProps"]["data"]["snapshot"];
+    if let Value::Null = snapshot {
+        return Err("Could not obtain snapshot from JSON".into());
+    }
+    debug!("{}", serde_json::to_string(snapshot).unwrap());
+
+    let currency = get_string(&snapshot["derivativesDetails"]["isoCurrency"])
+        .ok_or("error parsing currency")?;
+    let isin = get_string(&snapshot["instrument"]["isin"]).ok_or("error parsing isin")?;
+    let instrument_id =
+        get_string(&snapshot["instrument"]["entityValue"]).ok_or("error parsing instrument id")?;
+    let wkn = get_string(&snapshot["instrument"]["wkn"]).ok_or("error parsing wkn")?;
+    let title =
+        get_string(&snapshot["instrument"]["name"]).ok_or("error parsing title")?;
+    let company =
+        get_string(&snapshot["derivativesIssuer"]["name"]).ok_or("error parsing company")?;
+
+    let exchanges = get_array(&snapshot["quoteList"]["list"])
+        .ok_or("error parsing exchanges")?
+        .iter()
+        .map(|s| parse_exchange(&isin, s).ok_or_else(|| format!("error parsing {:?}", s)))
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok((
         StockInfo {
             isin,
             wkn,
             onvista_url: url,
-            kind,
-            fonds_type: None,
+            kind: "ETF".to_string(),
+            fonds_type:None,
             focus: None,
             company,
             title,
@@ -97,33 +69,35 @@ pub async fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>
             last_realtime_update: None,
             holdings: None,
             industry_breakdown: None,
+            instrument_breakdown:None,
             country_breakdown: None,
             currency_breakdown: None,
-            instrument_breakdown: None,
             launch_date: None,
-            currency: None,
+            currency: Some(currency),
             management_type: None,
-            payout_type: None,
+            payout_type:None,
             ter: None,
             description: None,
             benchmark_index: None,
-            instrument_id: None,
+            instrument_id: Some(instrument_id),
         },
         exchanges,
     ))
 }
 
-fn parse_exchange(isin: &str, s: &scraper::element_ref::ElementRef) -> Option<StockExchange> {
-    let record_id = s.value().attr("data-idnotation")?.parse().ok()?;
-    let code = s.value().attr("value")?.to_string();
-    let name = s.text().next()?.trim().to_string();
+fn parse_exchange(isin: &str, s: &Value) -> Option<StockExchange> {
+    // let record_id = get_string(&s["idInstrument"])?.parse().ok()?;
+    let record_id = get_i64(&s["market"]["idNotation"])? as i32;
+    let quality = get_string(&s["codeQualityPrice"])?;
+    let name = get_string(&s["market"]["name"])?;
+    let code = get_string(&s["market"]["codeExchange"])?;
 
     Some(StockExchange {
         isin: isin.to_string(),
         onvista_exchange_id: None,
         onvista_record_id: record_id,
         code,
-        quality: None,
+        quality: Some(quality),
         name,
     })
 }
@@ -164,10 +138,12 @@ async fn get_data_realtime_exchange(
     onvista_record_id: i32,
     offset: i32,
 ) -> Result<Option<RealtimePrice>, Box<dyn Error>> {
-    let resp = reqwest::get(&format!(
+    let url = &format!(
         "https://www.onvista.de/derivative/bond/snapshotTimesSalesCSV?idNotation={}&offset=-{}",
         onvista_record_id, offset
-    ))
+    );
+    debug!("Querying realtime data from {url}");
+    let resp = reqwest::get(url)
     .await?;
 
     if !resp.status().is_success() {
