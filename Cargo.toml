@@ -19,7 +19,7 @@ futures = "0.3"
 itertools = "0.10"
 log = "0.4"
 lopdf = "0.26"
-pdf-extract = { git = "https://github.com/jrmuizel/pdf-extract.git", rev="e03d6637e84c39cb798389a81d1f71f26a1f09df" }
+pdf-extract = "0.6"
 prettytable-rs = "0.8"
 qstring = "0.7"
 regex = "1.4"
