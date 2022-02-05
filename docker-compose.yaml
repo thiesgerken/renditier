@@ -3,6 +3,7 @@ services:
   stockdb:
     build:
       context: .
+    image: git.thiesgerken.de:5005/thies/stockdb:latest
     restart: unless-stopped
     ports:
       - "8484:80"
@@ -14,7 +15,7 @@ services:
       - STOCKDB__WEB__SERVER_KEY=""
       - STOCKDB__PUSH__KEY_FILE=""
     command:
-      /app/stockdb serve
+      stockdb serve
 
   postgres:
     image: docker.io/postgres:14
