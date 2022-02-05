@@ -25,6 +25,11 @@ pub fn build() -> App<'static> {
             Arg::new("fetch")
                 .long("fetch")
                 .help("update realtime and historic data for all stocks"),
+        )        
+        .arg(
+            Arg::new("force")
+                .long("force")
+                .help("ignore last stock update time"),
         )
         .arg(
             Arg::new("export")
@@ -46,7 +51,8 @@ pub fn build() -> App<'static> {
 pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches) {
     let connection = pool.get().unwrap();
 
-    if sub_matches.is_present("fetch") {
+    if sub_matches.is_present("fetch") {    
+        let force = sub_matches.is_present("force") ;
         let now = Utc::now();
         let stocks = stock_infos
             .load::<StockInfo>(&connection)
@@ -55,7 +61,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         let stocks_rt_update = stocks
             .iter()
             .filter(|x| match x.last_realtime_update {
-                Some(t) => now.signed_duration_since(t) > Duration::hours(1),
+                Some(t) => now.signed_duration_since(t) > Duration::hours(1) || force,
                 None => true,
             })
             .collect::<Vec<_>>();
@@ -70,7 +76,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         let stocks_hist_update = stocks
             .iter()
             .filter(|x| match x.last_historical_update {
-                Some(t) => now.signed_duration_since(t) > Duration::hours(4),
+                Some(t) => now.signed_duration_since(t) > Duration::hours(4) || force,
                 None => true,
             })
             .collect::<Vec<_>>();
