@@ -71,34 +71,34 @@ package-deb:
     paths:
       - stockdb.deb
 
-.deploy-thiesgerken-de:
-  stage: deploy
-  needs: ["package-deb"]
-  script:
-    - echo "$RSA_THIESGERKEN_DE" > id_rsa
-    - chmod 500 id_rsa
-    - scp -i id_rsa -oStrictHostKeyChecking=no stockdb.deb thies@thiesgerken.de:~
-    - ssh -i id_rsa -oStrictHostKeyChecking=no thies@thiesgerken.de "sudo systemctl stop stockdb"
-    - ssh -i id_rsa -oStrictHostKeyChecking=no thies@thiesgerken.de "sudo dpkg --force-confdef --force-confold -i stockdb.deb && rm stockdb.deb"
-    - ssh -i id_rsa -oStrictHostKeyChecking=no thies@thiesgerken.de "sudo systemctl enable stockdb && sudo systemctl start stockdb"
-    - rm id_rsa
-  environment:
-    name: thiesgerken.de
-    url: https://stocks.thiesgerken.de
-  tags:
-    - docker
-  image: git.thiesgerken.de:5005/thies/stockdb/build
+# .deploy-thiesgerken-de:
+#   stage: deploy
+#   needs: ["package-deb"]
+#   script:
+#     - echo "$RSA_THIESGERKEN_DE" > id_rsa
+#     - chmod 500 id_rsa
+#     - scp -i id_rsa -oStrictHostKeyChecking=no stockdb.deb thies@thiesgerken.de:~
+#     - ssh -i id_rsa -oStrictHostKeyChecking=no thies@thiesgerken.de "sudo systemctl stop stockdb"
+#     - ssh -i id_rsa -oStrictHostKeyChecking=no thies@thiesgerken.de "sudo dpkg --force-confdef --force-confold -i stockdb.deb && rm stockdb.deb"
+#     - ssh -i id_rsa -oStrictHostKeyChecking=no thies@thiesgerken.de "sudo systemctl enable stockdb && sudo systemctl start stockdb"
+#     - rm id_rsa
+#   environment:
+#     name: thiesgerken.de
+#     url: https://stocks.thiesgerken.de
+#   tags:
+#     - docker
+#   image: git.thiesgerken.de:5005/thies/stockdb/build
 
-deploy-thiesgerken-de:
-  extends: .deploy-thiesgerken-de
-  only:
-    - master
+# deploy-thiesgerken-de:
+#   extends: .deploy-thiesgerken-de
+#   only:
+#     - master
 
-deploy-thiesgerken-de-manual:
-  extends: .deploy-thiesgerken-de
-  when: manual
-  except:
-    - master
+# deploy-thiesgerken-de-manual:
+#   extends: .deploy-thiesgerken-de
+#   when: manual
+#   except:
+#     - master
 
 deploy-docker:
   stage: deploy
