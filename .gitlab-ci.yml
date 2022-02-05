@@ -125,14 +125,14 @@ deploy-docker-version:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - VERSION=$(sed -rn "s/^version = \"([0-9.]+)\"/\1/p" Cargo.toml)
     - VERSION_MAJOR=$(sed -rn "s/^version = \"([0-9.]+)\.\d+\.\d+\"/\1/p" Cargo.toml)
     - VERSION_MAJOR_MINOR=$(sed -rn "s/^version = \"([0-9.]+)\.\d+\"/\1/p" Cargo.toml)
+    - VERSION=$(sed -rn "s/^version = \"([0-9.]+)\"/\1/p" Cargo.toml)
     - docker pull $CI_REGISTRY_IMAGE:latest || true
     - docker build --cache-from $CI_REGISTRY_IMAGE:stable --tag $CI_REGISTRY_IMAGE:$VERSION --tag $CI_REGISTRY_IMAGE:$VERSION_MAJOR --tag $CI_REGISTRY_IMAGE:$VERSION_MAJOR_MINOR --tag $CI_REGISTRY_IMAGE:stable -f docker/run/Dockerfile .
-    - docker push $CI_REGISTRY_IMAGE:$VERSION
     - docker push $CI_REGISTRY_IMAGE:$VERSION_MAJOR
     - docker push $CI_REGISTRY_IMAGE:$VERSION_MAJOR_MINOR
+    - docker push $CI_REGISTRY_IMAGE:$VERSION
     - docker push $CI_REGISTRY_IMAGE:stable
-  # only:
-  #  - master
+  only:
+   - master
