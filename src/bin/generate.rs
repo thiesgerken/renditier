@@ -38,8 +38,6 @@ fn main() {
             "{}",
             toml::to_string(&config).expect("unable to serialize default config")
         );
-
-        println!("# [web]\n# secret_key = ");
     } else if let Ok(generator) = matches.value_of_t::<Shell>("generator") {
         let mut app = cli::build();
         eprintln!("Generating completion file for {}...", generator);
