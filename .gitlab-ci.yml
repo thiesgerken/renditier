@@ -57,7 +57,7 @@ build-server:
       - bash-completions
       - zsh-completions
 
-package-server:
+package-deb:
   stage: package
   needs: ["build-server"]
   tags:
@@ -73,7 +73,7 @@ package-server:
 
 .deploy-thiesgerken-de:
   stage: deploy
-  needs: ["package-server"]
+  needs: ["package-deb"]
   script:
     - echo "$RSA_THIESGERKEN_DE" > id_rsa
     - chmod 500 id_rsa
@@ -109,9 +109,28 @@ deploy-docker:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - $VERSION=$(sed -rn "s/^version = \"([0-9.]+)\"/\1/p" Cargo.toml)
     - docker pull $CI_REGISTRY_IMAGE:latest || true
-    - docker build --cache-from $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$VERSION --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA --tag $CI_REGISTRY_IMAGE:latest -f docker/run/Dockerfile .
+    - docker build --cache-from $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA --tag $CI_REGISTRY_IMAGE:latest -f docker/run/Dockerfile .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest
+  except:
+    - master
+
+deploy-docker-version:
+  stage: deploy
+  image: docker:20.10.12
+  tags:
+    - docker
+  needs: ["build-server"]
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - VERSION=$(sed -rn "s/^version = \"([0-9.]+)\"/\1/p" Cargo.toml)
+    - docker pull $CI_REGISTRY_IMAGE:latest || true
+    - docker build --cache-from $CI_REGISTRY_IMAGE:stable --tag $CI_REGISTRY_IMAGE:$VERSION --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA --tag $CI_REGISTRY_IMAGE:stable -f docker/run/Dockerfile .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE:$VERSION
-    - docker push $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:stable
+  #only:
+  #  - master
+
