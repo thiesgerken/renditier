@@ -29,7 +29,7 @@ build-web:
 build-server:
   tags:
     - docker
-  image: git.thiesgerken.de:5005/thies/stockdb/server
+  image: git.thiesgerken.de:5005/thies/stockdb/build
   stage: build-server
   needs: ["build-web"]
   script:
@@ -87,7 +87,7 @@ package-server:
     url: https://stocks.thiesgerken.de
   tags:
     - docker
-  image: git.thiesgerken.de:5005/thies/stockdb/build-ubuntu
+  image: git.thiesgerken.de:5005/thies/stockdb/build
 
 deploy-thiesgerken-de:
   extends: .deploy-thiesgerken-de
