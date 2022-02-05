@@ -37,8 +37,12 @@ fn main() {
 
         let manager = ConnectionManager::<PgConnection>::new(&config.database);
         let pool = Pool::builder().max_size(10).build(manager).unwrap();
-
-        if let Some(sub_matches) = matches.subcommand_matches("user") {
+        if matches.is_present("dump") {
+            println!(
+                "{}",
+                toml::to_string(&config).expect("unable to serialize config")
+            );
+        } else if let Some(sub_matches) = matches.subcommand_matches("user") {
             cli::user::handle(&connection, sub_matches);
         } else if let Some(sub_matches) = matches.subcommand_matches("stock") {
             cli::stock::handle(pool, sub_matches).await;
