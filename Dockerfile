@@ -29,7 +29,5 @@ RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get install -y --no-install-recommends ca-certificates libpq5 libssl1.1 \
   && rm -Rf /var/cache/apt
 
-WORKDIR /app
-COPY --from=builder /build/target/x86_64-unknown-linux-gnu/release/stockdb .
-
+COPY --from=builder /build/target/x86_64-unknown-linux-gnu/release/stockdb /bin/stockdb
 CMD stockdb

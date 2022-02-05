@@ -12,7 +12,7 @@ build-web:
       - .yarn-cache
   tags:
     - docker
-  image: git.thiesgerken.de:5005/thies/stockdb/web
+  image: git.thiesgerken.de:5005/thies/stockdb/build
   script:
     - cd web
     - yarn install
@@ -26,7 +26,10 @@ build-web:
     paths:
       - web/build
 
-.build-server:
+build-server:
+  tags:
+    - docker
+  image: git.thiesgerken.de:5005/thies/stockdb/server
   stage: build-server
   needs: ["build-web"]
   script:
@@ -45,7 +48,6 @@ build-web:
   cache:
     key: ${CI_JOB_NAME}
     paths:
-      # - target
       - .cargo-registry
   artifacts:
     expire_in: 1 month
@@ -56,17 +58,13 @@ build-web:
       - zsh-completions
 
 build-server-ubuntu:
-  extends: .build-server
-  tags:
-    - docker
-  image: git.thiesgerken.de:5005/thies/stockdb/server-ubuntu
 
-package-server-ubuntu:
+package-server:
   stage: package
-  needs: ["build-server-ubuntu"]
+  needs: ["build-server"]
   tags:
     - docker
-  image: git.thiesgerken.de:5005/thies/stockdb/build-ubuntu
+  image: git.thiesgerken.de:5005/thies/stockdb/build
   script:
     - (cd package/ubuntu && ./package.sh)
     - mv package/ubuntu/build/stockdb.deb .
@@ -77,7 +75,7 @@ package-server-ubuntu:
 
 .deploy-thiesgerken-de:
   stage: deploy
-  needs: ["package-server-ubuntu"]
+  needs: ["package-server"]
   script:
     - echo "$RSA_THIESGERKEN_DE" > id_rsa
     - chmod 500 id_rsa
@@ -103,3 +101,15 @@ deploy-thiesgerken-de-manual:
   when: manual
   except:
     - master
+
+deploy-docker:
+  stage: deploy
+  image: docker:20.10.12
+  tags:
+    - docker
+  needs: ["build-server"]
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:latest || true
+    - docker build --cache-from $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA --tag $CI_REGISTRY_IMAGE:latest -f docker/run/Dockerfile .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest
