@@ -57,8 +57,6 @@ build-server:
       - bash-completions
       - zsh-completions
 
-build-server-ubuntu:
-
 package-server:
   stage: package
   needs: ["build-server"]
