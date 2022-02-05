@@ -1,3 +1,5 @@
+#![allow(clippy::unused_unit)]
+
 use crate::schema::*;
 
 use chrono::{DateTime, NaiveDate, Utc};

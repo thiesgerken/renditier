@@ -111,7 +111,7 @@ pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches, config:
             let s_endpoint = if sub_matches.is_present("full") || s.endpoint.len() <= 45 + 4 {
                 s.endpoint.clone()
             } else {
-                String::from(&format!("{} ...", s.endpoint[..45].to_string()))
+                String::from(&format!("{} ...", &s.endpoint[..45]))
             };
 
             table.add_row(row![

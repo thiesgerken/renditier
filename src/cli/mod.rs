@@ -13,7 +13,6 @@ use config::ConfigError;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-// build a clap::App interface
 pub fn build() -> App<'static> {
     App::new(crate_name!())
         .version(crate_version!())
@@ -24,6 +23,9 @@ pub fn build() -> App<'static> {
                 .long("config")
                 .value_name("file")
                 .help("read configuration from this file (instead of config.* in '/etc/stockdb' and stockdb.* in '.')"))
+        .arg(Arg::new("dump")
+                .long("dump")
+                .help("dump configuration and exit"))
         .arg(Arg::new("v")
                 .short('v')
                 .long("verbose")
@@ -69,8 +71,6 @@ impl Default for Config {
 // files that are considered: basenames /etc/stockdb/config and ./stockdb
 // fails, if additional_file does not exist or cannot be read
 pub fn initialize_settings(additional_file: Option<&str>) -> Result<config::Config, ConfigError> {
-    // let default: Config = Default::default();
-    // let mut settings = config::Config::try_from(&default)?;
     let mut settings = config::Config::new();
 
     if let Some(p) = additional_file {
@@ -84,6 +84,10 @@ pub fn initialize_settings(additional_file: Option<&str>) -> Result<config::Conf
             .merge(config::File::with_name("./stockdb").required(false))
             .unwrap();
     }
+
+    settings
+        .merge(config::Environment::with_prefix("stockdb_").separator("__"))
+        .expect("unable to read config from environment variables");
 
     Ok(settings)
 }

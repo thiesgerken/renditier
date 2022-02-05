@@ -131,7 +131,14 @@ fn parse_exchange(isin: &str, s: &Value) -> Option<StockExchange> {
 }
 
 pub async fn get_data_realtime(stock: &StockInfo) -> Result<Vec<RealtimePrice>, Box<dyn Error>> {
-    let resp = reqwest::get(&stock.onvista_url).await?;
+    let expected_prefix = "https://www.onvista.de";
+    let url = if stock.onvista_url.starts_with(expected_prefix) {
+        stock.onvista_url.clone()
+    } else {
+        format!("https://www.onvista.de/{}", &stock.onvista_url)
+    };
+    debug!("Querying realtime data from {}", url);
+    let resp = reqwest::get(&url).await?;
 
     if !resp.status().is_success() {
         return Err(format!("Data request unsuccessful: status {}", resp.status()).into());

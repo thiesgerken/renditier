@@ -28,9 +28,9 @@ pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), B
     } else if url.starts_with("https://www.onvista.de/aktien/") {
         debug!("recognized {} as a stock", needle);
         stock::parse_info(resp).await
-    } else if url.starts_with("https://www.onvista.de/derivate/etc-etn/") {
+    } else if url.starts_with("https://www.onvista.de/derivate/ETCs/") {
         debug!("recognized {} as an ETC or ETN", needle);
-        etc::parse_info(resp).await
+        etc::parse_info(url, resp).await
     } else {
         Err(format!("unrecognized url type: {}", url).into())
     }
