@@ -326,12 +326,14 @@ pub fn compute_stock_plot(
     source_selection: DataSourceSelection,
 ) -> Result<StockPlot, Box<dyn Error>> {
     // for this ISIN, grab all exchanges and select the preferred one
-    let ex = stock_exchanges::table
+    let exs = stock_exchanges::table
         .filter(stock_exchanges::isin.eq(isin.clone()))
         .load::<StockExchange>(connection)?
         .into_iter()
-        .min_by(exchange_comparison)
-        .ok_or("No exchanges found for isin")?;
+        .collect::<Vec<_>>();
+
+    // .min_by(exchange_comparison)
+    // .ok_or("No exchanges found for isin")?;
 
     // read all transactions up to end_time from db
     let ts = transactions::table
@@ -345,13 +347,13 @@ pub fn compute_stock_plot(
         .map(|(a, _)| a)
         .collect::<Vec<_>>();
 
-    let (dates, prices) = choose_and_query_points(
-        connection,
-        &[ex.onvista_record_id],
-        start_date,
-        end_date,
-        source_selection,
-    )?;
+    let ex_ids = exs
+        .iter()
+        .map(|ex| ex.onvista_record_id)
+        .collect::<Vec<_>>();
+
+    let (dates, prices) =
+        choose_and_query_points(connection, &ex_ids, start_date, end_date, source_selection)?;
 
     let mut points = dates
         .into_iter()
@@ -403,8 +405,13 @@ pub fn compute_stock_plot(
         }
     }
 
+    // TODO: this is not correct anymore; StockPlot expect one exchange,
+    // but the code has been changed to return prices from multiple exchanges
     Ok(StockPlot {
-        exchange: ex,
+        exchange: exs
+            .into_iter()
+            .next()
+            .ok_or("No exchanges found for isin")?,
         points: points
             .into_iter()
             .dedup_by(|x, y| {
