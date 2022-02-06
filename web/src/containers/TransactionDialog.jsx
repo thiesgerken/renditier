@@ -60,8 +60,8 @@ const TransactionDialog = ({
   };
 
   const getExchangeName = ex => {
-    if (ex === '') return '';
-    return ex?.name || '';
+    if (!ex || ex === '') return '';
+    return ex.name || '';
   };
 
   const isValidFloat = s => {
@@ -127,11 +127,11 @@ const TransactionDialog = ({
     if (t.id !== null && t.onvistaExchangeId !== null)
       ex = initialStock
         ? getExchangeName(
-          find(
-            initialStock.exchanges,
-            e => e.onvistaExchangeId === t.onvistaExchangeId
+            find(
+              initialStock.exchanges,
+              e => e.onvistaExchangeId === t.onvistaExchangeId
+            )
           )
-        )
         : t.onvistaExchangeId;
     else if (t.exchange !== null) ex = t.exchange;
     else ex = '';
@@ -207,8 +207,8 @@ const TransactionDialog = ({
     isValidFloat(transaction.units) &&
     parseFloat(transaction.units) === 0 &&
     Math.abs(parseFloat(transaction.amount)) +
-    Math.abs(parseFloat(transaction.fees)) <
-    0.01;
+      Math.abs(parseFloat(transaction.fees)) <
+      0.01;
 
   return (
     <>
@@ -271,11 +271,11 @@ const TransactionDialog = ({
                 options={
                   stock
                     ? reverse(
-                      sortedUniqBy(
-                        sortBy(stock.exchanges, 'name'),
-                        x => x.name
+                        sortedUniqBy(
+                          sortBy(stock.exchanges, 'name'),
+                          x => x.name
+                        )
                       )
-                    )
                     : []
                 }
                 getOptionLabel={option => {
@@ -297,49 +297,49 @@ const TransactionDialog = ({
                     {...params}
                     label="Handelsplatz"
                     fullWidth
-                  // error={
-                  //   findExchangeByName(stock, transaction.exchange) === null
-                  // }
+                    // error={
+                    //   findExchangeByName(stock, transaction.exchange) === null
+                    // }
                   />
                 )}
               />
             </Grid>
             {(accounts.items.length > 1 ||
               findAccountByName(accounts, transaction.account) === null) && (
-                <Grid item xs={12}>
-                  <Autocomplete
-                    freeSolo
-                    options={accounts.items}
-                    getOptionLabel={option => {
-                      if (typeof option === 'string') return option;
-                      return option.name;
-                    }}
-                    autoComplete
-                    openOnFocus
-                    onInputChange={(e, v) =>
-                      setTransaction({
-                        ...transaction,
-                        account: v,
-                      })
-                    }
-                    value={transaction.account || ''}
-                    renderInput={params => (
-                      <TextField
-                        // eslint-disable-next-line react/jsx-props-no-spreading
-                        {...params}
-                        label="Depot"
-                        fullWidth
-                        error={
-                          triedToSave &&
-                          findAccountByName(accounts, transaction.account) ===
+              <Grid item xs={12}>
+                <Autocomplete
+                  freeSolo
+                  options={accounts.items}
+                  getOptionLabel={option => {
+                    if (typeof option === 'string') return option;
+                    return option.name;
+                  }}
+                  autoComplete
+                  openOnFocus
+                  onInputChange={(e, v) =>
+                    setTransaction({
+                      ...transaction,
+                      account: v,
+                    })
+                  }
+                  value={transaction.account || ''}
+                  renderInput={params => (
+                    <TextField
+                      // eslint-disable-next-line react/jsx-props-no-spreading
+                      {...params}
+                      label="Depot"
+                      fullWidth
+                      error={
+                        triedToSave &&
+                        findAccountByName(accounts, transaction.account) ===
                           null
-                        }
-                        margin="normal"
-                      />
-                    )}
-                  />
-                </Grid>
-              )}
+                      }
+                      margin="normal"
+                    />
+                  )}
+                />
+              </Grid>
+            )}
             <Grid item xs={12}>
               <DateTimePicker
                 label="Datum"
