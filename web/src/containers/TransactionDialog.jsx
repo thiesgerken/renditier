@@ -60,8 +60,8 @@ const TransactionDialog = ({
   };
 
   const getExchangeName = ex => {
-    if (ex === '') return '';
-    return ex.name || null;
+    if (!ex || ex === '') return '';
+    return ex.name || '';
   };
 
   const isValidFloat = s => {
