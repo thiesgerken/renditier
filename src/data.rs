@@ -87,7 +87,7 @@ pub async fn fetch_historical(
     for s in stocks {
         let now = Utc::now();
 
-        for ex in exs.iter().filter(|&e| e.isin == s.isin).take(5) {
+        for ex in exs.iter().filter(|&e| e.isin == s.isin).take(6) {
             let latest_datum = historical_prices::table
                 .filter(historical_prices::dsl::onvista_record_id.eq(ex.onvista_record_id))
                 .order_by(historical_prices::dsl::date.asc())
@@ -149,7 +149,7 @@ pub async fn fetch_historical(
 
 pub fn exchange_comparison(a: &StockExchange, b: &StockExchange) -> std::cmp::Ordering {
     let exchange_favorites = [
-        "GER", "QUO", "FRA", "LUSG", "STU", "HAM", "MUN", "BER", "GAT", "DUS",
+        "GER", "FRA", "GAT", "QUO", "LUSG", "STU", "HAM", "MUN", "BER", "DUS",
     ];
 
     let idx_a = exchange_favorites.iter().position(|&e| a.code == e);
