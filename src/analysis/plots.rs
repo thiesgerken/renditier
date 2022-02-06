@@ -42,7 +42,7 @@ pub struct StockPlotDataPoint {
 #[derive(Deserialize, Serialize)]
 pub struct StockPlot {
     points: Vec<StockPlotDataPoint>,
-    exchange: StockExchange,
+    exchanges: Vec<StockExchange>,
 }
 
 #[derive(PartialEq)]
@@ -405,13 +405,8 @@ pub fn compute_stock_plot(
         }
     }
 
-    // TODO: this is not correct anymore; StockPlot expect one exchange,
-    // but the code has been changed to return prices from multiple exchanges
     Ok(StockPlot {
-        exchange: exs
-            .into_iter()
-            .next()
-            .ok_or("No exchanges found for isin")?,
+        exchanges: exs,
         points: points
             .into_iter()
             .dedup_by(|x, y| {

@@ -87,7 +87,7 @@ pub async fn fetch_historical(
     for s in stocks {
         let now = Utc::now();
 
-        for ex in exs.iter().filter(|&e| e.isin == s.isin).take(6) {
+        for ex in exs.iter().filter(|&e| e.isin == s.isin).take(4) {
             let latest_datum = historical_prices::table
                 .filter(historical_prices::dsl::onvista_record_id.eq(ex.onvista_record_id))
                 .order_by(historical_prices::dsl::date.asc())
