@@ -25,7 +25,7 @@ pub fn build() -> App<'static> {
             Arg::new("fetch")
                 .long("fetch")
                 .help("update realtime and historic data for all stocks"),
-        )        
+        )
         .arg(
             Arg::new("force")
                 .long("force")
@@ -51,8 +51,8 @@ pub fn build() -> App<'static> {
 pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches) {
     let connection = pool.get().unwrap();
 
-    if sub_matches.is_present("fetch") {    
-        let force = sub_matches.is_present("force") ;
+    if sub_matches.is_present("fetch") {
+        let force = sub_matches.is_present("force");
         let now = Utc::now();
         let stocks = stock_infos
             .load::<StockInfo>(&connection)

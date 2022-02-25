@@ -1,7 +1,8 @@
 use crate::models::*;
 use crate::onvista::json_utils::*;
+use crate::onvista::USER_AGENT;
 
-use chrono::{Utc, Local, Date, TimeZone, Datelike};
+use chrono::{Date, Datelike, Local, TimeZone, Utc};
 use reqwest::Response;
 use scraper::{Html, Selector};
 use serde_json::Value;
@@ -43,8 +44,7 @@ pub async fn parse_info(
     let instrument_id =
         get_string(&snapshot["instrument"]["entityValue"]).ok_or("error parsing instrument id")?;
     let wkn = get_string(&snapshot["instrument"]["wkn"]).ok_or("error parsing wkn")?;
-    let title =
-        get_string(&snapshot["instrument"]["name"]).ok_or("error parsing title")?;
+    let title = get_string(&snapshot["instrument"]["name"]).ok_or("error parsing title")?;
     let company =
         get_string(&snapshot["derivativesIssuer"]["name"]).ok_or("error parsing company")?;
 
@@ -60,7 +60,7 @@ pub async fn parse_info(
             wkn,
             onvista_url: url,
             kind: "ETF".to_string(),
-            fonds_type:None,
+            fonds_type: None,
             focus: None,
             company,
             title,
@@ -69,13 +69,13 @@ pub async fn parse_info(
             last_realtime_update: None,
             holdings: None,
             industry_breakdown: None,
-            instrument_breakdown:None,
+            instrument_breakdown: None,
             country_breakdown: None,
             currency_breakdown: None,
             launch_date: None,
             currency: Some(currency),
             management_type: None,
-            payout_type:None,
+            payout_type: None,
             ter: None,
             description: None,
             benchmark_index: None,
@@ -143,8 +143,12 @@ async fn get_data_realtime_exchange(
         onvista_record_id, offset
     );
     debug!("Querying realtime data from {url}");
-    let resp = reqwest::get(url)
-    .await?;
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(url)
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await?;
 
     if !resp.status().is_success() {
         return Err("Data request unsuccessful".into());

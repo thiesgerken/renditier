@@ -1,5 +1,6 @@
 use crate::models::*;
 use crate::onvista::json_utils::*;
+use crate::onvista::USER_AGENT;
 
 use reqwest::Response;
 use scraper::{Html, Selector};
@@ -138,7 +139,12 @@ pub async fn get_data_realtime(stock: &StockInfo) -> Result<Vec<RealtimePrice>, 
         format!("https://www.onvista.de/{}", &stock.onvista_url)
     };
     debug!("Querying realtime data from {}", url);
-    let resp = reqwest::get(&url).await?;
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(url)
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await?;
 
     if !resp.status().is_success() {
         return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
