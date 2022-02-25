@@ -1,4 +1,5 @@
 use crate::models::*;
+use crate::onvista::USER_AGENT;
 
 use chrono::{Local, NaiveDate, NaiveTime, TimeZone, Utc};
 use regex::Regex;
@@ -146,7 +147,12 @@ pub async fn get_data_realtime(
     stock: &StockInfo,
     exchanges: &[StockExchange],
 ) -> Result<Vec<RealtimePrice>, Box<dyn Error>> {
-    let resp = reqwest::get(&format!("https://www.onvista.de{}", &stock.onvista_url)).await?;
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(&format!("https://www.onvista.de{}", &stock.onvista_url))
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await?;
 
     if !resp.status().is_success() {
         return Err("Data request unsuccessful".into());

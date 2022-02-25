@@ -12,9 +12,16 @@ use log::debug;
 use serde_json::Value;
 use std::error::Error;
 
+pub const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64; rv:97.0) Gecko/20100101 Firefox/97.0";
+
 pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
     let params = qstring::QString::new(vec![("searchValue", needle)]);
-    let resp = reqwest::get(&format!("https://www.onvista.de/suche/?{}", params)).await?;
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(&format!("https://www.onvista.de/suche/?{}", params))
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await?;
 
     if !resp.status().is_success() {
         return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
@@ -56,7 +63,12 @@ pub async fn get_data_historical_new(
     let url = format!("https://api.onvista.de/api/v1/instruments/FUND/{}/eod_history?idNotation={}&range=Y5&startDate={}",
   stock.instrument_id.clone().ok_or("ETF without instrument id")?,   onvista_record_id, start.format("%Y-%m-%d"),
        );
-    let resp = reqwest::get(&url).await?;
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(&url)
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await?;
 
     if !resp.status().is_success() {
         return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
@@ -141,7 +153,12 @@ pub async fn get_data_historical(
     };
 
     debug!("{}", url);
-    let resp = reqwest::get(&url).await?;
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(&url)
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await?;
     if !resp.status().is_success() {
         return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
     }
