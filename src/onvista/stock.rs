@@ -56,15 +56,13 @@ pub async fn parse_info(resp: Response) -> Result<(StockInfo, Vec<StockExchange>
 
     // parse realtime data from this page and augment the list of exchanges with codes
     let exchange_names_and_codes = fragment
-        .select(&Selector::parse(".HANDELSPLAETZE tbody > tr").unwrap())
-        .map(|s| parse_exchange_name_and_code(&s))
-        .flatten()
+        .select(&Selector::parse(".HANDELSPLAETZE tbody > tr").unwrap()) // cSpell: disable-line
+        .flat_map(|s| parse_exchange_name_and_code(&s))
         .collect::<Vec<_>>();
 
     let exchanges = fragment
         .select(&Selector::parse("#chartExchangesLayer > ul:nth-child(2) > li > a").unwrap())
-        .map(|s| parse_exchange(&isin, &exchange_names_and_codes, &s))
-        .flatten()
+        .flat_map(|s| parse_exchange(&isin, &exchange_names_and_codes, &s))
         .collect::<Vec<_>>();
 
     Ok((
@@ -161,7 +159,7 @@ pub async fn get_data_realtime(
     let body = resp.text().await?;
     let fragment = Html::parse_document(&body);
 
-    let tr_selector = Selector::parse(".HANDELSPLAETZE tbody > tr").unwrap();
+    let tr_selector = Selector::parse(".HANDELSPLAETZE tbody > tr").unwrap(); // cSpell: disable-line
     let rows = fragment.select(&tr_selector);
 
     Ok(rows
@@ -192,8 +190,8 @@ fn parse_realtime_row(
         .trim()
         .split(' ')
         .next()?
-        .replace(".", "")
-        .replace(",", ".")
+        .replace('.', "")
+        .replace(',', ".")
         .parse()
         .ok()?;
 

@@ -168,15 +168,14 @@ pub async fn list(
 }
 
 fn find_index(s: &StockInfo) -> Option<String> {
-    let re = Regex::new(r"(MSCI|iSTOXX|STOXX|S&P|Dow Jones)[^ ]*(:? [^a-z(][\w]*)+").unwrap();
+    let re = Regex::new(r"(MSCI|iSTOXX|STOXX|S&P|Dow Jones)[^ ]*(:? [^a-z(][\w]*)+").unwrap(); // cSpell: disable-line
     s.description
         .as_ref()
-        .map(|desc| {
+        .and_then(|desc| {
             re.find_iter(desc)
                 .map(|m| m.as_str().to_owned())
                 .find(|m| !m.contains("ETF"))
         })
-        .flatten()
 }
 
 #[get("/stocks/<isin>")]
