@@ -10,9 +10,9 @@ steps:
       - yarn run git && yarn test --all && yarn test:lint:js
       - yarn run build && yarn run analyze
 
-steps:
   - name: build-backend
     image: rust:1.63
     commands:
+      - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev
       - cargo build --release
       - cargo test
