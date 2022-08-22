@@ -1,0 +1,18 @@
+kind: pipeline
+name: default
+
+steps:
+  - name: build-frontend
+    image: node:16-bullseye
+    commands:
+      - cd web
+      - yarn install
+      - yarn run git && yarn test --all && yarn test:lint:js
+      - yarn run build && yarn run analyze
+
+steps:
+  - name: build-backend
+    image: rust:1.63
+    commands:
+      - cargo build --release
+      - cargo test

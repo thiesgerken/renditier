@@ -1,4 +1,4 @@
-FROM ubuntu:focal as builder
+FROM debian:bullseye as builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && apt-get dist-upgrade -y \
@@ -22,7 +22,7 @@ WORKDIR /build
 RUN cargo build --target=x86_64-unknown-linux-gnu --release
 RUN strip -s target/x86_64-unknown-linux-gnu/release/stockdb
 
-FROM ubuntu:focal
+FROM debian:bullseye-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && apt-get dist-upgrade -y \
