@@ -14,5 +14,9 @@ steps:
     image: rust:1.63
     commands:
       - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev
-      - cargo build --release
       - cargo test
+
+trigger:
+  ref:
+    - refs/heads/main
+    - refs/pull/*/head
