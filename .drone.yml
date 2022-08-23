@@ -18,7 +18,7 @@ steps:
       - name: cache
         path: /tmp/cache
 
-  - name: build-backend
+  - name: test-backend
     image: rust:1.63-bullseye
     commands:
       - export CARGO_HOME=$(pwd)/.cargo/
@@ -29,7 +29,7 @@ steps:
     depends_on:
       - restore-backend-cache
 
-  - name: rebuild-backend-cache
+  - name: retest-backend-cache
     image: meltwater/drone-cache
     pull: true
     settings:
@@ -45,7 +45,7 @@ steps:
       - name: cache
         path: /tmp/cache
     depends_on:
-      - build-backend
+      - test-backend
 
   - name: restore-frontend-cache
     image: meltwater/drone-cache
@@ -63,7 +63,7 @@ steps:
       - name: cache
         path: /tmp/cache
 
-  - name: build-frontend
+  - name: test-frontend
     image: node:16-bullseye
     commands:
       - apt-get update -y && apt-get install git
@@ -75,7 +75,7 @@ steps:
     depends_on:
       - restore-frontend-cache
 
-  - name: rebuild-frontend-cache
+  - name: retest-frontend-cache
     image: meltwater/drone-cache
     pull: true
     settings:
@@ -91,7 +91,7 @@ steps:
       - name: cache
         path: /tmp/cache
     depends_on:
-      - build-frontend
+      - test-frontend
 
 volumes:
   - name: cache
