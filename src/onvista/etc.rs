@@ -206,8 +206,8 @@ fn parse_realtime_row(
 
     let price = record
         .get(1)?
-        .replace(".", "")
-        .replace(",", ".")
+        .replace('.', "")
+        .replace(',', ".")
         .parse()
         .ok()?;
 

@@ -172,7 +172,7 @@ pub async fn get_data_historical(
 
     let headers = rdr.headers()?;
     if headers == vec!["Datum", "Eröffnung", "Hoch", "Tief", "Schluss", "Volumen"]
-        || headers == vec!["Datum", "Eroeffnung", "Hoch", "Tief", "Schluss", "Volumen"]
+        || headers == vec!["Datum", "Eroeffnung", "Hoch", "Tief", "Schluss", "Volumen"]// cSpell: disable-line
     {
         let mut res = Vec::new();
         for s in rdr.records() {
@@ -222,29 +222,29 @@ fn parse_historical_row(
 
     let opening = record
         .get(1)?
-        .replace(".", "")
-        .replace(",", ".")
+        .replace('.', "")
+        .replace(',', ".")
         .parse()
         .ok()?;
     let high = record
         .get(2)?
-        .replace(".", "")
-        .replace(",", ".")
+        .replace('.', "")
+        .replace(',', ".")
         .parse()
         .ok()?;
     let low = record
         .get(3)?
-        .replace(".", "")
-        .replace(",", ".")
+        .replace('.', "")
+        .replace(',', ".")
         .parse()
         .ok()?;
     let closing = record
         .get(4)?
-        .replace(".", "")
-        .replace(",", ".")
+        .replace('.', "")
+        .replace(',', ".")
         .parse()
         .ok()?;
-    let volume = record.get(5)?.replace(".", "").parse().ok()?;
+    let volume = record.get(5)?.replace('.', "").parse().ok()?;
 
     Some(HistoricalPrice {
         date,
@@ -274,26 +274,26 @@ fn parse_historical_row_novol(
 
     let opening = record
         .get(1)?
-        .replace(".", "")
-        .replace(",", ".")
+        .replace('.', "")
+        .replace(',', ".")
         .parse()
         .ok()?;
     let high = record
         .get(3)?
-        .replace(".", "")
-        .replace(",", ".")
+        .replace('.', "")
+        .replace(',', ".")
         .parse()
         .ok()?;
     let low = record
         .get(4)?
-        .replace(".", "")
-        .replace(",", ".")
+        .replace('.', "")
+        .replace(',', ".")
         .parse()
         .ok()?;
     let closing = record
         .get(2)?
-        .replace(".", "")
-        .replace(",", ".")
+        .replace('.', "")
+        .replace(',', ".")
         .parse()
         .ok()?;
 

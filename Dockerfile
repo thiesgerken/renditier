@@ -1,33 +1,43 @@
-FROM ubuntu:focal as builder
+FROM node:16-bullseye as builder-frontend
 
-ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && apt-get dist-upgrade -y \
-  && apt-get install -y --no-install-recommends git ca-certificates curl pkg-config gcc clang make libpq5 libpq-dev libc-dev libssl-dev \
-  && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
-  && apt-get install -y nodejs \
+  && apt-get update -y && apt-get install -y --no-install-recommends git \
   && rm -Rf /var/cache/apt
 
-RUN npm install --global yarn
-RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y
-
-ENV PATH="/root/.cargo/bin:$PATH"
-
-COPY . /build
-
+COPY web /build/web
+COPY .git /build/.git
 WORKDIR /build/web
+
 RUN yarn install
 RUN yarn run build
 
-WORKDIR /build
-RUN cargo build --target=x86_64-unknown-linux-gnu --release
-RUN strip -s target/x86_64-unknown-linux-gnu/release/stockdb
+FROM rust:1.63-bullseye as builder-backend
 
-FROM ubuntu:focal
+RUN apt-get update -y && apt-get dist-upgrade -y \
+  && apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev pkg-config gcc clang \
+  && rm -Rf /var/cache/apt
+
+WORKDIR /build
+
+COPY Cargo.toml .
+COPY Cargo.lock .
+RUN mkdir -p src/bin && touch src/lib.rs && touch src/bin/stockdb.rs && touch src/bin/sandbox.rs && touch src/bin/generate.rs && cargo build --lib --release
+
+COPY --from=builder-frontend /build/web/build ./web/build
+
+COPY src ./src
+COPY migrations ./migrations
+
+RUN touch src/lib.rs && touch src/bin/stockdb.rs && touch src/bin/sandbox.rs && touch src/bin/generate.rs
+RUN cargo build --release
+RUN strip -s target/release/stockdb
+
+FROM debian:bullseye-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get install -y --no-install-recommends ca-certificates libpq5 libssl1.1 \
   && rm -Rf /var/cache/apt
 
-COPY --from=builder /build/target/x86_64-unknown-linux-gnu/release/stockdb /bin/stockdb
+COPY --from=builder-backend /build/target/release/stockdb /bin/stockdb
 CMD stockdb

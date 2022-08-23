@@ -125,7 +125,7 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
     )?;
     let body = std::str::from_utf8(&buffer)?
         .to_owned()
-        .replace("Depot-Nr.", "Depot-Nr.Depot-Nr."); // Lookaheads are not supported by the regex engine
+        .replace("Depot-Nr.", "Depot-Nr.Depot-Nr."); // Look-ahead not supported by the regex engine
     debug!("body of PDF: {}", &body);
 
     let mut ts = Vec::new();
@@ -385,7 +385,7 @@ fn parse_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
 }
 
 fn parse_float(s: &str) -> Result<f64, <f64 as FromStr>::Err> {
-    s.replace(".", "").replace(",", ".").parse()
+    s.replace('.', "").replace(',', ".").parse()
 }
 
 fn replace_exchange(
