@@ -98,7 +98,8 @@ steps:
     settings:
       registry: git.gerken.haus
       repo: thies/stockdb
-      auto_tag: true
+      tags:
+        - ${DRONE_COMMIT_BRANCH}
       force_tag: true
 
 volumes:
