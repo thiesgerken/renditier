@@ -47,7 +47,7 @@ steps:
       - ls vendor
       - pwd
       - ls ~/.cache || true
-      - mkdir -pi ~/.cache
+      - mkdir -p ~/.cache
       - touch ~/.cache/b.txt
 
   - name: rebuild-cache-with-filesystem
