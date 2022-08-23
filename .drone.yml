@@ -32,7 +32,7 @@ steps:
     depends_on:
       - restore-backend-cache
 
-  - name: retest-backend-cache
+  - name: rebuild-backend-cache
     image: meltwater/drone-cache
     pull: true
     settings:
@@ -81,7 +81,7 @@ steps:
     depends_on:
       - restore-frontend-cache
 
-  - name: retest-frontend-cache
+  - name: rebuild-frontend-cache
     image: meltwater/drone-cache
     pull: true
     settings:
