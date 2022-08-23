@@ -106,6 +106,10 @@ steps:
       username: thies
       password:
         from_secret: gitea_token
+    when:
+      branch:
+        - main
+        - devel
 
 volumes:
   - name: cache
@@ -115,4 +119,5 @@ volumes:
 trigger:
   ref:
     - refs/heads/main
+    - refs/heads/devel
     - refs/pull/*/head
