@@ -16,7 +16,7 @@ steps:
       - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev
       - cargo test
 
-trigger:
-  ref:
-    - refs/heads/main
-    - refs/pull/*/head
+# trigger:
+#   ref:
+#     - refs/heads/main
+#     - refs/pull/*/head
