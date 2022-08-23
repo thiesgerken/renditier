@@ -34,7 +34,7 @@ pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), B
         etf::parse_info(url, resp).await
     } else if url.starts_with("https://www.onvista.de/aktien/") {
         debug!("recognized {} as a stock", needle);
-        stock::parse_info(resp).await
+        stock::parse_info(url, resp).await
     } else if url.starts_with("https://www.onvista.de/derivate/ETCs/") {
         debug!("recognized {} as an ETC or ETN", needle);
         etc::parse_info(url, resp).await
@@ -50,7 +50,7 @@ pub async fn get_data_realtime(
     match stock.kind.as_str() {
         "ETF" => etf::get_data_realtime(stock).await,
         "ETC" | "ETN" => etc::get_data_realtime(exchanges).await,
-        "Aktie" => stock::get_data_realtime(stock, exchanges).await,
+        "Aktie" => stock::get_data_realtime(stock).await,
         s => Err(format!("unrecognized stock type: {}", s).into()),
     }
 }
@@ -63,6 +63,7 @@ pub async fn get_data_historical_new(
     let url = format!("https://api.onvista.de/api/v1/instruments/FUND/{}/eod_history?idNotation={}&range=Y5&startDate={}",
   stock.instrument_id.clone().ok_or("ETF without instrument id")?,   onvista_record_id, start.format("%Y-%m-%d"),
        );
+    debug!("Making request to {url:?}");
     let client = reqwest::Client::new();
     let resp = client
         .get(&url)
@@ -138,19 +139,13 @@ pub async fn get_data_historical(
     onvista_record_id: i32,
     start: Date<Local>,
 ) -> Result<Vec<HistoricalPrice>, Box<dyn Error>> {
-    if stock.kind == "ETF" {
+    if stock.kind == "ETF" || stock.kind == "Aktie" {
         return get_data_historical_new(stock, onvista_record_id, start).await;
     }
 
-    let url = if stock.kind == "Aktie" {
-        format!("https://www.onvista.de/onvista/boxes/historicalquote/export.csv?interval=Y5&dateStart={}&notationId={}",
+    let url =        format!("https://www.onvista.de/derivative/snapshotHistoryCSV?kag=false&timeSpan=5Y&datetimeTzStartRange={}&idNotation={}&codeResolution=1D",
         start.format("%d.%m.%Y"),
-        onvista_record_id)
-    } else {
-        format!("https://www.onvista.de/derivative/snapshotHistoryCSV?kag=false&timeSpan=5Y&datetimeTzStartRange={}&idNotation={}&codeResolution=1D",
-        start.format("%d.%m.%Y"),
-        onvista_record_id)
-    };
+        onvista_record_id);
 
     debug!("{}", url);
     let client = reqwest::Client::new();
@@ -313,18 +308,117 @@ fn parse_historical_row_novol(
 mod tests {
     use super::*;
 
-    macro_rules! aw {
-        ($e:expr) => {
-            tokio_test::block_on($e)
-        };
-    }
+    use chrono::Duration;
+    use test_log::test;
 
-    #[test]
-    fn test_info() {
-        let (info, exs) = aw!(get_info("DE0007164600")).unwrap();
+    #[test(tokio::test)]
+    async fn test_stock_info() {
+        let (info, exs) = get_info("DE0007164600").await.unwrap();
 
         log::info!("{info:?}");
+        log::info!("{exs:?}");
 
         assert_eq!(info.isin, "DE0007164600");
+        assert_ne!(exs.len(), 0);
+    }
+
+    #[test(tokio::test)]
+    async fn test_stock_realtime() {
+        let (info, exs) = get_info("DE0007164600").await.unwrap();
+
+        let data = get_data_realtime(&info, &exs).await.unwrap();
+        assert_ne!(data.len(), 0)
+    }
+
+    #[test(tokio::test)]
+    async fn test_stock_historical() {
+        let (info, exs) = get_info("DE0007164600").await.unwrap();
+
+        let data = get_data_historical(
+            &info,
+            exs[0].onvista_record_id,
+            Local::today()
+                .checked_sub_signed(Duration::weeks(2))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        // (this might actually fail, the exchange could be inactive for the stock)
+        assert_ne!(data.len(), 0);
+    }
+
+    #[test(tokio::test)]
+    async fn test_etf_info() {
+        let (info, exs) = get_info("IE00BK5BQT80").await.unwrap();
+
+        log::info!("{info:?}");
+        log::info!("{exs:?}");
+
+        assert_eq!(info.isin, "IE00BK5BQT80");
+        assert_ne!(exs.len(), 0);
+    }
+
+    #[test(tokio::test)]
+    async fn test_etf_realtime() {
+        let (info, exs) = get_info("IE00BK5BQT80").await.unwrap();
+
+        let data = get_data_realtime(&info, &exs).await.unwrap();
+        assert_ne!(data.len(), 0)
+    }
+
+    #[test(tokio::test)]
+    async fn test_etf_historical() {
+        let (info, exs) = get_info("IE00BK5BQT80").await.unwrap();
+
+        let data = get_data_historical(
+            &info,
+            exs[0].onvista_record_id,
+            Local::today()
+                .checked_sub_signed(Duration::weeks(2))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        // (this might actually fail, the exchange could be inactive for the stock)
+        assert_ne!(data.len(), 0);
+    }
+
+    #[test(tokio::test)]
+    async fn test_etc_info() {
+        let (info, exs) = get_info("DE000EWG2LD7").await.unwrap();
+
+        log::info!("{info:?}");
+        log::info!("{exs:?}");
+
+        assert_eq!(info.isin, "DE000EWG2LD7");
+        assert_ne!(exs.len(), 0);
+    }
+
+    #[test(tokio::test)]
+    async fn test_etc_realtime() {
+        let (info, exs) = get_info("DE000EWG2LD7").await.unwrap();
+
+        let data = get_data_realtime(&info, &exs).await.unwrap();
+        assert_ne!(data.len(), 0)
+    }
+
+    #[test(tokio::test)]
+    async fn test_etc_historical() {
+        let (info, exs) = get_info("DE000EWG2LD7").await.unwrap();
+
+        let data = get_data_historical(
+            &info,
+            exs[0].onvista_record_id,
+            Local::today()
+                .checked_sub_signed(Duration::weeks(2))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        // (this might actually fail, the exchange could be inactive for the stock)
+        assert_ne!(data.len(), 0);
     }
 }
