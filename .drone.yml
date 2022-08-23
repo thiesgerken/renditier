@@ -11,12 +11,6 @@
 #       - yarn run git && yarn test --all && yarn test:lint:js
 #       - yarn run build && yarn run analyze
 
-#   - name: build-backend
-#     image: rust:1.63
-#     commands:
-#       - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev
-#       - cargo test
-
 kind: pipeline
 name: default
 
@@ -31,24 +25,16 @@ steps:
       archive_format: "tar"
       filesystem_cache_root: "/tmp/cache"
       mount:
-        - "vendor"
-        - "/root/.cache"
+        - "target"
     volumes:
       - name: cache
         path: /tmp/cache
 
-  - name: build
-    image: ubuntu:jammy
-    pull: true
+  - name: build-backend
+    image: rust:1.63
     commands:
-      - ls vendor || true
-      - mkdir -p vendor
-      - touch vendor/a.txt
-      - ls vendor
-      - pwd
-      - ls ~/.cache || true
-      - mkdir -p ~/.cache
-      - touch ~/.cache/b.txt
+      - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev
+      - cargo test
 
   - name: rebuild-cache-with-filesystem
     image: meltwater/drone-cache
@@ -60,8 +46,7 @@ steps:
       archive_format: "tar"
       filesystem_cache_root: "/tmp/cache"
       mount:
-        - "vendor"
-        - "/root/.cache"
+        - "target"
     volumes:
       - name: cache
         path: /tmp/cache
@@ -74,5 +59,4 @@ volumes:
 trigger:
   ref:
     - refs/heads/main
-    # - refs/heads/**
     - refs/pull/*/head
