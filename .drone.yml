@@ -26,6 +26,7 @@ steps:
       filesystem_cache_root: "/tmp/cache"
       mount:
         - "target"
+        - "cargo"
     volumes:
       - name: cache
         path: /tmp/cache
@@ -33,7 +34,8 @@ steps:
   - name: build-backend
     image: rust:1.63
     commands:
-      - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev
+      - export CARGO_HOME=$(pwd)/cargo/
+      - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev pkg-config gcc clang
       - cargo test
 
   - name: rebuild-cache-with-filesystem
@@ -47,6 +49,7 @@ steps:
       filesystem_cache_root: "/tmp/cache"
       mount:
         - "target"
+        - "cargo"
     volumes:
       - name: cache
         path: /tmp/cache
