@@ -22,7 +22,7 @@ steps:
     image: rust:1.63-bullseye
     commands:
       - export CARGO_HOME=$(pwd)/.cargo/
-      - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev pkg-config gcc clang
+      - apt-get update -y && apt-get install -y --no-install-recommends libssl-dev gcc clang
       - mkdir -p web/build
       - touch web/build/index.html
       - cargo test
