@@ -26,6 +26,8 @@ steps:
       - mkdir -p web/build
       - touch web/build/index.html
       - cargo test
+    depends_on:
+      - restore-backend-cache
 
   - name: rebuild-backend-cache
     image: meltwater/drone-cache
@@ -42,6 +44,8 @@ steps:
     volumes:
       - name: cache
         path: /tmp/cache
+    depends_on:
+      - build-backend
 
   - name: restore-frontend-cache
     image: meltwater/drone-cache
@@ -68,6 +72,8 @@ steps:
       - yarn install
       - yarn run git && yarn test --all && yarn test:lint:js
       - yarn run build && yarn run analyze
+    depends_on:
+      - restore-frontend-cache
 
   - name: rebuild-frontend-cache
     image: meltwater/drone-cache
@@ -84,6 +90,8 @@ steps:
     volumes:
       - name: cache
         path: /tmp/cache
+    depends_on:
+      - build-frontend
 
 volumes:
   - name: cache
