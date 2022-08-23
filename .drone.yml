@@ -1,22 +1,65 @@
+# kind: pipeline
+# name: default
+
+# steps:
+#   - name: build-frontend
+#     image: node:16-bullseye
+#     commands:
+#       - apt-get update -y && apt-get install git
+#       - cd web
+#       - yarn install
+#       - yarn run git && yarn test --all && yarn test:lint:js
+#       - yarn run build && yarn run analyze
+
+#   - name: build-backend
+#     image: rust:1.63
+#     commands:
+#       - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev
+#       - cargo test
+
 kind: pipeline
 name: default
 
 steps:
-  - name: build-frontend
-    image: node:16-bullseye
-    commands:
-      - cd web
-      - yarn install
-      - yarn run git && yarn test --all && yarn test:lint:js
-      - yarn run build && yarn run analyze
+  - name: restore-cache-with-filesystem
+    image: meltwater/drone-cache
+    pull: true
+    settings:
+      backend: "filesystem"
+      restore: true
+      cache_key: "volume"
+      archive_format: "tar"
+      filesystem_cache_root: "/tmp/cache"
+      mount:
+        - "vendor"
+    volumes:
+      - name: cache
+        path: /tmp/cache
 
-  - name: build-backend
-    image: rust:1.63
+  - name: build
+    image: ubuntu:jammy-slim
+    pull: true
     commands:
-      - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev
-      - cargo test
+      - ls vendor
+      - touch vendor/a.txt
+      - ls vendor
 
-# trigger:
-#   ref:
-#     - refs/heads/main
-#     - refs/pull/*/head
+  - name: rebuild-cache-with-filesystem
+    image: meltwater/drone-cache
+    pull: true
+    settings:
+      backend: "filesystem"
+      rebuild: true
+      cache_key: "volume"
+      archive_format: "tar"
+      filesystem_cache_root: "/tmp/cache"
+      mount:
+        - "vendor"
+    volumes:
+      - name: cache
+        path: /tmp/cache
+
+volumes:
+  - name: cache
+    host:
+      path: /var/lib/cache
