@@ -32,7 +32,7 @@ steps:
       filesystem_cache_root: "/tmp/cache"
       mount:
         - "vendor"
-        - "/home/.cache"
+        - "~/.cache"
     volumes:
       - name: cache
         path: /tmp/cache
@@ -61,7 +61,7 @@ steps:
       filesystem_cache_root: "/tmp/cache"
       mount:
         - "vendor"
-        - "/home/.cache"
+        - "~/.cache"
     volumes:
       - name: cache
         path: /tmp/cache
