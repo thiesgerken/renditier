@@ -26,6 +26,9 @@ steps:
       - mkdir -p web/build
       - touch web/build/index.html
       - cargo test
+    when:
+      event:
+        - pull_request
     depends_on:
       - restore-backend-cache
 
@@ -72,6 +75,9 @@ steps:
       - yarn install
       - yarn run git && yarn test --all && yarn test:lint:js
       - yarn run build && yarn run analyze
+    when:
+      event:
+        - pull_request
     depends_on:
       - restore-frontend-cache
 
@@ -107,6 +113,8 @@ steps:
       password:
         from_secret: gitea_token
     when:
+      event:
+        - push
       branch:
         - main
         - devel
