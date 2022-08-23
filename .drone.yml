@@ -21,7 +21,7 @@ steps:
     settings:
       backend: "filesystem"
       restore: true
-      cache_key: "volume"
+      cache_key: "backend"
       archive_format: "tar"
       filesystem_cache_root: "/tmp/cache"
       mount:
@@ -36,6 +36,8 @@ steps:
     commands:
       - export CARGO_HOME=$(pwd)/cargo/
       - apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev pkg-config gcc clang
+      - mkdir -p web/build
+      - touch web/build/index.html
       - cargo test
 
   - name: rebuild-cache-with-filesystem
@@ -44,7 +46,7 @@ steps:
     settings:
       backend: "filesystem"
       rebuild: true
-      cache_key: "volume"
+      cache_key: "backend"
       archive_format: "tar"
       filesystem_cache_root: "/tmp/cache"
       mount:
