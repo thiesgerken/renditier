@@ -32,6 +32,7 @@ steps:
       filesystem_cache_root: "/tmp/cache"
       mount:
         - "vendor"
+        - "/home/.cache"
     volumes:
       - name: cache
         path: /tmp/cache
@@ -44,6 +45,9 @@ steps:
       - mkdir -p vendor
       - touch vendor/a.txt
       - ls vendor
+      - pwd
+      - ls ~/.cache || true
+      - touch ~/.cache/b.txt
 
   - name: rebuild-cache-with-filesystem
     image: meltwater/drone-cache
@@ -56,6 +60,7 @@ steps:
       filesystem_cache_root: "/tmp/cache"
       mount:
         - "vendor"
+        - "/home/.cache"
     volumes:
       - name: cache
         path: /tmp/cache
