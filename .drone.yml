@@ -37,7 +37,7 @@ steps:
         path: /tmp/cache
 
   - name: build
-    image: ubuntu:jammy-slim
+    image: ubuntu:jammy
     pull: true
     commands:
       - ls vendor
