@@ -11,7 +11,6 @@ pub async fn parse_info(
     url: String,
     resp: Response,
 ) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
-    // scope is needed to fix problems with async/.await and non-sendable borrows
     let body = resp.text().await?;
     let fragment = Html::parse_document(&body);
 
