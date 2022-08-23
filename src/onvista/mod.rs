@@ -172,7 +172,8 @@ pub async fn get_data_historical(
 
     let headers = rdr.headers()?;
     if headers == vec!["Datum", "Eröffnung", "Hoch", "Tief", "Schluss", "Volumen"]
-        || headers == vec!["Datum", "Eroeffnung", "Hoch", "Tief", "Schluss", "Volumen"]// cSpell: disable-line
+        || headers == vec!["Datum", "Eroeffnung", "Hoch", "Tief", "Schluss", "Volumen"]
+    // cSpell: disable-line
     {
         let mut res = Vec::new();
         for s in rdr.records() {
@@ -306,4 +307,24 @@ fn parse_historical_row_novol(
         volume: 0,
         onvista_record_id,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! aw {
+        ($e:expr) => {
+            tokio_test::block_on($e)
+        };
+    }
+
+    #[test]
+    fn test_info() {
+        let (info, exs) = aw!(get_info("DE0007164600")).unwrap();
+
+        log::info!("{info:?}");
+
+        assert_eq!(info.isin, "DE0007164600");
+    }
 }
