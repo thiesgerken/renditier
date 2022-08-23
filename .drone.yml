@@ -101,6 +101,9 @@ steps:
       tags:
         - ${DRONE_COMMIT_BRANCH}
       force_tag: true
+      username: thies
+      password:
+        from_secret: gitea_token
 
 volumes:
   - name: cache
