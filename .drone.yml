@@ -2,96 +2,103 @@ kind: pipeline
 name: default
 
 steps:
-  - name: restore-backend-cache
-    image: meltwater/drone-cache
-    pull: true
+  # - name: restore-backend-cache
+  #   image: meltwater/drone-cache
+  #   pull: true
+  #   settings:
+  #     backend: "filesystem"
+  #     restore: true
+  #     cache_key: "backend"
+  #     archive_format: "tar"
+  #     filesystem_cache_root: "/tmp/cache"
+  #     mount:
+  #       - "target"
+  #       - ".cargo"
+  #   volumes:
+  #     - name: cache
+  #       path: /tmp/cache
+
+  # - name: test-backend
+  #   image: rust:1.63-bullseye
+  #   commands:
+  #     - export CARGO_HOME=$(pwd)/.cargo/
+  #     - apt-get update -y && apt-get install -y --no-install-recommends libssl-dev gcc clang
+  #     - mkdir -p web/build
+  #     - touch web/build/index.html
+  #     - cargo test
+  #   depends_on:
+  #     - restore-backend-cache
+
+  # - name: retest-backend-cache
+  #   image: meltwater/drone-cache
+  #   pull: true
+  #   settings:
+  #     backend: "filesystem"
+  #     rebuild: true
+  #     cache_key: "backend"
+  #     archive_format: "tar"
+  #     filesystem_cache_root: "/tmp/cache"
+  #     mount:
+  #       - "target"
+  #       - ".cargo"
+  #   volumes:
+  #     - name: cache
+  #       path: /tmp/cache
+  #   depends_on:
+  #     - test-backend
+
+  # - name: restore-frontend-cache
+  #   image: meltwater/drone-cache
+  #   pull: true
+  #   settings:
+  #     backend: "filesystem"
+  #     restore: true
+  #     cache_key: "frontend"
+  #     archive_format: "tar"
+  #     filesystem_cache_root: "/tmp/cache"
+  #     mount:
+  #       - "web/node_modules"
+  #       - "web/.yarn"
+  #   volumes:
+  #     - name: cache
+  #       path: /tmp/cache
+
+  # - name: test-frontend
+  #   image: node:16-bullseye
+  #   commands:
+  #     - apt-get update -y && apt-get install git
+  #     - cd web
+  #     - export YARN_CACHE_FOLDER=$(pwd)/.yarn
+  #     - yarn install
+  #     - yarn run git && yarn test --all && yarn test:lint:js
+  #     - yarn run build && yarn run analyze
+  #   depends_on:
+  #     - restore-frontend-cache
+
+  # - name: retest-frontend-cache
+  #   image: meltwater/drone-cache
+  #   pull: true
+  #   settings:
+  #     backend: "filesystem"
+  #     rebuild: true
+  #     cache_key: "frontend"
+  #     archive_format: "tar"
+  #     filesystem_cache_root: "/tmp/cache"
+  #     mount:
+  #       - "web/node_modules"
+  #       - "web/.yarn"
+  #   volumes:
+  #     - name: cache
+  #       path: /tmp/cache
+  #   depends_on:
+  #     - test-frontend
+
+  - name: build-docker-image
+    image: plugins/docker
     settings:
-      backend: "filesystem"
-      restore: true
-      cache_key: "backend"
-      archive_format: "tar"
-      filesystem_cache_root: "/tmp/cache"
-      mount:
-        - "target"
-        - ".cargo"
-    volumes:
-      - name: cache
-        path: /tmp/cache
-
-  - name: test-backend
-    image: rust:1.63-bullseye
-    commands:
-      - export CARGO_HOME=$(pwd)/.cargo/
-      - apt-get update -y && apt-get install -y --no-install-recommends libssl-dev gcc clang
-      - mkdir -p web/build
-      - touch web/build/index.html
-      - cargo test
-    depends_on:
-      - restore-backend-cache
-
-  - name: retest-backend-cache
-    image: meltwater/drone-cache
-    pull: true
-    settings:
-      backend: "filesystem"
-      rebuild: true
-      cache_key: "backend"
-      archive_format: "tar"
-      filesystem_cache_root: "/tmp/cache"
-      mount:
-        - "target"
-        - ".cargo"
-    volumes:
-      - name: cache
-        path: /tmp/cache
-    depends_on:
-      - test-backend
-
-  - name: restore-frontend-cache
-    image: meltwater/drone-cache
-    pull: true
-    settings:
-      backend: "filesystem"
-      restore: true
-      cache_key: "frontend"
-      archive_format: "tar"
-      filesystem_cache_root: "/tmp/cache"
-      mount:
-        - "web/node_modules"
-        - "web/.yarn"
-    volumes:
-      - name: cache
-        path: /tmp/cache
-
-  - name: test-frontend
-    image: node:16-bullseye
-    commands:
-      - apt-get update -y && apt-get install git
-      - cd web
-      - export YARN_CACHE_FOLDER=$(pwd)/.yarn
-      - yarn install
-      - yarn run git && yarn test --all && yarn test:lint:js
-      - yarn run build && yarn run analyze
-    depends_on:
-      - restore-frontend-cache
-
-  - name: retest-frontend-cache
-    image: meltwater/drone-cache
-    pull: true
-    settings:
-      backend: "filesystem"
-      rebuild: true
-      cache_key: "frontend"
-      archive_format: "tar"
-      filesystem_cache_root: "/tmp/cache"
-      mount:
-        - "web/node_modules"
-        - "web/.yarn"
-    volumes:
-      - name: cache
-        path: /tmp/cache
-    depends_on:
-      - test-frontend
+      registry: git.gerken.haus
+      auto_tag: true
+      force_tag: true
 
 volumes:
   - name: cache
