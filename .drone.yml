@@ -40,7 +40,7 @@ steps:
     image: ubuntu:jammy
     pull: true
     commands:
-      - ls vendor
+      - ls vendor || true
       - touch vendor/a.txt
       - ls vendor
 
@@ -63,3 +63,9 @@ volumes:
   - name: cache
     host:
       path: /var/lib/cache
+
+trigger:
+  ref:
+  - refs/heads/main
+  # - refs/heads/**
+  - refs/pull/*/head
