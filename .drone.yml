@@ -97,6 +97,7 @@ steps:
     image: plugins/docker
     settings:
       registry: git.gerken.haus
+      repo: thies/stockdb
       auto_tag: true
       force_tag: true
 
