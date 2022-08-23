@@ -96,8 +96,8 @@ steps:
   - name: build-docker-image
     image: plugins/docker
     settings:
-      registry: https://git.gerken.haus
-      repo: thies/stockdb
+      registry: git.gerken.haus
+      repo: git.gerken.haus/thies/stockdb
       tags:
         - ${DRONE_COMMIT_BRANCH}
       force_tag: true
