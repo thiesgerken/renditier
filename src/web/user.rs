@@ -40,13 +40,28 @@ impl<'r> FromRequest<'r> for UserId {
     }
 }
 
+pub struct OptionalUserId(Option<UserId>);
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for OptionalUserId {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        match UserId::from_request(request).await {
+            Outcome::Success(id) => Outcome::Success(OptionalUserId(Some(id))),
+            _ => Outcome::Success(OptionalUserId(None)),
+        }
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserInfo {
-    id: i32,
-    name: String,
-    full_name: String,
-    application_server_key: String,
+    id: Option<i32>,
+    name: Option<String>,
+    full_name: Option<String>,
+    application_server_key: Option<String>,
+    redirect: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -59,10 +74,11 @@ pub struct LoginData {
 impl UserInfo {
     pub fn new(user: User, application_server_key: String) -> Self {
         Self {
-            id: user.id,
-            name: user.name,
-            full_name: user.full_name,
-            application_server_key,
+            id: Some(user.id),
+            name: Some(user.name),
+            full_name: Some(user.full_name),
+            application_server_key: Some(application_server_key),
+            redirect: None,
         }
     }
 }
@@ -70,20 +86,41 @@ impl UserInfo {
 #[get("/user")]
 pub async fn info(
     config: &State<Config>,
-    uid: UserId,
+    uid: OptionalUserId,
     connection: DbConn,
-) -> Option<Json<UserInfo>> {
-    let key = config.application_server_key.clone();
+) -> (Status, Option<Json<UserInfo>>) {
+    if let Some(uid) = uid.0 {
+        let key = config.application_server_key.clone();
 
-    connection
-        .run(move |c| {
-            users::table
-                .find(*uid)
-                .first(c)
-                .map(|u| Json(UserInfo::new(u, key)))
-                .ok()
-        })
-        .await
+        let info = connection
+            .run(move |c| {
+                users::table
+                    .find(*uid)
+                    .first(c)
+                    .map(|u| Json(UserInfo::new(u, key)))
+                    .ok()
+            })
+            .await;
+        if info.is_some() {
+            (Status::Ok, info)
+        } else {
+            (Status::Forbidden, None)
+        }
+    } else {
+        (
+            Status::Unauthorized,
+            Some(Json(UserInfo {
+                id: None,
+                name: None,
+                full_name: None,
+                application_server_key: None,
+                redirect: Some(
+                    "https://auth.gerken.haus/?rd=https%3A%2F%2Fstocks.gerken.haus%2F&amp;rm=GET"
+                        .to_owned(), // TODO: replace with configured redirect
+                ),
+            })),
+        )
+    }
 }
 
 #[get("/user/logout")]
