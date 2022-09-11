@@ -21,6 +21,8 @@ pub struct Config {
     pub log_level: LogLevel,
     pub database_url: String,
     pub application_server_key: String,
+    pub authentication_redirect: Option<String>,
+    pub trusted_header_authentication: bool,
 }
 
 pub async fn handle(config: Config) {

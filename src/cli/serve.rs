@@ -49,6 +49,12 @@ pub struct Config {
     pub port: i64,
     pub address: String,
     pub application_server_key: String, // for push notifications
+    // if this is set to Some value, then the client will be instructed to redirect to this page.
+    // should be used with trusted_header_authentication
+    pub authentication_redirect: Option<String>,
+    // server will trust the username that is present in the HTTP header.
+    // only use this behind a reverse proxy that properly manages this header!
+    pub trusted_header_authentication: bool,
 }
 
 impl Default for Config {
@@ -58,6 +64,8 @@ impl Default for Config {
             port: 8383,
             address: "127.0.0.1".into(),
             application_server_key: String::new(),
+            authentication_redirect: None,
+            trusted_header_authentication: false,
         }
     }
 }
@@ -205,6 +213,8 @@ pub async fn handle(
         log_level: level,
         database_url: database,
         application_server_key: config.application_server_key,
+        trusted_header_authentication: config.trusted_header_authentication,
+        authentication_redirect: config.authentication_redirect,
     })
     .await;
 }

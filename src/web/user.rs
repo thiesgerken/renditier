@@ -54,6 +54,25 @@ impl<'r> FromRequest<'r> for OptionalUserId {
     }
 }
 
+pub struct TrustedHeaderSSO {
+    user_name: Option<String>,
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for TrustedHeaderSSO {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let user_name = request.headers().get_one("Remote-User");
+        match user_name {
+            Some(user_name) => Outcome::Success(TrustedHeaderSSO {
+                user_name: Some(user_name.to_owned()),
+            }),
+            None => Outcome::Success(TrustedHeaderSSO { user_name: None }),
+        }
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserInfo {
@@ -87,6 +106,8 @@ impl UserInfo {
 pub async fn info(
     config: &State<Config>,
     uid: OptionalUserId,
+    trusted_header: TrustedHeaderSSO,
+    cookies: &CookieJar<'_>,
     connection: DbConn,
 ) -> (Status, Option<Json<UserInfo>>) {
     if let Some(uid) = uid.0 {
@@ -102,25 +123,53 @@ pub async fn info(
             })
             .await;
         if info.is_some() {
-            (Status::Ok, info)
+            return (Status::Ok, info);
         } else {
-            (Status::Forbidden, None)
+            return (Status::Forbidden, None);
         }
-    } else {
-        (
-            Status::Unauthorized,
-            Some(Json(UserInfo {
-                id: None,
-                name: None,
-                full_name: None,
-                application_server_key: None,
-                redirect: Some(
-                    "https://auth.gerken.haus/?rd=https%3A%2F%2Fstocks.gerken.haus%2F&amp;rm=GET"
-                        .to_owned(), // TODO: replace with configured redirect
-                ),
-            })),
-        )
     }
+
+    if config.trusted_header_authentication {
+        if let Some(user_name) = trusted_header.user_name {
+            use crate::schema::users::dsl::*;
+            let uname = user_name.clone();
+            let u: Result<User, _> = connection
+                .run(|c| users.filter(name.eq(uname)).first(c))
+                .await;
+
+            if let Ok(u) = u {
+                info!(
+                    "Successful login with username from trusted header: '{}'",
+                    &user_name
+                );
+                cookies.add_private(Cookie::new("user_id", u.id.to_string()));
+
+                return (
+                    Status::Ok,
+                    Some(Json(UserInfo::new(
+                        u,
+                        config.application_server_key.clone(),
+                    ))),
+                );
+            } else {
+                warn!(
+                "Attempt to login with non-existing username via trusted header: '{}'; ignoring.",
+                &user_name
+            );
+            }
+        }
+    }
+
+    (
+        Status::Unauthorized,
+        Some(Json(UserInfo {
+            id: None,
+            name: None,
+            full_name: None,
+            application_server_key: None,
+            redirect: config.authentication_redirect.clone(),
+        })),
+    )
 }
 
 #[get("/user/logout")]
