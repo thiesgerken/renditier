@@ -39,7 +39,7 @@ export const login = (userName, password) => dispatch => {
     body: JSON.stringify({ userName, password }),
   })
     .then(res => {
-      if (!res.ok) throw Error(res.status.toString());
+      if (!res.ok) throw new Error(res.status.toString());
       return res.json();
     })
     .then(res => {
@@ -54,11 +54,14 @@ export const login = (userName, password) => dispatch => {
 export const checkLogin = () => dispatch =>
   fetch('/api/user')
     .then(res => {
-      if (!res.ok) throw Error(res.status.toString());
       return res.json();
     })
     .then(res => {
-      if (res.error) throw res.error;
+      if (res.redirect) {
+        window.location.replace(res.redirect);
+      }
+
+      if (!res.id && !res.name) throw new Error(res);
 
       dispatch(loginSuccess(res));
       dispatch(subscribe());
