@@ -178,8 +178,8 @@ pub async fn get_data_realtime(stock: &StockInfo) -> Result<Vec<RealtimePrice>, 
 fn parse_exchange_price(s: &Value) -> Option<RealtimePrice> {
     // let record_id = get_string(&s["idInstrument"])?.parse().ok()?;
     let record_id = get_i64(&s["market"]["idNotation"])? as i32;
-    let price = get_f64(&s["last"])?;
-    let date = get_timestamp(&s["datetimeLast"])?;
+    let price = get_f64(&s["last"]).or_else(|| get_f64(&s["bid"]))?;
+    let date = get_timestamp(&s["datetimeLast"]).or_else(|| get_timestamp(&s["datetimeBid"]))?;
 
     Some(RealtimePrice {
         onvista_record_id: record_id,
