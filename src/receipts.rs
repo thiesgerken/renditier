@@ -67,7 +67,7 @@ pub fn parse_mem(
         .map(|t| replace_exchange(&exs, t))
         .collect::<Vec<_>>();
 
-    for mut t in ts.iter_mut() {
+    for t in ts.iter_mut() {
         let account = accs
             .iter()
             .find(|a| {
@@ -118,10 +118,7 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
 
     pdf_extract::output_doc(
         &doc,
-        Box::new(pdf_extract::PlainTextOutput::new(
-            &mut buffer as &mut dyn std::io::Write,
-        ))
-        .as_mut(),
+        &mut pdf_extract::PlainTextOutput::new(&mut buffer as &mut dyn std::io::Write),
     )?;
     let body = std::str::from_utf8(&buffer)?
         .to_owned()
