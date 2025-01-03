@@ -1,6 +1,6 @@
 use stockdb::cli;
 
-use clap::{crate_authors, crate_name, crate_version, Arg, ArgGroup, Command};
+use clap::{crate_authors, crate_name, crate_version, Arg, ArgAction, ArgGroup, Command};
 use clap_complete::{generate, Generator, Shell};
 use std::io;
 
@@ -22,6 +22,7 @@ fn main() {
         .arg(
             Arg::new("config")
                 .long("config")
+                .action(ArgAction::SetTrue)
                 .help("Outputs the default config in toml format"),
         )
         .group(
@@ -31,7 +32,7 @@ fn main() {
         )
         .get_matches();
 
-    if matches.contains_id("config") {
+    if *matches.get_one::<bool>("config").unwrap() {
         let config: cli::Config = Default::default();
 
         println!(

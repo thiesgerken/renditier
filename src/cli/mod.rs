@@ -8,7 +8,7 @@ pub mod stock;
 pub mod transaction;
 pub mod user;
 
-use clap::{crate_authors, crate_name, crate_version, Arg, Command};
+use clap::{crate_authors, crate_name, crate_version, Arg, ArgAction, Command};
 use config::ConfigError;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -25,11 +25,12 @@ pub fn build() -> Command {
                 .help("read configuration from this file (instead of config.* in '/etc/stockdb' and stockdb.* in '.')"))
         .arg(Arg::new("dump")
                 .long("dump")
+                .action(ArgAction::SetTrue)
                 .help("dump configuration and exit"))
         .arg(Arg::new("v")
                 .short('v')
                 .long("verbose")
-                .num_args(0..3)
+                .action(ArgAction::Count)
                 .help("specify multiple times (up to three) to increase verbosity level"))
         .arg(Arg::new("database")
                 .long("database")
@@ -83,7 +84,11 @@ pub fn initialize_settings(
             .add_source(config::File::with_name("./stockdb").required(false))
     };
 
-    settings.add_source(config::Environment::with_prefix("stockdb_").separator("__"))
+    settings.add_source(
+        config::Environment::with_prefix("STOCKDB")
+            .prefix_separator("__")
+            .separator("__"),
+    )
 }
 
 // parse the command line flags and add them as overrides to settings
@@ -94,8 +99,8 @@ pub fn merge_settings(
     let ov = ["database"];
 
     for x in ov.iter() {
-        if let Some(y) = opts.get_one::<&str>(x) {
-            settings = settings.set_override(x, *y)?;
+        if let Some(y) = opts.get_one::<String>(x) {
+            settings = settings.set_override(x, y.clone())?;
         }
     }
 

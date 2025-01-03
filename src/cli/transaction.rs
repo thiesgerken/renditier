@@ -2,6 +2,7 @@ use crate::models::*;
 use crate::receipts;
 
 use chrono::{DateTime, Utc};
+use clap::ArgAction;
 use clap::ArgMatches;
 use clap::{Arg, ArgGroup, Command};
 use diesel::prelude::*;
@@ -12,7 +13,12 @@ use std::io;
 pub fn build() -> Command {
     Command::new("transaction")
         .about("Transaction Management")
-        .arg(Arg::new("add").long("add").help("add transaction"))
+        .arg(
+            Arg::new("add")
+                .long("add")
+                .action(ArgAction::SetTrue)
+                .help("add transaction"),
+        )
         .arg(
             Arg::new("remove")
                 .long("remove")
@@ -41,7 +47,12 @@ pub fn build() -> Command {
                 .help("user id for --receipts")
                 .conflicts_with_all(["add", "remove", "list"]),
         )
-        .arg(Arg::new("list").long("list").help("list transactions"))
+        .arg(
+            Arg::new("list")
+                .long("list")
+                .action(ArgAction::SetTrue)
+                .help("list transactions"),
+        )
         .group(
             ArgGroup::new("action")
                 .args(["add", "remove", "list", "receipts"])
@@ -50,7 +61,7 @@ pub fn build() -> Command {
 }
 
 pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
-    if sub_matches.contains_id("add") {
+    if *sub_matches.get_one::<bool>("add").unwrap() {
         let mut s_aid = String::new();
         println!("Please enter the account id for the transaction");
         io::stdin().read_line(&mut s_aid).unwrap();
@@ -101,13 +112,22 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
         let mut s_amount = String::new();
         println!("Please enter the total price (units*price, not including fees, negative value -> sale)");
         io::stdin().read_line(&mut s_amount).unwrap();
-        let s_amount =
-            (s_amount.trim_end().parse::<f64>().expect("Could not parse price") * 100.0).round() as i64;
+        let s_amount = (s_amount
+            .trim_end()
+            .parse::<f64>()
+            .expect("Could not parse price")
+            * 100.0)
+            .round() as i64;
 
         let mut s_fees = String::new();
         println!("Please enter the fees paid for this transaction");
         io::stdin().read_line(&mut s_fees).unwrap();
-        let s_fees = (s_fees.trim_end().parse::<f64>().expect("Could not parse fees") * 100.0).round() as i64;
+        let s_fees = (s_fees
+            .trim_end()
+            .parse::<f64>()
+            .expect("Could not parse fees")
+            * 100.0)
+            .round() as i64;
 
         let mut s_comments = String::new();
         println!("Any comments on this transaction?");
@@ -133,7 +153,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
             .expect("Error saving new transaction");
 
         info!("Created transaction {:?}", t);
-    } else if let Some(s_tid) = sub_matches.get_one::<&str>("remove") {
+    } else if let Some(s_tid) = sub_matches.get_one::<String>("remove") {
         let s_tid: i32 = s_tid.parse().expect("Could not parse transaction id!");
 
         assert!(
@@ -163,15 +183,15 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
     } else if let Some(file_names) = sub_matches.get_many::<String>("receipts") {
         let file_names = file_names.map(|s| s.as_str()).collect::<Vec<_>>();
         let uid: i32 = sub_matches
-            .get_one::<&str>("user")
+            .get_one::<String>("user")
             .unwrap()
             .parse()
             .expect("Could not parse user id!");
 
         receipts::parse_files(connection, uid, &file_names)
             .unwrap_or_else(|e| panic!("Error adding receipts: {:?}", e));
-    } else if sub_matches.contains_id("list") {
-        let ts = if let Some(s_aid) = sub_matches.get_one::<&str>("account") {
+    } else if *sub_matches.get_one::<bool>("list").unwrap() {
+        let ts = if let Some(s_aid) = sub_matches.get_one::<String>("account") {
             let s_aid: i32 = s_aid.parse().expect("Could not parse account id!");
 
             crate::schema::transactions::table

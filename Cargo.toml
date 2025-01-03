@@ -42,3 +42,6 @@ web-push = "0.10"
 
 [profile.release]
 lto = true
+
+[dev-dependencies]
+test-log = "0.2.16"

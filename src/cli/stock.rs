@@ -4,6 +4,7 @@ use crate::onvista;
 use crate::schema::stock_infos::dsl::{isin, persistent, stock_infos};
 
 use chrono::{DateTime, NaiveDate, Utc};
+use clap::ArgAction;
 use clap::ArgMatches;
 use clap::{Arg, ArgGroup, Command};
 use diesel::{
@@ -21,11 +22,13 @@ pub fn build() -> Command {
         .arg(
             Arg::new("list")
                 .long("list")
+                .action(ArgAction::SetTrue)
                 .help("overview over collected stock data"),
         )
         .arg(
             Arg::new("fetch")
                 .long("fetch")
+                .action(ArgAction::SetTrue)
                 .help("try to fetch missing stocks"),
         )
         .arg(
@@ -40,7 +43,12 @@ pub fn build() -> Command {
                 .value_name("isin")
                 .help("remove stock from watchlist (might be re-added automatically!)"),
         )
-        .arg(Arg::new("update").long("update").help("update stock infos"))
+        .arg(
+            Arg::new("update")
+                .long("update")
+                .action(ArgAction::SetTrue)
+                .help("update stock infos"),
+        )
         .group(
             ArgGroup::new("action")
                 .args(["add", "update", "remove", "list", "fetch"])
@@ -51,14 +59,15 @@ pub fn build() -> Command {
 pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches) {
     let mut connection = pool.get().unwrap();
 
-    if let Some(isin_) = sub_matches.get_one::<&str>("add") {
+    if let Some(isin_) = sub_matches.get_one::<String>("add") {
         let isin_ = isin_.to_uppercase();
         assert!(isin_.len() == 12, "ISINs always have a length of 12");
 
         let exists = stock_infos
             .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
             .load::<StockInfo>(&mut connection)
-            .expect("Error loading stock infos").first()
+            .expect("Error loading stock infos")
+            .first()
             .is_some();
 
         if exists {
@@ -96,7 +105,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
                 Err(e) => error!("Error obtaining stock infos for {}: {}", isin_, e),
             }
         }
-    } else if sub_matches.contains_id("update") {
+    } else if *sub_matches.get_one::<bool>("update").unwrap() {
         let infos = stock_infos
             .load::<StockInfo>(&mut connection)
             .expect("error querying infos");
@@ -115,7 +124,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
             info!("updated stock info for {}", &info.isin);
             debug!("new info: {:?}", &new_info);
         }
-    } else if let Some(isin_) = sub_matches.get_one::<&str>("remove") {
+    } else if let Some(isin_) = sub_matches.get_one::<String>("remove") {
         let isin_ = isin_.to_uppercase();
         assert!(isin_.len() == 12, "ISINs always have a length of 12");
 
@@ -123,7 +132,8 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         stock_infos
             .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
             .load::<StockInfo>(&mut connection)
-            .expect("Error loading stock infos").first()
+            .expect("Error loading stock infos")
+            .first()
             .expect("Stock is not watched");
 
         let mut confirmation = String::new();
@@ -141,7 +151,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
             .unwrap_or_else(|_| panic!("Unable to delete stock {}", &isin_));
 
         info!("deleted stock '{}', its exchanges and price data", isin_);
-    } else if sub_matches.contains_id("list") {
+    } else if *sub_matches.get_one::<bool>("list").unwrap() {
         let sis = stock_infos
             .load::<StockInfo>(&mut connection)
             .expect("Error loading stock infos");
@@ -157,12 +167,13 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         ]);
 
         for si in sis {
-            let row = add_stock_infos(&mut connection, si).expect("could not load stock infos from db");
+            let row =
+                add_stock_infos(&mut connection, si).expect("could not load stock infos from db");
             table.add_row(row);
         }
 
         table.printstd();
-    } else if sub_matches.contains_id("fetch") {
+    } else if *sub_matches.get_one::<bool>("fetch").unwrap() {
         add_missing_stocks(pool).await;
     } else {
         panic!("unexpected options for subcommand 'stock'");

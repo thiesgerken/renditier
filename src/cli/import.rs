@@ -1,6 +1,7 @@
 use crate::schema::*;
 use crate::serialization::*;
 
+use clap::ArgAction;
 use clap::ArgMatches;
 use clap::{Command, Arg};
 use diesel::prelude::*;
@@ -13,6 +14,7 @@ pub fn build() -> Command {
         .arg(
             Arg::new("moneydb")
                 .long("moneydb")
+                .action(ArgAction::SetTrue)
                 .help("import from moneydb json data"),
         )
         .arg(
@@ -23,7 +25,7 @@ pub fn build() -> Command {
 }
 
 pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
-    if sub_matches.contains_id("clean") {
+    if *sub_matches.get_one::<bool>("clean").unwrap() {
         // diesel::delete(stock_infos::table)
         //     .execute(connection)
         //     .expect("Unable to delete stocks!");
@@ -35,7 +37,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
         warn!("removed all users, accounts and transactions.");
     }
 
-    if sub_matches.contains_id("moneydb") {
+    if *sub_matches.get_one::<bool>("moneydb").unwrap(){
         let p: MoneyDBFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse moneydb input");
         // debug!("{:?}", p);

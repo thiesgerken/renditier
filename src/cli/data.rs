@@ -4,6 +4,7 @@ use crate::schema::stock_infos::dsl::*;
 use crate::serialization::*;
 
 use chrono::{Duration, Utc};
+use clap::ArgAction;
 use clap::ArgMatches;
 use clap::{Command, Arg, ArgGroup};
 use diesel::{
@@ -19,26 +20,31 @@ pub fn build() -> Command {
         .arg(
             Arg::new("clean")
                 .long("clean")
+                .action(ArgAction::SetTrue)
                 .help("delete old realtime prices, keeping only the latest data"),
         )
         .arg(
             Arg::new("fetch")
                 .long("fetch")
+                .action(ArgAction::SetTrue)
                 .help("update realtime and historic data for all stocks"),
         )
         .arg(
             Arg::new("force")
                 .long("force")
+                .action(ArgAction::SetTrue)
                 .help("ignore last stock update time"),
         )
         .arg(
             Arg::new("export")
                 .long("export")
+                .action(ArgAction::SetTrue)
                 .help("write realtime and historic data for all stocks to stdout"),
         )
         .arg(
             Arg::new("import")
                 .long("import")
+                .action(ArgAction::SetTrue)
                 .help("read realtime and historic data from stdin"),
         )
         .group(
@@ -51,8 +57,8 @@ pub fn build() -> Command {
 pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches) {
     let mut connection = pool.get().unwrap();
 
-    if sub_matches.contains_id("fetch") {
-        let force = sub_matches.contains_id("force");
+    if *sub_matches.get_one::<bool>("fetch").unwrap() {
+        let force = *sub_matches.get_one::<bool>("force").unwrap();
         let now = Utc::now();
         let stocks = stock_infos
             .load::<StockInfo>(&mut connection)
@@ -87,18 +93,18 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         if let Err(e) = fetch_historical(pool.clone(), &stocks_hist_update).await {
             error!("Could not update historical data: {}", e)
         }
-    } else if sub_matches.contains_id("export") {
+    } else if *sub_matches.get_one::<bool>("export").unwrap() {
         let p = DataFormat::new(&mut connection);
         println!(
             "{}",
             serde_json::to_string(&p).expect("Could not serialize data")
         );
-    } else if sub_matches.contains_id("import") {
+    } else if *sub_matches.get_one::<bool>("import").unwrap(){
         let p: DataFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse data input");
 
         p.write_to(&mut connection);
-    } else if sub_matches.contains_id("clean") {
+    } else if *sub_matches.get_one::<bool>("clean").unwrap() {
         use crate::schema::realtime_prices::dsl::*;
         let now = Utc::now();
 

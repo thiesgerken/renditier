@@ -3,11 +3,12 @@ use crate::push;
 use crate::schema::push_subscriptions::dsl::*;
 
 use chrono::Utc;
+use clap::ArgAction;
 use clap::ArgMatches;
-use clap::{Command, Arg, ArgGroup};
+use clap::{Arg, ArgGroup, Command};
 use diesel::prelude::*;
 use log::info;
-use prettytable::{ row, Table};
+use prettytable::{row, Table};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
@@ -32,7 +33,12 @@ pub fn build() -> Command {
                 .value_name("endpoint")
                 .help("send a test notification"),
         )
-        .arg(Arg::new("list").long("list").help("list subscriptions"))
+        .arg(
+            Arg::new("list")
+                .long("list")
+                .action(ArgAction::SetTrue)
+                .help("list subscriptions"),
+        )
         .arg(
             Arg::new("full")
                 .long("full")
@@ -87,13 +93,13 @@ pub async fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches, con
             .unwrap_or_else(|_| panic!("unable to delete subscription {}", &s_pid));
 
         info!("deleted subscription '{}'", s_pid);
-    } else if sub_matches.contains_id("clear") {
+    } else if *sub_matches.get_one::<bool>("clear").unwrap() {
         let rows = diesel::delete(push_subscriptions)
             .execute(connection)
             .unwrap();
 
         info!("deleted {} subscription(s)", rows);
-    } else if sub_matches.contains_id("list") {
+    } else if *sub_matches.get_one::<bool>("list").unwrap() {
         let subs = push_subscriptions
             .load::<PushSubscription>(connection)
             .expect("error loading subscriptions");
@@ -108,7 +114,7 @@ pub async fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches, con
         ]);
 
         for s in subs.iter() {
-            let s_endpoint = if sub_matches.contains_id("full") || s.endpoint.len() <= 45 + 4 {
+            let s_endpoint = if *sub_matches.get_one::<bool>("full").unwrap() || s.endpoint.len() <= 45 + 4 {
                 s.endpoint.clone()
             } else {
                 String::from(&format!("{} ...", &s.endpoint[..45]))

@@ -1,4 +1,4 @@
-FROM node:16-bullseye as builder-frontend
+FROM node:16-bullseye AS builder-frontend
 
 RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get update -y && apt-get install -y --no-install-recommends git \
@@ -11,7 +11,7 @@ WORKDIR /build/web
 RUN yarn install
 RUN yarn run build
 
-FROM rust:1.81-bullseye as builder-backend
+FROM rust:1.81-bullseye AS builder-backend
 
 RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev pkg-config gcc clang \

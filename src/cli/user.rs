@@ -2,6 +2,7 @@ use crate::hash_password;
 use crate::models::*;
 use crate::schema::users::dsl::*;
 
+use clap::ArgAction;
 use clap::ArgMatches;
 use clap::{Arg, ArgGroup, Command};
 use diesel::prelude::*;
@@ -30,7 +31,12 @@ pub fn build() -> Command {
                 .value_name("name")
                 .help("update user name and password"),
         )
-        .arg(Arg::new("list").long("list").help("list users"))
+        .arg(
+            Arg::new("list")
+                .long("list")
+                .action(ArgAction::SetTrue)
+                .help("list users"),
+        )
         .group(
             ArgGroup::new("action")
                 .args(["add", "update", "remove", "list"])
@@ -39,7 +45,7 @@ pub fn build() -> Command {
 }
 
 pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
-    if let Some(uname) = sub_matches.get_one::<&str>("add") {
+    if let Some(uname) = sub_matches.get_one::<String>("add") {
         // check if this username is taken
         assert!(
             users
@@ -78,7 +84,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
             .expect("Error saving new user");
 
         info!("Created user {:?}", u);
-    } else if let Some(uname) = sub_matches.get_one::<&str>("update") {
+    } else if let Some(uname) = sub_matches.get_one::<String>("update") {
         let mut fname = String::new();
         println!("Please enter a new full name of the user");
         io::stdin().read_line(&mut fname).unwrap();
@@ -100,7 +106,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
             .unwrap_or_else(|_| panic!("Unable to find user {}", uname));
 
         info!("Updated user {:?}", u);
-    } else if let Some(uname) = sub_matches.get_one::<&str>("remove") {
+    } else if let Some(uname) = sub_matches.get_one::<String>("remove") {
         // check if this user even exists
         assert!(
             users
@@ -140,7 +146,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
             .unwrap_or_else(|_| panic!("Unable to delete user {}", uname));
 
         info!("deleted user '{}'", uname);
-    } else if sub_matches.contains_id("list") {
+    } else if *sub_matches.get_one::<bool>("list").unwrap() {
         let us = users.load::<User>(connection).expect("Error loading users");
 
         let mut table = Table::new();

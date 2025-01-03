@@ -21,7 +21,7 @@ fn main() {
         initialize_logging(matches.get_count("v") as u32);
 
         // setup default settings and parse overrides from config files
-        let mut settings = cli::initialize_settings(matches.get_one::<&str>("config").copied());
+        let mut settings = cli::initialize_settings(matches.get_one::<String>("config").cloned().as_deref());
 
         // parse overrides from CLI and modify settings
         settings = cli::merge_settings(&matches, settings).expect("unable to merge flags from CLI");
@@ -39,7 +39,7 @@ fn main() {
 
         let manager = ConnectionManager::<PgConnection>::new(&config.database);
         let pool = Pool::builder().max_size(10).build(manager).unwrap();
-        if matches.contains_id("dump") {
+        if *matches.get_one::<bool>("dump").unwrap() {
             println!(
                 "{}",
                 toml::to_string(&config).expect("unable to serialize config")
