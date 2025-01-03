@@ -4,8 +4,9 @@ use crate::schema::stock_infos::dsl::*;
 use crate::serialization::*;
 
 use chrono::{Duration, Utc};
+use clap::ArgAction;
 use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup};
+use clap::{Command, Arg, ArgGroup};
 use diesel::{
     prelude::*,
     r2d2::{ConnectionManager, Pool},
@@ -13,49 +14,54 @@ use diesel::{
 use log::{error, info};
 use std::io;
 
-pub fn build() -> App<'static> {
-    App::new("data")
+pub fn build() -> Command {
+    Command::new("data")
         .about("Data Management")
         .arg(
             Arg::new("clean")
                 .long("clean")
+                .action(ArgAction::SetTrue)
                 .help("delete old realtime prices, keeping only the latest data"),
         )
         .arg(
             Arg::new("fetch")
                 .long("fetch")
+                .action(ArgAction::SetTrue)
                 .help("update realtime and historic data for all stocks"),
         )
         .arg(
             Arg::new("force")
                 .long("force")
+                .action(ArgAction::SetTrue)
                 .help("ignore last stock update time"),
         )
         .arg(
             Arg::new("export")
                 .long("export")
+                .action(ArgAction::SetTrue)
                 .help("write realtime and historic data for all stocks to stdout"),
         )
         .arg(
             Arg::new("import")
                 .long("import")
+                .action(ArgAction::SetTrue)
                 .help("read realtime and historic data from stdin"),
         )
         .group(
             ArgGroup::new("action")
-                .args(&["clean", "fetch", "export", "import"])
+                .args(["clean", "fetch", "export", "import"])
                 .required(true),
         )
 }
 
 pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches) {
-    let connection = pool.get().unwrap();
+    let mut connection = pool.get().unwrap();
 
-    if sub_matches.is_present("fetch") {
-        let force = sub_matches.is_present("force");
+    if *sub_matches.get_one::<bool>("fetch").unwrap() {
+        let force = *sub_matches.get_one::<bool>("force").unwrap();
         let now = Utc::now();
         let stocks = stock_infos
-            .load::<StockInfo>(&connection)
+            .load::<StockInfo>(&mut connection)
             .expect("Error loading stock infos");
 
         let stocks_rt_update = stocks
@@ -87,18 +93,18 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         if let Err(e) = fetch_historical(pool.clone(), &stocks_hist_update).await {
             error!("Could not update historical data: {}", e)
         }
-    } else if sub_matches.is_present("export") {
-        let p = DataFormat::new(&connection);
+    } else if *sub_matches.get_one::<bool>("export").unwrap() {
+        let p = DataFormat::new(&mut connection);
         println!(
             "{}",
             serde_json::to_string(&p).expect("Could not serialize data")
         );
-    } else if sub_matches.is_present("import") {
+    } else if *sub_matches.get_one::<bool>("import").unwrap(){
         let p: DataFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse data input");
 
-        p.write_to(&connection);
-    } else if sub_matches.is_present("clean") {
+        p.write_to(&mut connection);
+    } else if *sub_matches.get_one::<bool>("clean").unwrap() {
         use crate::schema::realtime_prices::dsl::*;
         let now = Utc::now();
 
@@ -108,7 +114,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
                     .lt(now.checked_sub_signed(Duration::weeks(1)).unwrap()),
             ),
         )
-        .execute(&connection)
+        .execute(&mut connection)
         .expect("Unable to delete old realtime prices");
 
         info!(
@@ -117,7 +123,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         );
 
         let cnt = diesel::sql_query("DELETE FROM superfluous_stocks")
-            .execute(&connection)
+            .execute(&mut connection)
             .expect("Unable to delete superfluous stocks");
         info!("found and deleted {} superfluous stocks", cnt);
     } else {

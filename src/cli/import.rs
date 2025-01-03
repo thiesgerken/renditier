@@ -1,18 +1,20 @@
 use crate::schema::*;
 use crate::serialization::*;
 
+use clap::ArgAction;
 use clap::ArgMatches;
-use clap::{App, Arg};
+use clap::{Command, Arg};
 use diesel::prelude::*;
 use log::warn;
 use std::io;
 
-pub fn build() -> App<'static> {
-    App::new("import")
+pub fn build() -> Command {
+    Command::new("import")
         .about("Importing of data via stdin")
         .arg(
             Arg::new("moneydb")
                 .long("moneydb")
+                .action(ArgAction::SetTrue)
                 .help("import from moneydb json data"),
         )
         .arg(
@@ -22,8 +24,8 @@ pub fn build() -> App<'static> {
         )
 }
 
-pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
-    if sub_matches.is_present("clean") {
+pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
+    if *sub_matches.get_one::<bool>("clean").unwrap() {
         // diesel::delete(stock_infos::table)
         //     .execute(connection)
         //     .expect("Unable to delete stocks!");
@@ -35,7 +37,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
         warn!("removed all users, accounts and transactions.");
     }
 
-    if sub_matches.is_present("moneydb") {
+    if *sub_matches.get_one::<bool>("moneydb").unwrap(){
         let p: MoneyDBFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse moneydb input");
         // debug!("{:?}", p);

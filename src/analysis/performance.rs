@@ -3,7 +3,6 @@ use crate::analysis::{irr, price};
 use crate::models::*;
 use crate::schema::*;
 
-use chrono::offset::TimeZone;
 use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, Utc, Weekday};
 use diesel::prelude::*;
 use log::debug;
@@ -65,7 +64,7 @@ pub struct PositionSnapshot {
 }
 
 pub fn compute(
-    connection: &diesel::PgConnection,
+    connection: &mut diesel::PgConnection,
     user_id: i32,
     date: DateTime<Utc>,
 ) -> Result<Vec<PortfolioPerformance>, Box<dyn Error>> {
@@ -102,25 +101,29 @@ pub fn compute(
         .max()
         .unwrap_or_else(Utc::now)
         .with_timezone(&Local)
-        .date()
-        .naive_local();
+        .naive_local()
+        .date();
     while current_day.weekday().number_from_monday() > 5 {
-        current_day = current_day.pred();
+        current_day = current_day.pred_opt().unwrap();
     }
 
-    let mut prev_day = current_day.pred();
+    let mut prev_day = current_day.pred_opt().unwrap();
     while prev_day.weekday().number_from_monday() > 5 {
-        prev_day = prev_day.pred();
+        prev_day = prev_day.pred_opt().unwrap();
     }
 
     let first_transaction_date = ts
         .iter()
         .map(|t| t.date)
         .min()
-        .map(|d| d.with_timezone(&Local).date().naive_local())
-        .unwrap_or_else(|| NaiveDate::from_ymd(prev_day.year(), 1, 1));
+        .map(|d| d.with_timezone(&Local).naive_local().date())
+        .unwrap_or_else(|| NaiveDate::from_ymd_opt(prev_day.year(), 1, 1).unwrap());
 
-    let mut jobs = vec![(PerformanceKind::Total, first_transaction_date.pred(), None)];
+    let mut jobs = vec![(
+        PerformanceKind::Total,
+        first_transaction_date.pred_opt().unwrap(),
+        None,
+    )];
 
     /*
       EOD prices <-> current_prices:
@@ -144,7 +147,7 @@ pub fn compute(
         None,
     ));
 
-    let first_of_month = NaiveDate::from_ymd(prev_day.year(), prev_day.month(), 1);
+    let first_of_month = NaiveDate::from_ymd_opt(prev_day.year(), prev_day.month(), 1).unwrap();
     jobs.push((
         PerformanceKind::MonthToDate,
         first_of_month
@@ -153,7 +156,7 @@ pub fn compute(
         None,
     ));
 
-    let first_of_year = NaiveDate::from_ymd(prev_day.year(), 1, 1);
+    let first_of_year = NaiveDate::from_ymd_opt(prev_day.year(), 1, 1).unwrap();
     jobs.push((
         PerformanceKind::YearToDate,
         first_of_year.checked_sub_signed(Duration::days(1)).unwrap(),
@@ -171,7 +174,8 @@ pub fn compute(
             .checked_sub_signed(Duration::days(1))
             .map(|x| (x, first_of_year)),
         |(last, _)| {
-            NaiveDate::from_ymd(last.year(), 1, 1)
+            NaiveDate::from_ymd_opt(last.year(), 1, 1)
+                .unwrap()
                 .checked_sub_signed(Duration::days(1))
                 .map(|x| (x, *last))
         },
@@ -186,7 +190,8 @@ pub fn compute(
             .checked_sub_signed(Duration::days(1))
             .map(|x| (x, first_of_month)),
         |(last, _)| {
-            NaiveDate::from_ymd(last.year(), last.month(), 1)
+            NaiveDate::from_ymd_opt(last.year(), last.month(), 1)
+                .unwrap()
                 .checked_sub_signed(Duration::days(1))
                 .map(|x| (x, *last))
         },
@@ -210,12 +215,7 @@ pub fn compute(
     // find_multiple needs DateTime<Utc> ...
     let utc_date_times = dates
         .iter()
-        .map(|d| {
-            Local
-                .from_utc_date(d)
-                .and_hms(17, 30, 0)
-                .with_timezone(&Utc)
-        })
+        .map(|d| d.and_hms_opt(17, 30, 0).unwrap().and_utc())
         .collect::<Vec<_>>();
 
     // query db for prices on these dates
@@ -243,9 +243,9 @@ fn compute_position(
 ) -> PositionPerformance {
     let (prior_ts, relevant_ts): (Vec<_>, Vec<_>) = ts
         .iter()
-        .filter(|t| t.isin == isin && t.date.with_timezone(&Local).date().naive_local() <= end)
+        .filter(|t| t.isin == isin && t.date.with_timezone(&Local).naive_local().date() <= end)
         .cloned()
-        .partition(|t| t.date.with_timezone(&Local).date().naive_local() <= start);
+        .partition(|t| t.date.with_timezone(&Local).naive_local().date() <= start);
 
     let (prior_units, prior_invested, prior_fees) =
         prior_ts.iter().fold((0.0, 0.0, 0.0), |(au, ac, af), t| {
@@ -319,7 +319,7 @@ fn compute_position(
             start_price
                 .as_ref()
                 .map(|sp| sp.price.date())
-                .unwrap_or_else(|| DateTime::<Utc>::from_utc(start.and_hms(12, 0, 0), Utc)),
+                .unwrap_or_else(|| start.and_hms_opt(12, 0, 0).unwrap().and_utc()),
         );
         let year = chrono::Duration::days(365);
 
@@ -398,7 +398,7 @@ fn compute_performance(
                             .cloned()
                             .map(EitherPrice::wrap_realtime),
                         start,
-                        Local::today().naive_local(),
+                        Local::now().naive_local().date(),
                     ),
                 )
             })
@@ -420,7 +420,7 @@ fn compute_performance(
     );
 
     let end_snapshot = PortfolioSnapshot {
-        date: end.unwrap_or_else(|| Local::today().naive_local()),
+        date: end.unwrap_or_else(|| Local::now().naive_local().date()),
         invested,
         fees,
         value,

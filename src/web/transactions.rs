@@ -23,7 +23,7 @@ pub async fn list(
                 .inner_join(accounts::table)
                 .filter(accounts::user_id.eq(*uid))
                 .order(transactions::id.asc())
-                .limit(count.unwrap_or(i64::max_value()))
+                .limit(count.unwrap_or(i64::MAX))
                 .offset(offset.unwrap_or(0))
                 .load::<(Transaction, Account)>(c)
                 .map(|a| Json(a.into_iter().map(|(a, _)| a).collect()))

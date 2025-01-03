@@ -8,8 +8,7 @@ use crate::models::*;
 use crate::web::user::UserId;
 use crate::web::DbConn;
 
-use chrono::offset::TimeZone;
-use chrono::{NaiveDate, Utc};
+use chrono::{NaiveDate, NaiveDateTime, Utc};
 use rocket::serde::json::Json;
 
 #[get("/analysis/portfolio?<date>")]
@@ -20,9 +19,10 @@ pub async fn compute_historic_portfolio(
 ) -> Option<Json<Portfolio<HistoricalPrice>>> {
     connection
         .run(move |c| {
-            let date = Utc
-                .datetime_from_str(&format!("{} 17:30:00", &date), "%Y-%m-%d %H:%M:%S")
-                .ok()?;
+            let date =
+                NaiveDateTime::parse_from_str(&format!("{} 17:30:00", &date), "%Y-%m-%d %H:%M:%S")
+                    .ok()?
+                    .and_utc();
 
             portfolio::compute(c, *uid, date).ok().map(Json)
         })

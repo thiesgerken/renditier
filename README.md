@@ -10,7 +10,7 @@ Tool to query and analyze stock and ETF investments using realtime and historica
 
 ## Fixing sequences
 
-Usually needed after a database dump was imported, cf. https://wiki.postgresql.org/wiki/Fixing_Sequences
+Usually needed after a database dump was imported, cf. <https://wiki.postgresql.org/wiki/Fixing_Sequences>
 
 ```sql
 SELECT 'SELECT SETVAL(' ||
@@ -31,7 +31,7 @@ WHERE S.relkind = 'S'
 ORDER BY S.relname;
 ```
 
-Write to `reset.sql`, then run 
+Write to `reset.sql`, then run
 
 ```shell
 psql -Atq -f reset.sql -o temp -d stocks -U postgres

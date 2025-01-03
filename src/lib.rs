@@ -27,15 +27,20 @@ use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
 };
+use diesel_migrations::{EmbeddedMigrations, HarnessWithOutput, MigrationHarness};
 use log::{error, info};
-use simplelog::{ColorChoice, LevelFilter, SimpleLogger, TermLogger, TerminalMode};
+use simplelog::{format_description, ColorChoice, LevelFilter, SimpleLogger, TermLogger, TerminalMode};
 use std::error::Error;
 
-embed_migrations!();
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
 pub fn connect(database_url: &str) -> Result<PgConnection, Box<dyn Error>> {
-    let conn = PgConnection::establish(database_url)?;
-    embedded_migrations::run_with_output(&conn, &mut std::io::stdout())?;
+    let mut conn = PgConnection::establish(database_url)?;
+
+    HarnessWithOutput::new(&mut conn, &mut std::io::stdout())
+        .run_pending_migrations(MIGRATIONS)
+        .unwrap();
+
     Ok(conn)
 }
 
@@ -58,15 +63,15 @@ pub fn hash_password(pw: &str) -> String {
 
 #[derive(QueryableByName, Debug)]
 struct StockDummy {
-    #[sql_type = "diesel::sql_types::Text"]
+    #[diesel(sql_type = diesel::sql_types::Text)]
     isin: String,
 }
 
 pub async fn add_missing_stocks(pool: Pool<ConnectionManager<PgConnection>>) {
-    let connection = pool.get().unwrap();
+    let mut connection = pool.get().unwrap();
 
     let isins = diesel::sql_query("SELECT isin FROM missing_stocks")
-        .load::<StockDummy>(&connection)
+        .load::<StockDummy>(&mut connection)
         .expect("Unable to find missing stocks")
         .into_iter()
         .map(|sd| sd.isin)
@@ -83,12 +88,12 @@ pub async fn add_missing_stocks(pool: Pool<ConnectionManager<PgConnection>>) {
             Ok((si, exs)) => {
                 diesel::insert_into(crate::schema::stock_infos::table)
                     .values(&si)
-                    .execute(&connection)
+                    .execute(&mut connection)
                     .expect("Error saving stock info");
 
                 diesel::insert_into(crate::schema::stock_exchanges::table)
                     .values(&exs)
-                    .execute(&connection)
+                    .execute(&mut connection)
                     .expect("Error saving exchanges");
 
                 info!("Added stock {} and {} exchanges", &isin, exs.len());
@@ -107,7 +112,7 @@ pub fn initialize_logging(verbosity: u32) {
     };
 
     let mut log_config = simplelog::ConfigBuilder::new();
-    log_config.set_time_format_str("");
+    log_config.set_time_format_custom(format_description!(""));
 
     log_config.add_filter_ignore_str("html5ever");
     log_config.add_filter_ignore_str("hyper");

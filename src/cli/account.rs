@@ -1,17 +1,22 @@
 use crate::models::*;
 use crate::schema::accounts::dsl::*;
 
-use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup};
+use clap::{Arg, ArgGroup, Command};
+use clap::{ArgAction, ArgMatches};
 use diesel::prelude::*;
 use log::info;
-use prettytable::{cell, row, Table};
+use prettytable::{row, Table};
 use std::io;
 
-pub fn build() -> App<'static> {
-    App::new("account")
+pub fn build() -> Command {
+    Command::new("account")
         .about("Account Management")
-        .arg(Arg::new("add").long("add").help("add account"))
+        .arg(
+            Arg::new("add")
+                .long("add")
+                .action(ArgAction::SetTrue)
+                .help("add account"),
+        )
         .arg(
             Arg::new("remove")
                 .long("remove")
@@ -24,16 +29,21 @@ pub fn build() -> App<'static> {
                 .value_name("id")
                 .help("update account details"),
         )
-        .arg(Arg::new("list").long("list").help("list accounts"))
+        .arg(
+            Arg::new("list")
+                .long("list")
+                .action(ArgAction::SetTrue)
+                .help("list accounts"),
+        )
         .group(
             ArgGroup::new("action")
-                .args(&["add", "update", "remove", "list"])
+                .args(["add", "update", "remove", "list"])
                 .required(true),
         )
 }
 
-pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
-    if sub_matches.is_present("add") {
+pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
+    if *sub_matches.get_one::<bool>("add").unwrap() {
         let mut s_uid = String::new();
         println!("Please enter the user id for the new account");
         io::stdin().read_line(&mut s_uid).unwrap();
@@ -80,7 +90,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
             .expect("Error saving new account");
 
         info!("Created account {:?}", a);
-    } else if let Some(s_aid) = sub_matches.value_of("update") {
+    } else if let Some(s_aid) = sub_matches.get_one::<String>("update") {
         let s_aid: i32 = s_aid.parse().expect("Could not parse account id!");
         assert!(
             crate::schema::accounts::table
@@ -120,7 +130,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
             .unwrap_or_else(|_| panic!("Unable to update account {}", s_aid));
 
         info!("Updated account {:?}", a);
-    } else if let Some(s_aid) = sub_matches.value_of("remove") {
+    } else if let Some(s_aid) = sub_matches.get_one::<String>("remove") {
         let s_aid: i32 = s_aid.parse().expect("Could not parse account id!");
         let a = crate::schema::accounts::table
             .find(&s_aid)
@@ -150,7 +160,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
             .unwrap_or_else(|_| panic!("Unable to delete account {}", &s_aid));
 
         info!("deleted account '{}'", s_aid);
-    } else if sub_matches.is_present("list") {
+    } else if *sub_matches.get_one::<bool>("list").unwrap() {
         let accs = accounts
             .load::<Account>(connection)
             .expect("Error loading accounts");

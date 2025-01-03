@@ -148,7 +148,7 @@ const PositionRow = ({ data, stock, push }) => {
           </span>
         </Button>
       </TableCell>
-      <Hidden lgDown>
+      <Hidden xsDown>
         <TableCell align="right">
           {fromTo(data.start.units, data.end.units, true, '', formatUnits)}
         </TableCell>

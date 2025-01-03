@@ -71,7 +71,7 @@ const PositionsTable = ({ performance, stocks, push }) => {
                       <StyledTableCell>ISIN</StyledTableCell>
                     </Hidden>
                     <StyledTableCell>Name</StyledTableCell>
-                    <Hidden lgDown>
+                    <Hidden xsDown>
                       <StyledTableCell align="right">Einheiten</StyledTableCell>
                     </Hidden>
                     <Hidden xsDown>

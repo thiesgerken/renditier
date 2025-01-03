@@ -63,7 +63,7 @@ fn option_almost_eq(a: Option<f64>, b: Option<f64>) -> bool {
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
 fn choose_and_query_points(
-    connection: &diesel::PgConnection,
+    connection: &mut diesel::PgConnection,
     exchanges: &[i32],
     start_date: NaiveDate,
     end_date: NaiveDate,
@@ -78,13 +78,12 @@ fn choose_and_query_points(
         let mut dates = successors(
             Some(
                 Local
-                    .from_utc_date(&start_date)
-                    .and_hms(9, 0, 0)
+                    .from_utc_datetime(&start_date.and_hms_opt(9, 0, 0).unwrap())
                     .with_timezone(&Utc),
             ),
             |x| x.checked_add_signed(interval),
         )
-        .take_while(|d| d.date().naive_utc() <= end_date)
+        .take_while(|d| d.naive_local().date() <= end_date)
         // .filter(|d| d.date().weekday().number_from_monday() < 6)
         .collect::<Vec<_>>();
 
@@ -94,12 +93,10 @@ fn choose_and_query_points(
                 .flat_map(|d| {
                     vec![
                         Local
-                            .from_utc_date(&d.naive_utc().date())
-                            .and_hms(9, 0, 0)
+                            .from_utc_datetime(&d.naive_utc().date().and_hms_opt(9, 0, 0).unwrap())
                             .with_timezone(&Utc),
                         Local
-                            .from_utc_date(&d.naive_utc().date())
-                            .and_hms(18, 0, 0)
+                            .from_utc_datetime(&d.naive_utc().date().and_hms_opt(18, 0, 0).unwrap())
                             .with_timezone(&Utc),
                     ]
                 })
@@ -109,8 +106,7 @@ fn choose_and_query_points(
                 .into_iter()
                 .map(|d| {
                     Local
-                        .from_utc_date(&d.naive_utc().date())
-                        .and_hms(18, 0, 0)
+                        .from_utc_datetime(&d.naive_utc().date().and_hms_opt(18, 0, 0).unwrap())
                         .with_timezone(&Utc)
                 })
                 .collect::<Vec<_>>()
@@ -140,13 +136,11 @@ fn choose_and_query_points(
         Ok((dates, prices))
     } else {
         let start_time = Local
-            .from_utc_date(&start_date)
-            .and_hms(9, 0, 0)
+            .from_utc_datetime(&start_date.and_hms_opt(9, 0, 0).unwrap())
             .with_timezone(&Utc);
         let end_time = min(
             Local
-                .from_utc_date(&end_date)
-                .and_hms(18, 0, 0)
+                .from_utc_datetime(&end_date.and_hms_opt(18, 0, 0).unwrap())
                 .with_timezone(&Utc),
             Utc::now(),
         );
@@ -195,7 +189,7 @@ fn choose_and_query_points(
 }
 
 pub fn compute_portfolio_plot(
-    connection: &diesel::PgConnection,
+    connection: &mut diesel::PgConnection,
     user_id: i32,
     start_date: NaiveDate,
     end_date: NaiveDate,
@@ -205,7 +199,9 @@ pub fn compute_portfolio_plot(
     let ts = transactions::table
         .inner_join(accounts::table)
         .filter(accounts::user_id.eq(user_id))
-        .filter(transactions::date.le(Utc.from_utc_date(&end_date).and_hms(18, 0, 0)))
+        .filter(
+            transactions::date.le(Utc.from_utc_datetime(&end_date.and_hms_opt(18, 0, 0).unwrap())),
+        )
         .order(transactions::date.asc())
         .load::<(Transaction, Account)>(connection)?
         .into_iter()
@@ -221,7 +217,7 @@ pub fn compute_portfolio_plot(
         .order(stock_exchanges::isin.asc())
         .load::<StockExchange>(connection)?
         .into_iter()
-        .group_by(|se| se.isin.clone())
+        .chunk_by(|se| se.isin.clone())
         .into_iter()
         .filter_map(|(isin, es)| es.min_by(exchange_comparison).map(|e| (isin, Some(e))))
         .collect::<HashMap<_, _>>();
@@ -271,7 +267,7 @@ pub fn compute_portfolio_plot(
             Vec::new()
         };
 
-        let mut current_price = isin_ps.get(0);
+        let mut current_price = isin_ps.first();
 
         // go through all points, search for the nearest price,
         // calculate invested money and current value
@@ -318,7 +314,7 @@ pub fn compute_portfolio_plot(
 }
 
 pub fn compute_stock_plot(
-    connection: &diesel::PgConnection,
+    connection: &mut diesel::PgConnection,
     user_id: i32,
     isin: String,
     start_date: NaiveDate,
@@ -340,7 +336,9 @@ pub fn compute_stock_plot(
         .inner_join(accounts::table)
         .filter(accounts::user_id.eq(user_id))
         .filter(transactions::isin.eq(isin))
-        .filter(transactions::date.le(Utc.from_utc_date(&end_date).and_hms(18, 0, 0)))
+        .filter(
+            transactions::date.le(Utc.from_utc_datetime(&end_date.and_hms_opt(18, 0, 0).unwrap())),
+        )
         .order(transactions::date.asc())
         .load::<(Transaction, Account)>(connection)?
         .into_iter()

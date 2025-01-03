@@ -30,7 +30,7 @@ pub struct Position<T> {
 }
 
 pub fn compute<T>(
-    connection: &diesel::PgConnection,
+    connection: &mut diesel::PgConnection,
     user_id: i32,
     date: DateTime<Utc>,
 ) -> Result<Portfolio<T>, Box<dyn Error>>
@@ -72,7 +72,7 @@ where
     let invested = positions.iter().fold(0.0, |acc, p| acc + p.invested);
     let value = positions
         .iter()
-        .fold(Some(0.0), |acc, p| acc.and_then(|a| p.value.map(|x| a + x)));
+        .try_fold(0.0, |acc, p| p.value.map(|x| acc + x));
 
     // calculate the total irr
     // (only possible if we can simulate sales for all positions, i.e. value != None)

@@ -2,7 +2,8 @@ use crate::models::*;
 use crate::onvista::json_utils::*;
 use crate::onvista::USER_AGENT;
 
-use chrono::{Date, Datelike, Local, TimeZone, Utc};
+use chrono::Datelike;
+use chrono::NaiveDate;
 use reqwest::Response;
 use scraper::{Html, Selector};
 use serde_json::Value;
@@ -168,11 +169,12 @@ async fn get_data_realtime_exchange(
         .ok_or("no date")?
         .split('.')
         .collect::<Vec<_>>();
-    let date = Local.ymd(
+    let date = NaiveDate::from_ymd_opt(
         date_splits[2].parse()?,
         date_splits[1].parse()?,
         date_splits[0].parse()?,
-    );
+    )
+    .unwrap();
 
     if date.weekday().number_from_monday() >= 6 {
         // just ignore these
@@ -190,7 +192,7 @@ async fn get_data_realtime_exchange(
 
 fn parse_realtime_row(
     onvista_record_id: i32,
-    date: Date<Local>,
+    date: NaiveDate,
     record: csv::StringRecord,
 ) -> Option<RealtimePrice> {
     if record.len() != 4 {
@@ -198,11 +200,13 @@ fn parse_realtime_row(
     }
 
     let time_splits = record.get(0)?.split(':').collect::<Vec<_>>();
-    let d = date.and_hms(
-        time_splits[0].parse().ok()?,
-        time_splits[1].parse().ok()?,
-        time_splits[2].parse().ok()?,
-    );
+    let d = date
+        .and_hms_opt(
+            time_splits[0].parse().ok()?,
+            time_splits[1].parse().ok()?,
+            time_splits[2].parse().ok()?,
+        )
+        .unwrap();
 
     let price = record
         .get(1)?
@@ -212,7 +216,7 @@ fn parse_realtime_row(
         .ok()?;
 
     Some(RealtimePrice {
-        date: d.with_timezone(&Utc),
+        date: d.and_utc(),
         price,
         onvista_record_id,
     })

@@ -21,7 +21,7 @@ struct TextPayload {
 }
 
 fn daily_notification_body(
-    connection: &PgConnection,
+    connection: &mut PgConnection,
     uid: i32,
     kind: PerformanceKind,
 ) -> Result<String, Box<dyn Error>> {
@@ -38,9 +38,10 @@ fn daily_notification_body(
         .max();
 
     if let Some(newest) = newest {
-        if newest.date() != now.date()
+        if newest.naive_local().date() != now.naive_local().date()
             || now
                 .with_timezone(&Local)
+                .naive_local()
                 .date()
                 .weekday()
                 .number_from_monday()
@@ -67,7 +68,7 @@ pub async fn send(
         subscription.p256dh,
         subscription.auth,
     );
-    let mut builder = WebPushMessageBuilder::new(&subscription_info)?;
+    let mut builder = WebPushMessageBuilder::new(&subscription_info);
 
     let sig_builder = VapidSignatureBuilder::from_pem(private_key, &subscription_info)?;
     builder.set_vapid_signature(sig_builder.build()?);
@@ -75,7 +76,7 @@ pub async fn send(
 
     let message = builder.build()?;
 
-    let client = WebPushClient::new()?;
+    let client = IsahcWebPushClient::new()?;
     client.send(message).await.map_err(|e| e.into())
 }
 
@@ -100,21 +101,26 @@ pub async fn send_welcome_notifications(
     Ok(())
 }
 
-// TODO: also send weekly notifications
 // returns error only on serious problems
 pub async fn send_daily_notifications(
     pool: Pool<ConnectionManager<PgConnection>>,
     private_key: &[u8],
 ) -> Result<(), Box<dyn Error>> {
-    let connection = pool.get()?;
-    let notification_time = Local::now().date().and_hms(20, 0, 0).with_timezone(&Utc);
+    let mut connection = pool.get()?;
+    let notification_time = Local::now()
+        .naive_local()
+        .date()
+        .and_hms_opt(20, 0, 0)
+        .unwrap()
+        .and_local_timezone(Utc)
+        .unwrap();
     let subs = push_subscriptions
         .filter(
             last_notification
                 .lt(notification_time)
                 .or(last_notification.is_null()),
         )
-        .load::<PushSubscription>(&connection)?
+        .load::<PushSubscription>(&mut connection)?
         .into_iter()
         .sorted_by_key(|s| s.user_id)
         .collect::<Vec<_>>();
@@ -123,7 +129,7 @@ pub async fn send_daily_notifications(
     let endpoints = subs.iter().map(|s| s.endpoint.clone()).collect::<Vec<_>>();
     diesel::update(push_subscriptions.filter(endpoint.eq_any(endpoints)))
         .set(last_notification.eq(Utc::now()))
-        .execute(&connection)?;
+        .execute(&mut connection)?;
 
     if notification_time > Local::now() {
         return Ok(());
@@ -131,8 +137,8 @@ pub async fn send_daily_notifications(
 
     let mut pending_notifications = Vec::new();
 
-    for (uid, group) in &subs.iter().group_by(|s| s.user_id) {
-        let body = daily_notification_body(&connection, uid, PerformanceKind::Today)?;
+    for (uid, group) in &subs.iter().chunk_by(|s| s.user_id) {
+        let body = daily_notification_body(&mut connection, uid, PerformanceKind::Today)?;
         if !body.is_empty() {
             for sub in group {
                 pending_notifications.push((sub.clone(), body.clone()))

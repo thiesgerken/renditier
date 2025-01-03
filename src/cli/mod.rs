@@ -8,13 +8,13 @@ pub mod stock;
 pub mod transaction;
 pub mod user;
 
-use clap::{crate_authors, crate_name, crate_version, App, Arg};
+use clap::{crate_authors, crate_name, crate_version, Arg, ArgAction, Command};
 use config::ConfigError;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-pub fn build() -> App<'static> {
-    App::new(crate_name!())
+pub fn build() -> Command {
+    Command::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
         .about("Stock database and analysis tool")
@@ -25,11 +25,12 @@ pub fn build() -> App<'static> {
                 .help("read configuration from this file (instead of config.* in '/etc/stockdb' and stockdb.* in '.')"))
         .arg(Arg::new("dump")
                 .long("dump")
+                .action(ArgAction::SetTrue)
                 .help("dump configuration and exit"))
         .arg(Arg::new("v")
                 .short('v')
                 .long("verbose")
-                .multiple_occurrences(true)
+                .action(ArgAction::Count)
                 .help("specify multiple times (up to three) to increase verbosity level"))
         .arg(Arg::new("database")
                 .long("database")
@@ -70,42 +71,40 @@ impl Default for Config {
 // set default settings and load overrides from config files
 // files that are considered: basenames /etc/stockdb/config and ./stockdb
 // fails, if additional_file does not exist or cannot be read
-pub fn initialize_settings(additional_file: Option<&str>) -> Result<config::Config, ConfigError> {
-    let mut settings = config::Config::new();
+pub fn initialize_settings(
+    additional_file: Option<&str>,
+) -> config::ConfigBuilder<config::builder::DefaultState> {
+    let mut settings = config::Config::builder();
 
-    if let Some(p) = additional_file {
-        settings
-            .merge(config::File::from(Path::new(p)).required(true))
-            .expect("unable to read config file");
+    settings = if let Some(p) = additional_file {
+        settings.add_source(config::File::from(Path::new(p)).required(true))
     } else {
         settings
-            .merge(config::File::with_name("/etc/stockdb/config").required(false))
-            .unwrap()
-            .merge(config::File::with_name("./stockdb").required(false))
-            .unwrap();
-    }
+            .add_source(config::File::with_name("/etc/stockdb/config").required(false))
+            .add_source(config::File::with_name("./stockdb").required(false))
+    };
 
-    settings
-        .merge(config::Environment::with_prefix("stockdb_").separator("__"))
-        .expect("unable to read config from environment variables");
-
-    Ok(settings)
+    settings.add_source(
+        config::Environment::with_prefix("STOCKDB")
+            .prefix_separator("__")
+            .separator("__"),
+    )
 }
 
 // parse the command line flags and add them as overrides to settings
 pub fn merge_settings(
     opts: &clap::ArgMatches,
-    settings: &mut config::Config,
-) -> Result<(), ConfigError> {
-    let ov = vec!["database"];
+    mut settings: config::ConfigBuilder<config::builder::DefaultState>,
+) -> Result<config::ConfigBuilder<config::builder::DefaultState>, ConfigError> {
+    let ov = ["database"];
 
     for x in ov.iter() {
-        if let Some(y) = opts.value_of(x) {
-            settings.set(x, y)?;
+        if let Some(y) = opts.get_one::<String>(x) {
+            settings = settings.set_override(x, y.clone())?;
         }
     }
 
-    settings.set("verbosity", opts.occurrences_of("v") as i64)?;
+    settings = settings.set_override("verbosity", opts.get_count("v") as i64)?;
 
-    Ok(())
+    Ok(settings)
 }

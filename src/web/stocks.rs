@@ -116,7 +116,7 @@ pub async fn list(
         .run(move |c| {
             let infos = stock_infos::table
                 .order(stock_infos::isin.asc())
-                .limit(count.unwrap_or(i64::max_value()))
+                .limit(count.unwrap_or(i64::MAX))
                 .offset(offset.unwrap_or(0))
                 .load::<StockInfo>(c)
                 .ok()?;

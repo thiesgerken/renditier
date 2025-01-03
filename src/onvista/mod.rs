@@ -6,7 +6,7 @@ pub mod stock;
 use crate::models::*;
 use crate::onvista::json_utils::*;
 
-use chrono::{Date, Local, NaiveDate, NaiveDateTime};
+use chrono::{DateTime, NaiveDate, Utc};
 use itertools::izip;
 use log::debug;
 use serde_json::Value;
@@ -18,7 +18,7 @@ pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), B
     let params = qstring::QString::new(vec![("searchValue", needle)]);
     let client = reqwest::Client::new();
     let resp = client
-        .get(&format!("https://www.onvista.de/suche/?{}", params))
+        .get(format!("https://www.onvista.de/suche/?{}", params))
         .header("User-Agent", USER_AGENT)
         .send()
         .await?;
@@ -58,7 +58,7 @@ pub async fn get_data_realtime(
 pub async fn get_data_historical_new(
     stock: &StockInfo,
     onvista_record_id: i32,
-    start: Date<Local>,
+    start: NaiveDate,
 ) -> Result<Vec<HistoricalPrice>, Box<dyn Error>> {
     let url = format!("https://api.onvista.de/api/v1/instruments/FUND/{}/eod_history?idNotation={}&range=Y5&startDate={}",
   stock.instrument_id.clone().ok_or("ETF without instrument id")?,   onvista_record_id, start.format("%Y-%m-%d"),
@@ -82,10 +82,12 @@ pub async fn get_data_historical_new(
         .ok_or("error obtaining datetimes")?
         .iter()
         .map(|s| {
-            Ok(NaiveDateTime::from_timestamp(
+            Ok(DateTime::<Utc>::from_timestamp(
                 get_i64(s).ok_or_else(|| format!("error parsing {}", s))?,
                 0,
             )
+            .unwrap()
+            .naive_local()
             .date())
         })
         .collect::<Result<Vec<_>, String>>()?;
@@ -137,7 +139,7 @@ pub async fn get_data_historical_new(
 pub async fn get_data_historical(
     stock: &StockInfo,
     onvista_record_id: i32,
-    start: Date<Local>,
+    start: NaiveDate,
 ) -> Result<Vec<HistoricalPrice>, Box<dyn Error>> {
     if stock.kind == "ETF" || stock.kind == "Aktie" {
         return get_data_historical_new(stock, onvista_record_id, start).await;
@@ -210,11 +212,12 @@ fn parse_historical_row(
     }
 
     let date_splits = record.get(0)?.trim().split('.').collect::<Vec<_>>();
-    let date = NaiveDate::from_ymd(
+    let date = NaiveDate::from_ymd_opt(
         date_splits[2].parse().ok()?,
         date_splits[1].parse().ok()?,
         date_splits[0].parse().ok()?,
-    );
+    )
+    .unwrap();
 
     let opening = record
         .get(1)?
@@ -262,11 +265,12 @@ fn parse_historical_row_novol(
     }
 
     let date_splits = record.get(0)?.trim().split('.').collect::<Vec<_>>();
-    let date = NaiveDate::from_ymd(
+    let date = NaiveDate::from_ymd_opt(
         date_splits[2].parse().ok()?,
         date_splits[1].parse().ok()?,
         date_splits[0].parse().ok()?,
-    );
+    )
+    .unwrap();
 
     let opening = record
         .get(1)?
@@ -308,7 +312,7 @@ fn parse_historical_row_novol(
 mod tests {
     use super::*;
 
-    use chrono::Duration;
+    use chrono::{Duration, Local};
     use test_log::test;
 
     #[test(tokio::test)]
@@ -337,7 +341,9 @@ mod tests {
         let data = get_data_historical(
             &info,
             exs[0].onvista_record_id,
-            Local::today()
+            Local::now()
+                .naive_local()
+                .date()
                 .checked_sub_signed(Duration::weeks(2))
                 .unwrap(),
         )
@@ -374,7 +380,9 @@ mod tests {
         let data = get_data_historical(
             &info,
             exs[0].onvista_record_id,
-            Local::today()
+            Local::now()
+                .naive_local()
+                .date()
                 .checked_sub_signed(Duration::weeks(2))
                 .unwrap(),
         )
@@ -411,7 +419,9 @@ mod tests {
         let data = get_data_historical(
             &info,
             exs[0].onvista_record_id,
-            Local::today()
+            Local::now()
+                .naive_local()
+                .date()
                 .checked_sub_signed(Duration::weeks(2))
                 .unwrap(),
         )

@@ -22,7 +22,7 @@ pub struct DataFormat {
 }
 
 impl DataFormat {
-    pub fn new(connection: &PgConnection) -> Self {
+    pub fn new(connection: &mut PgConnection) -> Self {
         let realtime_prices = realtime_prices::table
             .load::<RealtimePrice>(connection)
             .expect("Error loading realtime prices");
@@ -36,7 +36,7 @@ impl DataFormat {
         }
     }
 
-    pub fn write_to(self, connection: &PgConnection) {
+    pub fn write_to(self, connection: &mut PgConnection) {
         let known_exchanges = stock_exchanges::table
             .load::<StockExchange>(connection)
             .expect("Error loading stock exchanges")
@@ -87,7 +87,7 @@ impl DataFormat {
 }
 
 impl NativeFormat {
-    pub fn new(connection: &PgConnection) -> Self {
+    pub fn new(connection: &mut PgConnection) -> Self {
         let us = users::table
             .load::<User>(connection)
             .expect("Error loading users");
@@ -105,7 +105,7 @@ impl NativeFormat {
         }
     }
 
-    pub fn write_to(&self, connection: &PgConnection) {
+    pub fn write_to(&self, connection: &mut PgConnection) {
         let user_count = diesel::insert_into(users::table)
             .values(&self.users)
             .on_conflict_do_nothing()
@@ -152,7 +152,7 @@ pub struct MoneyDBFormat {
 }
 
 impl MoneyDBFormat {
-    pub fn write_to(&self, connection: &PgConnection) {
+    pub fn write_to(&self, connection: &mut PgConnection) {
         let users = diesel::insert_into(users::table)
             .values(self.users.iter().map(|u| u.convert()).collect::<Vec<_>>())
             .load::<User>(connection)
