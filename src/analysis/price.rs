@@ -22,7 +22,7 @@ pub trait Price {
     // hard_threshold: amount of hours the price may be off
     // soft_threshold: amount of hours that are considered irrelevant to scoring of exchanges
     fn find_multiple(
-        connection: &diesel::PgConnection,
+        connection: &mut diesel::PgConnection,
         isins: &[String],
         dates: &[DateTime<Utc>],
         hard_threshold: i64,
@@ -37,7 +37,7 @@ pub trait Price {
 }
 
 pub fn find<T>(
-    connection: &diesel::PgConnection,
+    connection: &mut diesel::PgConnection,
     isins: &[String],
     date: DateTime<Utc>,
     hard_threshold: i64,
@@ -67,7 +67,7 @@ impl Price for RealtimePrice {
     }
 
     fn find_multiple(
-        connection: &diesel::PgConnection,
+        connection: &mut diesel::PgConnection,
         isins: &[String],
         dates: &[DateTime<Utc>],
         hard_threshold: i64,
@@ -86,25 +86,9 @@ impl Price for RealtimePrice {
                 .unwrap()
         });
 
-        type MyJoinOn = diesel::query_source::joins::JoinOn<
-            diesel::query_source::joins::Join<
-                realtime_prices::table,
-                stock_exchanges::table,
-                diesel::query_source::joins::Inner,
-            >,
-            diesel::expression::operators::Eq<
-                realtime_prices::columns::onvista_record_id,
-                stock_exchanges::columns::onvista_record_id,
-            >,
-        >;
-
         let always_false = Box::new(realtime_prices::date.ne(realtime_prices::date));
         let fs: Box<
-            dyn diesel::BoxableExpression<
-                MyJoinOn,
-                diesel::pg::Pg,
-                SqlType = diesel::sql_types::Bool,
-            >,
+            dyn diesel::BoxableExpression<_, diesel::pg::Pg, SqlType = diesel::sql_types::Bool>,
         > = hard_lbs
             .iter()
             .zip(dates.iter())
@@ -135,7 +119,7 @@ impl Price for RealtimePrice {
         );
 
         Ok(soft_lbs
-            .zip(hard_lbs.into_iter())
+            .zip(hard_lbs)
             .zip(dates)
             .map(|((soft_lb, hard_lb), date)| {
                 let mut res = HashMap::new();
@@ -177,7 +161,7 @@ impl Price for HistoricalPrice {
 
     fn date(&self) -> DateTime<Utc> {
         // does not have to be exact
-        let d = self.date.and_hms(18, 0, 0);
+        let d = self.date.and_hms_opt(18, 0, 0).unwrap();
 
         chrono::Local
             .from_local_datetime(&d)
@@ -187,7 +171,7 @@ impl Price for HistoricalPrice {
     }
 
     fn find_multiple(
-        connection: &diesel::PgConnection,
+        connection: &mut diesel::PgConnection,
         isins: &[String],
         dates: &[DateTime<Utc>],
         hard_threshold: i64,
@@ -217,25 +201,9 @@ impl Price for HistoricalPrice {
             .map(|d| d.with_timezone(&Local).naive_local().date())
             .collect::<Vec<_>>();
 
-        type MyJoinOn = diesel::query_source::joins::JoinOn<
-            diesel::query_source::joins::Join<
-                historical_prices::table,
-                stock_exchanges::table,
-                diesel::query_source::joins::Inner,
-            >,
-            diesel::expression::operators::Eq<
-                historical_prices::columns::onvista_record_id,
-                stock_exchanges::columns::onvista_record_id,
-            >,
-        >;
-
         let always_false = Box::new(historical_prices::date.ne(historical_prices::date));
         let fs: Box<
-            dyn diesel::BoxableExpression<
-                MyJoinOn,
-                diesel::pg::Pg,
-                SqlType = diesel::sql_types::Bool,
-            >,
+            dyn diesel::BoxableExpression<_, diesel::pg::Pg, SqlType = diesel::sql_types::Bool>,
         > = hard_lbs
             .iter()
             .zip(days.iter())
@@ -265,7 +233,7 @@ impl Price for HistoricalPrice {
         );
 
         Ok(soft_lbs
-            .zip(hard_lbs.into_iter())
+            .zip(hard_lbs)
             .zip(days)
             .map(|((soft_lb, hard_lb), day)| {
                 let mut res = HashMap::new();
@@ -331,9 +299,9 @@ impl EitherPrice {
             EitherPrice::RealtimePrice(p) => p.date(),
             EitherPrice::HistoricalPrice(p) => p.date(),
             EitherPrice::HistoricalPriceOpening(p) => chrono::Local
-                .from_local_datetime(&p.date.and_hms(9, 0, 0))
+                .from_local_datetime(&p.date.and_hms_opt(9, 0, 0).unwrap())
                 .earliest()
-                .unwrap_or_else(|| chrono::Local.from_utc_datetime(&p.date.and_hms(9, 0, 0)))
+                .unwrap_or_else(|| chrono::Local.from_utc_datetime(&p.date.and_hms_opt(9, 0, 0).unwrap()))
                 .with_timezone(&Utc),
         }
     }

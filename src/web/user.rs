@@ -35,7 +35,7 @@ impl<'r> FromRequest<'r> for UserId {
 
         match id {
             Some(id) => Outcome::Success(UserId(id)),
-            None => Outcome::Failure((Status::Unauthorized, ())),
+            None => Outcome::Error((Status::Unauthorized, ())),
         }
     }
 }
@@ -174,7 +174,7 @@ pub async fn info(
 
 #[get("/user/logout")]
 pub fn logout(cookies: &CookieJar<'_>) -> Status {
-    cookies.remove_private(Cookie::named("user_id"));
+    cookies.remove_private(Cookie::build("user_id"));
     Status::Ok
 }
 

@@ -15,7 +15,7 @@ pub struct FileResponder {
 
 #[rocket::async_trait]
 impl<'r> Responder<'r, 'static> for FileResponder {
-    fn respond_to(self, r: &'r Request<'_>) -> response::Result<'static> {
+    fn respond_to(self, _r: &'r Request<'_>) -> response::Result<'static> {
         let filename = self.file.display().to_string();
 
         if let Some(d) = Asset::get(&filename) {
@@ -43,7 +43,7 @@ impl<'r> Responder<'r, 'static> for FileResponder {
             FileResponder {
                 file: PathBuf::from("index.html"),
             }
-            .respond_to(r)
+            .respond_to(_r)
         } else {
             Err(Status::NotFound)
         }

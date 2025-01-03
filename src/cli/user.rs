@@ -3,14 +3,14 @@ use crate::models::*;
 use crate::schema::users::dsl::*;
 
 use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup};
+use clap::{Arg, ArgGroup, Command};
 use diesel::prelude::*;
 use log::info;
-use prettytable::{cell, row, Table};
+use prettytable::{row, Table};
 use std::io;
 
-pub fn build() -> App<'static> {
-    App::new("user")
+pub fn build() -> Command {
+    Command::new("user")
         .about("User Management")
         .arg(
             Arg::new("add")
@@ -33,13 +33,13 @@ pub fn build() -> App<'static> {
         .arg(Arg::new("list").long("list").help("list users"))
         .group(
             ArgGroup::new("action")
-                .args(&["add", "update", "remove", "list"])
+                .args(["add", "update", "remove", "list"])
                 .required(true),
         )
 }
 
-pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
-    if let Some(uname) = sub_matches.value_of("add") {
+pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
+    if let Some(uname) = sub_matches.get_one::<&str>("add") {
         // check if this username is taken
         assert!(
             users
@@ -78,7 +78,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
             .expect("Error saving new user");
 
         info!("Created user {:?}", u);
-    } else if let Some(uname) = sub_matches.value_of("update") {
+    } else if let Some(uname) = sub_matches.get_one::<&str>("update") {
         let mut fname = String::new();
         println!("Please enter a new full name of the user");
         io::stdin().read_line(&mut fname).unwrap();
@@ -100,7 +100,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
             .unwrap_or_else(|_| panic!("Unable to find user {}", uname));
 
         info!("Updated user {:?}", u);
-    } else if let Some(uname) = sub_matches.value_of("remove") {
+    } else if let Some(uname) = sub_matches.get_one::<&str>("remove") {
         // check if this user even exists
         assert!(
             users
@@ -118,7 +118,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
       );
         io::stdin().read_line(&mut confirmation).unwrap();
         let confirmation = confirmation.trim_end(); // Remove the trailing newline
-        assert_eq!(confirmation, uname, "Confirmation failed");
+        assert_eq!(confirmation, *uname, "Confirmation failed");
 
         // not needed because of ON DELETE CASCADE pragmas in accounts and transaction tables
         // delete relevant accounts and transactions
@@ -140,7 +140,7 @@ pub fn handle(connection: &PgConnection, sub_matches: &ArgMatches) {
             .unwrap_or_else(|_| panic!("Unable to delete user {}", uname));
 
         info!("deleted user '{}'", uname);
-    } else if sub_matches.is_present("list") {
+    } else if sub_matches.contains_id("list") {
         let us = users.load::<User>(connection).expect("Error loading users");
 
         let mut table = Table::new();

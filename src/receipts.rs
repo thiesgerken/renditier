@@ -15,7 +15,7 @@ struct ParsedTransaction {
 }
 
 pub fn parse_mem(
-    connection: &PgConnection,
+    connection: &mut PgConnection,
     uid: i32,
     files: &[(String, Vec<u8>)],
 ) -> Result<Vec<Transaction>, Box<dyn Error>> {
@@ -96,7 +96,7 @@ pub fn parse_mem(
 }
 
 pub fn parse_files(
-    connection: &PgConnection,
+    connection: &mut PgConnection,
     uid: i32,
     file_names: &[&str],
 ) -> Result<Vec<Transaction>, Box<dyn Error>> {
@@ -204,8 +204,8 @@ fn parse_dividends(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let re = Regex::new(r"Wert\s+(\d\d)\.(\d\d)\.(\d{4})\s").unwrap();
     let cpt = re.captures_iter(s).next().ok_or("no date match")?;
     let date = Local
-        .ymd(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?)
-        .and_hms(0, 0, 0)
+        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?,
+        0, 0, 0).unwrap()
         .with_timezone(&Utc);
 
     let t = NewTransaction {
@@ -268,8 +268,8 @@ fn parse_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let re = Regex::new(r"Wert\s+(\d\d)\.(\d\d)\.(\d{4})\s").unwrap();
     let cpt = re.captures_iter(s).next().ok_or("no date match")?;
     let date = Local
-        .ymd(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?)
-        .and_hms(0, 0, 0)
+        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
+        .unwrap()
         .with_timezone(&Utc);
 
     let t = NewTransaction {
@@ -350,8 +350,15 @@ fn parse_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
         .ok_or("no date and place match")?;
 
     let date = Local
-        .ymd(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?)
-        .and_hms(cpt[4].parse()?, cpt[5].parse()?, 0)
+        .with_ymd_and_hms(
+            cpt[3].parse()?,
+            cpt[2].parse()?,
+            cpt[1].parse()?,
+            cpt[4].parse()?,
+            cpt[5].parse()?,
+            0,
+        )
+        .unwrap()
         .with_timezone(&Utc);
 
     let ex_type = cpt[6].to_owned();

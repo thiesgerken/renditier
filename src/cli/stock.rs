@@ -5,18 +5,18 @@ use crate::schema::stock_infos::dsl::{isin, persistent, stock_infos};
 
 use chrono::{DateTime, NaiveDate, Utc};
 use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup};
+use clap::{Arg, ArgGroup, Command};
 use diesel::{
     prelude::*,
     r2d2::{ConnectionManager, Pool},
 };
 use log::{error, info};
-use prettytable::{cell, row, Row, Table};
+use prettytable::{row, Row, Table};
 use std::error::Error;
 use std::io;
 
-pub fn build() -> App<'static> {
-    App::new("stock")
+pub fn build() -> Command {
+    Command::new("stock")
         .about("Stock Management")
         .arg(
             Arg::new("list")
@@ -43,23 +43,22 @@ pub fn build() -> App<'static> {
         .arg(Arg::new("update").long("update").help("update stock infos"))
         .group(
             ArgGroup::new("action")
-                .args(&["add", "update", "remove", "list", "fetch"])
+                .args(["add", "update", "remove", "list", "fetch"])
                 .required(true),
         )
 }
 
 pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &ArgMatches) {
-    let connection = pool.get().unwrap();
+    let mut connection = pool.get().unwrap();
 
-    if let Some(isin_) = sub_matches.value_of("add") {
+    if let Some(isin_) = sub_matches.get_one::<&str>("add") {
         let isin_ = isin_.to_uppercase();
         assert!(isin_.len() == 12, "ISINs always have a length of 12");
 
         let exists = stock_infos
             .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
-            .load::<StockInfo>(&connection)
-            .expect("Error loading stock infos")
-            .get(0)
+            .load::<StockInfo>(&mut connection)
+            .expect("Error loading stock infos").first()
             .is_some();
 
         if exists {
@@ -70,7 +69,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
 
             diesel::update(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
                 .set(persistent.eq(true))
-                .get_result::<StockInfo>(&connection)
+                .get_result::<StockInfo>(&mut connection)
                 .unwrap_or_else(|_| panic!("Unable to find ISIN {}", &isin_));
 
             info!("Set stock {:?} as persistent", &isin_);
@@ -84,12 +83,12 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
 
                     diesel::insert_into(crate::schema::stock_infos::table)
                         .values(&si)
-                        .execute(&connection)
+                        .execute(&mut connection)
                         .expect("Error saving stock info");
 
                     diesel::insert_into(crate::schema::stock_exchanges::table)
                         .values(&exs)
-                        .execute(&connection)
+                        .execute(&mut connection)
                         .expect("Error saving exchanges");
 
                     info!("Added stock {} and {} exchanges", &isin_, exs.len());
@@ -97,9 +96,9 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
                 Err(e) => error!("Error obtaining stock infos for {}: {}", isin_, e),
             }
         }
-    } else if sub_matches.is_present("update") {
+    } else if sub_matches.contains_id("update") {
         let infos = stock_infos
-            .load::<StockInfo>(&connection)
+            .load::<StockInfo>(&mut connection)
             .expect("error querying infos");
 
         for info in infos.iter() {
@@ -110,22 +109,21 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
                 .expect("error obtaining stock info");
             diesel::update(stock_infos.filter(isin.eq(info.isin.clone())))
                 .set(new_info.clone())
-                .execute(&connection)
+                .execute(&mut connection)
                 .expect("error updating stock info");
 
             info!("updated stock info for {}", &info.isin);
             debug!("new info: {:?}", &new_info);
         }
-    } else if let Some(isin_) = sub_matches.value_of("remove") {
+    } else if let Some(isin_) = sub_matches.get_one::<&str>("remove") {
         let isin_ = isin_.to_uppercase();
         assert!(isin_.len() == 12, "ISINs always have a length of 12");
 
         // check if this stock even exists in the database
         stock_infos
             .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
-            .load::<StockInfo>(&connection)
-            .expect("Error loading stock infos")
-            .get(0)
+            .load::<StockInfo>(&mut connection)
+            .expect("Error loading stock infos").first()
             .expect("Stock is not watched");
 
         let mut confirmation = String::new();
@@ -139,13 +137,13 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
 
         // delete stock info, deletes prices and so on because of ON DELETE CASCADE
         diesel::delete(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
-            .execute(&connection)
+            .execute(&mut connection)
             .unwrap_or_else(|_| panic!("Unable to delete stock {}", &isin_));
 
         info!("deleted stock '{}', its exchanges and price data", isin_);
-    } else if sub_matches.is_present("list") {
+    } else if sub_matches.contains_id("list") {
         let sis = stock_infos
-            .load::<StockInfo>(&connection)
+            .load::<StockInfo>(&mut connection)
             .expect("Error loading stock infos");
 
         let mut table = Table::new();
@@ -159,19 +157,19 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         ]);
 
         for si in sis {
-            let row = add_stock_infos(&connection, si).expect("could not load stock infos from db");
+            let row = add_stock_infos(&mut connection, si).expect("could not load stock infos from db");
             table.add_row(row);
         }
 
         table.printstd();
-    } else if sub_matches.is_present("fetch") {
+    } else if sub_matches.contains_id("fetch") {
         add_missing_stocks(pool).await;
     } else {
         panic!("unexpected options for subcommand 'stock'");
     }
 }
 
-fn add_stock_infos(connection: &PgConnection, si: StockInfo) -> Result<Row, Box<dyn Error>> {
+fn add_stock_infos(connection: &mut PgConnection, si: StockInfo) -> Result<Row, Box<dyn Error>> {
     use crate::schema::historical_prices::dsl::*;
     use crate::schema::realtime_prices::dsl::*;
     use crate::schema::stock_exchanges::dsl::*;

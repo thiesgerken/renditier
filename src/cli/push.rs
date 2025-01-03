@@ -4,16 +4,16 @@ use crate::schema::push_subscriptions::dsl::*;
 
 use chrono::Utc;
 use clap::ArgMatches;
-use clap::{App, Arg, ArgGroup};
+use clap::{Command, Arg, ArgGroup};
 use diesel::prelude::*;
 use log::info;
-use prettytable::{cell, row, Table};
+use prettytable::{ row, Table};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
 
-pub fn build() -> App<'static> {
-    App::new("push")
+pub fn build() -> Command {
+    Command::new("push")
         .about("Push Subscription Management")
         .arg(
             Arg::new("remove")
@@ -40,7 +40,7 @@ pub fn build() -> App<'static> {
         )
         .group(
             ArgGroup::new("action")
-                .args(&["test", "remove", "list", "clear"])
+                .args(["test", "remove", "list", "clear"])
                 .required(true),
         )
 }
@@ -51,8 +51,8 @@ pub struct Config {
     pub key_file: String,
 }
 
-pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches, config: Config) {
-    if let Some(s_pid) = sub_matches.value_of("test") {
+pub async fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches, config: Config) {
+    if let Some(s_pid) = sub_matches.get_one::<String>("test") {
         let sub = crate::schema::push_subscriptions::table
             .find(&s_pid)
             .load::<PushSubscription>(connection)
@@ -73,7 +73,7 @@ pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches, config:
         )
         .await
         .expect("failed to send push message");
-    } else if let Some(s_pid) = sub_matches.value_of("remove") {
+    } else if let Some(s_pid) = sub_matches.get_one::<String>("remove") {
         crate::schema::push_subscriptions::table
             .find(&s_pid)
             .load::<PushSubscription>(connection)
@@ -87,13 +87,13 @@ pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches, config:
             .unwrap_or_else(|_| panic!("unable to delete subscription {}", &s_pid));
 
         info!("deleted subscription '{}'", s_pid);
-    } else if sub_matches.is_present("clear") {
+    } else if sub_matches.contains_id("clear") {
         let rows = diesel::delete(push_subscriptions)
             .execute(connection)
             .unwrap();
 
         info!("deleted {} subscription(s)", rows);
-    } else if sub_matches.is_present("list") {
+    } else if sub_matches.contains_id("list") {
         let subs = push_subscriptions
             .load::<PushSubscription>(connection)
             .expect("error loading subscriptions");
@@ -108,7 +108,7 @@ pub async fn handle(connection: &PgConnection, sub_matches: &ArgMatches, config:
         ]);
 
         for s in subs.iter() {
-            let s_endpoint = if sub_matches.is_present("full") || s.endpoint.len() <= 45 + 4 {
+            let s_endpoint = if sub_matches.contains_id("full") || s.endpoint.len() <= 45 + 4 {
                 s.endpoint.clone()
             } else {
                 String::from(&format!("{} ...", &s.endpoint[..45]))

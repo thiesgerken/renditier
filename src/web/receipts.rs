@@ -3,6 +3,8 @@ use crate::receipts;
 use crate::web::user::UserId;
 use crate::web::DbConn;
 
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +36,7 @@ pub async fn upload(
                 .into_iter()
                 .map(|fc| {
                     let name = fc.name;
-                    let buf = base64::decode(fc.bytes).map_err(|e| {
+                    let buf = BASE64_STANDARD.decode(fc.bytes).map_err(|e| {
                         wrap_string(format!("{}: error decoding base64: {}", name.clone(), e))
                     })?;
 

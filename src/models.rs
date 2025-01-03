@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Debug, Clone, Queryable, Insertable, Identifiable, Serialize, Deserialize, AsChangeset,
 )]
-#[changeset_options(treat_none_as_null = "true")]
-#[primary_key("isin")]
+#[diesel(treat_none_as_null = true)]
+#[diesel(primary_key(isin))]
 #[serde(rename_all = "camelCase")]
 pub struct StockInfo {
     pub isin: String,
@@ -42,8 +42,8 @@ pub struct StockInfo {
 #[derive(
     Debug, Clone, Queryable, Insertable, Identifiable, Associations, Serialize, Deserialize,
 )]
-#[primary_key("onvista_record_id")]
-#[belongs_to(StockInfo, foreign_key = "isin")]
+#[diesel(primary_key(onvista_record_id))]
+#[diesel(belongs_to(StockInfo, foreign_key = isin))]
 #[serde(rename_all = "camelCase")]
 pub struct StockExchange {
     pub isin: String,
@@ -58,8 +58,8 @@ pub struct StockExchange {
 #[derive(
     Debug, Clone, Queryable, Insertable, Identifiable, Associations, Serialize, Deserialize,
 )]
-#[belongs_to(StockExchange, foreign_key = "onvista_record_id")]
-#[primary_key("date", "onvista_record_id")]
+#[diesel(belongs_to(StockExchange, foreign_key = onvista_record_id))]
+#[diesel(primary_key(date, onvista_record_id))]
 #[serde(rename_all = "camelCase")]
 pub struct HistoricalPrice {
     pub date: NaiveDate,
@@ -76,8 +76,8 @@ pub struct HistoricalPrice {
 #[derive(
     Debug, Clone, Queryable, Insertable, Identifiable, Associations, Serialize, Deserialize,
 )]
-#[belongs_to(StockExchange, foreign_key = "onvista_record_id")]
-#[primary_key("date", "onvista_record_id")]
+#[diesel(belongs_to(StockExchange, foreign_key = onvista_record_id))]
+#[diesel(primary_key(date, onvista_record_id))]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimePrice {
     pub date: DateTime<Utc>,
@@ -96,7 +96,7 @@ pub struct User {
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[table_name = "users"]
+#[diesel(table_name = users)]
 pub struct NewUser {
     pub name: String,
     pub full_name: String,
@@ -114,7 +114,7 @@ pub struct NewUser {
     Deserialize,
     AsChangeset,
 )]
-#[belongs_to(User, foreign_key = "user_id")]
+#[diesel(belongs_to(User, foreign_key = user_id))]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
     pub id: i32,
@@ -124,7 +124,7 @@ pub struct Account {
 }
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
-#[table_name = "accounts"]
+#[diesel(table_name = accounts)]
 #[serde(rename_all = "camelCase")]
 pub struct NewAccount {
     pub user_id: i32,
@@ -135,8 +135,8 @@ pub struct NewAccount {
 #[derive(
     Debug, Clone, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize,
 )]
-#[belongs_to(User, foreign_key = "user_id")]
-#[primary_key("endpoint")]
+#[diesel(belongs_to(User, foreign_key = user_id))]
+#[diesel(primary_key(endpoint))]
 #[serde(rename_all = "camelCase")]
 pub struct PushSubscription {
     pub endpoint: String,
@@ -159,7 +159,7 @@ pub struct PushSubscription {
     Deserialize,
     AsChangeset,
 )]
-#[belongs_to(Account, foreign_key = "account_id")]
+#[diesel(belongs_to(Account, foreign_key = account_id))]
 #[serde(rename_all = "camelCase")]
 pub struct Transaction {
     pub id: i32,
@@ -176,7 +176,7 @@ pub struct Transaction {
 }
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
-#[table_name = "transactions"]
+#[diesel(table_name = transactions)]
 #[serde(rename_all = "camelCase")]
 pub struct NewTransaction {
     pub account_id: i32,

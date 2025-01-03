@@ -27,14 +27,14 @@ pub async fn list(
                 .filter(historical_prices::onvista_record_id.eq(record))
                 .filter(
                     historical_prices::date
-                        .le(to.unwrap_or_else(|| NaiveDate::from_ymd(2100, 1, 1))),
+                        .le(to.unwrap_or_else(|| NaiveDate::from_ymd_opt(2100, 1, 1).unwrap())),
                 )
                 .filter(
                     historical_prices::date
-                        .ge(from.unwrap_or_else(|| NaiveDate::from_ymd(1900, 1, 1))),
+                        .ge(from.unwrap_or_else(|| NaiveDate::from_ymd_opt(1900, 1, 1).unwrap())),
                 )
                 .order(historical_prices::date.asc())
-                .limit(count.unwrap_or(i64::max_value()))
+                .limit(count.unwrap_or(i64::MAX))
                 .offset(offset.unwrap_or(0))
                 .load::<HistoricalPrice>(c)
                 .map(Json)

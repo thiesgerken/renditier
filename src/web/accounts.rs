@@ -22,7 +22,7 @@ pub async fn list(
             accounts::table
                 .filter(accounts::user_id.eq(*uid))
                 .order(accounts::id.asc())
-                .limit(count.unwrap_or(i64::max_value()))
+                .limit(count.unwrap_or(i64::MAX))
                 .offset(offset.unwrap_or(0))
                 .load::<Account>(c)
                 .map(Json)

@@ -7,7 +7,7 @@ use crate::{add_missing_stocks, web};
 
 use chrono::{Datelike, Duration, Local, Timelike, Utc};
 use clap::ArgMatches;
-use clap::{App, Arg};
+use clap::{Arg, Command};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use log::{error, info, warn};
@@ -18,8 +18,8 @@ use std::fs::File;
 use std::io::Read;
 use tokio;
 
-pub fn build() -> App<'static> {
-    App::new("serve")
+pub fn build() -> Command {
+    Command::new("serve")
     .about("serve web interface")
     .arg(
       Arg::new("port")
@@ -74,11 +74,11 @@ async fn fetch_data(pool: Pool<ConnectionManager<PgConnection>>) -> Result<(), B
     let now = Utc::now();
     let now_local = now.with_timezone(&Local);
 
-    let connection = pool.get()?;
-    let stocks = stock_infos.load::<StockInfo>(&connection)?;
+    let mut connection = pool.get()?;
+    let stocks = stock_infos.load::<StockInfo>(&mut connection)?;
 
     // do not update data as often in the night and on weekends
-    let rt_interval = if now.date().weekday().number_from_monday() >= 6
+    let rt_interval = if now.naive_local().date().weekday().number_from_monday() >= 6
         || now_local.hour() > 19
         || now_local.hour() < 9
     {
@@ -105,7 +105,7 @@ async fn fetch_data(pool: Pool<ConnectionManager<PgConnection>>) -> Result<(), B
     }
 
     // do not update data as often in the night and on weekends
-    let hist_interval = if now.date().weekday().number_from_monday() >= 6
+    let hist_interval = if now.naive_local().date().weekday().number_from_monday() >= 6
         || now_local.hour() > 22
         || now_local.hour() < 18
     {
@@ -142,15 +142,15 @@ pub async fn handle(
     database: String,
     verbosity: i64,
 ) {
-    if let Some(y) = sub_matches.value_of("port") {
+    if let Some(y) = sub_matches.get_one::<String>("port") {
         config.port = y.parse().expect("cannot parse port");
     }
 
-    if let Some(y) = sub_matches.value_of("secret") {
+    if let Some(y) = sub_matches.get_one::<String>("secret") {
         config.secret_key = y.into();
     }
 
-    if let Some(y) = sub_matches.value_of("address") {
+    if let Some(y) = sub_matches.get_one::<String>("address") {
         config.address = y.into();
     }
 
