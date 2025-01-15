@@ -467,15 +467,14 @@ fn parse_comdirect_fees(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
         .round() as i64;
 
     debug!("Parsing date and receipt number");
-    let re = Regex::new(r"\s+(\d\d)\.(\d\d)\.(\d{4})\s+([^\s]+)\s").unwrap();
+    let re = Regex::new(r"\s+(\d\d)\.(\d\d)\.(\d{4})\s").unwrap();
     let cpt = re.captures_iter(s).next().ok_or("no date match")?;
     let date = Local
         .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
         .unwrap()
         .with_timezone(&Utc);
 
-    let receipt_number_str = cpt[4].to_owned();
-    let receipt_number = quick_and_dirty_checksum(&receipt_number_str);
+    let receipt_number = quick_and_dirty_checksum(&format!("{}{}{}", wkn, date.format("%Y%m%d"), amount));
 
     debug!("Parsing account number");
     let re = Regex::new(r"Kundennummer: \d+ (\d+)\s").unwrap();
