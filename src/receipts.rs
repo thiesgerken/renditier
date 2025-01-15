@@ -10,7 +10,7 @@ use std::str::FromStr;
 #[derive(Debug)]
 struct ParsedTransaction {
     content: NewTransaction,
-    account_number: u64,
+    account_number: String,
     over_the_counter: bool,
 }
 
@@ -73,7 +73,7 @@ pub fn parse_mem(
             .find(|a| {
                 a.iban
                     .as_ref()
-                    .map(|iban| iban.ends_with(&format!("{}", t.account_number)))
+                    .map(|iban| iban.contains(&format!("{}", t.account_number)))
                     .unwrap_or(false)
             })
             .ok_or_else(|| {
@@ -126,33 +126,49 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
     debug!("body of PDF: {}", &body);
 
     let mut ts = Vec::new();
-    let re_page = Regex::new(r"Depot-Nr\.[\s\S]+?(Depot-Nr\.|\z)").unwrap();
 
-    for page in re_page.find_iter(&body) {
-        let s = page.as_str();
+    if body.contains("onvista") {
+        let re_page = Regex::new(r"Depot-Nr\.[\s\S]+?(Depot-Nr\.|\z)").unwrap();
+        for page in re_page.find_iter(&body) {
+            let s = page.as_str();
 
-        let re_purchase = Regex::new(
-            r"Wertpapierabrechnung\s+(Verkauf|Kauf|Kauf Sparplan)\s+Kommissionsgeschäft",
-        )
-        .unwrap();
+            let re_purchase = Regex::new(
+                r"Wertpapierabrechnung\s+(Verkauf|Kauf|Kauf Sparplan)\s+Kommissionsgeschäft",
+            )
+            .unwrap();
 
-        if s.contains("Dividendengutschrift") {
-            debug!("Parsing as dividends");
-            ts.push(parse_dividends(s)?);
-        } else if s.contains("Erträgnisgutschrift") {
-            debug!("Parsing as payout");
-            ts.push(parse_payout(s)?);
-        } else if re_purchase.is_match(s) {
-            debug!("Parsing as purchase");
-            ts.push(parse_purchase(s)?);
-        } else if s.contains("Steuerbelastung\naus Wertpapieren") {
-            debug!("Ignoring page with tax information");
-        } else if !s.contains("SEITENNUMMER=1\n") {
-            debug!("Ignoring page that does not have page number 1");
-        } else {
-            info!("{}", s);
-            return Err("unknown receipt type".into());
+            if s.contains("Dividendengutschrift") {
+                debug!("Parsing as onvista dividends");
+                ts.push(parse_onvista_dividends(s)?);
+            } else if s.contains("Erträgnisgutschrift") {
+                debug!("Parsing as onvista payout");
+                ts.push(parse_onvista_payout(s)?);
+            } else if re_purchase.is_match(s) {
+                debug!("Parsing as onvista purchase");
+                ts.push(parse_onvista_purchase(s)?);
+            } else if s.contains("Steuerbelastung\naus Wertpapieren") {
+                debug!("Ignoring page with tax information");
+            } else if !s.contains("SEITENNUMMER=1\n") {
+                debug!("Ignoring page that does not have page number 1");
+            } else {
+                info!("{}", s);
+                return Err("unknown onvista receipt type".into());
+            }
         }
+    } else if body.contains("comdirect") {
+        if body.contains("Wertpapierkauf") || body.contains("Wertpapierverkauf") {
+            debug!("Parsing as comdirect purchase");
+            ts.push(parse_comdirect_purchase(&body)?);
+        } else if body.contains("für die Verwahrung Ihres Wertpapieres") {
+            debug!("Parsing as comdirect purchase");
+            ts.push(parse_comdirect_fees(&body)?);
+        } else {
+            info!("{}", body);
+            return Err("unknown comdirect receipt type".into());
+        }
+    } else {
+        info!("{}", body);
+        return Err("unknown receipt type".into());
     }
 
     if ts.is_empty() {
@@ -167,7 +183,7 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
     Ok(ts)
 }
 
-fn parse_dividends(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+fn parse_onvista_dividends(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let re = Regex::new(r"ISIN\s+([A-Z]{2}[A-Z0-9]{10})\s").unwrap();
     let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
 
@@ -204,8 +220,8 @@ fn parse_dividends(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let re = Regex::new(r"Wert\s+(\d\d)\.(\d\d)\.(\d{4})\s").unwrap();
     let cpt = re.captures_iter(s).next().ok_or("no date match")?;
     let date = Local
-        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?,
-        0, 0, 0).unwrap()
+        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
+        .unwrap()
         .with_timezone(&Utc);
 
     let t = NewTransaction {
@@ -228,7 +244,7 @@ fn parse_dividends(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     })
 }
 
-fn parse_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+fn parse_onvista_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let re = Regex::new(r"ISIN\s+([A-Z]{2}[A-Z0-9]{10})\s").unwrap();
     let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
 
@@ -292,7 +308,200 @@ fn parse_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     })
 }
 
-fn parse_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+fn quick_and_dirty_checksum(input: &str) -> i64 {
+    let mut sum = 0;
+    for c in input.chars() {
+        sum = (sum * 10 + c as i64) % 97;
+    }
+    sum
+}
+fn parse_comdirect_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+    debug!("Parsing isin");
+    let re = Regex::new(r"WKN / ISIN: [A-Z0-9]+\s*/\s*([A-Z]{2}[A-Z0-9]{10})\s*").unwrap();
+    let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
+
+    // not only numeric, cannot store as-is
+    let re = Regex::new(r"Rechnungsnummer\s*:\s*([A-Z0-9]+)\s").unwrap();
+    let receipt_number_str = re
+        .captures_iter(s)
+        .next()
+        .ok_or("no receipt number match")?[1]
+        .to_owned();
+    let receipt_number = quick_and_dirty_checksum(&receipt_number_str);
+
+    debug!("Parsing units and price");
+    let re_units_price =
+        Regex::new(r"Nennwert\s+Zum (?:Kurs|Preis) von\s*St. ([\d\.]+)\s+EUR\s+([\d\.]+,\d\d)\s")
+            .unwrap();
+    let cpt = re_units_price
+        .captures_iter(s)
+        .next()
+        .ok_or("no units/price match")?;
+    let mut units = parse_float(&cpt[1])?;
+    // let price = parse_float(&cpt[2])?;
+
+    debug!("Parsing amount");
+    let re = Regex::new(r"Kurswert\s+:\sEUR\s+([\d\.]+,\d{2})\s").unwrap();
+    let mut amount_no_fees =
+        (parse_float(&re.captures_iter(s).next().ok_or("no amount match")?[1])? * 100.0).round()
+            as i64;
+
+    debug!("Parsing account number");
+    let re = Regex::new(r"IBAN[a-zA-Z\s]+(DE[0-9 ]+)\s EUR").unwrap();
+    let account_number = re.captures_iter(s).next().ok_or("no account match")?[1].replace(' ', "");
+
+    debug!("Parsing total amount");
+    let re_purchase =
+        Regex::new(r"Zu Ihren Lasten vor Steuern:\s+EUR\s+(-?[\d\.]+,\d{2})\s").unwrap();
+    let re_sale = Regex::new(r"Zu Ihren Gunsten vor Steuern:\s+EUR\s+(-?[\d\.]+,\d{2})\s").unwrap();
+    let amount = if re_purchase.is_match(s) {
+        amount_no_fees *= -1;
+        (parse_float(
+            &re_purchase
+                .captures_iter(s)
+                .next()
+                .ok_or("no total amount match")?[1],
+        )? * 100.0)
+            .round() as i64
+    } else {
+        units *= -1.;
+
+        (parse_float(
+            &re_sale
+                .captures_iter(s)
+                .next()
+                .ok_or("no total amount match")?[1],
+        )? * 100.0)
+            .round() as i64
+    };
+
+    debug!("Parsing date and exchange");
+    let re = Regex::new(r"Geschäftstag\s+:\s(\d\d)\.(\d\d)\.(\d{4})\s+(?:Ausführungsplatz|Abwicklung)\s+:\s+(.+?)\s+Handelszeit\s+:\s+(\d\d):(\d\d)\s").unwrap();
+    let cpt = re
+        .captures_iter(s)
+        .next()
+        .ok_or("no date and place match")?;
+
+    let date = Local
+        .with_ymd_and_hms(
+            cpt[3].parse()?,
+            cpt[2].parse()?,
+            cpt[1].parse()?,
+            cpt[5].parse()?,
+            cpt[6].parse()?,
+            0,
+        )
+        .unwrap()
+        .with_timezone(&Utc);
+
+    let ex = cpt[4].to_owned();
+
+    let t = NewTransaction {
+        account_id: -1,
+        isin,
+        date,
+        units,
+        amount: amount_no_fees, // -units*price in cents (or simply the amount in case of dividends); does not include fees; negative sign -> gave money away.
+        fees: amount - amount_no_fees, // sign should be negative
+        onvista_exchange_id: None,
+        comments: String::new(),
+        exchange: Some(ex),
+        receipt_number: Some(receipt_number),
+    };
+
+    Ok(ParsedTransaction {
+        content: t,
+        over_the_counter: false,
+        account_number,
+    })
+}
+
+fn calculate_isin_checksum(isin_without_check: &str) -> Result<char, &'static str> {
+    // Überprüfe die Länge (sollte 11 Zeichen sein, ohne Prüfziffer)
+    if isin_without_check.len() != 11 {
+        return Err("ISIN must be 11 characters long (without check digit)");
+    }
+
+    // Konvertiere Buchstaben in Zahlen (A=10, B=11, etc.)
+    let mut expanded = String::with_capacity(24);
+    for c in isin_without_check.chars() {
+        if c.is_ascii_digit() {
+            expanded.push(c);
+        } else if c.is_ascii_alphabetic() {
+            let num = (c.to_ascii_uppercase() as u8 - b'A' + 10).to_string();
+            expanded.push_str(&num);
+        } else {
+            return Err("Invalid character in ISIN");
+        }
+    }
+
+    // Berechne die Prüfziffer
+    let mut sum = 0;
+    let mut toggle = true;
+    for c in expanded.chars().rev() {
+        let mut digit = c.to_digit(10).unwrap();
+        if toggle {
+            digit *= 2;
+            if digit > 9 {
+                digit = (digit % 10) + 1;
+            }
+        }
+        sum += digit;
+        toggle = !toggle;
+    }
+
+    let check_digit = (10 - (sum % 10)) % 10;
+    Ok(char::from_digit(check_digit, 10).unwrap())
+}
+
+fn parse_comdirect_fees(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+    debug!("Parsing isin");
+    let re = Regex::new(r"WKN\s([A-Z0-9]{6}),").unwrap();
+    let wkn = re.captures_iter(s).next().ok_or("no wkn match")?[1].to_owned();
+    let mut isin = format!("DE000{}", &wkn); // without check digit
+    isin.push(calculate_isin_checksum(&isin)?);
+
+    debug!("Parsing amount");
+    let re = Regex::new(r"Die Buchung von ([\d\.]+,\d{2}) Euro").unwrap();
+    let amount = (parse_float(&re.captures_iter(s).next().ok_or("no amount match")?[1])? * 100.0)
+        .round() as i64;
+
+    debug!("Parsing date and receipt number");
+    let re = Regex::new(r"\s+(\d\d)\.(\d\d)\.(\d{4})\s+([^\s]+)\s").unwrap();
+    let cpt = re.captures_iter(s).next().ok_or("no date match")?;
+    let date = Local
+        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
+        .unwrap()
+        .with_timezone(&Utc);
+
+    let receipt_number_str = cpt[4].to_owned();
+    let receipt_number = quick_and_dirty_checksum(&receipt_number_str);
+
+    debug!("Parsing account number");
+    let re = Regex::new(r"Kundennummer: \d+ (\d+)\s").unwrap();
+    let account_number = re.captures_iter(s).next().ok_or("no account match")?[1].to_owned();
+
+    let t = NewTransaction {
+        account_id: -1,
+        isin,
+        date,
+        units: 0.0,
+        amount: 0,
+        fees: -amount,
+        onvista_exchange_id: None,
+        comments: String::new(),
+        exchange: None,
+        receipt_number: Some(receipt_number),
+    };
+
+    Ok(ParsedTransaction {
+        content: t,
+        over_the_counter: true,
+        account_number,
+    })
+}
+
+fn parse_onvista_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     let re = Regex::new(r"ISIN\s+([A-Z]{2}[A-Z0-9]{10})\s").unwrap();
     let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
 

@@ -14,7 +14,7 @@ services:
       - STOCKDB__WEB__SERVER_KEY=""
       - STOCKDB__PUSH__KEY_FILE=""
     command:
-      stockdb serve
+      stockdb -v serve
 
   postgres:
     image: docker.io/postgres:14
