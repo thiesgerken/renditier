@@ -330,9 +330,10 @@ fn parse_comdirect_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>
     let receipt_number = quick_and_dirty_checksum(&receipt_number_str);
 
     debug!("Parsing units and price");
-    let re_units_price =
-        Regex::new(r"Nennwert\s+Zum (?:Kurs|Preis) von\s*St. ([\d\.]+)\s+EUR\s+([\d\.]+,\d\d)\s")
-            .unwrap();
+    let re_units_price = Regex::new(
+        r"Nennwert\s+Zum (?:Kurs|Preis) von\s*St. ([\d\.]+(?:,\d+)?)\s+EUR\s+([\d\.]+,\d{2,})\s",
+    )
+    .unwrap();
     let cpt = re_units_price
         .captures_iter(s)
         .next()
@@ -376,7 +377,7 @@ fn parse_comdirect_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>
     };
 
     debug!("Parsing date and exchange");
-    let re = Regex::new(r"Geschäftstag\s+:\s(\d\d)\.(\d\d)\.(\d{4})\s+(?:Ausführungsplatz|Abwicklung)\s+:\s+(.+?)\s+Handelszeit\s+:\s+(\d\d):(\d\d)\s").unwrap();
+    let re = Regex::new(r"Geschäftstag\s+:\s(\d\d)\.(\d\d)\.(\d{4})\s+(?:Ausführungsplatz|Abwicklung)\s+:\s+(.+?)\s+(?:Handelszeit\s+:\s+(\d\d):(\d\d)\s)?").unwrap();
     let cpt = re
         .captures_iter(s)
         .next()
@@ -387,8 +388,8 @@ fn parse_comdirect_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>
             cpt[3].parse()?,
             cpt[2].parse()?,
             cpt[1].parse()?,
-            cpt[5].parse()?,
-            cpt[6].parse()?,
+            cpt.get(5).map(|x| x.as_str().parse()).unwrap_or(Ok(0))?,
+            cpt.get(6).map(|x| x.as_str().parse()).unwrap_or(Ok(0))?,
             0,
         )
         .unwrap()
@@ -474,7 +475,8 @@ fn parse_comdirect_fees(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
         .unwrap()
         .with_timezone(&Utc);
 
-    let receipt_number = quick_and_dirty_checksum(&format!("{}{}{}", wkn, date.format("%Y%m%d"), amount));
+    let receipt_number =
+        quick_and_dirty_checksum(&format!("{}{}{}", wkn, date.format("%Y%m%d"), amount));
 
     debug!("Parsing account number");
     let re = Regex::new(r"Kundennummer: \d+ (\d+)\s").unwrap();
