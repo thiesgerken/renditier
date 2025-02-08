@@ -102,16 +102,17 @@ steps:
   - name: build-docker-image
     image: plugins/docker
     settings:
-      registry: git.gerken.haus
-      repo: git.gerken.haus/thies/stockdb
+      registry: harbor.gerken.haus
+      repo: harbor.gerken.haus/library/stockdb
       tags:
         - ${DRONE_COMMIT_BRANCH}
       cache_from:
-        - "git.gerken.haus/thies/stockdb:${DRONE_COMMIT_BRANCH}"
+        - "harbor.gerken.haus/library/stockdb:${DRONE_COMMIT_BRANCH}"
       force_tag: true
-      username: thies
+      username:
+        from_secret: harbor_username
       password:
-        from_secret: gitea_token
+        from_secret: harbor_password
     when:
       event:
         - push
