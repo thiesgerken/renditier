@@ -102,17 +102,16 @@ steps:
   - name: build-docker-image
     image: plugins/docker
     settings:
-      registry: nexus.gerken.haus
-      repo: nexus.gerken.haus/stockdb
+      registry: gitea.gerken.haus
+      repo: gitea.gerken.haus/thies/stockdb
       tags:
         - ${DRONE_COMMIT_BRANCH}
       cache_from:
-        - "nexus.gerken.haus/stockdb:${DRONE_COMMIT_BRANCH}"
+        - "gitea.gerken.haus/thies/stockdb:${DRONE_COMMIT_BRANCH}"
       force_tag: true
-      username:
-        from_secret: nexus_username
+      username: thies
       password:
-        from_secret: nexus_password
+        from_secret: gitea_token
     when:
       event:
         - push

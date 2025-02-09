@@ -2,7 +2,7 @@ services:
   stockdb:
     build:
       context: .
-    image: git.gerken.haus/thies/stockdb:latest
+    image: gitea.gerken.haus/thies/stockdb:latest
     restart: unless-stopped
     ports:
       - "8484:80"
