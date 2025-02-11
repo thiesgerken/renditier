@@ -127,7 +127,7 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
 
     let mut ts = Vec::new();
 
-    if body.contains("onvist") {
+    if body.contains("onvist") { // footer is broken
         let re_page = Regex::new(r"Depot-Nr\.[\s\S]+?(Depot-Nr\.|\z)").unwrap();
         for page in re_page.find_iter(&body) {
             let s = page.as_str();
