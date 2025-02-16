@@ -29,7 +29,9 @@ use diesel::{
 };
 use diesel_migrations::{EmbeddedMigrations, HarnessWithOutput, MigrationHarness};
 use log::{error, info};
-use simplelog::{format_description, ColorChoice, LevelFilter, SimpleLogger, TermLogger, TerminalMode};
+use simplelog::{
+    format_description, ColorChoice, LevelFilter, SimpleLogger, TermLogger, TerminalMode,
+};
 use std::error::Error;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();

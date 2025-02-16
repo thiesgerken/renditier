@@ -21,7 +21,8 @@ fn main() {
         initialize_logging(matches.get_count("v") as u32);
 
         // setup default settings and parse overrides from config files
-        let mut settings = cli::initialize_settings(matches.get_one::<String>("config").cloned().as_deref());
+        let mut settings =
+            cli::initialize_settings(matches.get_one::<String>("config").cloned().as_deref());
 
         // parse overrides from CLI and modify settings
         settings = cli::merge_settings(&matches, settings).expect("unable to merge flags from CLI");

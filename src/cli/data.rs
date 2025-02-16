@@ -6,7 +6,7 @@ use crate::serialization::*;
 use chrono::{Duration, Utc};
 use clap::ArgAction;
 use clap::ArgMatches;
-use clap::{Command, Arg, ArgGroup};
+use clap::{Arg, ArgGroup, Command};
 use diesel::{
     prelude::*,
     r2d2::{ConnectionManager, Pool},
@@ -99,7 +99,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
             "{}",
             serde_json::to_string(&p).expect("Could not serialize data")
         );
-    } else if *sub_matches.get_one::<bool>("import").unwrap(){
+    } else if *sub_matches.get_one::<bool>("import").unwrap() {
         let p: DataFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse data input");
 

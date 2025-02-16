@@ -114,11 +114,12 @@ pub async fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches, con
         ]);
 
         for s in subs.iter() {
-            let s_endpoint = if *sub_matches.get_one::<bool>("full").unwrap() || s.endpoint.len() <= 45 + 4 {
-                s.endpoint.clone()
-            } else {
-                String::from(&format!("{} ...", &s.endpoint[..45]))
-            };
+            let s_endpoint =
+                if *sub_matches.get_one::<bool>("full").unwrap() || s.endpoint.len() <= 45 + 4 {
+                    s.endpoint.clone()
+                } else {
+                    String::from(&format!("{} ...", &s.endpoint[..45]))
+                };
 
             table.add_row(row![
                 s.user_id,

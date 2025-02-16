@@ -63,12 +63,11 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         let isin_ = isin_.to_uppercase();
         assert!(isin_.len() == 12, "ISINs always have a length of 12");
 
-        let exists = stock_infos
+        let exists = !stock_infos
             .filter(crate::schema::stock_infos::dsl::isin.eq(&isin_))
             .load::<StockInfo>(&mut connection)
             .expect("Error loading stock infos")
-            .first()
-            .is_some();
+            .is_empty();
 
         if exists {
             println!(

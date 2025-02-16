@@ -301,7 +301,9 @@ impl EitherPrice {
             EitherPrice::HistoricalPriceOpening(p) => chrono::Local
                 .from_local_datetime(&p.date.and_hms_opt(9, 0, 0).unwrap())
                 .earliest()
-                .unwrap_or_else(|| chrono::Local.from_utc_datetime(&p.date.and_hms_opt(9, 0, 0).unwrap()))
+                .unwrap_or_else(|| {
+                    chrono::Local.from_utc_datetime(&p.date.and_hms_opt(9, 0, 0).unwrap())
+                })
                 .with_timezone(&Utc),
         }
     }

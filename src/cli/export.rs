@@ -1,7 +1,7 @@
 use crate::serialization::*;
 
-use clap::Command;
 use clap::ArgMatches;
+use clap::Command;
 use diesel::prelude::*;
 
 pub fn build() -> Command {

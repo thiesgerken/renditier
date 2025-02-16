@@ -3,7 +3,7 @@ use crate::serialization::*;
 
 use clap::ArgAction;
 use clap::ArgMatches;
-use clap::{Command, Arg};
+use clap::{Arg, Command};
 use diesel::prelude::*;
 use log::warn;
 use std::io;
@@ -37,7 +37,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
         warn!("removed all users, accounts and transactions.");
     }
 
-    if *sub_matches.get_one::<bool>("moneydb").unwrap(){
+    if *sub_matches.get_one::<bool>("moneydb").unwrap() {
         let p: MoneyDBFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse moneydb input");
         // debug!("{:?}", p);

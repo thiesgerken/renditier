@@ -73,7 +73,7 @@ pub fn parse_mem(
             .find(|a| {
                 a.iban
                     .as_ref()
-                    .map(|iban| iban.contains(&format!("{}", t.account_number)))
+                    .map(|iban| iban.contains(&t.account_number.to_string()))
                     .unwrap_or(false)
             })
             .ok_or_else(|| {
@@ -127,15 +127,16 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
 
     let mut ts = Vec::new();
 
-    if body.contains("onvist") { // footer is broken
+    if body.contains("onvist") {
+        // footer is broken
         let re_page = Regex::new(r"Depot-Nr\.[\s\S]+?(Depot-Nr\.|\z)").unwrap();
+        let re_purchase = Regex::new(
+            r"Wertpapierabrechnung\s+(Verkauf|Kauf|Kauf Sparplan)\s+Kommissionsgeschäft",
+        )
+        .unwrap();
+
         for page in re_page.find_iter(&body) {
             let s = page.as_str();
-
-            let re_purchase = Regex::new(
-                r"Wertpapierabrechnung\s+(Verkauf|Kauf|Kauf Sparplan)\s+Kommissionsgeschäft",
-            )
-            .unwrap();
 
             if s.contains("Dividendengutschrift") {
                 debug!("Parsing as onvista dividends");
