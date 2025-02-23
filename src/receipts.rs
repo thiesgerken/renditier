@@ -317,7 +317,7 @@ fn quick_and_dirty_checksum(input: &str) -> i64 {
         sum ^= sum.rotate_left(17);
         sum = sum.wrapping_mul(0x517cc1b727220a95);
     }
-    sum ^ sum >> 32
+    sum ^ (sum >> 32)
 }
 
 fn parse_comdirect_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
