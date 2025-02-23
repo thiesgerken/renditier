@@ -310,12 +310,16 @@ fn parse_onvista_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
 }
 
 fn quick_and_dirty_checksum(input: &str) -> i64 {
-    let mut sum = 0;
+    let mut sum: i64 = 0;
     for c in input.chars() {
-        sum = (sum * 10 + c as i64) % 97;
+        sum = sum.wrapping_mul(31);
+        sum = sum.wrapping_add(c as i64);
+        sum ^= sum.rotate_left(17);
+        sum = sum.wrapping_mul(0x517cc1b727220a95);
     }
-    sum
+    sum ^ sum >> 32
 }
+
 fn parse_comdirect_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
     debug!("Parsing isin");
     let re = Regex::new(r"WKN / ISIN: [A-Z0-9]+\s*/\s*([A-Z]{2}[A-Z0-9]{10})\s*").unwrap();
