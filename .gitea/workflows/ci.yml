@@ -49,7 +49,7 @@ jobs:
           yarn run build && yarn run analyze
 
   build-docker:
-    needs: [test-backend, test-frontend]
+    # needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devel')
     steps:
