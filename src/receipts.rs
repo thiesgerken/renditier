@@ -537,7 +537,7 @@ fn parse_comdirect_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> 
         isin,
         date,
         units: 0.0,
-        amount: amount,
+        amount,
         fees: 0,
         onvista_exchange_id: None,
         comments: String::new(),
