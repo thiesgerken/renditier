@@ -163,6 +163,9 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
         } else if body.contains("für die Verwahrung Ihres Wertpapieres") {
             debug!("Parsing as comdirect purchase");
             ts.push(parse_comdirect_fees(&body)?);
+        } else if body.contains("Ertragsgutschrift") {
+            debug!("Parsing as comdirect payout");
+            ts.push(parse_comdirect_payout(&body)?);
         } else {
             info!("{}", body);
             return Err("unknown comdirect receipt type".into());
@@ -494,6 +497,48 @@ fn parse_comdirect_fees(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
         units: 0.0,
         amount: 0,
         fees: -amount,
+        onvista_exchange_id: None,
+        comments: String::new(),
+        exchange: None,
+        receipt_number: Some(receipt_number),
+    };
+
+    Ok(ParsedTransaction {
+        content: t,
+        over_the_counter: true,
+        account_number,
+    })
+}
+
+fn parse_comdirect_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+    debug!("Parsing isin");
+    let re = Regex::new(r"WKN\/ISIN\n[^\n]+\nSTK\s+[0-9,]+\s+([^\s]+)\s").unwrap();
+    let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
+
+    debug!("Parsing date & amount");
+    let re = Regex::new(r"Zu Ihren Gunsten vor Steuern\s+\n[^\n]+EUR\s+(\d\d)\.(\d\d)\.(\d{4})\s+EUR\s+([\d\.]+,\d{2})\s+\n").unwrap();
+    let cpt = re.captures_iter(s).next().ok_or("no amount+date match")?;
+    let amount = (parse_float(&cpt[4])? * 100.0).round() as i64;
+
+    let date = Local
+        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
+        .unwrap()
+        .with_timezone(&Utc);
+
+    let receipt_number =
+        quick_and_dirty_checksum(&format!("{}{}{}", isin, date.format("%Y%m%d"), amount));
+
+    debug!("Parsing account number");
+    let re = Regex::new(r"Depotnr.:\s+(\d+)\s+\n").unwrap();
+    let account_number = re.captures_iter(s).next().ok_or("no account match")?[1].to_owned();
+
+    let t = NewTransaction {
+        account_id: -1,
+        isin,
+        date,
+        units: 0.0,
+        amount: amount,
+        fees: 0,
         onvista_exchange_id: None,
         comments: String::new(),
         exchange: None,
