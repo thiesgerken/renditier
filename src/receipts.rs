@@ -339,7 +339,7 @@ fn parse_comdirect_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>
 
     debug!("Parsing units and price");
     let re_units_price = Regex::new(
-        r"Nennwert\s+Zum (?:Kurs|Preis) von\s*St. ([\d\.]+(?:,\d+)?)\s+EUR\s+([\d\.]+,\d{2,})\s",
+        r"Nennwert\s+Zum (?:Mischkurs|Kurs|Preis) von\s*St. ([\d\.]+(?:,\d+)?)\s+EUR\s+([\d\.]+,\d{2,})\s",
     )
     .unwrap();
     let cpt = re_units_price
