@@ -12,7 +12,7 @@
     "babel-loader": "8.1.0",
     "classnames": "^2.2.6",
     "connected-react-router": "^6.6.1",
-    "d3-shape": "^2.0.0",
+    "d3-shape": "^3.0.0",
     "history": "^4.0.0",
     "immutable": "^4.0.0-rc.12",
     "lodash": "^4.17.15",
