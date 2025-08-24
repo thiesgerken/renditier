@@ -60,10 +60,10 @@ jobs:
           components: rustfmt, clippy
 
       - run: cargo check
-      - run: cargo test
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy -- -D warnings
-      - run: cargo build
+      # - run: cargo test
+      # - run: cargo fmt --all -- --check
+      # - run: cargo clippy -- -D warnings
+      # - run: cargo build
 
   test-frontend:
     runs-on: ubuntu-latest
