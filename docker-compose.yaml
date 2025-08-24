@@ -17,7 +17,7 @@ services:
       stockdb -v serve
 
   postgres:
-    image: docker.io/postgres:14
+    image: docker.io/postgres:14@sha256:445df84770a5a99d141a79700f2806313bf9569ffa08a71f055b28702859a981
     volumes:
       - postgres:/var/lib/postgresql/data
     environment:
