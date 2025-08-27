@@ -40,4 +40,4 @@ RUN apt-get update -y && apt-get dist-upgrade -y \
   && rm -Rf /var/cache/apt
 
 COPY --from=builder-backend /build/target/release/stockdb /bin/stockdb
-CMD stockdb
+CMD stockdb serve
