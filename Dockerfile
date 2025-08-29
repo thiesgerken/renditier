@@ -11,7 +11,7 @@ WORKDIR /build/web
 RUN yarn install
 RUN yarn run build
 
-FROM rust:1.81-bullseye@sha256:8328d21407009f8a2d17b0327f32c63411a8c3d5590b71ab87ea993cd2ffd169 AS builder-backend
+FROM rust:1.87-bullseye AS builder-backend
 
 RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev pkg-config gcc clang \
