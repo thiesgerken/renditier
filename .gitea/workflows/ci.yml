@@ -55,7 +55,7 @@ jobs:
           mkdir -p web/build
           touch web/build/index.html
 
-      - uses: actions-rust-lang/setup-rust-toolchain@ab6845274e2ff01cd4462007e1a9d9df1ab49f42 # v1
+      - uses: actions-rust-lang/setup-rust-toolchain@ac90e63697ac2784f4ecfe2964e1a285c304003a # v1
         with:
           components: rustfmt, clippy
 
