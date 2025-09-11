@@ -4,5 +4,15 @@
     "config:best-practices",
     ":preserveSemverRanges",
     "group:allNonMajor"
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true
+  },
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["digest"],
+      "automerge": true
+    }
   ]
 }
