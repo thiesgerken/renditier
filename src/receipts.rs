@@ -161,7 +161,7 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
             debug!("Parsing as comdirect purchase");
             ts.push(parse_comdirect_purchase(&body)?);
         } else if body.contains("für die Verwahrung Ihres Wertpapieres") {
-            debug!("Parsing as comdirect purchase");
+            debug!("Parsing as comdirect fees");
             ts.push(parse_comdirect_fees(&body)?);
         } else if body.contains("Ertragsgutschrift") {
             debug!("Parsing as comdirect payout");
