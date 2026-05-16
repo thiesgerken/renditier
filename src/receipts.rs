@@ -379,7 +379,7 @@ fn parse_comdirect_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn
             as i64;
 
     debug!("Parsing account number");
-    let re = Regex::new(r"IBAN[a-zA-Z\s]+(DE[0-9 ]+)\s EUR").unwrap();
+    let re = Regex::new(r"IBAN[\s\S]+?\b(DE[0-9 ]{20,})\s+EUR\b").unwrap();
     let account_number = re.captures_iter(s).next().ok_or("no account match")?[1].replace(' ', "");
 
     debug!("Parsing total amount");
@@ -692,5 +692,66 @@ fn replace_exchange(
             transaction.content.onvista_exchange_id = ex.onvista_exchange_id;
         }
         transaction
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDate;
+
+    const COMDIRECT_PURCHASE_2026_05_15_FILENAME: &str =
+        "Wertpapierabrechnung_Kauf_0,412_St._A2JRT5_(FIC-FICT.WORLD_EQ_UEA)_vom_15.05.2026_9F21B7.pdf";
+
+    const COMDIRECT_PURCHASE_2026_05_15_TEXT: &str = r#"
+GESCHÄFTSABRECHNUNG VOM 15.05.2026
+
+Wertpapierkauf
+Geschäftsnummer : 47 905613
+418276035912 Rechnungsnummer : 382746150923A417
+Geschäftstag : 15.05.2026 Ausführungsplatz : TRADEGATE
+(Kommissionsgeschäft)
+
+WKN / ISIN: A2JRT5 / LU2093847569
+Wertpapier-Bezeichnung WPKNR/ISIN
+FIC-Fictional World Equity A2JRT5 / LU2093847569
+
+Nennwert Zum Kurs von
+St. 0,412 EUR 84,37
+Kurswert : EUR 34,76
+
+IBAN Valuta Zu Ihren Lasten vor Steuern
+DE00 0000 0000 0000 0000 00 EUR 19.05.2026 EUR 34,76
+Zu Ihren Lasten vor Steuern: EUR -34,76
+
+Verwahrungs-Art: GIROSAMMELDEPOT
+"#;
+
+    #[test]
+    fn parses_comdirect_purchase_account_from_iban_block_for_2026_05_15_receipt() {
+        let parsed =
+            parse_comdirect_purchase(COMDIRECT_PURCHASE_2026_05_15_TEXT).unwrap_or_else(|_| {
+                panic!(
+                    "failed to parse receipt fixture {}",
+                    COMDIRECT_PURCHASE_2026_05_15_FILENAME
+                )
+            });
+
+        assert_eq!(
+            parsed.account_number, "DE00000000000000000000",
+            "fixture: {}",
+            COMDIRECT_PURCHASE_2026_05_15_FILENAME
+        );
+        assert_eq!(parsed.content.isin, "LU2093847569");
+        assert_eq!(parsed.content.units, 0.412);
+        assert_eq!(parsed.content.amount, -3476);
+        assert_eq!(parsed.content.fees, 0);
+        assert_eq!(parsed.content.exchange.as_deref(), Some("TRADEGATE"));
+        assert_eq!(
+            parsed.content.date.with_timezone(&Local).date_naive(),
+            NaiveDate::from_ymd_opt(2026, 5, 15).unwrap()
+        );
+        assert!(!parsed.over_the_counter);
+        assert!(parsed.content.receipt_number.is_some());
     }
 }
