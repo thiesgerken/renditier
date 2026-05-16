@@ -8,6 +8,22 @@ Tool to query and analyze stock and ETF investments using realtime and historica
 - `openssl ecparam -genkey -name prime256v1 -out vapid.pem` to obtain private key for push
 - `openssl ec -in vapid.pem -pubout -outform DER | tail -c 65 | base64 | tr '/+' '_-' | tr -d '\n'` to obtain base64 encoded public key for use in js
 
+## Testing receipt parsing
+
+Use the dedicated parse-only binary to test receipt parsing on local PDF files without connecting to PostgreSQL or writing any transactions:
+
+```shell
+cargo run --bin parse_receipt -- path/to/receipt.pdf
+```
+
+For machine-readable output:
+
+```shell
+cargo run --bin parse_receipt -- --json path/to/receipt.pdf
+```
+
+You can pass multiple files and add `-v` for parser debug logging.
+
 ## Fixing sequences
 
 Usually needed after a database dump was imported, cf. <https://wiki.postgresql.org/wiki/Fixing_Sequences>

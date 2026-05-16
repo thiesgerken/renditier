@@ -469,11 +469,11 @@ fn compute_performance(
 
         let first_purchase = positions
             .values()
-            .filter_map(|p| p.start.data_source.as_ref().map(|s| (s.price.date())))
+            .filter_map(|p| p.start.data_source.as_ref().map(|s| s.price.date()))
             .min();
         let last_sale = positions
             .values()
-            .filter_map(|p| p.end.data_source.as_ref().map(|s| (s.price.date())))
+            .filter_map(|p| p.end.data_source.as_ref().map(|s| s.price.date()))
             .max();
 
         // Note that if the options are 'None' the irr will be 'None' no matter what period_length is

@@ -4,14 +4,26 @@ use chrono::{Local, TimeZone, Utc};
 use diesel::prelude::*;
 use log::{debug, info, warn};
 use regex::Regex;
+use serde::Serialize;
 use std::error::Error;
 use std::str::FromStr;
 
-#[derive(Debug)]
-struct ParsedTransaction {
-    content: NewTransaction,
-    account_number: String,
-    over_the_counter: bool,
+#[derive(Debug, Clone, Serialize)]
+pub struct ParsedReceiptTransaction {
+    pub content: NewTransaction,
+    pub account_number: String,
+    pub over_the_counter: bool,
+}
+
+pub fn parse_mem_preview(
+    files: &[(String, Vec<u8>)],
+) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
+    let ts = files
+        .iter()
+        .map(|(file_name, buf)| parse_receipt(buf).map_err(|e| format!("{}: {}", file_name, e)))
+        .collect::<Result<Vec<Vec<ParsedReceiptTransaction>>, String>>()?;
+
+    Ok(ts.into_iter().flatten().collect::<Vec<_>>())
 }
 
 pub fn parse_mem(
@@ -19,11 +31,7 @@ pub fn parse_mem(
     uid: i32,
     files: &[(String, Vec<u8>)],
 ) -> Result<Vec<Transaction>, Box<dyn Error>> {
-    let ts = files
-        .iter()
-        .map(|(file_name, buf)| parse_receipt(buf).map_err(|e| format!("{}: {}", file_name, e)))
-        .collect::<Result<Vec<Vec<ParsedTransaction>>, String>>()?;
-    let ts = ts.into_iter().flatten().collect::<Vec<_>>();
+    let ts = parse_mem_preview(files)?;
 
     let accs = crate::schema::accounts::table
         .filter(crate::schema::accounts::user_id.eq(uid))
@@ -112,7 +120,22 @@ pub fn parse_files(
     parse_mem(connection, uid, &files)
 }
 
-fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
+pub fn parse_preview_files(
+    file_names: &[&str],
+) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
+    let files = file_names
+        .iter()
+        .map(|file_name| {
+            let buf = std::fs::read(file_name)?;
+
+            Ok((file_name.to_string(), buf))
+        })
+        .collect::<Result<Vec<(String, Vec<u8>)>, Box<dyn Error>>>()?;
+
+    parse_mem_preview(&files)
+}
+
+fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
     let mut buffer = Vec::<u8>::new();
     let doc = lopdf::Document::load_mem(buf)?;
 
@@ -187,7 +210,7 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedTransaction>, Box<dyn Error>> {
     Ok(ts)
 }
 
-fn parse_onvista_dividends(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+fn parse_onvista_dividends(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     let re = Regex::new(r"ISIN\s+([A-Z]{2}[A-Z0-9]{10})\s").unwrap();
     let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
 
@@ -241,14 +264,14 @@ fn parse_onvista_dividends(s: &str) -> Result<ParsedTransaction, Box<dyn Error>>
         receipt_number: Some(receipt_number),
     };
 
-    Ok(ParsedTransaction {
+    Ok(ParsedReceiptTransaction {
         content: t,
         over_the_counter: true,
         account_number,
     })
 }
 
-fn parse_onvista_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+fn parse_onvista_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     let re = Regex::new(r"ISIN\s+([A-Z]{2}[A-Z0-9]{10})\s").unwrap();
     let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
 
@@ -305,7 +328,7 @@ fn parse_onvista_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
         receipt_number: Some(receipt_number),
     };
 
-    Ok(ParsedTransaction {
+    Ok(ParsedReceiptTransaction {
         content: t,
         over_the_counter: true,
         account_number,
@@ -323,7 +346,7 @@ fn quick_and_dirty_checksum(input: &str) -> i64 {
     sum ^ (sum >> 32)
 }
 
-fn parse_comdirect_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+fn parse_comdirect_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     debug!("Parsing isin");
     let re = Regex::new(r"WKN / ISIN: [A-Z0-9]+\s*/\s*([A-Z]{2}[A-Z0-9]{10})\s*").unwrap();
     let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
@@ -418,7 +441,7 @@ fn parse_comdirect_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>
         receipt_number: Some(receipt_number),
     };
 
-    Ok(ParsedTransaction {
+    Ok(ParsedReceiptTransaction {
         content: t,
         over_the_counter: false,
         account_number,
@@ -463,7 +486,7 @@ fn calculate_isin_checksum(isin_without_check: &str) -> Result<char, &'static st
     Ok(char::from_digit(check_digit, 10).unwrap())
 }
 
-fn parse_comdirect_fees(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+fn parse_comdirect_fees(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     debug!("Parsing isin");
     let re = Regex::new(r"WKN\s([A-Z0-9]{6}),").unwrap();
     let wkn = re.captures_iter(s).next().ok_or("no wkn match")?[1].to_owned();
@@ -503,14 +526,14 @@ fn parse_comdirect_fees(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
         receipt_number: Some(receipt_number),
     };
 
-    Ok(ParsedTransaction {
+    Ok(ParsedReceiptTransaction {
         content: t,
         over_the_counter: true,
         account_number,
     })
 }
 
-fn parse_comdirect_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+fn parse_comdirect_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     debug!("Parsing isin");
     let re = Regex::new(r"WKN\/ISIN\n[^\n]+\nSTK\s+[0-9,]+\s+([^\s]+)\s").unwrap();
     let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
@@ -545,14 +568,14 @@ fn parse_comdirect_payout(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> 
         receipt_number: Some(receipt_number),
     };
 
-    Ok(ParsedTransaction {
+    Ok(ParsedReceiptTransaction {
         content: t,
         over_the_counter: true,
         account_number,
     })
 }
 
-fn parse_onvista_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> {
+fn parse_onvista_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     let re = Regex::new(r"ISIN\s+([A-Z]{2}[A-Z0-9]{10})\s").unwrap();
     let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
 
@@ -641,7 +664,7 @@ fn parse_onvista_purchase(s: &str) -> Result<ParsedTransaction, Box<dyn Error>> 
         receipt_number: Some(receipt_number),
     };
 
-    Ok(ParsedTransaction {
+    Ok(ParsedReceiptTransaction {
         content: t,
         over_the_counter: ex_type == "außerbörslich",
         account_number,
@@ -654,8 +677,8 @@ fn parse_float(s: &str) -> Result<f64, <f64 as FromStr>::Err> {
 
 fn replace_exchange(
     exchanges: &[StockExchange],
-    mut transaction: ParsedTransaction,
-) -> ParsedTransaction {
+    mut transaction: ParsedReceiptTransaction,
+) -> ParsedReceiptTransaction {
     if transaction.over_the_counter {
         transaction
     } else {
