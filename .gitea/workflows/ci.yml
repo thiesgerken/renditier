@@ -72,12 +72,11 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "16"
-      - run: npm install -g yarn
 
       - name: Install dependencies and test
         run: |
           cd web
-          yarn install
+          yarn install --frozen-lockfile
           yarn run git && yarn test --all && yarn test:lint:js
           yarn run build && yarn run analyze
 
