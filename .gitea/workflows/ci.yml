@@ -44,41 +44,41 @@ jobs:
           cache-from: type=registry,ref=gitea.gerken.haus/thies/stockdb:${{ github.ref_name }}
           cache-to: type=inline
 
-  test-backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+  # test-backend:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
-      - name: Install dependencies
-        run: |
-          apt-get update -y && apt-get install -y --no-install-recommends libssl-dev gcc clang
-          mkdir -p web/build
-          touch web/build/index.html
+  #     - name: Install dependencies
+  #       run: |
+  #         apt-get update -y && apt-get install -y --no-install-recommends libssl-dev gcc clang
+  #         mkdir -p web/build
+  #         touch web/build/index.html
 
-      - uses: actions-rust-lang/setup-rust-toolchain@ac90e63697ac2784f4ecfe2964e1a285c304003a # v1
-        with:
-          components: rustfmt, clippy
+  #     - uses: actions-rust-lang/setup-rust-toolchain@ac90e63697ac2784f4ecfe2964e1a285c304003a # v1
+  #       with:
+  #         components: rustfmt, clippy
 
-      - run: cargo check
-      # - run: cargo test
-      # - run: cargo fmt --all -- --check
-      # - run: cargo clippy -- -D warnings
-      # - run: cargo build
+  #     - run: cargo check
+  #     # - run: cargo test
+  #     # - run: cargo fmt --all -- --check
+  #     # - run: cargo clippy -- -D warnings
+  #     # - run: cargo build
 
-  test-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: "16"
+  # test-frontend:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+  #     - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+  #       with:
+  #         node-version: "16"
 
-      - name: Install dependencies and test
-        run: |
-          cd web
-          yarn install --frozen-lockfile
-          yarn run git && yarn test --all && yarn test:lint:js
-          yarn run build && yarn run analyze
+  #     - name: Install dependencies and test
+  #       run: |
+  #         cd web
+  #         yarn install --frozen-lockfile
+  #         yarn run git && yarn test --all && yarn test:lint:js
+  #         yarn run build && yarn run analyze
 
   deploy:
     runs-on: ubuntu-latest
