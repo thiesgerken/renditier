@@ -448,11 +448,12 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
             </ResponsiveContainer>
           </Grid>
           <Grid item xs={9}>
-            <FormControl sx={formControlSx}>
+            <FormControl sx={formControlSx} variant="standard">
               <InputLabel id="mode-select-label">Art</InputLabel>
               <Select
                 labelId="mode-select-label"
                 id="mode-select"
+                label="Art"
                 value={mode}
                 autoWidth
                 onChange={handleModeChange}
@@ -474,11 +475,12 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                 </MenuItem>
               </Select>
             </FormControl>
-            <FormControl sx={formControlSx}>
+            <FormControl sx={formControlSx} variant="standard">
               <InputLabel id="source-select-label">Datenquelle</InputLabel>
               <Select
                 labelId="source-select-label"
                 id="source-select"
+                label="Datenquelle"
                 value={source}
                 autoWidth
                 onChange={handleSourceChange}
@@ -488,11 +490,12 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                 <MenuItem value="realtime">Echtzeit</MenuItem>
               </Select>
             </FormControl>
-            <FormControl sx={formControlSx}>
+            <FormControl sx={formControlSx} variant="standard">
               <InputLabel id="period-select-label">Zeit</InputLabel>
               <Select
                 labelId="period-select-label"
                 id="period-select"
+                label="Zeit"
                 autoWidth
                 value={
                   performance.data === null || performance.data.length === 0

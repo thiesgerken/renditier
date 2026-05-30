@@ -97,11 +97,12 @@ const PositionsTable = ({ performance, stocks, push }) => {
             </TableContainer>
           </Grid>
           <Grid size={9}>
-            <FormControl sx={formControlSx}>
+            <FormControl sx={formControlSx} variant="standard">
               <InputLabel id="period-select-label">Zeit</InputLabel>
               <Select
                 labelId="period-select-label"
                 id="period-select"
+                label="Zeit"
                 autoWidth
                 value={
                   performance.data === null || performance.data.length === 0

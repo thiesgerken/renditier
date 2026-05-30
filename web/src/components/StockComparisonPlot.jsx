@@ -337,6 +337,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
           <Grid container item xs={9}>
             <Grid item xs={3}>
               <FormControl
+                variant="standard"
                 sx={{ ...formControlSx, width: '100%', pr: 2 }}
                 style={{
                   width: '100%',
@@ -347,6 +348,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                 <Select
                   labelId="isin-checkbox-label"
                   id="isin-checkbox"
+                  label="Wertpapiere"
                   multiple
                   value={isins}
                   onChange={handleIsinChange}
@@ -387,11 +389,12 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
               </FormControl>{' '}
             </Grid>
             <Grid item xs={9}>
-              <FormControl sx={formControlSx}>
+              <FormControl sx={formControlSx} variant="standard">
                 <InputLabel id="source-select-label">Datenquelle</InputLabel>
                 <Select
                   labelId="source-select-label"
                   id="source-select"
+                  label="Datenquelle"
                   value={source}
                   fullWidth
                   onChange={handleSourceChange}
@@ -401,11 +404,12 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                   <MenuItem value="realtime">Echtzeit</MenuItem>
                 </Select>
               </FormControl>
-              <FormControl sx={formControlSx}>
+              <FormControl sx={formControlSx} variant="standard">
                 <InputLabel id="period-select-label">Zeit</InputLabel>
                 <Select
                   labelId="period-select-label"
                   id="period-select"
+                  label="Zeit"
                   autoWidth
                   value={
                     performance.data === null || performance.data.length === 0

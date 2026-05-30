@@ -172,11 +172,12 @@ const PositionsPie = ({ performance, stocks }) => {
             </div>
           </Grid>
           <Grid size={9}>
-            <FormControl sx={formControlSx}>
+            <FormControl sx={formControlSx} variant="standard">
               <InputLabel id="mode-select-label">Art</InputLabel>
               <Select
                 labelId="mode-select-label"
                 id="mode-select"
+                label="Art"
                 value={mode}
                 autoWidth
                 onChange={handleModeChange}
