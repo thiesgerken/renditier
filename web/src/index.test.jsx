@@ -1,5 +1,5 @@
 import React from 'react';
-import thunkMiddleware from 'redux-thunk';
+import { thunk as thunkMiddleware } from 'redux-thunk';
 import { createLogger } from 'redux-logger';
 import { createRoot } from 'react-dom/client';
 import { createStore, applyMiddleware, compose } from 'redux';

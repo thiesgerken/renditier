@@ -5,8 +5,10 @@ peerDependencyRules:
     '@mui/icons-material': '9'
     '@mui/material': '9'
     '@types/react': '18'
+    eslint: '10'
     react: '18'
     react-dom: '18'
+    redux: '5'
     react-dnd: '11'
     eslint-plugin-react-hooks: '7'
 allowBuilds:
