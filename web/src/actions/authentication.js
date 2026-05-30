@@ -1,5 +1,5 @@
 import { subscribe } from './notifications';
-import history from '../history';
+import { navigateTo } from '../navigation';
 
 export const LOGIN_REQUEST = 'LOGIN_REQUEST';
 export const loginRequest = () => ({
@@ -32,7 +32,7 @@ export const clearAuthMessage = () => ({
 });
 
 export const login = (userName, password) => dispatch => {
-  history.push('/');
+  navigateTo('/');
   dispatch(loginRequest());
   return fetch('/api/user/login', {
     method: 'POST',
@@ -96,7 +96,7 @@ export const logout = () => dispatch => {
       if (res.error) throw res.error;
 
       dispatch(logoutSuccess());
-      history.push('/');
+      navigateTo('/');
     })
     .catch(e => dispatch(logoutError(e)));
 };

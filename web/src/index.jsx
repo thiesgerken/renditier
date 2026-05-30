@@ -4,7 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
-import { Router } from 'react-router-dom';
+import { BrowserRouter, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
 import 'typeface-oxygen';
@@ -16,7 +16,15 @@ import moment from 'moment';
 import rootReducer from './reducers';
 import App from './containers/App';
 import ServiceWorker from './containers/ServiceWorker';
-import history from './history';
+import { setNavigate } from './navigation';
+
+function NavigationBridge() {
+  const navigate = useNavigate();
+
+  React.useEffect(() => setNavigate(navigate), [navigate]);
+
+  return null;
+}
 
 const middlewares = [thunkMiddleware];
 let composeEnhancers = compose;
@@ -46,7 +54,8 @@ const theme = createTheme({
 
 createRoot(document.getElementById('root')).render(
   <Provider store={store}>
-    <Router history={history}>
+    <BrowserRouter>
+      <NavigationBridge />
       <ThemeProvider theme={theme}>
         <LocalizationProvider
           dateAdapter={AdapterMoment}
@@ -56,6 +65,6 @@ createRoot(document.getElementById('root')).render(
           <App />
         </LocalizationProvider>
       </ThemeProvider>
-    </Router>
+    </BrowserRouter>
   </Provider>
 );

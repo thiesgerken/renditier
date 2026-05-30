@@ -13,7 +13,7 @@ import {
 import { map } from 'lodash';
 import React from 'react';
 import { styled, useTheme } from '@mui/material/styles';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import {
   updateStocks as updateStocksAction,
@@ -39,7 +39,7 @@ const StockTable = ({
   performance,
   updatePerformance,
 }) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const theme = useTheme();
   updateStocks();
   updatePerformance();
@@ -86,7 +86,7 @@ const StockTable = ({
                 <TableBody>
                   {stocks.data !== null &&
                     map(stocks.data, d => (
-                      <StockRow data={d} key={d.isin} push={history.push} />
+                      <StockRow data={d} key={d.isin} push={navigate} />
                     ))}
                 </TableBody>
               </Table>

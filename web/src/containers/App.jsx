@@ -1,5 +1,5 @@
 import React from 'react';
-import { Switch, Route } from 'react-router-dom';
+import { Route, Routes, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 
@@ -17,6 +17,23 @@ import Accounts from './Accounts';
 import StockTable from './StockTable';
 import StockAnalysis from './StockAnalysis';
 
+const StockAnalysisRoute = () => {
+  const { isin } = useParams();
+  return <StockAnalysis isin={isin} />;
+};
+
+const LogoutRoute = ({ onLogout }) => {
+  React.useEffect(() => {
+    onLogout();
+  }, [onLogout]);
+
+  return null;
+};
+
+LogoutRoute.propTypes = {
+  onLogout: PropTypes.func.isRequired,
+};
+
 const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
   if (!initialized) {
     onInitAuthentication();
@@ -27,18 +44,15 @@ const App = ({ loggedIn, onLogout, initialized, onInitAuthentication }) => {
 
   return (
     <AppLayout>
-      <Switch>
-        <Route path="/logout" render={onLogout} />
-        <Route
-          path="/stocks/:isin"
-          render={e => <StockAnalysis isin={e.match.params.isin} />}
-        />
-        <Route path="/stocks" render={() => <StockTable />} />
-        <Route path="/accounts" render={() => <Accounts />} />
-        <Route path="/transactions" render={() => <Transactions />} />
-        <Route path="/settings" render={() => <Settings />} />
-        <Route render={() => <Dashboard />} />
-      </Switch>
+      <Routes>
+        <Route path="/logout" element={<LogoutRoute onLogout={onLogout} />} />
+        <Route path="/stocks/:isin" element={<StockAnalysisRoute />} />
+        <Route path="/stocks" element={<StockTable />} />
+        <Route path="/accounts" element={<Accounts />} />
+        <Route path="/transactions" element={<Transactions />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<Dashboard />} />
+      </Routes>
     </AppLayout>
   );
 };

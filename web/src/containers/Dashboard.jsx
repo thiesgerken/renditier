@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { Grid, Typography, Container, Paper, useTheme } from '@mui/material';
 import { find, filter, max, min, map } from 'lodash';
 import moment from 'moment';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import {
   updateStocks as updateStocksAction,
@@ -26,7 +26,7 @@ const Dashboard = ({
   portfolioPlotData,
   updatePortfolioPlotData,
 }) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const theme = useTheme();
 
   updatePerformance();
@@ -78,7 +78,7 @@ const Dashboard = ({
             <PositionsTable
               stocks={stocks}
               performance={performance}
-              push={history.push}
+              push={navigate}
             />
           </Grid>
           <Hidden xsDown implementation="js">

@@ -4,8 +4,7 @@ import { createLogger } from 'redux-logger';
 import { createRoot } from 'react-dom/client';
 import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
-import { createBrowserHistory } from 'history';
-import { Router } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
 import 'typeface-oxygen';
@@ -19,8 +18,6 @@ import App from './containers/App';
 import ServiceWorker from './containers/ServiceWorker';
 
 it('renders without crashing', () => {
-  const history = createBrowserHistory();
-
   const middlewares = [thunkMiddleware];
   let composeEnhancers = compose;
 
@@ -53,7 +50,7 @@ it('renders without crashing', () => {
 
   root.render(
     <Provider store={store}>
-      <Router history={history}>
+      <MemoryRouter>
         <ThemeProvider theme={theme}>
           <LocalizationProvider
             dateAdapter={AdapterMoment}
@@ -63,7 +60,7 @@ it('renders without crashing', () => {
             <App />
           </LocalizationProvider>
         </ThemeProvider>
-      </Router>
+      </MemoryRouter>
     </Provider>
   );
 

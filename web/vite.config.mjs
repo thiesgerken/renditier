@@ -54,9 +54,8 @@ const vendorChunkGroups = [
   ['vendor-mui-pickers', ['@mui/x-date-pickers']],
   ['vendor-emotion', ['@emotion/react', '@emotion/styled']],
   ['vendor-d3-shape', ['d3-shape']],
-  ['vendor-tables', ['mui-datatables']],
   ['vendor-date', ['moment']],
-  ['vendor-utils', ['lodash', 'immutable', 'classnames']],
+  ['vendor-utils', ['lodash', 'classnames']],
 ];
 
 function chunkForPackage(id, packageName) {

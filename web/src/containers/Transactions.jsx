@@ -1,24 +1,25 @@
 import { connect } from 'react-redux';
 import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import MUIDataTable from 'mui-datatables';
 import moment from 'moment';
-import { find, map } from 'lodash';
+import { find } from 'lodash';
 import {
-  ThemeProvider,
-  useTheme,
-  useMediaQuery,
-  Container,
+  Box,
   Button,
-  CircularProgress,
-  Tooltip,
+  Container,
   IconButton,
+  Paper,
+  Tooltip,
+  Typography,
+  useMediaQuery,
 } from '@mui/material';
-import { createTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
+import { DataGrid } from '@mui/x-data-grid';
+import { deDE } from '@mui/x-data-grid/locales';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { useLocation, useHistory } from 'react-router';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { updateTransactions as updateTransactionsAction } from '../actions/transactions';
 import { updateStocks as updateStocksAction } from '../actions/api';
@@ -31,39 +32,41 @@ import ReceiptUploadDialog from './ReceiptUploadDialog';
 function useQuery(key) {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const set = value => {
     if (value === null || value === undefined) query.delete(key);
     else query.set(key, value);
 
     const qs = query.toString();
-    history.push(`${location.pathname}${qs.length ? '?' : ''}${qs}`);
+    navigate(`${location.pathname}${qs.length ? '?' : ''}${qs}`);
   };
 
   return [query.get(key), set];
 }
 
-const manipulateExchange = (stocks, x) => {
-  let ex = null;
-  if (x.exchange !== null) ex = x.exchange;
-  if (x.onvistaExchangeId !== null) {
-    ex = `[${x.onvistaExchangeId}]`;
+const manipulateExchange = (stocks, transaction) => {
+  let exchangeDisplay = null;
+  if (transaction.exchange !== null) exchangeDisplay = transaction.exchange;
+  if (transaction.onvistaExchangeId !== null) {
+    exchangeDisplay = `[${transaction.onvistaExchangeId}]`;
 
-    const stock = findStock(stocks, x.isin);
+    const stock = findStock(stocks, transaction.isin);
     if (stock !== null) {
-      const e = find(
+      const exchange = find(
         stock.exchanges,
-        ee => ee.onvistaExchangeId === x.onvistaExchangeId
+        item => item.onvistaExchangeId === transaction.onvistaExchangeId
       );
 
-      if (e !== undefined && e !== null) ex = e.name;
+      if (exchange !== undefined && exchange !== null) {
+        exchangeDisplay = exchange.name;
+      }
     }
   }
 
   return {
-    ...x,
-    exchangeDisplay: ex,
+    ...transaction,
+    exchangeDisplay,
   };
 };
 
@@ -79,10 +82,18 @@ const Transactions = ({
   const [transactionId, setTransactionId] = useQuery('id');
   const [uploading, setUploading] = useQuery('upload');
   const [page, setPage] = useQuery('page');
+  const theme = useTheme();
+  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const navigate = useNavigate();
+  const [pageSize, setPageSize] = React.useState(10);
 
+  const onlyAccount =
+    accounts.items !== null && accounts.items.length === 1
+      ? accounts.items[0].id
+      : null;
   let initialTransaction = {
     id: null,
-    accountId: accounts.items.length === 1 ? accounts.items[0].id : null,
+    accountId: onlyAccount,
     isin: null,
     date: moment().format(),
     units: 0,
@@ -97,55 +108,12 @@ const Transactions = ({
     transactionId !== null &&
     parseInt(transactionId, 10) >= 0
   ) {
-    const t = find(
+    const transaction = find(
       transactions.items,
-      x => x.id === parseInt(transactionId, 10)
+      item => item.id === parseInt(transactionId, 10)
     );
-    if (t !== undefined) initialTransaction = t;
+    if (transaction !== undefined) initialTransaction = transaction;
   }
-
-  const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
-
-  const myTheme = th =>
-    createTheme({
-      ...th,
-      components: {
-        ...th.components,
-        MuiTableRow: {
-          styleOverrides: {
-            root: {
-              // '&$selected': {
-              //   backgroundColor: theme.palette.primary.light,
-              // },
-            },
-          },
-        },
-        MUIDataTableSelectCell: {
-          styleOverrides: {
-            root: {
-              display: 'none',
-            },
-          },
-        },
-      },
-    });
-
-  const colorize = v =>
-    v === null || v === undefined || v === 0
-      ? {}
-      : {
-          color:
-            v < 0 ? theme.palette.secondary.dark : theme.palette.primary.dark,
-        };
-
-  const formatAmount = value => (
-    <span style={colorize(value)}>
-      {`${(value / 100).toFixed(mdUp ? 2 : 0)}€`}
-    </span>
-  );
-
-  const history = useHistory();
 
   useEffect(() => {
     updateTransactions();
@@ -156,255 +124,189 @@ const Transactions = ({
   const isLoading =
     transactions.isFetching || stocks.isFetching || accounts.isFetching;
 
+  const colorize = value =>
+    value === null || value === undefined || value === 0
+      ? {}
+      : {
+          color:
+            value < 0
+              ? theme.palette.secondary.dark
+              : theme.palette.primary.dark,
+        };
+
+  const formatAmount = value => (
+    <span style={colorize(value)}>{`${(value / 100).toFixed(
+      mdUp ? 2 : 0
+    )}€`}</span>
+  );
+
+  const rows = (transactions.items ?? []).map(transaction =>
+    manipulateExchange(stocks, transaction)
+  );
+  const pageNumber = page === null ? 0 : parseInt(page, 10);
+
   const columns = [
     {
-      name: 'id',
-      label: 'ID',
-      options: {
-        filter: false,
-        display: false,
-      },
+      field: 'id',
+      headerName: 'ID',
     },
     {
-      name: 'date',
-      label: 'Datum',
-      options: {
-        filter: false,
-        customBodyRender: d => moment(d).format(mdUp ? 'L LT' : 'L'),
-      },
+      field: 'date',
+      headerName: 'Datum',
+      minWidth: mdUp ? 150 : 110,
+      renderCell: params => moment(params.value).format(mdUp ? 'L LT' : 'L'),
     },
     {
-      name: 'amount',
-      label: 'Betrag',
-      options: {
-        filter: false,
-        customBodyRender: formatAmount,
-      },
+      field: 'amount',
+      headerName: 'Betrag',
+      minWidth: 110,
+      renderCell: params => formatAmount(params.value),
     },
     {
-      name: 'fees',
-      label: 'Gebühren',
-      options: {
-        filter: false,
-        customBodyRender: formatAmount,
-        display: mdUp,
-      },
+      field: 'fees',
+      headerName: 'Gebühren',
+      minWidth: 110,
+      renderCell: params => formatAmount(params.value),
     },
     {
-      name: 'isin',
-      label: 'Wertpapier',
-      options: {
-        customBodyRender: isin => {
-          const stock = findStock(stocks, isin);
-          if (stock === null) return isin;
+      field: 'stockTitle',
+      headerName: 'Wertpapier',
+      flex: 1,
+      minWidth: mdUp ? 260 : 170,
+      sortable: false,
+      renderCell: params => {
+        const stock = findStock(stocks, params.row.isin);
+        if (stock === null) return params.row.isin;
 
-          return (
-            <Button
-              variant="text"
-              color="primary"
-              startIcon={<ShowChartIcon />}
+        return (
+          <Button
+            variant="text"
+            color="primary"
+            startIcon={<ShowChartIcon />}
+            sx={{
+              justifyContent: 'flex-start',
+              m: -2,
+              maxWidth: '100%',
+              textAlign: 'left',
+              textTransform: 'none',
+            }}
+            onClick={event => {
+              event.stopPropagation();
+              navigate(`/stocks/${stock.isin}`);
+            }}
+          >
+            <span
               style={{
-                margin: theme.spacing(-2),
+                display: '-webkit-box',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 2,
+                wordWrap: 'break-word',
               }}
-              onClick={() => history.push(`/stocks/${stock.isin}`)}
             >
-              <span
-                style={{
-                  wordWrap: 'break-word',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  display: '-webkit-box',
-                  WebkitBoxOrient: 'vertical',
-                  // wordBreak: 'break-all',
-                  WebkitLineClamp: 2,
-                  textAlign: 'left',
-                }}
-              >
-                {abbreviateTitle(stock.title, !mdUp)}
-              </span>
-            </Button>
-          );
-        },
+              {abbreviateTitle(stock.title, !mdUp)}
+            </span>
+          </Button>
+        );
       },
     },
     {
-      name: 'isin',
-      label: 'ISIN',
-      options: {
-        display: false,
-      },
+      field: 'isin',
+      headerName: 'ISIN',
     },
     {
-      name: 'units',
-      label: 'Einheiten',
-      options: {
-        filter: false,
-        display: false,
-        customBodyRender: v => <span style={colorize(v)}>{v}</span>,
-      },
+      field: 'units',
+      headerName: 'Einheiten',
+      renderCell: params => (
+        <span style={colorize(params.value)}>{params.value}</span>
+      ),
     },
     {
-      name: 'accountId',
-      label: 'Konto',
-      options: {
-        display: false,
-      },
+      field: 'accountId',
+      headerName: 'Konto',
     },
     {
-      name: 'exchangeDisplay',
-      label: 'Handelsplatz',
-      options: {
-        display: mdUp,
-      },
+      field: 'exchangeDisplay',
+      headerName: 'Handelsplatz',
+      flex: 1,
+      minWidth: 150,
     },
     {
-      name: 'comments',
-      label: 'Kommentare',
-      options: {
-        filter: false,
-        display: mdUp,
-      },
+      field: 'comments',
+      headerName: 'Kommentare',
+      flex: 1,
+      minWidth: 180,
     },
   ];
 
-  const options = {
-    selectToolbarPlacement: 'none',
-    enableNestedDataAccess: '.',
-    selectableRows: 'single',
-    selectableRowsOnClick: true,
-    // expandableRowsOnClick: true,
-    sortOrder: {
-      name: 'date',
-      direction: 'desc',
-    },
-    print: false,
-    page: page === null ? 0 : parseInt(page, 10), // https://github.com/gregnb/mui-datatables/issues/957
-    onChangePage: p => {
-      setPage(p === 0 ? null : p);
-    },
-    // pagination: mdUp,
-    // expandableRows: true,
-    // renderExpandableRow: rowData => {
-    //   const colSpan = rowData.length + 1;
-    //   return (
-    //     <TableRow>
-    //       <TableCell colSpan={colSpan}>Custom expandable row option.</TableCell>
-    //     </TableRow>
-    //   );
-    // },
-    onRowSelectionChange: (_, rows) => {
-      if (rows.length > 0 && rows[0].dataIndex < transactions.items.length)
-        setTransactionId(transactions.items[rows[0].dataIndex].id);
-      else setTransactionId(null);
-    },
-    // onRowClick: (_, { dataIndex }) => {
-    //   if (dataIndex < transactions.items.length) {
-    //     setCurrentTransaction(transactions.items[dataIndex]);
-    //     console.log(transactions.items[dataIndex]);
-    //   } else setCurrentTransaction(null);
-    // },
-    download: false,
-    rowsPerPageOptions: mdUp ? [10, 25, 50] : [10],
-    responsive: 'standard',
-    customToolbar: () => (
-      <>
-        <Tooltip title="Abrechnungen hochladen">
-          <IconButton component="label">
-            <input
-              type="file"
-              hidden
-              accept="application/pdf"
-              multiple
-              onChange={e => {
-                setUploading(true);
-                uploadReceipts(e.target.files);
-              }}
-            />
-            <CloudUploadIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Neue Transaktion">
-          <IconButton onClick={() => setTransactionId(-1)}>
-            <AddIcon />
-          </IconButton>
-        </Tooltip>
-      </>
-    ),
-    textLabels: {
-      body: {
-        noMatch: 'Keine Transaktionen vorhanden.',
-        toolTip: 'Sortieren',
-        columnHeaderTooltip: column => `Sortiere nach ${column.label}`,
-      },
-      pagination: {
-        next: 'Nächste Seite',
-        previous: 'Vorherige Seite',
-        rowsPerPage: 'Zeilen pro Seite:',
-        displayRows: 'von',
-      },
-      toolbar: {
-        search: 'Suchen',
-        viewColumns: 'Spalten',
-        filterTable: 'Filter',
-      },
-      filter: {
-        all: 'Alle',
-        title: 'FILTER',
-        reset: 'RESET',
-      },
-      viewColumns: {
-        title: 'Angezeigte Spalten',
-        titleAria: 'Zeigen/Ausblenden von Tabellenspalten',
-      },
-      selectedRows: {
-        text: 'Zeile(n) ausgewählt',
-        delete: 'Löschen',
-        deleteAria: 'ausgewählte Zeilen löschen',
-      },
-    },
-  };
   return (
     <div style={{ margin: '-4px' }}>
       <Container maxWidth="xl" style={{ padding: '0px' }}>
-        <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-          {isLoading && (
-            <div
-              style={{
-                position: 'absolute',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(0%, -0%)',
-                width: '0%',
-                height: '0%',
-                padding: '0px',
-                margin: 0,
-                zIndex: 9,
-              }}
-            >
-              <CircularProgress color="secondary" />
-            </div>
-          )}
-          <div
-            style={{
-              position: 'relative',
-              width: '100%',
-              height: '100%',
-              left: '0',
-              top: '0',
+        <Paper>
+          <Box
+            sx={{
+              alignItems: 'center',
+              display: 'flex',
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1,
             }}
           >
-            <ThemeProvider theme={myTheme}>
-              <MUIDataTable
-                title="Transaktionen"
-                data={map(transactions.items, x =>
-                  manipulateExchange(stocks, x)
-                )}
-                columns={columns}
-                options={options}
-              />
-            </ThemeProvider>
-          </div>
-        </div>
+            <Typography variant="h6">Transaktionen</Typography>
+            <Box>
+              <Tooltip title="Abrechnungen hochladen">
+                <IconButton component="label">
+                  <input
+                    type="file"
+                    hidden
+                    accept="application/pdf"
+                    multiple
+                    onChange={event => {
+                      setUploading(true);
+                      uploadReceipts(event.target.files);
+                    }}
+                  />
+                  <CloudUploadIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Neue Transaktion">
+                <IconButton onClick={() => setTransactionId(-1)}>
+                  <AddIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
+          <DataGrid
+            autoHeight
+            rows={rows}
+            columns={columns}
+            loading={isLoading}
+            disableRowSelectionOnClick
+            pagination
+            columnVisibilityModel={{
+              id: false,
+              isin: false,
+              units: false,
+              accountId: false,
+              fees: mdUp,
+              exchangeDisplay: mdUp,
+              comments: mdUp,
+            }}
+            initialState={{
+              sorting: { sortModel: [{ field: 'date', sort: 'desc' }] },
+            }}
+            localeText={deDE.components.MuiDataGrid.defaultProps.localeText}
+            pageSizeOptions={mdUp ? [10, 25, 50] : [10]}
+            paginationModel={{ page: pageNumber, pageSize }}
+            onPaginationModelChange={model => {
+              setPageSize(model.pageSize);
+              setPage(model.page === 0 ? null : model.page);
+            }}
+            onRowClick={params => setTransactionId(params.row.id)}
+            sx={{ border: 0 }}
+          />
+        </Paper>
       </Container>
       <TransactionDialog
         initialTransaction={initialTransaction}

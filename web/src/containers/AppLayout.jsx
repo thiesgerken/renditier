@@ -26,7 +26,7 @@ import Alert from '@mui/material/Alert';
 import PropTypes from 'prop-types';
 import React from 'react';
 import { connect } from 'react-redux';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ignoreUpdate as ignoreUpdateAction } from '../actions/notifications';
 import Hidden from '../components/Hidden';
@@ -35,7 +35,7 @@ const drawerWidth = 240;
 
 function ResponsiveDrawer(props) {
   const { children, username, updateAvailable, ignoreUpdate } = props;
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -53,7 +53,7 @@ function ResponsiveDrawer(props) {
       key={x.key}
       selected={currentPage === x.key}
       onClick={() => {
-        history.push(`/${x.key}`);
+        navigate(`/${x.key}`);
         setMobileOpen(false);
       }}
     >
@@ -172,7 +172,7 @@ function ResponsiveDrawer(props) {
                   <MenuItem
                     onClick={() => {
                       handleClose();
-                      history.push('/logout');
+                      navigate('/logout');
                     }}
                   >
                     Ausloggen
