@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Box, Paper, Grid, Container, TextField, Button } from '@mui/material';
-import { Face, Fingerprint } from '@mui/icons-material';
+import {
+  Box,
+  Button,
+  Container,
+  InputAdornment,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { Face, Fingerprint, TrendingUp } from '@mui/icons-material';
 import Alert from '@mui/material/Alert';
 
 const Login = ({ onSubmit, message, messageType }) => {
@@ -9,93 +18,104 @@ const Login = ({ onSubmit, message, messageType }) => {
   const [password, setPassword] = useState('');
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: '0%',
-        top: '25%',
-        transform: 'translate(0%, -25%)',
-        width: '100%',
+    <Box
+      sx={{
+        alignItems: 'center',
+        bgcolor: theme => theme.palette.background.default,
+        display: 'flex',
+        minHeight: '100vh',
+        px: 2,
+        py: 4,
       }}
     >
-      <Container maxWidth="sm" spacing={3}>
-        <Grid container spacing={4}>
-          <Grid item xs={12}>
-            <Paper sx={{ p: 1 }}>
-              <Box sx={{ m: 2 }}>
-                <form
-                  onSubmit={e => {
-                    e.preventDefault();
-                    onSubmit(username, password);
-                  }}
-                >
-                  <Grid container spacing={3}>
-                    <Grid item xs={12}>
-                      <Grid container spacing={4} alignItems="flex-end">
-                        <Grid item>
-                          <Face />
-                        </Grid>
-                        <Grid item md sm xs>
-                          <TextField
-                            id="username"
-                            label="Benutzername"
-                            value={username}
-                            onChange={e => setUsername(e.target.value)}
-                            type="username"
-                            fullWidth
-                            autoFocus
-                            required
-                          />
-                        </Grid>
-                      </Grid>
-                      <Grid container spacing={4} alignItems="flex-end">
-                        <Grid item>
-                          <Fingerprint />
-                        </Grid>
-                        <Grid item md sm xs>
-                          <TextField
-                            id="password"
-                            label="Passwort"
-                            type="password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            fullWidth
-                            required
-                          />
-                        </Grid>
-                      </Grid>
-                    </Grid>
-                    <Grid
-                      item
-                      container
-                      xs={12}
-                      justify="center"
-                      style={{ marginTop: '10px' }}
-                    >
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        type="submit"
-                        style={{ textTransform: 'none' }}
-                      >
-                        Login
-                      </Button>
-                    </Grid>
-                  </Grid>
-                </form>
+      <Container maxWidth="xs" disableGutters>
+        <Paper elevation={3} sx={{ p: { xs: 3, sm: 4 } }}>
+          <Stack spacing={3}>
+            <Stack spacing={1} sx={{ alignItems: 'center' }}>
+              <Box
+                sx={{
+                  alignItems: 'center',
+                  bgcolor: 'primary.main',
+                  borderRadius: '50%',
+                  color: 'primary.contrastText',
+                  display: 'flex',
+                  height: 48,
+                  justifyContent: 'center',
+                  width: 48,
+                }}
+              >
+                <TrendingUp />
               </Box>
-            </Paper>
-          </Grid>
-          {message !== null && messageType !== null && (
-            <Grid item xs={12}>
-              <Alert elevation={5} variant="filled" severity={messageType}>
+              <Typography component="h1" variant="h5">
+                Aktienverwaltung
+              </Typography>
+            </Stack>
+            <Box
+              component="form"
+              onSubmit={e => {
+                e.preventDefault();
+                onSubmit(username, password);
+              }}
+            >
+              <Stack spacing={2.5}>
+                <TextField
+                  id="username"
+                  label="Benutzername"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  type="username"
+                  fullWidth
+                  autoFocus
+                  required
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Face />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+                <TextField
+                  id="password"
+                  label="Passwort"
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  fullWidth
+                  required
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Fingerprint />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  type="submit"
+                  size="large"
+                  fullWidth
+                  sx={{ textTransform: 'none' }}
+                >
+                  Login
+                </Button>
+              </Stack>
+            </Box>
+            {message !== null && messageType !== null && (
+              <Alert elevation={0} variant="filled" severity={messageType}>
                 {message}
               </Alert>
-            </Grid>
-          )}
-        </Grid>
+            )}
+          </Stack>
+        </Paper>
       </Container>
-    </div>
+    </Box>
   );
 };
 
