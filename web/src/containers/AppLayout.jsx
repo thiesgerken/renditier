@@ -3,16 +3,17 @@ import AppBar from '@mui/material/AppBar';
 import CssBaseline from '@mui/material/CssBaseline';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
-import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { useTheme } from '@mui/material/styles';
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
+import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import AccountCircle from '@mui/icons-material/AccountCircle';
@@ -48,17 +49,17 @@ function ResponsiveDrawer(props) {
   };
 
   const makeMenuItem = x => (
-    <ListItem
-      button
-      key={x.key}
-      selected={currentPage === x.key}
-      onClick={() => {
-        navigate(`/${x.key}`);
-        setMobileOpen(false);
-      }}
-    >
-      <ListItemIcon>{x.icon}</ListItemIcon>
-      <ListItemText primary={x.text} />
+    <ListItem key={x.key} disablePadding>
+      <ListItemButton
+        selected={currentPage === x.key}
+        onClick={() => {
+          navigate(`/${x.key}`);
+          setMobileOpen(false);
+        }}
+      >
+        <ListItemIcon>{x.icon}</ListItemIcon>
+        <ListItemText primary={x.text} />
+      </ListItemButton>
     </ListItem>
   );
 
@@ -142,7 +143,7 @@ function ResponsiveDrawer(props) {
             Aktienverwaltung
           </Typography>
           <div>
-            <Grid container spacing={0} alignItems="center" justify="center">
+            <Stack direction="row" spacing={0} sx={{ alignItems: 'center' }}>
               <div>{username}</div>
               <div>
                 <IconButton
@@ -179,7 +180,7 @@ function ResponsiveDrawer(props) {
                   </MenuItem>
                 </Menu>
               </div>
-            </Grid>
+            </Stack>
           </div>
         </Toolbar>
       </AppBar>
@@ -195,7 +196,7 @@ function ResponsiveDrawer(props) {
             onClose={handleDrawerToggle}
             onOpen={handleDrawerToggle}
             disableBackdropTransition
-            PaperProps={{ sx: { width: drawerWidth } }}
+            slotProps={{ paper: { sx: { width: drawerWidth } } }}
             ModalProps={{
               keepMounted: true, // Better open performance on mobile.
             }}
@@ -205,7 +206,7 @@ function ResponsiveDrawer(props) {
         </Hidden>
         <Hidden smDown>
           <Drawer
-            PaperProps={{ sx: { width: drawerWidth } }}
+            slotProps={{ paper: { sx: { width: drawerWidth } } }}
             variant="permanent"
             open
           >

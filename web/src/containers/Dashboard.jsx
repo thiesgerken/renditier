@@ -60,7 +60,7 @@ const Dashboard = ({
     <Grid container spacing={3}>
       {hasStuff && (
         <Hidden xsDown implementation="js">
-          <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+          <Grid size={12} style={{ padding: theme.spacing(1) }}>
             <PortfolioPlot
               data={portfolioPlotData}
               updateData={updatePortfolioPlotData}
@@ -69,12 +69,12 @@ const Dashboard = ({
           </Grid>
         </Hidden>
       )}
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+      <Grid size={12} style={{ padding: theme.spacing(1) }}>
         <PerformanceTable performance={performance} />
       </Grid>
       {hasStuff && (
         <>
-          <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+          <Grid size={12} style={{ padding: theme.spacing(1) }}>
             <PositionsTable
               stocks={stocks}
               performance={performance}
@@ -82,19 +82,19 @@ const Dashboard = ({
             />
           </Grid>
           <Hidden xsDown implementation="js">
-            <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+            <Grid size={12} style={{ padding: theme.spacing(1) }}>
               <PositionsPie stocks={stocks} performance={performance} />
             </Grid>
           </Hidden>
           <Hidden xsDown implementation="js">
-            <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+            <Grid size={12} style={{ padding: theme.spacing(1) }}>
               <Breakdowns stocks={stocks} performance={performance} />
             </Grid>
           </Hidden>
         </>
       )}
       {oldestTodayData !== null && (
-        <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+        <Grid size={12} style={{ padding: theme.spacing(1) }}>
           <Container maxWidth="xl" style={{ padding: '0px' }}>
             <Paper style={{ padding: theme.spacing(1) }}>
               <Typography variant="caption">

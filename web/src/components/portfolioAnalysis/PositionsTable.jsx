@@ -53,7 +53,7 @@ const PositionsTable = ({ performance, stocks, push }) => {
     <Container maxWidth="xl" style={{ padding: '0px' }}>
       <ProgressPaper loading={performance.isFetching}>
         <Grid container style={{ width: '100%' }}>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TableContainer>
               <Table size="small" aria-label="positions">
                 <TableHead>
@@ -96,7 +96,7 @@ const PositionsTable = ({ performance, stocks, push }) => {
               </Table>
             </TableContainer>
           </Grid>
-          <Grid item xs={9}>
+          <Grid size={9}>
             <FormControl sx={formControlSx}>
               <InputLabel id="period-select-label">Zeit</InputLabel>
               <Select

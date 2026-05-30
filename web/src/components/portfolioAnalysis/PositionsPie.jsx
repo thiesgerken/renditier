@@ -111,7 +111,7 @@ const PositionsPie = ({ performance, stocks }) => {
     <Container maxWidth="xl" style={{ padding: '0px' }}>
       <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
         <Grid container style={{ width: '100%' }}>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <div
               style={{ position: 'relative', width: '100%', height: '100%' }}
             >
@@ -171,7 +171,7 @@ const PositionsPie = ({ performance, stocks }) => {
               </div>
             </div>
           </Grid>
-          <Grid item xs={9}>
+          <Grid size={9}>
             <FormControl sx={formControlSx}>
               <InputLabel id="mode-select-label">Art</InputLabel>
               <Select

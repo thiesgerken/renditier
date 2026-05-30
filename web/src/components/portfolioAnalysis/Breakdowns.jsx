@@ -118,16 +118,16 @@ const Breakdowns = ({ stocks, performance }) => {
     <Container maxWidth="xl" style={{ padding: '0px' }}>
       <ProgressPaper loading={stocks.isFetching || performance.isFetching}>
         <Grid container>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <HoldingsPie holdings={holdings} />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <BreakdownPie breakdown={industryBreakdown} />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <BreakdownPie breakdown={currencyBreakdown} />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <BreakdownPie breakdown={countryBreakdown} />
           </Grid>
           {/* <Grid item xs={12} md={6}>

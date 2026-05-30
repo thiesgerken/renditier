@@ -171,7 +171,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
         }
       >
         <Grid container style={{ width: '100%' }}>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
               <ComposedChart data={points}>
                 <XAxis
@@ -345,7 +345,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
               </ComposedChart>
             </ResponsiveContainer>
           </Grid>
-          <Grid item xs={9}>
+          <Grid size={9}>
             <FormControl sx={formControlSx}>
               <InputLabel id="mode-select-label">Art</InputLabel>
               <Select
