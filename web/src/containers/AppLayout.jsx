@@ -1,4 +1,4 @@
-import { Container, Collapse } from '@mui/material';
+import { Box, Container, Collapse } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import CssBaseline from '@mui/material/CssBaseline';
 import Divider from '@mui/material/Divider';
@@ -12,7 +12,6 @@ import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { useTheme } from '@mui/material/styles';
-import { makeStyles } from '@mui/styles';
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -34,42 +33,9 @@ import Hidden from '../components/Hidden';
 
 const drawerWidth = 240;
 
-const useStyles = makeStyles(theme => ({
-  root: {
-    display: 'flex',
-  },
-  drawer: {
-    [theme.breakpoints.up('md')]: {
-      width: drawerWidth,
-      flexShrink: 0,
-    },
-  },
-  appBar: {
-    zIndex: theme.zIndex.drawer + 1,
-  },
-  menuButton: {
-    marginRight: theme.spacing(2),
-    [theme.breakpoints.up('md')]: {
-      display: 'none',
-    },
-  },
-  toolbar: theme.mixins.toolbar,
-  drawerPaper: {
-    width: drawerWidth,
-  },
-  content: {
-    flexGrow: 1,
-    'padding-top': theme.spacing(1),
-  },
-  title: {
-    flexGrow: 1,
-  },
-}));
-
 function ResponsiveDrawer(props) {
   const { children, username, push, pathname, updateAvailable, ignoreUpdate } =
     props;
-  const classes = useStyles();
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
@@ -98,7 +64,7 @@ function ResponsiveDrawer(props) {
   const drawer = (
     <div>
       <Hidden smDown>
-        <div className={classes.toolbar} />
+        <Toolbar />
         <Divider />
       </Hidden>
       <List>
@@ -155,20 +121,23 @@ function ResponsiveDrawer(props) {
   };
 
   return (
-    <div className={classes.root}>
+    <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <AppBar position="fixed" className={classes.appBar}>
+      <AppBar
+        position="fixed"
+        sx={{ zIndex: themeValue => themeValue.zIndex.drawer + 1 }}
+      >
         <Toolbar>
           <IconButton
             color="inherit"
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            className={classes.menuButton}
+            sx={{ mr: 2, display: { md: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap className={classes.title}>
+          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
             Aktienverwaltung
           </Typography>
           <div>
@@ -213,7 +182,10 @@ function ResponsiveDrawer(props) {
           </div>
         </Toolbar>
       </AppBar>
-      <nav className={classes.drawer}>
+      <Box
+        component="nav"
+        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+      >
         <Hidden mdUp>
           <SwipeableDrawer
             variant="temporary"
@@ -222,9 +194,7 @@ function ResponsiveDrawer(props) {
             onClose={handleDrawerToggle}
             onOpen={handleDrawerToggle}
             disableBackdropTransition
-            classes={{
-              paper: classes.drawerPaper,
-            }}
+            PaperProps={{ sx: { width: drawerWidth } }}
             ModalProps={{
               keepMounted: true, // Better open performance on mobile.
             }}
@@ -234,18 +204,16 @@ function ResponsiveDrawer(props) {
         </Hidden>
         <Hidden smDown>
           <Drawer
-            classes={{
-              paper: classes.drawerPaper,
-            }}
+            PaperProps={{ sx: { width: drawerWidth } }}
             variant="permanent"
             open
           >
             {drawer}
           </Drawer>
         </Hidden>
-      </nav>
-      <main className={classes.content}>
-        <div className={classes.toolbar} />
+      </Box>
+      <Box component="main" sx={{ flexGrow: 1, pt: 1 }}>
+        <Toolbar />
 
         <div style={{ padding: '12px' }}>
           <Collapse in={updateAvailable}>
@@ -257,8 +225,8 @@ function ResponsiveDrawer(props) {
           </Collapse>
           {children}
         </div>
-      </main>
-    </div>
+      </Box>
+    </Box>
   );
 }
 

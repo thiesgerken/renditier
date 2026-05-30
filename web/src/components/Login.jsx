@@ -1,20 +1,10 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Paper, Grid, Container, TextField, Button } from '@mui/material';
-import { withStyles } from '@mui/styles';
+import { Box, Paper, Grid, Container, TextField, Button } from '@mui/material';
 import { Face, Fingerprint } from '@mui/icons-material';
 import Alert from '@mui/material/Alert';
 
-const styles = theme => ({
-  margin: {
-    margin: theme.spacing(2),
-  },
-  padding: {
-    padding: theme.spacing(1),
-  },
-});
-
-const Login = ({ onSubmit, message, messageType, classes }) => {
+const Login = ({ onSubmit, message, messageType }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -31,8 +21,8 @@ const Login = ({ onSubmit, message, messageType, classes }) => {
       <Container maxWidth="sm" spacing={3}>
         <Grid container spacing={4}>
           <Grid item xs={12}>
-            <Paper className={classes.padding}>
-              <div className={classes.margin}>
+            <Paper sx={{ p: 1 }}>
+              <Box sx={{ m: 2 }}>
                 <form
                   onSubmit={e => {
                     e.preventDefault();
@@ -93,7 +83,7 @@ const Login = ({ onSubmit, message, messageType, classes }) => {
                     </Grid>
                   </Grid>
                 </form>
-              </div>
+              </Box>
             </Paper>
           </Grid>
           {message !== null && messageType !== null && (
@@ -113,10 +103,6 @@ Login.propTypes = {
   onSubmit: PropTypes.func.isRequired,
   message: PropTypes.string,
   messageType: PropTypes.string,
-  classes: PropTypes.shape({
-    margin: PropTypes.string,
-    padding: PropTypes.string,
-  }).isRequired,
 };
 
 Login.defaultProps = {
@@ -124,4 +110,4 @@ Login.defaultProps = {
   messageType: null,
 };
 
-export default withStyles(styles)(Login);
+export default Login;

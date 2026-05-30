@@ -9,22 +9,21 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { CircularProgress, Container, useMediaQuery } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { withStyles } from '@mui/styles';
+import { styled, useTheme } from '@mui/material/styles';
 
 import StockPerformanceRow from './StockPerformanceRow';
 import Hidden from '../Hidden';
+
+const StyledTableCell = styled(TableCell)({
+  '&.MuiTableCell-head': {
+    fontWeight: 600,
+  },
+});
 
 const StockPerformanceTable = ({ performance }) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const lgDown = useMediaQuery(theme.breakpoints.down('lg'));
-
-  const StyledTableCell = withStyles(() => ({
-    head: {
-      fontWeight: 600,
-    },
-  }))(TableCell);
 
   let cols = 7;
   if (lgDown) cols = 6;

@@ -8,22 +8,21 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { Container, useMediaQuery } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { withStyles } from '@mui/styles';
+import { styled, useTheme } from '@mui/material/styles';
 
 import PerformanceRow from './PerformanceRow';
 import ProgressPaper from '../ProgressPaper';
 import Hidden from '../Hidden';
 
+const StyledTableCell = styled(TableCell)({
+  '&.MuiTableCell-head': {
+    fontWeight: 600,
+  },
+});
+
 const PerformanceTable = ({ performance }) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const StyledTableCell = withStyles(() => ({
-    head: {
-      fontWeight: 600,
-    },
-  }))(TableCell);
 
   return (
     <Container maxWidth="xl" style={{ padding: '0px' }}>

@@ -8,7 +8,6 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { makeStyles } from '@mui/styles';
 import { DatePicker } from '@mui/x-date-pickers';
 import * as moment from 'moment';
 import PropTypes from 'prop-types';
@@ -43,18 +42,9 @@ function getData(items, isin, startDate, endDate, source) {
   return item;
 }
 
-const useStyles = makeStyles(theme => ({
-  formControl: {
-    margin: theme.spacing(1),
-    minWidth: 120,
-  },
-  selectEmpty: {
-    marginTop: theme.spacing(2),
-  },
-}));
+const formControlSx = { m: 1, minWidth: 120 };
 
 const StockPlot = ({ isin, performance, data, updateData }) => {
-  const classes = useStyles();
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
@@ -458,7 +448,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
             </ResponsiveContainer>
           </Grid>
           <Grid item xs={9}>
-            <FormControl className={classes.formControl}>
+            <FormControl sx={formControlSx}>
               <InputLabel id="mode-select-label">Art</InputLabel>
               <Select
                 labelId="mode-select-label"
@@ -484,7 +474,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                 </MenuItem>
               </Select>
             </FormControl>
-            <FormControl className={classes.formControl}>
+            <FormControl sx={formControlSx}>
               <InputLabel id="source-select-label">Datenquelle</InputLabel>
               <Select
                 labelId="source-select-label"
@@ -498,7 +488,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                 <MenuItem value="realtime">Echtzeit</MenuItem>
               </Select>
             </FormControl>
-            <FormControl className={classes.formControl}>
+            <FormControl sx={formControlSx}>
               <InputLabel id="period-select-label">Zeit</InputLabel>
               <Select
                 labelId="period-select-label"
@@ -530,7 +520,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                   value={dates}
                   onChange={handleDateChange}
                   disableFuture
-                  className={classes.formControl}
+                  sx={formControlSx}
                 /> */}
                 <DatePicker
                   label="Start"
@@ -542,7 +532,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                   disabled={period >= 0}
                   slotProps={{
                     textField: {
-                      className: classes.formControl,
+                      sx: formControlSx,
                     },
                   }}
                 />
@@ -556,7 +546,7 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
                   disabled={period >= 0}
                   slotProps={{
                     textField: {
-                      className: classes.formControl,
+                      sx: formControlSx,
                     },
                   }}
                 />

@@ -11,7 +11,6 @@ import {
   ListItemText,
   Checkbox,
 } from '@mui/material';
-import { makeStyles } from '@mui/styles';
 import { DatePicker } from '@mui/x-date-pickers';
 import * as moment from 'moment';
 import { map, every, mapValues, sortBy } from 'lodash';
@@ -70,15 +69,7 @@ const MenuProps = {
   },
 };
 
-const useStyles = makeStyles(theme => ({
-  formControl: {
-    margin: theme.spacing(1),
-    minWidth: 120,
-  },
-  selectEmpty: {
-    marginTop: theme.spacing(2),
-  },
-}));
+const formControlSx = { m: 1, minWidth: 120 };
 
 const unifyPoints = (points, isins) => {
   const unifiedPoints = [];
@@ -127,7 +118,6 @@ const unifyPoints = (points, isins) => {
 };
 
 const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
-  const classes = useStyles();
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
@@ -347,7 +337,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
           <Grid container item xs={9}>
             <Grid item xs={3}>
               <FormControl
-                className={classes.formControl}
+                sx={{ ...formControlSx, width: '100%', pr: 2 }}
                 style={{
                   width: '100%',
                   paddingRight: theme.spacing(2),
@@ -397,7 +387,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
               </FormControl>{' '}
             </Grid>
             <Grid item xs={9}>
-              <FormControl className={classes.formControl}>
+              <FormControl sx={formControlSx}>
                 <InputLabel id="source-select-label">Datenquelle</InputLabel>
                 <Select
                   labelId="source-select-label"
@@ -411,7 +401,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                   <MenuItem value="realtime">Echtzeit</MenuItem>
                 </Select>
               </FormControl>
-              <FormControl className={classes.formControl}>
+              <FormControl sx={formControlSx}>
                 <InputLabel id="period-select-label">Zeit</InputLabel>
                 <Select
                   labelId="period-select-label"
@@ -443,7 +433,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                   value={dates}
                   onChange={handleDateChange}
                   disableFuture
-                  className={classes.formControl}
+                  sx={formControlSx}
                 /> */}
                   <DatePicker
                     label="Start"
@@ -455,7 +445,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                     disabled={period >= 0}
                     slotProps={{
                       textField: {
-                        className: classes.formControl,
+                        sx: formControlSx,
                         helperText: null,
                       },
                     }}
@@ -470,7 +460,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                     disabled={period >= 0}
                     slotProps={{
                       textField: {
-                        className: classes.formControl,
+                        sx: formControlSx,
                         helperText: null,
                       },
                     }}

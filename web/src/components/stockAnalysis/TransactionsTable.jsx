@@ -8,18 +8,18 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { Container } from '@mui/material';
-import { withStyles } from '@mui/styles';
+import { styled } from '@mui/material/styles';
 import { map } from 'lodash';
 import * as moment from 'moment';
 
 import TransactionRow from './TransactionRow';
 import Hidden from '../Hidden';
 
-const StyledTableCell = withStyles(() => ({
-  head: {
+const StyledTableCell = styled(TableCell)({
+  '&.MuiTableCell-head': {
     fontWeight: 600,
   },
-}))(TableCell);
+});
 
 const TransactionsTable = ({ transactions, currentPrice }) => {
   transactions.sort((a, b) => moment(b.date) - moment(a.date));

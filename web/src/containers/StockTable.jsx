@@ -12,8 +12,7 @@ import {
 } from '@mui/material';
 import { map } from 'lodash';
 import React from 'react';
-import { useTheme } from '@mui/material/styles';
-import { withStyles } from '@mui/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import { push as routerPush } from 'connected-react-router';
 
 import {
@@ -26,11 +25,11 @@ import ProgressPaper from '../components/ProgressPaper';
 import Hidden from '../components/Hidden';
 import StockComparisonPlot from '../components/StockComparisonPlot';
 
-const StyledTableCell = withStyles(() => ({
-  head: {
+const StyledTableCell = styled(TableCell)({
+  '&.MuiTableCell-head': {
     fontWeight: 600,
   },
-}))(TableCell);
+});
 
 const StockTable = ({
   stocks,

@@ -10,7 +10,6 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
-import { makeStyles } from '@mui/styles';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { find, map, sumBy } from 'lodash';
@@ -28,18 +27,9 @@ import {
 } from '@mui/material/colors';
 import { findStock, abbreviateTitle } from '../../selectors/stocks';
 
-const useStyles = makeStyles(theme => ({
-  formControl: {
-    margin: theme.spacing(1),
-    minWidth: 120,
-  },
-  selectEmpty: {
-    marginTop: theme.spacing(2),
-  },
-}));
+const formControlSx = { m: 1, minWidth: 120 };
 
 const PositionsPie = ({ performance, stocks }) => {
-  const classes = useStyles();
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [mode, setMode] = useState('invested');
@@ -182,7 +172,7 @@ const PositionsPie = ({ performance, stocks }) => {
             </div>
           </Grid>
           <Grid item xs={9}>
-            <FormControl className={classes.formControl}>
+            <FormControl sx={formControlSx}>
               <InputLabel id="mode-select-label">Art</InputLabel>
               <Select
                 labelId="mode-select-label"

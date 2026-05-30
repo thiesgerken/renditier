@@ -13,7 +13,7 @@ import {
   Typography,
   useMediaQuery,
 } from '@mui/material';
-import { withStyles } from '@mui/styles';
+import { styled } from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
 import * as moment from 'moment';
 
@@ -30,6 +30,10 @@ import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
 import StockPlot from '../components/stockAnalysis/StockPlot';
 import HoldingsPie from '../components/stockAnalysis/HoldingsPie';
 import BreakdownPie from '../components/stockAnalysis/BreakdownPie';
+
+const StyledListItem = styled(ListItem)({
+  height: '2em',
+});
 
 const StockAnalysis = ({
   isin,
@@ -144,12 +148,6 @@ const StockAnalysis = ({
   if (stock.kind === 'ETF')
     typeInfo = `Typ: ${stock.kind} (${stock.fondsType}) mit Fokus auf ${stock.focus}`;
   else typeInfo = `Typ: ${stock.kind}`;
-
-  const StyledListItem = withStyles(() => ({
-    root: {
-      height: '2em',
-    },
-  }))(ListItem);
 
   const holdings = stock.holdings !== null ? JSON.parse(stock.holdings) : [];
   const industryBreakdown =
