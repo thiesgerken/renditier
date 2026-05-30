@@ -9,16 +9,16 @@ import {
   TextField,
   useMediaQuery,
   useTheme,
-} from '@material-ui/core';
-import Alert from '@material-ui/lab/Alert';
-import Autocomplete from '@material-ui/lab/Autocomplete';
-import { DateTimePicker } from '@material-ui/pickers';
+} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Autocomplete from '@mui/material/Autocomplete';
+import { DateTimePicker } from '@mui/x-date-pickers';
 import { find, reverse, sortBy, sortedUniqBy } from 'lodash';
 import * as moment from 'moment';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { connect } from 'react-redux';
-import DeleteIcon from '@material-ui/icons/Delete';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 import {
   deleteTransaction as deleteTransactionAction,
@@ -343,13 +343,7 @@ const TransactionDialog = ({
             <Grid item xs={12}>
               <DateTimePicker
                 label="Datum"
-                renderInput={props => (
-                  <TextField /* eslint-disable react/jsx-props-no-spreading */
-                    {...props}
-                  />
-                )}
-                fullWidth
-                inputFormat="DD/MM/YYYY HH:mm"
+                format="DD/MM/YYYY HH:mm"
                 value={transaction.date}
                 onChange={d => {
                   setTransaction({
@@ -358,7 +352,11 @@ const TransactionDialog = ({
                   });
                 }}
                 disableFuture
-                autoOk
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={6}>

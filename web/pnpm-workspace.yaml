@@ -2,11 +2,11 @@ autoInstallPeers: false
 nodeLinker: hoisted
 peerDependencyRules:
   allowedVersions:
-    '@material-ui/core': '4'
-    '@material-ui/lab': '4.0.0-alpha.61'
-    '@types/react': '17'
-    react: '17'
-    react-dom: '17'
+    '@mui/icons-material': '9'
+    '@mui/material': '9'
+    '@types/react': '18'
+    react: '18'
+    react-dom: '18'
     react-dnd: '11'
     eslint-plugin-react-hooks: '7'
 allowBuilds:

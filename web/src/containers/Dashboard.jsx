@@ -1,14 +1,7 @@
 import { connect } from 'react-redux';
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Grid,
-  Hidden,
-  Typography,
-  Container,
-  Paper,
-  useTheme,
-} from '@material-ui/core';
+import { Grid, Typography, Container, Paper, useTheme } from '@mui/material';
 import { find, filter, max, min, map } from 'lodash';
 import * as moment from 'moment';
 import { push as routerPush } from 'connected-react-router';
@@ -22,6 +15,7 @@ import PerformanceTable from '../components/portfolioAnalysis/PerformanceTable';
 import PortfolioPlot from '../components/portfolioAnalysis/PortfolioPlot';
 import PositionsTable from '../components/portfolioAnalysis/PositionsTable';
 import PositionsPie from '../components/portfolioAnalysis/PositionsPie';
+import Hidden from '../components/Hidden';
 import Breakdowns from '../components/portfolioAnalysis/Breakdowns';
 
 const Dashboard = ({

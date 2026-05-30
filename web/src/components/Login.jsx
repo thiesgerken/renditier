@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import {
-  Paper,
-  Grid,
-  Container,
-  TextField,
-  Button,
-  withStyles,
-} from '@material-ui/core';
-import { Face, Fingerprint } from '@material-ui/icons';
-import Alert from '@material-ui/lab/Alert';
+import { Paper, Grid, Container, TextField, Button } from '@mui/material';
+import { withStyles } from '@mui/styles';
+import { Face, Fingerprint } from '@mui/icons-material';
+import Alert from '@mui/material/Alert';
 
 const styles = theme => ({
   margin: {

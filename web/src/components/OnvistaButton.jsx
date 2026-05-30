@@ -1,4 +1,5 @@
-import { withStyles, Tooltip, Button } from '@material-ui/core';
+import { Tooltip, Button } from '@mui/material';
+import { withStyles } from '@mui/styles';
 import React from 'react';
 import PropTypes from 'prop-types';
 

@@ -3,9 +3,9 @@ import React from 'react';
 import * as moment from 'moment';
 import 'moment/locale/de';
 import PropTypes from 'prop-types';
-import FormGroup from '@material-ui/core/FormGroup';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Switch from '@material-ui/core/Switch';
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 
 import { subscribe, unsubscribe } from '../actions/notifications';
 import { buildCommit, buildDate } from '../git';

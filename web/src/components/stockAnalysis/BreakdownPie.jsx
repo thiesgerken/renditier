@@ -12,12 +12,12 @@ import {
   green,
   deepPurple,
   orange,
-} from '@material-ui/core/colors';
-import { useTheme, useMediaQuery } from '@material-ui/core';
+} from '@mui/material/colors';
+import { useTheme, useMediaQuery } from '@mui/material';
 
 const BreakdownPie = ({ breakdown }) => {
   const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
 
   const colorNames = [
     teal,

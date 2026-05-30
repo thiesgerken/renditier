@@ -12,10 +12,9 @@ import {
   ListItem,
   Typography,
   useMediaQuery,
-  withStyles,
-  Hidden,
-} from '@material-ui/core';
-import Alert from '@material-ui/lab/Alert';
+} from '@mui/material';
+import { withStyles } from '@mui/styles';
+import Alert from '@mui/material/Alert';
 import * as moment from 'moment';
 
 import {
@@ -26,6 +25,7 @@ import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
 import { findStock, capitalizeTitle } from '../selectors/stocks';
 import StockPerformanceTable from '../components/stockAnalysis/StockPerformanceTable';
 import OnvistaButton from '../components/OnvistaButton';
+import Hidden from '../components/Hidden';
 import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
 import StockPlot from '../components/stockAnalysis/StockPlot';
 import HoldingsPie from '../components/stockAnalysis/HoldingsPie';
@@ -41,7 +41,7 @@ const StockAnalysis = ({
   updatePerformance,
 }) => {
   const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
 
   const formatAmount = (value, precision, unit) =>
     value === null

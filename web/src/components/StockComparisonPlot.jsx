@@ -3,7 +3,6 @@ import {
   FormControl,
   Grid,
   InputLabel,
-  makeStyles,
   MenuItem,
   Select,
   useMediaQuery,
@@ -11,9 +10,9 @@ import {
   Input,
   ListItemText,
   Checkbox,
-  TextField,
-} from '@material-ui/core';
-import { DatePicker } from '@material-ui/pickers';
+} from '@mui/material';
+import { makeStyles } from '@mui/styles';
+import { DatePicker } from '@mui/x-date-pickers';
 import * as moment from 'moment';
 import { map, every, mapValues, sortBy } from 'lodash';
 import PropTypes from 'prop-types';
@@ -38,7 +37,7 @@ import {
   green,
   deepPurple,
   orange,
-} from '@material-ui/core/colors';
+} from '@mui/material/colors';
 
 import { getPeriodDescription } from '../selectors/performance';
 import ProgressPaper from './ProgressPaper';
@@ -131,7 +130,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
   const classes = useStyles();
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const [period, setPeriod] = useState(0);
   const [source, setSource] = useState('auto');
   const [dates, setDates] = useState([
@@ -448,39 +447,33 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                 /> */}
                   <DatePicker
                     label="Start"
-                    renderInput={props => (
-                      <FormControl className={classes.formControl}>
-                        <TextField /* eslint-disable react/jsx-props-no-spreading */
-                          {...props}
-                          helperText={null}
-                        />
-                      </FormControl>
-                    )}
                     value={dates[0]}
-                    inputFormat="DD/MM/YYYY"
+                    format="DD/MM/YYYY"
                     maxDate={dates[1]}
                     onChange={d => handleDateChange([d, dates[1]])}
                     disableFuture
-                    autoOk
                     disabled={period >= 0}
+                    slotProps={{
+                      textField: {
+                        className: classes.formControl,
+                        helperText: null,
+                      },
+                    }}
                   />
                   <DatePicker
                     label="Ende"
-                    renderInput={props => (
-                      <FormControl className={classes.formControl}>
-                        <TextField /* eslint-disable react/jsx-props-no-spreading */
-                          {...props}
-                          helperText={null}
-                        />
-                      </FormControl>
-                    )}
                     value={dates[1]}
-                    inputFormat="DD/MM/YYYY"
+                    format="DD/MM/YYYY"
                     minDate={dates[0]}
                     onChange={d => handleDateChange([dates[0], d])}
                     disableFuture
-                    autoOk
                     disabled={period >= 0}
+                    slotProps={{
+                      textField: {
+                        className: classes.formControl,
+                        helperText: null,
+                      },
+                    }}
                   />
                 </>
               )}

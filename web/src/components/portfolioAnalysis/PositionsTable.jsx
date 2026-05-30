@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import {
   Container,
-  Hidden,
   Grid,
   MenuItem,
   InputLabel,
   Select,
   FormControl,
-} from '@material-ui/core';
-import { withStyles, makeStyles } from '@material-ui/core/styles';
+} from '@mui/material';
+import { withStyles, makeStyles } from '@mui/styles';
 import { map } from 'lodash';
 
 import PositionRow from './PositionRow';
 import { getPeriodDescription } from '../../selectors/performance';
 import { findStock } from '../../selectors/stocks';
 import ProgressPaper from '../ProgressPaper';
+import Hidden from '../Hidden';
 
 const useStyles = makeStyles(theme => ({
   formControl: {

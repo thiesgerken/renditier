@@ -9,8 +9,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  makeStyles,
-} from '@material-ui/core';
+} from '@mui/material';
+import { makeStyles } from '@mui/styles';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { find, map, sumBy } from 'lodash';
@@ -25,7 +25,7 @@ import {
   green,
   deepPurple,
   orange,
-} from '@material-ui/core/colors';
+} from '@mui/material/colors';
 import { findStock, abbreviateTitle } from '../../selectors/stocks';
 
 const useStyles = makeStyles(theme => ({

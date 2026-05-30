@@ -1,16 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import TableCell from '@material-ui/core/TableCell';
-import TableRow from '@material-ui/core/TableRow';
-import { Button, Hidden, useTheme, useMediaQuery } from '@material-ui/core';
-import ShowChartIcon from '@material-ui/icons/ShowChart';
+import TableCell from '@mui/material/TableCell';
+import TableRow from '@mui/material/TableRow';
+import { Button, useTheme, useMediaQuery } from '@mui/material';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 
 import { abbreviateTitle } from '../selectors/stocks';
 import OnvistaButton from './OnvistaButton';
+import Hidden from './Hidden';
 
 const StockRow = ({ data, push }) => {
   const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <TableRow>

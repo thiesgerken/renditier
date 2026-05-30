@@ -11,9 +11,9 @@ import {
   CircularProgress,
   Tooltip,
   IconButton,
-} from '@material-ui/core';
-import { createTheme } from '@material-ui/core/styles';
-import AddIcon from '@material-ui/icons/Add';
+} from '@mui/material';
+import { createTheme } from '@mui/material/styles';
+import AddIcon from '@mui/icons-material/Add';
 import { useLocation, useHistory } from 'react-router';
 
 import { updateAccounts as updateAccountsAction } from '../actions/accounts';
@@ -60,11 +60,13 @@ const Accounts = ({ accounts, updateAccounts }) => {
   const myTheme = th =>
     createTheme({
       ...th,
-      overrides: {
-        ...th.overrides,
+      components: {
+        ...th.components,
         MUIDataTableSelectCell: {
-          root: {
-            display: 'none',
+          styleOverrides: {
+            root: {
+              display: 'none',
+            },
           },
         },
       },

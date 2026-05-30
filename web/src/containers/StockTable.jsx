@@ -8,12 +8,12 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Hidden,
   Grid,
-} from '@material-ui/core';
+} from '@mui/material';
 import { map } from 'lodash';
 import React from 'react';
-import { withStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+import { withStyles } from '@mui/styles';
 import { push as routerPush } from 'connected-react-router';
 
 import {
@@ -23,6 +23,7 @@ import {
 import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
 import StockRow from '../components/StockRow';
 import ProgressPaper from '../components/ProgressPaper';
+import Hidden from '../components/Hidden';
 import StockComparisonPlot from '../components/StockComparisonPlot';
 
 const StyledTableCell = withStyles(() => ({

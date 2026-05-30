@@ -13,11 +13,11 @@ import {
   CircularProgress,
   Tooltip,
   IconButton,
-} from '@material-ui/core';
-import { createTheme } from '@material-ui/core/styles';
-import ShowChartIcon from '@material-ui/icons/ShowChart';
-import AddIcon from '@material-ui/icons/Add';
-import CloudUploadIcon from '@material-ui/icons/CloudUpload';
+} from '@mui/material';
+import { createTheme } from '@mui/material/styles';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import AddIcon from '@mui/icons-material/Add';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useLocation, useHistory } from 'react-router';
 
 import { updateTransactions as updateTransactionsAction } from '../actions/transactions';
@@ -110,18 +110,22 @@ const Transactions = ({
   const myTheme = th =>
     createTheme({
       ...th,
-      overrides: {
-        ...th.overrides,
+      components: {
+        ...th.components,
         MuiTableRow: {
-          root: {
-            // '&$selected': {
-            //   backgroundColor: theme.palette.primary.light,
-            // },
+          styleOverrides: {
+            root: {
+              // '&$selected': {
+              //   backgroundColor: theme.palette.primary.light,
+              // },
+            },
           },
         },
         MUIDataTableSelectCell: {
-          root: {
-            display: 'none',
+          styleOverrides: {
+            root: {
+              display: 'none',
+            },
           },
         },
       },

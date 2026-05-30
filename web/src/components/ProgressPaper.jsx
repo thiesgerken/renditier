@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { CircularProgress, Paper } from '@material-ui/core';
+import { CircularProgress, Paper } from '@mui/material';
 
 const ProgressPaper = ({ loading, children, style }) => (
   <Paper style={{ ...style, minHeight: '8em' }}>

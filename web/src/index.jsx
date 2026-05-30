@@ -1,18 +1,17 @@
 import thunkMiddleware from 'redux-thunk';
 import { createLogger } from 'redux-logger';
 import React from 'react';
-import { render } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
 import { createBrowserHistory } from 'history';
 import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
-import { ThemeProvider } from '@material-ui/core';
-import { createTheme } from '@material-ui/core/styles';
+import { ThemeProvider } from '@mui/material';
+import { createTheme } from '@mui/material/styles';
 import 'typeface-oxygen';
-import teal from '@material-ui/core/colors/teal';
-import { LocalizationProvider } from '@material-ui/pickers';
-import MomentUtils from '@date-io/moment';
-import { pink } from '@material-ui/core/colors';
+import { pink, teal } from '@mui/material/colors';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import * as moment from 'moment';
 
 import rootReducer from './reducers';
@@ -47,12 +46,12 @@ const theme = createTheme({
   },
 });
 
-render(
+createRoot(document.getElementById('root')).render(
   <Provider store={store}>
     <ConnectedRouter history={history}>
       <ThemeProvider theme={theme}>
         <LocalizationProvider
-          dateAdapter={MomentUtils}
+          dateAdapter={AdapterMoment}
           dateLibInstance={moment}
         >
           <ServiceWorker />
@@ -60,6 +59,5 @@ render(
         </LocalizationProvider>
       </ThemeProvider>
     </ConnectedRouter>
-  </Provider>,
-  document.getElementById('root')
+  </Provider>
 );

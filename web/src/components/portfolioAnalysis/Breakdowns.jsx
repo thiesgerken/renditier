@@ -1,4 +1,4 @@
-import { Container, Grid } from '@material-ui/core';
+import { Container, Grid } from '@mui/material';
 import PropTypes from 'prop-types';
 import React from 'react';
 import { map, forEach } from 'lodash';
