@@ -1,0 +1,12 @@
+autoInstallPeers: false
+nodeLinker: hoisted
+allowBuilds:
+  core-js: true
+  core-js-pure: true
+  es5-ext: true
+  fsevents: true
+onlyBuiltDependencies:
+  - core-js
+  - core-js-pure
+  - es5-ext
+  - fsevents

@@ -71,14 +71,17 @@ jobs:
   #     - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
   #     - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
   #       with:
-  #         node-version: "16"
+  #         node-version: "24"
+  #         cache: "pnpm"
+  #         cache-dependency-path: "web/pnpm-lock.yaml"
 
   #     - name: Install dependencies and test
   #       run: |
   #         cd web
-  #         yarn install --frozen-lockfile
-  #         yarn run git && yarn test --all && yarn test:lint:js
-  #         yarn run build && yarn run analyze
+  #         corepack enable
+  #         pnpm install --frozen-lockfile
+  #         pnpm run git && pnpm test --all && pnpm test:lint:js
+  #         pnpm run build && pnpm run analyze
 
   deploy:
     runs-on: ubuntu-latest
@@ -87,7 +90,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Configure kubectl
         run: |
