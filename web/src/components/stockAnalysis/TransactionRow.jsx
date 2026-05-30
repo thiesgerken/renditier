@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
-import * as moment from 'moment';
+import moment from 'moment';
 import { useTheme, useMediaQuery, Tooltip } from '@mui/material';
 
 import Hidden from '../Hidden';

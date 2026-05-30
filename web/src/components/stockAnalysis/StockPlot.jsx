@@ -9,7 +9,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import * as moment from 'moment';
+import moment from 'moment';
 import PropTypes from 'prop-types';
 import React, { useState, Fragment, useCallback, useEffect } from 'react';
 import {

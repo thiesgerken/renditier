@@ -23,10 +23,10 @@ import MenuIcon from '@mui/icons-material/Menu';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Alert from '@mui/material/Alert';
-import { push as routerPush } from 'connected-react-router';
 import PropTypes from 'prop-types';
 import React from 'react';
 import { connect } from 'react-redux';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import { ignoreUpdate as ignoreUpdateAction } from '../actions/notifications';
 import Hidden from '../components/Hidden';
@@ -34,12 +34,13 @@ import Hidden from '../components/Hidden';
 const drawerWidth = 240;
 
 function ResponsiveDrawer(props) {
-  const { children, username, push, pathname, updateAvailable, ignoreUpdate } =
-    props;
+  const { children, username, updateAvailable, ignoreUpdate } = props;
+  const history = useHistory();
+  const location = useLocation();
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
-  let currentPage = pathname.split('/')[1];
+  let currentPage = location.pathname.split('/')[1];
   if (currentPage === '') currentPage = 'dashboard';
 
   const handleDrawerToggle = () => {
@@ -52,7 +53,7 @@ function ResponsiveDrawer(props) {
       key={x.key}
       selected={currentPage === x.key}
       onClick={() => {
-        push(`/${x.key}`);
+        history.push(`/${x.key}`);
         setMobileOpen(false);
       }}
     >
@@ -171,7 +172,7 @@ function ResponsiveDrawer(props) {
                   <MenuItem
                     onClick={() => {
                       handleClose();
-                      push('/logout');
+                      history.push('/logout');
                     }}
                   >
                     Ausloggen
@@ -235,22 +236,18 @@ ResponsiveDrawer.propTypes = {
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node,
   ]).isRequired,
-  push: PropTypes.func.isRequired,
   username: PropTypes.string.isRequired,
-  pathname: PropTypes.string.isRequired,
   updateAvailable: PropTypes.bool.isRequired,
   ignoreUpdate: PropTypes.func.isRequired,
 };
 
-const mapStateToProps = ({ authentication, router, notifications }) => ({
+const mapStateToProps = ({ authentication, notifications }) => ({
   username: authentication.userInfo.fullName,
-  pathname: router.location.pathname,
   updateAvailable:
     notifications.updateAvailable && !notifications.updateIgnored,
 });
 
 const mapDispatchToProps = dispatch => ({
-  push: x => dispatch(routerPush(x)),
   ignoreUpdate: () => dispatch(ignoreUpdateAction()),
 });
 

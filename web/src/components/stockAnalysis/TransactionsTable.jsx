@@ -10,7 +10,7 @@ import Paper from '@mui/material/Paper';
 import { Container } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { map } from 'lodash';
-import * as moment from 'moment';
+import moment from 'moment';
 
 import TransactionRow from './TransactionRow';
 import Hidden from '../Hidden';

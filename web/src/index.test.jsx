@@ -5,14 +5,14 @@ import { createRoot } from 'react-dom/client';
 import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
 import { createBrowserHistory } from 'history';
-import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
+import { Router } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
 import 'typeface-oxygen';
 import { pink, teal } from '@mui/material/colors';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
-import * as moment from 'moment';
+import moment from 'moment';
 
 import rootReducer from './reducers';
 import App from './containers/App';
@@ -21,10 +21,10 @@ import ServiceWorker from './containers/ServiceWorker';
 it('renders without crashing', () => {
   const history = createBrowserHistory();
 
-  const middlewares = [routerMiddleware(history), thunkMiddleware];
+  const middlewares = [thunkMiddleware];
   let composeEnhancers = compose;
 
-  if (process.env.NODE_ENV === `development`) {
+  if (import.meta.env.DEV) {
     const loggerMiddleware = createLogger();
     middlewares.push(loggerMiddleware);
 
@@ -33,7 +33,7 @@ it('renders without crashing', () => {
   }
 
   const store = createStore(
-    rootReducer(history),
+    rootReducer,
     composeEnhancers(applyMiddleware(...middlewares))
   );
 
@@ -53,7 +53,7 @@ it('renders without crashing', () => {
 
   root.render(
     <Provider store={store}>
-      <ConnectedRouter history={history}>
+      <Router history={history}>
         <ThemeProvider theme={theme}>
           <LocalizationProvider
             dateAdapter={AdapterMoment}
@@ -63,7 +63,7 @@ it('renders without crashing', () => {
             <App />
           </LocalizationProvider>
         </ThemeProvider>
-      </ConnectedRouter>
+      </Router>
     </Provider>
   );
 

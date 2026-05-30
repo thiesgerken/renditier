@@ -14,7 +14,7 @@ import Alert from '@mui/material/Alert';
 import Autocomplete from '@mui/material/Autocomplete';
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { find, reverse, sortBy, sortedUniqBy } from 'lodash';
-import * as moment from 'moment';
+import moment from 'moment';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { connect } from 'react-redux';

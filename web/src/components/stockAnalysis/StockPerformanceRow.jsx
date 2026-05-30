@@ -5,7 +5,7 @@ import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import { useMediaQuery, Tooltip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import * as moment from 'moment';
+import moment from 'moment';
 
 import { getPeriodDescription } from '../../selectors/performance';
 import Hidden from '../Hidden';

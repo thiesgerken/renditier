@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
-import * as moment from 'moment';
+import moment from 'moment';
 
 import {
   updateStocks as updateStocksAction,

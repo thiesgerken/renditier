@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
-import * as moment from 'moment';
+import moment from 'moment';
 import { useTheme, useMediaQuery, Button, Tooltip } from '@mui/material';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import { abbreviateTitle } from '../../selectors/stocks';

@@ -1,6 +1,6 @@
 import { connect } from 'react-redux';
 import React from 'react';
-import * as moment from 'moment';
+import moment from 'moment';
 import 'moment/locale/de';
 import PropTypes from 'prop-types';
 import FormGroup from '@mui/material/FormGroup';

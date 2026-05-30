@@ -12,7 +12,7 @@ import {
   Checkbox,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import * as moment from 'moment';
+import moment from 'moment';
 import { map, every, mapValues, sortBy } from 'lodash';
 import PropTypes from 'prop-types';
 import React, { useState, useCallback, useEffect } from 'react';

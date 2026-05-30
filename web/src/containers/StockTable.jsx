@@ -13,7 +13,7 @@ import {
 import { map } from 'lodash';
 import React from 'react';
 import { styled, useTheme } from '@mui/material/styles';
-import { push as routerPush } from 'connected-react-router';
+import { useHistory } from 'react-router-dom';
 
 import {
   updateStocks as updateStocksAction,
@@ -38,8 +38,8 @@ const StockTable = ({
   updateStockPlotData,
   performance,
   updatePerformance,
-  push,
 }) => {
+  const history = useHistory();
   const theme = useTheme();
   updateStocks();
   updatePerformance();
@@ -86,7 +86,7 @@ const StockTable = ({
                 <TableBody>
                   {stocks.data !== null &&
                     map(stocks.data, d => (
-                      <StockRow data={d} key={d.isin} push={push} />
+                      <StockRow data={d} key={d.isin} push={history.push} />
                     ))}
                 </TableBody>
               </Table>
@@ -111,12 +111,10 @@ StockTable.propTypes = {
     isFetching: PropTypes.bool,
   }).isRequired,
   updateStocks: PropTypes.func.isRequired,
-  push: PropTypes.func.isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
   updateStocks: () => dispatch(updateStocksAction()),
-  push: x => dispatch(routerPush(x)),
   updatePerformance: () => dispatch(updatePerformanceAction()),
   updateStockPlotData: (isin, startDate, endDate, source) =>
     dispatch(updateStockPlotAction(isin, startDate, endDate, source)),

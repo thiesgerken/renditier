@@ -3,8 +3,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Grid, Typography, Container, Paper, useTheme } from '@mui/material';
 import { find, filter, max, min, map } from 'lodash';
-import * as moment from 'moment';
-import { push as routerPush } from 'connected-react-router';
+import moment from 'moment';
+import { useHistory } from 'react-router-dom';
 
 import {
   updateStocks as updateStocksAction,
@@ -25,8 +25,8 @@ const Dashboard = ({
   updateStocks,
   portfolioPlotData,
   updatePortfolioPlotData,
-  push,
 }) => {
+  const history = useHistory();
   const theme = useTheme();
 
   updatePerformance();
@@ -78,7 +78,7 @@ const Dashboard = ({
             <PositionsTable
               stocks={stocks}
               performance={performance}
-              push={push}
+              push={history.push}
             />
           </Grid>
           <Hidden xsDown implementation="js">
@@ -127,7 +127,6 @@ Dashboard.propTypes = {
   updateStocks: PropTypes.func.isRequired,
   portfolioPlotData: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   updatePortfolioPlotData: PropTypes.func.isRequired,
-  push: PropTypes.func.isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
@@ -135,7 +134,6 @@ const mapDispatchToProps = dispatch => ({
   updateStocks: () => dispatch(updateStocksAction()),
   updatePortfolioPlotData: (startDate, endDate, source) =>
     dispatch(updatePortfolioPlotAction(startDate, endDate, source)),
-  push: x => dispatch(routerPush(x)),
 });
 
 const mapStateToProps = state => {
