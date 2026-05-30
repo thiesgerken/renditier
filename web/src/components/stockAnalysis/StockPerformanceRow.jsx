@@ -1,17 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import TableCell from '@material-ui/core/TableCell';
-import TableRow from '@material-ui/core/TableRow';
-import { Hidden, useMediaQuery, Tooltip } from '@material-ui/core';
-import { useTheme } from '@material-ui/core/styles';
-import * as moment from 'moment';
+import TableCell from '@mui/material/TableCell';
+import TableRow from '@mui/material/TableRow';
+import { useMediaQuery, Tooltip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import moment from 'moment';
 
 import { getPeriodDescription } from '../../selectors/performance';
+import Hidden from '../Hidden';
 
 const StockPerformanceRow = ({ data }) => {
   const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const colorize = v =>
     v === null || Math.abs(v) < 5e-3
       ? {}

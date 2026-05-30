@@ -1,23 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import TableCell from '@material-ui/core/TableCell';
-import TableRow from '@material-ui/core/TableRow';
-import * as moment from 'moment';
-import {
-  useTheme,
-  Hidden,
-  useMediaQuery,
-  Button,
-  Tooltip,
-} from '@material-ui/core';
-import ShowChartIcon from '@material-ui/icons/ShowChart';
+import TableCell from '@mui/material/TableCell';
+import TableRow from '@mui/material/TableRow';
+import moment from 'moment';
+import { useTheme, useMediaQuery, Button, Tooltip } from '@mui/material';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 import { abbreviateTitle } from '../../selectors/stocks';
 import OnvistaButton from '../OnvistaButton';
+import Hidden from '../Hidden';
 
 const PositionRow = ({ data, stock, push }) => {
   const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
 
   const colorize = v =>
     v === null || v === 0.0

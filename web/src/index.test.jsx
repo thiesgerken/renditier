@@ -1,31 +1,27 @@
 import React from 'react';
-import thunkMiddleware from 'redux-thunk';
+import { thunk as thunkMiddleware } from 'redux-thunk';
 import { createLogger } from 'redux-logger';
-import { render } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
-import { createBrowserHistory } from 'history';
-import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
-import { ThemeProvider } from '@material-ui/core';
-import { createTheme } from '@material-ui/core/styles';
+import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material';
+import { createTheme } from '@mui/material/styles';
 import 'typeface-oxygen';
-import teal from '@material-ui/core/colors/teal';
-import { LocalizationProvider } from '@material-ui/pickers';
-import MomentUtils from '@date-io/moment';
-import { pink } from '@material-ui/core/colors';
-import * as moment from 'moment';
+import { pink, teal } from '@mui/material/colors';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import moment from 'moment';
 
 import rootReducer from './reducers';
 import App from './containers/App';
 import ServiceWorker from './containers/ServiceWorker';
 
 it('renders without crashing', () => {
-  const history = createBrowserHistory();
-
-  const middlewares = [routerMiddleware(history), thunkMiddleware];
+  const middlewares = [thunkMiddleware];
   let composeEnhancers = compose;
 
-  if (process.env.NODE_ENV === `development`) {
+  if (import.meta.env.DEV) {
     const loggerMiddleware = createLogger();
     middlewares.push(loggerMiddleware);
 
@@ -34,7 +30,7 @@ it('renders without crashing', () => {
   }
 
   const store = createStore(
-    rootReducer(history),
+    rootReducer,
     composeEnhancers(applyMiddleware(...middlewares))
   );
 
@@ -50,20 +46,23 @@ it('renders without crashing', () => {
 
   const div = document.createElement('div');
 
-  render(
+  const root = createRoot(div);
+
+  root.render(
     <Provider store={store}>
-      <ConnectedRouter history={history}>
+      <MemoryRouter>
         <ThemeProvider theme={theme}>
           <LocalizationProvider
-            dateAdapter={MomentUtils}
+            dateAdapter={AdapterMoment}
             dateLibInstance={moment}
           >
             <ServiceWorker />
             <App />
           </LocalizationProvider>
         </ThemeProvider>
-      </ConnectedRouter>
-    </Provider>,
-    div
+      </MemoryRouter>
+    </Provider>
   );
+
+  root.unmount();
 });

@@ -10,13 +10,13 @@ import {
   List,
   ListItem,
   ListItemText,
-} from '@material-ui/core';
+} from '@mui/material';
 import PropTypes from 'prop-types';
 import React from 'react';
 import { connect } from 'react-redux';
 import { map } from 'lodash';
-import Alert from '@material-ui/lab/Alert';
-import AlertTitle from '@material-ui/lab/AlertTitle';
+import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import moment from 'moment';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
 
@@ -24,12 +24,17 @@ const ReceiptUploadDialog = ({ receipts, stocks, open, onClose }) => {
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
 
+  const handleDialogClose = (_event, reason) => {
+    if (reason === 'backdropClick') return;
+
+    onClose();
+  };
+
   return (
     <Dialog
       fullScreen={!mdUp}
       open={open && (receipts.isUploading || receipts.lastUpload !== null)}
-      disableBackdropClick
-      onClose={onClose}
+      onClose={handleDialogClose}
     >
       <DialogTitle id="form-dialog-title">Abrechnungen hochladen</DialogTitle>
       <DialogContent>

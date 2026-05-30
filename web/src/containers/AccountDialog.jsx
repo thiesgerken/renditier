@@ -9,12 +9,12 @@ import {
   TextField,
   useMediaQuery,
   useTheme,
-} from '@material-ui/core';
-import Alert from '@material-ui/lab/Alert';
+} from '@mui/material';
+import Alert from '@mui/material/Alert';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import { connect } from 'react-redux';
-import DeleteIcon from '@material-ui/icons/Delete';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 import {
   deleteAccount as deleteAccountAction,
@@ -68,6 +68,19 @@ const AccountDialog = ({
     setTriedToSave(false);
   };
 
+  const wasOpen = React.useRef(false);
+  React.useEffect(() => {
+    if (open && !wasOpen.current) reset();
+    wasOpen.current = open;
+  });
+
+  const handleDialogClose = (_event, reason) => {
+    if (reason === 'backdropClick') return;
+
+    reset();
+    onClose();
+  };
+
   const onDelete = () => {
     setConfirmOpen(false);
     deleteAccount(account.id);
@@ -93,26 +106,17 @@ const AccountDialog = ({
 
   return (
     <>
-      <Dialog
-        fullScreen={!mdUp}
-        open={open}
-        disableBackdropClick
-        onClose={() => {
-          reset();
-          onClose();
-        }}
-        onEntered={reset}
-        onEnter={reset}
-      >
+      <Dialog fullScreen={!mdUp} open={open} onClose={handleDialogClose}>
         <DialogTitle id="form-dialog-title">
           {account.id !== null ? 'Depot bearbeiten' : 'Depot erstellen'}
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={1}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 margin="dense"
                 label="Name"
+                variant="standard"
                 fullWidth
                 value={account.name}
                 onChange={v =>
@@ -124,10 +128,11 @@ const AccountDialog = ({
                 error={account.name.trim() === '' && triedToSave}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 margin="dense"
                 label="IBAN"
+                variant="standard"
                 fullWidth
                 value={account.iban || ''}
                 onChange={v =>

@@ -1,14 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import TableCell from '@material-ui/core/TableCell';
-import TableRow from '@material-ui/core/TableRow';
-import * as moment from 'moment';
-import { useTheme, Hidden, useMediaQuery, Tooltip } from '@material-ui/core';
+import TableCell from '@mui/material/TableCell';
+import TableRow from '@mui/material/TableRow';
+import moment from 'moment';
+import { useTheme, useMediaQuery, Tooltip } from '@mui/material';
+
+import Hidden from '../Hidden';
 
 const TransactionRow = ({ transaction, currentPrice }) => {
   const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
 
   const colorize = v =>
     v === null || v === undefined || Math.abs(v) < 5e-3

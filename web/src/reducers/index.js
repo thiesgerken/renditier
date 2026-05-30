@@ -1,5 +1,4 @@
 import { combineReducers } from 'redux';
-import { connectRouter } from 'connected-react-router';
 
 import accounts from './accounts';
 import authentication from './authentication';
@@ -15,18 +14,16 @@ import {
   performanceResource,
 } from '../apiResources';
 
-const root = history =>
-  combineReducers({
-    router: connectRouter(history),
-    authentication,
-    notifications,
-    portfolioPlot,
-    stockPlot,
-    accounts,
-    transactions,
-    receipts,
-    performance: resourceReducer(performanceResource),
-    stocks: resourceReducer(stockResource),
-  });
+const root = combineReducers({
+  authentication,
+  notifications,
+  portfolioPlot,
+  stockPlot,
+  accounts,
+  transactions,
+  receipts,
+  performance: resourceReducer(performanceResource),
+  stocks: resourceReducer(stockResource),
+});
 
 export default root;

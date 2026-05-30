@@ -305,7 +305,7 @@ fn compute_position(
         if prior_units != 0.0 {
             if let Some(sp) = start_price.as_ref() {
                 // simulated purchase
-                ts.push((sp.price.date(), -1.0 * prior_units * sp.price.value()));
+                ts.push((sp.price.date(), -prior_units * sp.price.value()));
             }
         }
 
@@ -455,7 +455,7 @@ fn compute_performance(
                 if p.start.units == 0.0 {
                     None
                 } else {
-                    Some((s.price.date(), -1.0 * p.start.units * s.price.value()))
+                    Some((s.price.date(), -p.start.units * s.price.value()))
                 }
             })
         }));

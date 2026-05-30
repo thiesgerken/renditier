@@ -1,17 +1,10 @@
 import { connect } from 'react-redux';
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  Grid,
-  Hidden,
-  Typography,
-  Container,
-  Paper,
-  useTheme,
-} from '@material-ui/core';
+import { Grid, Typography, Container, Paper, useTheme } from '@mui/material';
 import { find, filter, max, min, map } from 'lodash';
-import * as moment from 'moment';
-import { push as routerPush } from 'connected-react-router';
+import moment from 'moment';
+import { useNavigate } from 'react-router-dom';
 
 import {
   updateStocks as updateStocksAction,
@@ -22,6 +15,7 @@ import PerformanceTable from '../components/portfolioAnalysis/PerformanceTable';
 import PortfolioPlot from '../components/portfolioAnalysis/PortfolioPlot';
 import PositionsTable from '../components/portfolioAnalysis/PositionsTable';
 import PositionsPie from '../components/portfolioAnalysis/PositionsPie';
+import Hidden from '../components/Hidden';
 import Breakdowns from '../components/portfolioAnalysis/Breakdowns';
 
 const Dashboard = ({
@@ -31,8 +25,8 @@ const Dashboard = ({
   updateStocks,
   portfolioPlotData,
   updatePortfolioPlotData,
-  push,
 }) => {
+  const navigate = useNavigate();
   const theme = useTheme();
 
   updatePerformance();
@@ -66,7 +60,7 @@ const Dashboard = ({
     <Grid container spacing={3}>
       {hasStuff && (
         <Hidden xsDown implementation="js">
-          <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+          <Grid size={12} style={{ padding: theme.spacing(1) }}>
             <PortfolioPlot
               data={portfolioPlotData}
               updateData={updatePortfolioPlotData}
@@ -75,32 +69,32 @@ const Dashboard = ({
           </Grid>
         </Hidden>
       )}
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+      <Grid size={12} style={{ padding: theme.spacing(1) }}>
         <PerformanceTable performance={performance} />
       </Grid>
       {hasStuff && (
         <>
-          <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+          <Grid size={12} style={{ padding: theme.spacing(1) }}>
             <PositionsTable
               stocks={stocks}
               performance={performance}
-              push={push}
+              push={navigate}
             />
           </Grid>
           <Hidden xsDown implementation="js">
-            <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+            <Grid size={12} style={{ padding: theme.spacing(1) }}>
               <PositionsPie stocks={stocks} performance={performance} />
             </Grid>
           </Hidden>
           <Hidden xsDown implementation="js">
-            <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+            <Grid size={12} style={{ padding: theme.spacing(1) }}>
               <Breakdowns stocks={stocks} performance={performance} />
             </Grid>
           </Hidden>
         </>
       )}
       {oldestTodayData !== null && (
-        <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+        <Grid size={12} style={{ padding: theme.spacing(1) }}>
           <Container maxWidth="xl" style={{ padding: '0px' }}>
             <Paper style={{ padding: theme.spacing(1) }}>
               <Typography variant="caption">
@@ -133,7 +127,6 @@ Dashboard.propTypes = {
   updateStocks: PropTypes.func.isRequired,
   portfolioPlotData: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   updatePortfolioPlotData: PropTypes.func.isRequired,
-  push: PropTypes.func.isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
@@ -141,7 +134,6 @@ const mapDispatchToProps = dispatch => ({
   updateStocks: () => dispatch(updateStocksAction()),
   updatePortfolioPlotData: (startDate, endDate, source) =>
     dispatch(updatePortfolioPlotAction(startDate, endDate, source)),
-  push: x => dispatch(routerPush(x)),
 });
 
 const mapStateToProps = state => {

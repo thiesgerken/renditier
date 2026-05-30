@@ -4,7 +4,7 @@ import _ from 'lodash';
 import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import * as moment from 'moment';
+import moment from 'moment';
 
 const isNumber = value => _.isNumber(value) && !_.isNaN(value);
 const isNumOrStr = value => isNumber(value) || _.isString(value);
@@ -51,7 +51,6 @@ const StockTooltipContent = ({
             }
           }
           return (
-            // eslint-disable-next-line react/no-array-index-key
             <li
               className="recharts-tooltip-item"
               key={`tooltip-item-${i}`}

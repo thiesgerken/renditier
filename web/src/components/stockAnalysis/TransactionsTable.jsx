@@ -1,24 +1,25 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import Paper from '@material-ui/core/Paper';
-import { Container, Hidden } from '@material-ui/core';
-import { withStyles } from '@material-ui/core/styles';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
+import { Container } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { map } from 'lodash';
-import * as moment from 'moment';
+import moment from 'moment';
 
 import TransactionRow from './TransactionRow';
+import Hidden from '../Hidden';
 
-const StyledTableCell = withStyles(() => ({
-  head: {
+const StyledTableCell = styled(TableCell)({
+  '&.MuiTableCell-head': {
     fontWeight: 600,
   },
-}))(TableCell);
+});
 
 const TransactionsTable = ({ transactions, currentPrice }) => {
   transactions.sort((a, b) => moment(b.date) - moment(a.date));

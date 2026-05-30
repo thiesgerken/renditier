@@ -1,12 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import NumberFormat from 'react-number-format';
+import { NumericFormat } from 'react-number-format';
 
 export default function NumberInput(props) {
   const { inputRef, name, onChange, ...other } = props;
 
   return (
-    <NumberFormat
+    <NumericFormat
       // eslint-disable-next-line react/jsx-props-no-spreading
       {...other}
       getInputRef={inputRef}
@@ -19,7 +19,7 @@ export default function NumberInput(props) {
         });
       }}
       thousandSeparator=","
-      isNumericString
+      valueIsNumericString
     />
   );
 }

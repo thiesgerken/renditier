@@ -8,13 +8,12 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Hidden,
   Grid,
-} from '@material-ui/core';
+} from '@mui/material';
 import { map } from 'lodash';
 import React from 'react';
-import { withStyles, useTheme } from '@material-ui/core/styles';
-import { push as routerPush } from 'connected-react-router';
+import { styled, useTheme } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 
 import {
   updateStocks as updateStocksAction,
@@ -23,13 +22,14 @@ import {
 import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
 import StockRow from '../components/StockRow';
 import ProgressPaper from '../components/ProgressPaper';
+import Hidden from '../components/Hidden';
 import StockComparisonPlot from '../components/StockComparisonPlot';
 
-const StyledTableCell = withStyles(() => ({
-  head: {
+const StyledTableCell = styled(TableCell)({
+  '&.MuiTableCell-head': {
     fontWeight: 600,
   },
-}))(TableCell);
+});
 
 const StockTable = ({
   stocks,
@@ -38,8 +38,8 @@ const StockTable = ({
   updateStockPlotData,
   performance,
   updatePerformance,
-  push,
 }) => {
+  const navigate = useNavigate();
   const theme = useTheme();
   updateStocks();
   updatePerformance();
@@ -50,7 +50,7 @@ const StockTable = ({
   return (
     <Grid container spacing={3}>
       <Hidden xsDown implementation="js">
-        <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+        <Grid size={12} style={{ padding: theme.spacing(1) }}>
           <StockComparisonPlot
             stocks={stocks}
             data={stockPlotData}
@@ -59,7 +59,7 @@ const StockTable = ({
           />
         </Grid>
       </Hidden>
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+      <Grid size={12} style={{ padding: theme.spacing(1) }}>
         <Container maxWidth="xl" style={{ padding: '0px' }}>
           <ProgressPaper loading={stocks.isFetching}>
             <TableContainer>
@@ -86,7 +86,7 @@ const StockTable = ({
                 <TableBody>
                   {stocks.data !== null &&
                     map(stocks.data, d => (
-                      <StockRow data={d} key={d.isin} push={push} />
+                      <StockRow data={d} key={d.isin} push={navigate} />
                     ))}
                 </TableBody>
               </Table>
@@ -111,12 +111,10 @@ StockTable.propTypes = {
     isFetching: PropTypes.bool,
   }).isRequired,
   updateStocks: PropTypes.func.isRequired,
-  push: PropTypes.func.isRequired,
 };
 
 const mapDispatchToProps = dispatch => ({
   updateStocks: () => dispatch(updateStocksAction()),
-  push: x => dispatch(routerPush(x)),
   updatePerformance: () => dispatch(updatePerformanceAction()),
   updateStockPlotData: (isin, startDate, endDate, source) =>
     dispatch(updateStockPlotAction(isin, startDate, endDate, source)),

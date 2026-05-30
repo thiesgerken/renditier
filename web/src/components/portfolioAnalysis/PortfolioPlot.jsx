@@ -3,15 +3,13 @@ import {
   FormControl,
   Grid,
   InputLabel,
-  makeStyles,
   MenuItem,
   Select,
   useMediaQuery,
   useTheme,
-  TextField,
-} from '@material-ui/core';
-import { DatePicker } from '@material-ui/pickers';
-import * as moment from 'moment';
+} from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
+import moment from 'moment';
 import PropTypes from 'prop-types';
 import React, { useState, Fragment, useCallback, useEffect } from 'react';
 import {
@@ -42,21 +40,12 @@ function getData(items, startDate, endDate, source) {
   return item;
 }
 
-const useStyles = makeStyles(theme => ({
-  formControl: {
-    margin: theme.spacing(1),
-    minWidth: 120,
-  },
-  selectEmpty: {
-    marginTop: theme.spacing(2),
-  },
-}));
+const formControlSx = { m: 1, minWidth: 120 };
 
 const PortfolioPlot = ({ performance, data, updateData }) => {
-  const classes = useStyles();
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const [period, setPeriod] = useState(0);
   const [mode, setMode] = useState('earnings');
   const [source, setSource] = useState('auto');
@@ -182,7 +171,7 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
         }
       >
         <Grid container style={{ width: '100%' }}>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
               <ComposedChart data={points}>
                 <XAxis
@@ -356,12 +345,13 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
               </ComposedChart>
             </ResponsiveContainer>
           </Grid>
-          <Grid item xs={9}>
-            <FormControl className={classes.formControl}>
+          <Grid size={9}>
+            <FormControl sx={formControlSx} variant="standard">
               <InputLabel id="mode-select-label">Art</InputLabel>
               <Select
                 labelId="mode-select-label"
                 id="mode-select"
+                label="Art"
                 value={mode}
                 autoWidth
                 onChange={handleModeChange}
@@ -379,11 +369,12 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                 </MenuItem>
               </Select>
             </FormControl>
-            <FormControl className={classes.formControl}>
+            <FormControl sx={formControlSx} variant="standard">
               <InputLabel id="source-select-label">Datenquelle</InputLabel>
               <Select
                 labelId="source-select-label"
                 id="source-select"
+                label="Datenquelle"
                 value={source}
                 autoWidth
                 onChange={handleSourceChange}
@@ -393,11 +384,12 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                 <MenuItem value="realtime">Echtzeit</MenuItem>
               </Select>
             </FormControl>
-            <FormControl className={classes.formControl}>
+            <FormControl sx={formControlSx} variant="standard">
               <InputLabel id="period-select-label">Zeit</InputLabel>
               <Select
                 labelId="period-select-label"
                 id="period-select"
+                label="Zeit"
                 autoWidth
                 value={
                   performance.data === null || performance.data.length === 0
@@ -425,43 +417,37 @@ const PortfolioPlot = ({ performance, data, updateData }) => {
                 value={dates}
                 onChange={handleDateChange}
                 disableFuture
-                className={classes.formControl}
+                sx={formControlSx}
               /> */}
                 <DatePicker
                   label="Start"
-                  renderInput={props => (
-                    <FormControl className={classes.formControl}>
-                      <TextField /* eslint-disable react/jsx-props-no-spreading */
-                        {...props}
-                        helperText={null}
-                      />
-                    </FormControl>
-                  )}
                   value={dates[0]}
-                  inputFormat="DD/MM/YYYY"
+                  format="DD/MM/YYYY"
                   maxDate={dates[1]}
                   onChange={d => handleDateChange([d, dates[1]])}
                   disableFuture
-                  autoOk
                   disabled={period >= 0}
+                  slotProps={{
+                    textField: {
+                      sx: formControlSx,
+                      helperText: null,
+                    },
+                  }}
                 />
                 <DatePicker
                   label="Ende"
-                  renderInput={props => (
-                    <FormControl className={classes.formControl}>
-                      <TextField /* eslint-disable react/jsx-props-no-spreading */
-                        {...props}
-                        helperText={null}
-                      />
-                    </FormControl>
-                  )}
                   value={dates[1]}
-                  inputFormat="DD/MM/YYYY"
+                  format="DD/MM/YYYY"
                   minDate={dates[0]}
                   onChange={d => handleDateChange([dates[0], d])}
                   disableFuture
-                  autoOk
                   disabled={period >= 0}
+                  slotProps={{
+                    textField: {
+                      sx: formControlSx,
+                      helperText: null,
+                    },
+                  }}
                 />
               </>
             )}

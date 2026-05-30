@@ -12,11 +12,10 @@ import {
   ListItem,
   Typography,
   useMediaQuery,
-  withStyles,
-  Hidden,
-} from '@material-ui/core';
-import Alert from '@material-ui/lab/Alert';
-import * as moment from 'moment';
+} from '@mui/material';
+import { styled } from '@mui/material/styles';
+import Alert from '@mui/material/Alert';
+import moment from 'moment';
 
 import {
   updateStocks as updateStocksAction,
@@ -26,10 +25,15 @@ import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
 import { findStock, capitalizeTitle } from '../selectors/stocks';
 import StockPerformanceTable from '../components/stockAnalysis/StockPerformanceTable';
 import OnvistaButton from '../components/OnvistaButton';
+import Hidden from '../components/Hidden';
 import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
 import StockPlot from '../components/stockAnalysis/StockPlot';
 import HoldingsPie from '../components/stockAnalysis/HoldingsPie';
 import BreakdownPie from '../components/stockAnalysis/BreakdownPie';
+
+const StyledListItem = styled(ListItem)({
+  height: '2em',
+});
 
 const StockAnalysis = ({
   isin,
@@ -41,7 +45,7 @@ const StockAnalysis = ({
   updatePerformance,
 }) => {
   const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
+  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
 
   const formatAmount = (value, precision, unit) =>
     value === null
@@ -145,12 +149,6 @@ const StockAnalysis = ({
     typeInfo = `Typ: ${stock.kind} (${stock.fondsType}) mit Fokus auf ${stock.focus}`;
   else typeInfo = `Typ: ${stock.kind}`;
 
-  const StyledListItem = withStyles(() => ({
-    root: {
-      height: '2em',
-    },
-  }))(ListItem);
-
   const holdings = stock.holdings !== null ? JSON.parse(stock.holdings) : [];
   const industryBreakdown =
     stock.industryBreakdown !== null ? JSON.parse(stock.industryBreakdown) : [];
@@ -162,13 +160,12 @@ const StockAnalysis = ({
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+      <Grid size={12} style={{ padding: theme.spacing(1) }}>
         <Container maxWidth="lg" style={{ padding: '0px' }}>
           <Paper>
             <Grid container style={{ margin: '0px' }}>
               <Grid
-                item
-                xs={12}
+                size={12}
                 style={{
                   width: '100%',
                   textAlign: 'center',
@@ -180,7 +177,7 @@ const StockAnalysis = ({
                 </Typography>
               </Grid>
               {xsDown && (
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <List>
                     <ListItem>
                       {`ISIN: ${stock.isin}, WKN: ${stock.wkn}`}
@@ -201,7 +198,7 @@ const StockAnalysis = ({
               )}
               {xsDown || (
                 <>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <List>
                       <StyledListItem>
                         {`ISIN: ${stock.isin}, WKN: ${stock.wkn}`}
@@ -224,7 +221,7 @@ const StockAnalysis = ({
                       )}
                     </List>
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <List>
                       <StyledListItem>{transactionInfo}</StyledListItem>
                       <StyledListItem>
@@ -256,7 +253,7 @@ const StockAnalysis = ({
         </Container>
       </Grid>
       <Hidden xsDown implementation="js">
-        <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+        <Grid size={12} style={{ padding: theme.spacing(1) }}>
           <StockPlot
             isin={isin}
             data={stockPlotData}
@@ -265,10 +262,10 @@ const StockAnalysis = ({
           />
         </Grid>
       </Hidden>
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+      <Grid size={12} style={{ padding: theme.spacing(1) }}>
         <StockPerformanceTable performance={stockPerformance} />
       </Grid>
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+      <Grid size={12} style={{ padding: theme.spacing(1) }}>
         <TransactionsTable
           transactions={transactions}
           currentPrice={currentPrice}
@@ -279,27 +276,27 @@ const StockAnalysis = ({
           industryBreakdown.length > 0 ||
           currencyBreakdown.length > 0 ||
           countryBreakdown.length > 0) && (
-          <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+          <Grid size={12} style={{ padding: theme.spacing(1) }}>
             <Container maxWidth="xl" style={{ padding: '0px' }}>
               <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
                 <Grid container style={{ width: '100%' }}>
                   {holdings.length > 0 && (
-                    <Grid item xs={12} xl={6}>
+                    <Grid size={{ xs: 12, xl: 6 }}>
                       <HoldingsPie holdings={holdings} />
                     </Grid>
                   )}
                   {industryBreakdown.length > 0 && (
-                    <Grid item xs={12} xl={6}>
+                    <Grid size={{ xs: 12, xl: 6 }}>
                       <BreakdownPie breakdown={industryBreakdown} />
                     </Grid>
                   )}
                   {currencyBreakdown.length > 0 && (
-                    <Grid item xs={12} xl={6}>
+                    <Grid size={{ xs: 12, xl: 6 }}>
                       <BreakdownPie breakdown={currencyBreakdown} />
                     </Grid>
                   )}
                   {countryBreakdown.length > 0 && (
-                    <Grid item xs={12} xl={6}>
+                    <Grid size={{ xs: 12, xl: 6 }}>
                       <BreakdownPie breakdown={countryBreakdown} />
                     </Grid>
                   )}

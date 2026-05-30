@@ -1,27 +1,28 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import { Container, Hidden, useMediaQuery } from '@material-ui/core';
-import { withStyles, useTheme } from '@material-ui/core/styles';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import { Container, useMediaQuery } from '@mui/material';
+import { styled, useTheme } from '@mui/material/styles';
 
 import PerformanceRow from './PerformanceRow';
 import ProgressPaper from '../ProgressPaper';
+import Hidden from '../Hidden';
+
+const StyledTableCell = styled(TableCell)({
+  '&.MuiTableCell-head': {
+    fontWeight: 600,
+  },
+});
 
 const PerformanceTable = ({ performance }) => {
   const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('xs'));
-
-  const StyledTableCell = withStyles(() => ({
-    head: {
-      fontWeight: 600,
-    },
-  }))(TableCell);
+  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <Container maxWidth="xl" style={{ padding: '0px' }}>

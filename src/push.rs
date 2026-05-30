@@ -33,8 +33,8 @@ fn daily_notification_body(
 
     let newest = perf
         .positions
-        .iter()
-        .filter_map(|(_, p)| p.end.data_source.as_ref().map(|d| d.price.date()))
+        .values()
+        .filter_map(|p| p.end.data_source.as_ref().map(|d| d.price.date()))
         .max();
 
     if let Some(newest) = newest {

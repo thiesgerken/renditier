@@ -1,5 +1,5 @@
-import { push } from 'connected-react-router';
 import { subscribe } from './notifications';
+import { navigateTo } from '../navigation';
 
 export const LOGIN_REQUEST = 'LOGIN_REQUEST';
 export const loginRequest = () => ({
@@ -32,7 +32,7 @@ export const clearAuthMessage = () => ({
 });
 
 export const login = (userName, password) => dispatch => {
-  dispatch(push('/'));
+  navigateTo('/');
   dispatch(loginRequest());
   return fetch('/api/user/login', {
     method: 'POST',
@@ -96,7 +96,7 @@ export const logout = () => dispatch => {
       if (res.error) throw res.error;
 
       dispatch(logoutSuccess());
-      dispatch(push('/'));
+      navigateTo('/');
     })
     .catch(e => dispatch(logoutError(e)));
 };

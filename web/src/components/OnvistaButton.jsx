@@ -1,10 +1,12 @@
-import { withStyles, Tooltip, Button } from '@material-ui/core';
+import { Tooltip, Button } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import React from 'react';
 import PropTypes from 'prop-types';
 
-const StyledButton = withStyles(() => ({
-  root: { textTransform: 'none', fontWeight: 600 },
-}))(Button);
+const StyledButton = styled(Button)({
+  textTransform: 'none',
+  fontWeight: 600,
+});
 
 const OnvistaButton = ({ relativeUrl }) => (
   <Tooltip title="auf onvista.de ansehen" arrow>

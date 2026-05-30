@@ -1,46 +1,37 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import {
   Container,
-  Hidden,
   Grid,
   MenuItem,
   InputLabel,
   Select,
   FormControl,
-} from '@material-ui/core';
-import { withStyles, makeStyles } from '@material-ui/core/styles';
+} from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { map } from 'lodash';
 
 import PositionRow from './PositionRow';
 import { getPeriodDescription } from '../../selectors/performance';
 import { findStock } from '../../selectors/stocks';
 import ProgressPaper from '../ProgressPaper';
+import Hidden from '../Hidden';
 
-const useStyles = makeStyles(theme => ({
-  formControl: {
-    margin: theme.spacing(1),
-    minWidth: 120,
-  },
-  selectEmpty: {
-    marginTop: theme.spacing(2),
-  },
-}));
+const formControlSx = { m: 1, minWidth: 120 };
 
-const StyledTableCell = withStyles(() => ({
-  head: {
+const StyledTableCell = styled(TableCell)({
+  '&.MuiTableCell-head': {
     fontWeight: 600,
   },
-}))(TableCell);
+});
 
 const PositionsTable = ({ performance, stocks, push }) => {
-  const classes = useStyles();
   const [period, setPeriod] = useState(0);
 
   const handlePeriodChange = event => {
@@ -62,7 +53,7 @@ const PositionsTable = ({ performance, stocks, push }) => {
     <Container maxWidth="xl" style={{ padding: '0px' }}>
       <ProgressPaper loading={performance.isFetching}>
         <Grid container style={{ width: '100%' }}>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TableContainer>
               <Table size="small" aria-label="positions">
                 <TableHead>
@@ -105,12 +96,13 @@ const PositionsTable = ({ performance, stocks, push }) => {
               </Table>
             </TableContainer>
           </Grid>
-          <Grid item xs={9}>
-            <FormControl className={classes.formControl}>
+          <Grid size={9}>
+            <FormControl sx={formControlSx} variant="standard">
               <InputLabel id="period-select-label">Zeit</InputLabel>
               <Select
                 labelId="period-select-label"
                 id="period-select"
+                label="Zeit"
                 autoWidth
                 value={
                   performance.data === null || performance.data.length === 0
