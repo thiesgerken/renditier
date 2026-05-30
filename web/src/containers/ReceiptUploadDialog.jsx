@@ -24,12 +24,17 @@ const ReceiptUploadDialog = ({ receipts, stocks, open, onClose }) => {
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
 
+  const handleDialogClose = (_event, reason) => {
+    if (reason === 'backdropClick') return;
+
+    onClose();
+  };
+
   return (
     <Dialog
       fullScreen={!mdUp}
       open={open && (receipts.isUploading || receipts.lastUpload !== null)}
-      disableBackdropClick
-      onClose={onClose}
+      onClose={handleDialogClose}
     >
       <DialogTitle id="form-dialog-title">Abrechnungen hochladen</DialogTitle>
       <DialogContent>

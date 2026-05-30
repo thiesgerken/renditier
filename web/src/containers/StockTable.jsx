@@ -50,7 +50,7 @@ const StockTable = ({
   return (
     <Grid container spacing={3}>
       <Hidden xsDown implementation="js">
-        <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+        <Grid size={12} style={{ padding: theme.spacing(1) }}>
           <StockComparisonPlot
             stocks={stocks}
             data={stockPlotData}
@@ -59,7 +59,7 @@ const StockTable = ({
           />
         </Grid>
       </Hidden>
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+      <Grid size={12} style={{ padding: theme.spacing(1) }}>
         <Container maxWidth="xl" style={{ padding: '0px' }}>
           <ProgressPaper loading={stocks.isFetching}>
             <TableContainer>

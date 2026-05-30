@@ -160,13 +160,12 @@ const StockAnalysis = ({
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+      <Grid size={12} style={{ padding: theme.spacing(1) }}>
         <Container maxWidth="lg" style={{ padding: '0px' }}>
           <Paper>
             <Grid container style={{ margin: '0px' }}>
               <Grid
-                item
-                xs={12}
+                size={12}
                 style={{
                   width: '100%',
                   textAlign: 'center',
@@ -178,7 +177,7 @@ const StockAnalysis = ({
                 </Typography>
               </Grid>
               {xsDown && (
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <List>
                     <ListItem>
                       {`ISIN: ${stock.isin}, WKN: ${stock.wkn}`}
@@ -199,7 +198,7 @@ const StockAnalysis = ({
               )}
               {xsDown || (
                 <>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <List>
                       <StyledListItem>
                         {`ISIN: ${stock.isin}, WKN: ${stock.wkn}`}
@@ -222,7 +221,7 @@ const StockAnalysis = ({
                       )}
                     </List>
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <List>
                       <StyledListItem>{transactionInfo}</StyledListItem>
                       <StyledListItem>
@@ -254,7 +253,7 @@ const StockAnalysis = ({
         </Container>
       </Grid>
       <Hidden xsDown implementation="js">
-        <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+        <Grid size={12} style={{ padding: theme.spacing(1) }}>
           <StockPlot
             isin={isin}
             data={stockPlotData}
@@ -263,10 +262,10 @@ const StockAnalysis = ({
           />
         </Grid>
       </Hidden>
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+      <Grid size={12} style={{ padding: theme.spacing(1) }}>
         <StockPerformanceTable performance={stockPerformance} />
       </Grid>
-      <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+      <Grid size={12} style={{ padding: theme.spacing(1) }}>
         <TransactionsTable
           transactions={transactions}
           currentPrice={currentPrice}
@@ -277,27 +276,27 @@ const StockAnalysis = ({
           industryBreakdown.length > 0 ||
           currencyBreakdown.length > 0 ||
           countryBreakdown.length > 0) && (
-          <Grid item xs={12} style={{ padding: theme.spacing(1) }}>
+          <Grid size={12} style={{ padding: theme.spacing(1) }}>
             <Container maxWidth="xl" style={{ padding: '0px' }}>
               <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
                 <Grid container style={{ width: '100%' }}>
                   {holdings.length > 0 && (
-                    <Grid item xs={12} xl={6}>
+                    <Grid size={{ xs: 12, xl: 6 }}>
                       <HoldingsPie holdings={holdings} />
                     </Grid>
                   )}
                   {industryBreakdown.length > 0 && (
-                    <Grid item xs={12} xl={6}>
+                    <Grid size={{ xs: 12, xl: 6 }}>
                       <BreakdownPie breakdown={industryBreakdown} />
                     </Grid>
                   )}
                   {currencyBreakdown.length > 0 && (
-                    <Grid item xs={12} xl={6}>
+                    <Grid size={{ xs: 12, xl: 6 }}>
                       <BreakdownPie breakdown={currencyBreakdown} />
                     </Grid>
                   )}
                   {countryBreakdown.length > 0 && (
-                    <Grid item xs={12} xl={6}>
+                    <Grid size={{ xs: 12, xl: 6 }}>
                       <BreakdownPie breakdown={countryBreakdown} />
                     </Grid>
                   )}

@@ -284,7 +284,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
         style={{ width: '100%', padding: theme.spacing(1) }}
       >
         <Grid container style={{ width: '100%' }}>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
               <AreaChart data={unifiedPoints}>
                 <XAxis
@@ -334,8 +334,8 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
               </AreaChart>
             </ResponsiveContainer>
           </Grid>
-          <Grid container item xs={9}>
-            <Grid item xs={3}>
+          <Grid container size={9}>
+            <Grid size={3}>
               <FormControl
                 variant="standard"
                 sx={{ ...formControlSx, width: '100%', pr: 2 }}
@@ -388,7 +388,7 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
                 </Select>
               </FormControl>{' '}
             </Grid>
-            <Grid item xs={9}>
+            <Grid size={9}>
               <FormControl sx={formControlSx} variant="standard">
                 <InputLabel id="source-select-label">Datenquelle</InputLabel>
                 <Select

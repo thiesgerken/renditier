@@ -178,6 +178,19 @@ const TransactionDialog = ({
     setTriedToSave(false);
   };
 
+  const wasOpen = React.useRef(false);
+  React.useEffect(() => {
+    if (open && !wasOpen.current) reset();
+    wasOpen.current = open;
+  });
+
+  const handleDialogClose = (_event, reason) => {
+    if (reason === 'backdropClick') return;
+
+    reset();
+    onClose();
+  };
+
   const onDelete = () => {
     setConfirmOpen(false);
     deleteTransaction(transaction.id);
@@ -212,17 +225,7 @@ const TransactionDialog = ({
 
   return (
     <>
-      <Dialog
-        fullScreen={!mdUp}
-        open={open}
-        disableBackdropClick
-        onClose={() => {
-          reset();
-          onClose();
-        }}
-        onEntered={reset}
-        onEnter={reset}
-      >
+      <Dialog fullScreen={!mdUp} open={open} onClose={handleDialogClose}>
         <DialogTitle id="form-dialog-title">
           {transaction.id !== null
             ? 'Transaktion bearbeiten'
@@ -230,7 +233,7 @@ const TransactionDialog = ({
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={1}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Autocomplete
                 freeSolo
                 options={stocks.data !== null ? stocks.data : []}
@@ -259,13 +262,14 @@ const TransactionDialog = ({
                     // eslint-disable-next-line react/jsx-props-no-spreading
                     {...params}
                     label="ISIN"
+                    variant="standard"
                     fullWidth
                     error={triedToSave && parseISIN(transaction.isin) === null}
                   />
                 )}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Autocomplete
                 freeSolo
                 options={
@@ -296,6 +300,7 @@ const TransactionDialog = ({
                     // eslint-disable-next-line react/jsx-props-no-spreading
                     {...params}
                     label="Handelsplatz"
+                    variant="standard"
                     fullWidth
                     // error={
                     //   findExchangeByName(stock, transaction.exchange) === null
@@ -306,7 +311,7 @@ const TransactionDialog = ({
             </Grid>
             {(accounts.items.length > 1 ||
               findAccountByName(accounts, transaction.account) === null) && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Autocomplete
                   freeSolo
                   options={accounts.items}
@@ -328,6 +333,7 @@ const TransactionDialog = ({
                       // eslint-disable-next-line react/jsx-props-no-spreading
                       {...params}
                       label="Depot"
+                      variant="standard"
                       fullWidth
                       error={
                         triedToSave &&
@@ -340,7 +346,7 @@ const TransactionDialog = ({
                 />
               </Grid>
             )}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <DateTimePicker
                 label="Datum"
                 format="DD/MM/YYYY HH:mm"
@@ -354,15 +360,17 @@ const TransactionDialog = ({
                 disableFuture
                 slotProps={{
                   textField: {
+                    variant: 'standard',
                     fullWidth: true,
                   },
                 }}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={6}>
               <TextField
                 margin="dense"
                 label="Kosten"
+                variant="standard"
                 fullWidth
                 value={transaction.amount}
                 onChange={v => {
@@ -371,12 +379,17 @@ const TransactionDialog = ({
                     amount: v.target.value,
                   });
                 }}
-                InputProps={{
-                  inputComponent: NumberInput,
-                  inputProps: {
-                    suffix: '€',
-                    decimalScale: 2,
-                    fixedDecimalScale: true,
+                slotProps={{
+                  inputLabel: {
+                    shrink: true,
+                  },
+                  input: {
+                    inputComponent: NumberInput,
+                    inputProps: {
+                      suffix: '€',
+                      decimalScale: 2,
+                      fixedDecimalScale: true,
+                    },
                   },
                 }}
                 error={
@@ -385,10 +398,11 @@ const TransactionDialog = ({
                 }
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={6}>
               <TextField
                 margin="dense"
                 label="Gebühren (zzgl.)"
+                variant="standard"
                 fullWidth
                 value={transaction.fees}
                 onChange={v => {
@@ -397,13 +411,18 @@ const TransactionDialog = ({
                     fees: v.target.value,
                   });
                 }}
-                InputProps={{
-                  inputComponent: NumberInput,
-                  inputProps: {
-                    allowNegative: false,
-                    suffix: '€',
-                    decimalScale: 2,
-                    fixedDecimalScale: true,
+                slotProps={{
+                  inputLabel: {
+                    shrink: true,
+                  },
+                  input: {
+                    inputComponent: NumberInput,
+                    inputProps: {
+                      allowNegative: false,
+                      suffix: '€',
+                      decimalScale: 2,
+                      fixedDecimalScale: true,
+                    },
                   },
                 }}
                 error={
@@ -412,10 +431,11 @@ const TransactionDialog = ({
                 }
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={6}>
               <TextField
                 margin="dense"
                 label="Einheiten"
+                variant="standard"
                 fullWidth
                 value={transaction.units}
                 onChange={v => {
@@ -424,9 +444,14 @@ const TransactionDialog = ({
                     units: v.target.value,
                   });
                 }}
-                InputProps={{
-                  inputComponent: NumberInput,
-                  inputProps: {},
+                slotProps={{
+                  inputLabel: {
+                    shrink: true,
+                  },
+                  input: {
+                    inputComponent: NumberInput,
+                    inputProps: {},
+                  },
                 }}
                 error={
                   triedToSave &&
@@ -434,20 +459,21 @@ const TransactionDialog = ({
                 }
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={6}>
               <TextField
                 margin="dense"
                 label="Kurs"
-                readOnly
+                variant="standard"
                 disabled
                 fullWidth
                 value={price}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 margin="dense"
                 label="Kommentare"
+                variant="standard"
                 fullWidth
                 multiline
                 rows={3}
