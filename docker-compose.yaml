@@ -13,21 +13,19 @@ services:
       - STOCKDB__WEB__ADDRESS=0.0.0.0
       - STOCKDB__WEB__SERVER_KEY=""
       - STOCKDB__PUSH__KEY_FILE=""
-    command:
-      stockdb -v serve
+    command: stockdb -v serve
 
   postgres:
-    image: postgres:17
+    image: postgres:18
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - postgres18:/var/lib/postgresql
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=stocks
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5432:5432"
-    command:
-      postgres -c max_connections=256
+      - "127.0.0.1:5438:5432"
+    command: postgres -c max_connections=256
 
 volumes:
-  postgres:
+  postgres18:
