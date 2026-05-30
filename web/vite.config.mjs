@@ -1,5 +1,50 @@
+import { readFile } from 'node:fs/promises';
+import { basename, resolve } from 'node:path';
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+
+const emotionInitCall = 'init_emotion_react_browser_development_esm();';
+const emotionInitName = 'init_emotion_react_browser_development_esm';
+
+function patchMissingEmotionInit() {
+  return {
+    name: 'patch-missing-emotion-init',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use(async (request, response, next) => {
+        const pathname = new URL(request.url ?? '', 'http://vite.local').pathname;
+
+        if (
+          !pathname.startsWith('/node_modules/.vite/deps/') ||
+          !pathname.endsWith('.js')
+        ) {
+          next();
+          return;
+        }
+
+        const dependencyFile = resolve(
+          server.config.cacheDir,
+          'deps',
+          basename(pathname),
+        );
+        const code = await readFile(dependencyFile, 'utf8').catch(() => null);
+
+        if (
+          !code?.includes(emotionInitCall) ||
+          code.includes(`var ${emotionInitName}`) ||
+          code.includes(` as ${emotionInitName}`)
+        ) {
+          next();
+          return;
+        }
+
+        response.setHeader('Content-Type', 'text/javascript');
+        response.end(code.replaceAll(emotionInitCall, ''));
+      });
+    },
+  };
+}
 
 const vendorChunkGroups = [
   ['vendor-react', ['react', 'react-dom', 'react-router', 'react-router-dom']],
@@ -155,7 +200,7 @@ function manualChunks(id) {
 }
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [patchMissingEmotionInit(), react()],
   build: {
     outDir: 'build',
     rolldownOptions: {
