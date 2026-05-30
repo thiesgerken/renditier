@@ -137,7 +137,7 @@ pub fn parse_preview_files(
 
 fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
     let mut buffer = Vec::<u8>::new();
-    let doc = lopdf::Document::load_mem(buf)?;
+    let doc = pdf_extract::Document::load_mem(buf)?;
 
     pdf_extract::output_doc(
         &doc,
