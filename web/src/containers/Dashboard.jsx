@@ -123,15 +123,15 @@ const Dashboard = ({
 
 Dashboard.propTypes = {
   performance: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.shape({})),
     lastRequest: PropTypes.number,
   }).isRequired,
   updatePerformance: PropTypes.func.isRequired,
   stocks: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.shape({})),
   }).isRequired,
   updateStocks: PropTypes.func.isRequired,
-  portfolioPlotData: PropTypes.arrayOf(PropTypes.object).isRequired,
+  portfolioPlotData: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   updatePortfolioPlotData: PropTypes.func.isRequired,
   push: PropTypes.func.isRequired,
 };

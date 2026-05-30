@@ -574,12 +574,21 @@ const StockPlot = ({ isin, performance, data, updateData }) => {
   );
 };
 
+const performancePeriodType = PropTypes.shape({
+  start: PropTypes.shape({
+    date: PropTypes.string,
+  }),
+  end: PropTypes.shape({
+    date: PropTypes.string,
+  }),
+});
+
 StockPlot.propTypes = {
   isin: PropTypes.string.isRequired,
-  data: PropTypes.arrayOf(PropTypes.object).isRequired,
+  data: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   updateData: PropTypes.func.isRequired,
   performance: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(performancePeriodType),
     isFetching: PropTypes.bool,
   }).isRequired,
 };

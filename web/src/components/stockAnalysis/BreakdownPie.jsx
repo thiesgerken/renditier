@@ -85,7 +85,7 @@ const BreakdownPie = ({ breakdown }) => {
 };
 
 BreakdownPie.propTypes = {
-  breakdown: PropTypes.arrayOf(PropTypes.object).isRequired,
+  breakdown: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
 };
 
 export default BreakdownPie;

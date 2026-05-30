@@ -136,11 +136,11 @@ const PositionsTable = ({ performance, stocks, push }) => {
 
 PositionsTable.propTypes = {
   performance: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.shape({})),
     isFetching: PropTypes.bool,
   }).isRequired,
   stocks: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.shape({})),
     isFetching: PropTypes.bool,
   }).isRequired,
   push: PropTypes.func.isRequired,

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import NumberFormat from 'react-number-format';
 
 export default function NumberInput(props) {
-  const { inputRef, onChange, ...other } = props;
+  const { inputRef, name, onChange, ...other } = props;
 
   return (
     <NumberFormat
@@ -13,7 +13,7 @@ export default function NumberInput(props) {
       onValueChange={values => {
         onChange({
           target: {
-            name: props.name,
+            name,
             value: values.value,
           },
         });

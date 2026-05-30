@@ -492,15 +492,29 @@ const StockComparisonPlot = ({ stocks, performance, data, updateData }) => {
   );
 };
 
+const performancePeriodType = PropTypes.shape({
+  start: PropTypes.shape({
+    date: PropTypes.string,
+  }),
+  end: PropTypes.shape({
+    date: PropTypes.string,
+  }),
+  positions: PropTypes.shape({}),
+});
+
+const stockType = PropTypes.shape({
+  isin: PropTypes.string,
+});
+
 StockComparisonPlot.propTypes = {
-  data: PropTypes.arrayOf(PropTypes.object).isRequired,
+  data: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   updateData: PropTypes.func.isRequired,
   performance: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(performancePeriodType),
     isFetching: PropTypes.bool,
   }).isRequired,
   stocks: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(stockType),
     isFetching: PropTypes.bool,
   }).isRequired,
 };

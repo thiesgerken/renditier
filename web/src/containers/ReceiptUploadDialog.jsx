@@ -98,13 +98,13 @@ const ReceiptUploadDialog = ({ receipts, stocks, open, onClose }) => {
 
 ReceiptUploadDialog.propTypes = {
   receipts: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.shape({})),
     isUploading: PropTypes.bool,
     uploadError: PropTypes.string,
     lastUpload: PropTypes.instanceOf(Date),
   }).isRequired,
   stocks: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    items: PropTypes.arrayOf(PropTypes.shape({})),
     isFetching: PropTypes.bool,
   }).isRequired,
   open: PropTypes.bool.isRequired,

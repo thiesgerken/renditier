@@ -214,7 +214,7 @@ const Accounts = ({ accounts, updateAccounts }) => {
 Accounts.propTypes = {
   updateAccounts: PropTypes.func.isRequired,
   accounts: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    items: PropTypes.arrayOf(PropTypes.shape({})),
     isFetching: PropTypes.bool,
   }).isRequired,
 };
