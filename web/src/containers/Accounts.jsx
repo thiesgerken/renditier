@@ -5,7 +5,6 @@ import MUIDataTable from 'mui-datatables';
 import { find } from 'lodash';
 import {
   ThemeProvider,
-  createMuiTheme,
   useTheme,
   useMediaQuery,
   Container,
@@ -13,6 +12,7 @@ import {
   Tooltip,
   IconButton,
 } from '@material-ui/core';
+import { createTheme } from '@material-ui/core/styles';
 import AddIcon from '@material-ui/icons/Add';
 import { useLocation, useHistory } from 'react-router';
 
@@ -58,7 +58,7 @@ const Accounts = ({ accounts, updateAccounts }) => {
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   const myTheme = th =>
-    createMuiTheme({
+    createTheme({
       ...th,
       overrides: {
         ...th.overrides,
@@ -214,7 +214,7 @@ const Accounts = ({ accounts, updateAccounts }) => {
 Accounts.propTypes = {
   updateAccounts: PropTypes.func.isRequired,
   accounts: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    items: PropTypes.arrayOf(PropTypes.shape({})),
     isFetching: PropTypes.bool,
   }).isRequired,
 };

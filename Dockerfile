@@ -1,4 +1,4 @@
-FROM node:16-bullseye@sha256:cd59a61258b82b86c1ff0ead50c8a689f6c3483c5ed21036e11ee741add419eb AS builder-frontend
+FROM node:24-bullseye@sha256:87ba72ac15b59ca7dc49c63c7ad6253b7bc15ab28fa22351f7e402f64e0c8ea9 AS builder-frontend
 
 RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get update -y && apt-get install -y --no-install-recommends git \
@@ -8,8 +8,9 @@ COPY web /build/web
 COPY .git /build/.git
 WORKDIR /build/web
 
-RUN yarn install
-RUN yarn run build
+RUN corepack enable && corepack prepare pnpm@11.3.0 --activate
+RUN pnpm install --frozen-lockfile
+RUN pnpm run build
 
 FROM rust:1.87-bullseye@sha256:af1a29a166198e1295ca667007e95d2e70c866e3928ba9b25f3907035581c39e AS builder-backend
 

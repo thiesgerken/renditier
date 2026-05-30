@@ -56,7 +56,7 @@ const TransactionsTable = ({ transactions, currentPrice }) => {
 };
 
 TransactionsTable.propTypes = {
-  transactions: PropTypes.arrayOf(PropTypes.object).isRequired,
+  transactions: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   currentPrice: PropTypes.shape({}),
 };
 

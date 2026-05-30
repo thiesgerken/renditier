@@ -6,7 +6,6 @@ import moment from 'moment';
 import { find, map } from 'lodash';
 import {
   ThemeProvider,
-  createMuiTheme,
   useTheme,
   useMediaQuery,
   Container,
@@ -15,6 +14,7 @@ import {
   Tooltip,
   IconButton,
 } from '@material-ui/core';
+import { createTheme } from '@material-ui/core/styles';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
 import AddIcon from '@material-ui/icons/Add';
 import CloudUploadIcon from '@material-ui/icons/CloudUpload';
@@ -108,7 +108,7 @@ const Transactions = ({
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   const myTheme = th =>
-    createMuiTheme({
+    createTheme({
       ...th,
       overrides: {
         ...th.overrides,
@@ -419,21 +419,25 @@ const Transactions = ({
   );
 };
 
+const accountType = PropTypes.shape({
+  id: PropTypes.number,
+});
+
 Transactions.propTypes = {
   updateTransactions: PropTypes.func.isRequired,
   updateStocks: PropTypes.func.isRequired,
   updateAccounts: PropTypes.func.isRequired,
   uploadReceipts: PropTypes.func.isRequired,
   transactions: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    items: PropTypes.arrayOf(PropTypes.shape({})),
     isFetching: PropTypes.bool,
   }).isRequired,
   stocks: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    items: PropTypes.arrayOf(PropTypes.shape({})),
     isFetching: PropTypes.bool,
   }).isRequired,
   accounts: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    items: PropTypes.arrayOf(accountType),
     isFetching: PropTypes.bool,
   }).isRequired,
 };

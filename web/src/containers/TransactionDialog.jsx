@@ -522,11 +522,11 @@ TransactionDialog.propTypes = {
     isin: PropTypes.string,
   }).isRequired,
   stocks: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.shape({})),
     lastRequest: PropTypes.number,
   }).isRequired,
   accounts: PropTypes.shape({
-    items: PropTypes.arrayOf(PropTypes.object),
+    items: PropTypes.arrayOf(PropTypes.shape({})),
   }).isRequired,
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,

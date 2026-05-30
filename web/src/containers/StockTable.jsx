@@ -100,14 +100,14 @@ const StockTable = ({
 
 StockTable.propTypes = {
   performance: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.shape({})),
     isFetching: PropTypes.bool,
   }).isRequired,
   updatePerformance: PropTypes.func.isRequired,
-  stockPlotData: PropTypes.arrayOf(PropTypes.object).isRequired,
+  stockPlotData: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   updateStockPlotData: PropTypes.func.isRequired,
   stocks: PropTypes.shape({
-    data: PropTypes.arrayOf(PropTypes.object),
+    data: PropTypes.arrayOf(PropTypes.shape({})),
     isFetching: PropTypes.bool,
   }).isRequired,
   updateStocks: PropTypes.func.isRequired,

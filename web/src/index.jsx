@@ -6,7 +6,8 @@ import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
 import { createBrowserHistory } from 'history';
 import { ConnectedRouter, routerMiddleware } from 'connected-react-router';
-import { ThemeProvider, createMuiTheme } from '@material-ui/core';
+import { ThemeProvider } from '@material-ui/core';
+import { createTheme } from '@material-ui/core/styles';
 import 'typeface-oxygen';
 import teal from '@material-ui/core/colors/teal';
 import { LocalizationProvider } from '@material-ui/pickers';
@@ -36,7 +37,7 @@ const store = createStore(
   composeEnhancers(applyMiddleware(...middlewares))
 );
 
-const theme = createMuiTheme({
+const theme = createTheme({
   typography: {
     fontFamily: ['Oxygen'].join(','),
   },

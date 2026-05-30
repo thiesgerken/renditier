@@ -1,0 +1,21 @@
+autoInstallPeers: false
+nodeLinker: hoisted
+peerDependencyRules:
+  allowedVersions:
+    '@material-ui/core': '4'
+    '@material-ui/lab': '4.0.0-alpha.61'
+    '@types/react': '17'
+    react: '17'
+    react-dom: '17'
+    react-dnd: '11'
+    eslint-plugin-react-hooks: '7'
+allowBuilds:
+  core-js: true
+  core-js-pure: true
+  es5-ext: true
+  fsevents: true
+onlyBuiltDependencies:
+  - core-js
+  - core-js-pure
+  - es5-ext
+  - fsevents

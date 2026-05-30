@@ -150,7 +150,17 @@ StockTooltipContent.propTypes = {
   labelStyle: PropTypes.shape([]),
   labelFormatter: PropTypes.func,
   label: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  payload: PropTypes.arrayOf(PropTypes.object),
+  payload: PropTypes.arrayOf(
+    PropTypes.shape({
+      payload: PropTypes.shape({
+        priceDate: PropTypes.oneOfType([
+          PropTypes.string,
+          PropTypes.number,
+          PropTypes.instanceOf(Date),
+        ]),
+      }),
+    })
+  ),
   itemSorter: PropTypes.string,
 };
 
