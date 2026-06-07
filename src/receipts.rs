@@ -187,8 +187,13 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Er
             debug!("Parsing as comdirect fees");
             ts.push(parse_comdirect_fees(&body)?);
         } else if body.contains("Ertragsgutschrift") {
-            debug!("Parsing as comdirect payout");
-            ts.push(parse_comdirect_payout(&body)?);
+            if body.contains("Verrechnung über Konto") {
+                debug!("Parsing as comdirect payout (Ertragsgutschrift layout)");
+                ts.push(parse_comdirect_ertragsgutschrift(&body)?);
+            } else {
+                debug!("Parsing as comdirect payout");
+                ts.push(parse_comdirect_payout(&body)?);
+            }
         } else {
             info!("{}", body);
             return Err("unknown comdirect receipt type".into());
@@ -575,6 +580,53 @@ fn parse_comdirect_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn E
     })
 }
 
+fn parse_comdirect_ertragsgutschrift(
+    s: &str,
+) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
+    debug!("Parsing isin");
+    let re = Regex::new(r"STK\s+[\d\.,]+\s+([A-Z]{2}[A-Z0-9]{10})").unwrap();
+    let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
+
+    debug!("Parsing date & amount");
+    let re = Regex::new(
+        r"Zu Ihren Gunsten vor Steuern\s*\n[^\n]*EUR\s+(\d\d)\.(\d\d)\.(\d{4})\s+EUR\s+([\d\.]+,\d{2})",
+    )
+    .unwrap();
+    let cpt = re.captures_iter(s).next().ok_or("no amount+date match")?;
+    let amount = (parse_float(&cpt[4])? * 100.0).round() as i64;
+
+    let date = Local
+        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
+        .unwrap()
+        .with_timezone(&Utc);
+
+    let receipt_number =
+        quick_and_dirty_checksum(&format!("{}{}{}", isin, date.format("%Y%m%d"), amount));
+
+    debug!("Parsing account number");
+    let re = Regex::new(r"Depotnr\.:\s*(\d+)").unwrap();
+    let account_number = re.captures_iter(s).next().ok_or("no account match")?[1].to_owned();
+
+    let t = NewTransaction {
+        account_id: -1,
+        isin,
+        date,
+        units: 0.0,
+        amount,
+        fees: 0,
+        onvista_exchange_id: None,
+        comments: String::new(),
+        exchange: None,
+        receipt_number: Some(receipt_number),
+    };
+
+    Ok(ParsedReceiptTransaction {
+        content: t,
+        over_the_counter: true,
+        account_number,
+    })
+}
+
 fn parse_onvista_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     let re = Regex::new(r"ISIN\s+([A-Z]{2}[A-Z0-9]{10})\s").unwrap();
     let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
@@ -752,6 +804,56 @@ Verwahrungs-Art: GIROSAMMELDEPOT
             NaiveDate::from_ymd_opt(2026, 5, 15).unwrap()
         );
         assert!(!parsed.over_the_counter);
+        assert!(parsed.content.receipt_number.is_some());
+    }
+
+    const COMDIRECT_ERTRAGSGUTSCHRIFT_2026_05_29_FILENAME: &str =
+        "Ertragsgutschrift_37_St._A3FX7Q_(FICSHS-GL.INFRA.TR._DLDIS)_vom_29.05.2026_2C5E91.pdf";
+
+    const COMDIRECT_ERTRAGSGUTSCHRIFT_2026_05_29_TEXT: &str = "DD418/03/27\n\
+25449 Quickborn\n\
+\n\
+ 31207 010 Depotnr.: 718392650\n\
+BLZ: 200 411 77\n\
+\n\
+Ertragsgutschrift\n\
+\n\
+Depotbestand Wertpapier-Bezeichnung WKN/ISIN\n\
+per 20.05.2026 A3FX7QFicShs-Gl.Infra.Tra.U.ETF\n\
+STK 37,000 IE000K7Q2W58Registered Shares o.N.\n\
+Emissionsland: IRLAND\n\
+USD 0,0192 Ausschüttung pro Stück für Geschäftsjahr 01.01.26 bis 31.12.26\n\
+zahlbar ab 29.05.2026\n\
+ Abrechnung Ertragsgutschrift\n\
+\n\
+Bruttobetrag: USD 0,71\n\
+zum Devisenkurs: EUR/USD 1,167400 EUR 0,61\n\
+Verrechnung über Konto (IBAN) Valuta Zu Ihren Gunsten vor Steuern\n\
+DE45 2004 1177 0718 3926 50 EUR 02.06.2026 EUR 0,61\n\
+\n\
+Ihre comdirect\n";
+
+    #[test]
+    fn parses_comdirect_ertragsgutschrift_for_2026_05_29_receipt() {
+        let parsed = parse_comdirect_ertragsgutschrift(COMDIRECT_ERTRAGSGUTSCHRIFT_2026_05_29_TEXT)
+            .unwrap_or_else(|_| {
+                panic!(
+                    "failed to parse receipt fixture {}",
+                    COMDIRECT_ERTRAGSGUTSCHRIFT_2026_05_29_FILENAME
+                )
+            });
+
+        assert_eq!(parsed.content.isin, "IE000K7Q2W58");
+        assert_eq!(parsed.content.amount, 61);
+        assert_eq!(parsed.content.units, 0.0);
+        assert_eq!(parsed.content.fees, 0);
+        assert_eq!(parsed.account_number, "718392650");
+        assert_eq!(parsed.content.exchange, None);
+        assert_eq!(
+            parsed.content.date.with_timezone(&Local).date_naive(),
+            NaiveDate::from_ymd_opt(2026, 6, 2).unwrap()
+        );
+        assert!(parsed.over_the_counter);
         assert!(parsed.content.receipt_number.is_some());
     }
 }
