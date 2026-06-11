@@ -1,4 +1,4 @@
-FROM node:24-trixie@sha256:486d291ebb135fec677b9f67fc59c6b487067f9ed7d6fc8b6c6ef5edb4838af9 AS builder-frontend
+FROM node:24-trixie@sha256:98f99a9adcd4c2e14b4edcabf8e20660541d7eea602dbf9e5e78c8950293c946 AS builder-frontend
 
 RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get update -y && apt-get install -y --no-install-recommends git \
