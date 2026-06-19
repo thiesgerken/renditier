@@ -16,7 +16,7 @@ csv = "1.1"
 diesel = { version = "2.2", features = ["postgres", "chrono", "r2d2"] }
 diesel_migrations = "2.2"
 futures = "0.3"
-itertools = "0.14"
+itertools = "0.15"
 log = "0.4"
 pdf-extract = "0.10.0"
 prettytable-rs = "0.10"
