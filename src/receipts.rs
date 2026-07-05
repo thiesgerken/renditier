@@ -143,8 +143,7 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Er
         &doc,
         &mut pdf_extract::PlainTextOutput::new(&mut buffer as &mut dyn std::io::Write),
     )?;
-    let body = std::str::from_utf8(&buffer)?
-        .to_owned()
+    let body = fix_broken_glyphs(std::str::from_utf8(&buffer)?)
         .replace("Depot-Nr.", "Depot-Nr.Depot-Nr."); // Look-ahead not supported by the regex engine
     debug!("body of PDF: {}", &body);
 
@@ -338,6 +337,16 @@ fn parse_onvista_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Err
         over_the_counter: true,
         account_number,
     })
+}
+
+// comdirect PDFs since 2026-06 embed subset fonts without ToUnicode CMaps; pdf-extract's
+// raw-code fallback then emits wrong characters for the parse-relevant glyphs below.
+// ponytail: observed-substitution table, extend when new receipts garble other glyphs
+fn fix_broken_glyphs(s: &str) -> String {
+    s.replace('`', "-")
+        .replace('è', "Y")
+        .replace('ç', "X")
+        .replace('×', "P")
 }
 
 fn quick_and_dirty_checksum(input: &str) -> i64 {
@@ -778,6 +787,18 @@ Zu Ihren Lasten vor Steuern: EUR -34,76
 
 Verwahrungs-Art: GIROSAMMELDEPOT
 "#;
+
+    #[test]
+    fn fixes_broken_glyphs_from_2026_06_comdirect_fonts() {
+        assert_eq!(
+            fix_broken_glyphs("Zu Ihren Lasten vor Steuern: EUR `199,95"),
+            "Zu Ihren Lasten vor Steuern: EUR -199,95"
+        );
+        assert_eq!(
+            fix_broken_glyphs("WKN / ISIN: A2QZT4 / IE00Bèç7KM37"),
+            "WKN / ISIN: A2QZT4 / IE00BYX7KM37"
+        );
+    }
 
     #[test]
     fn parses_comdirect_purchase_account_from_iban_block_for_2026_05_15_receipt() {
