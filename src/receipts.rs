@@ -347,6 +347,7 @@ fn fix_broken_glyphs(s: &str) -> String {
         .replace('è', "Y")
         .replace('ç', "X")
         .replace('×', "P")
+        .replace('Ô', "M")
 }
 
 fn quick_and_dirty_checksum(input: &str) -> i64 {
@@ -797,6 +798,10 @@ Verwahrungs-Art: GIROSAMMELDEPOT
         assert_eq!(
             fix_broken_glyphs("WKN / ISIN: A2QZT4 / IE00Bèç7KM37"),
             "WKN / ISIN: A2QZT4 / IE00BYX7KM37"
+        );
+        assert_eq!(
+            fix_broken_glyphs("Stk. 2,318 FICSV-ÔSCI EM DL A , WKN / ISIN: A1KÔPR / IE00B7RT4Q87"),
+            "Stk. 2,318 FICSV-MSCI EM DL A , WKN / ISIN: A1KMPR / IE00B7RT4Q87"
         );
     }
 
