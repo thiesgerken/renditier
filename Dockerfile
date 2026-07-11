@@ -12,7 +12,7 @@ RUN corepack enable && corepack prepare pnpm@11.3.0 --activate
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
-FROM rust:1.96-trixie@sha256:1f0dbad1df66647807e6952d1db85d0b2bda7606cb2139d82517e4f009967376 AS builder-backend
+FROM rust:1.97-trixie@sha256:44637ff22d0a6571a221bfaf137849711ad02ff4723dbb4736e297538f6a3e60 AS builder-backend
 
 RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev pkg-config gcc clang libclang-dev \
