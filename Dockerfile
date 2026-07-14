@@ -33,7 +33,7 @@ RUN touch src/lib.rs && touch src/bin/stockdb.rs && touch src/bin/sandbox.rs && 
 RUN cargo build --release
 RUN strip -s target/release/stockdb
 
-FROM debian:trixie-slim@sha256:28de0877c2189802884ccd20f15ee41c203573bd87bb6b883f5f46362d24c5c2
+FROM debian:trixie-slim@sha256:020c0d20b9880058cbe785a9db107156c3c75c2ac944a6aa7ab59f2add76a7bd
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && apt-get dist-upgrade -y \
