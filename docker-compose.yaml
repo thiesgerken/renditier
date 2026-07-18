@@ -16,7 +16,7 @@ services:
     command: stockdb -v serve
 
   postgres:
-    image: postgres:18@sha256:48ebba8b80dc3be58b5ae431f47a33535289959cddfe13f5f887298de959fae0
+    image: postgres:18@sha256:32ca0af8e77bfb8c6610c488e4691f83f972a3e9e64d3b02facf3ab111ad5500
     volumes:
       - postgres18:/var/lib/postgresql
     environment:
