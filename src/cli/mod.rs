@@ -55,6 +55,7 @@ pub struct Config {
     pub database: String,
     pub web: serve::Config,
     pub push: push::Config,
+    pub receipts: crate::receipts::Config,
 }
 
 impl Default for Config {
@@ -64,6 +65,7 @@ impl Default for Config {
             verbosity: 0,
             web: Default::default(),
             push: Default::default(),
+            receipts: Default::default(),
         }
     }
 }

@@ -20,6 +20,12 @@ fn main() {
                 .help("Print parsed transactions as pretty JSON"),
         )
         .arg(
+            Arg::new("pdftotext")
+                .long("pdftotext")
+                .action(ArgAction::SetTrue)
+                .help("Prefer pdftotext over pdf-extract for text extraction"),
+        )
+        .arg(
             Arg::new("files")
                 .required(true)
                 .num_args(1..)
@@ -28,6 +34,10 @@ fn main() {
         .get_matches();
 
     initialize_logging(matches.get_count("verbose") as u32);
+
+    receipts::configure(&receipts::Config {
+        prefer_pdftotext: *matches.get_one::<bool>("pdftotext").unwrap(),
+    });
 
     let file_names = matches
         .get_many::<String>("files")

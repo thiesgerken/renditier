@@ -34,6 +34,7 @@ fn main() {
             .expect("unable to parse settings into Config struct");
 
         debug!("config={:?}", &config);
+        receipts::configure(&config.receipts);
 
         let mut connection =
             connect(&config.database).expect("error connecting and migrating to db");

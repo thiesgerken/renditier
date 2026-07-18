@@ -37,7 +37,7 @@ FROM debian:trixie-slim@sha256:020c0d20b9880058cbe785a9db107156c3c75c2ac944a6aa7
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && apt-get dist-upgrade -y \
-  && apt-get install -y --no-install-recommends ca-certificates libpq5 libssl3t64 \
+  && apt-get install -y --no-install-recommends ca-certificates libpq5 libssl3t64 poppler-utils \
   && rm -Rf /var/cache/apt
 
 COPY --from=builder-backend /build/target/release/stockdb /bin/stockdb

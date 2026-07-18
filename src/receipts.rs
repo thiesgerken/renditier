@@ -4,9 +4,25 @@ use chrono::{Local, TimeZone, Utc};
 use diesel::prelude::*;
 use log::{debug, info, warn};
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+#[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(default)]
+pub struct Config {
+    // extract text with pdftotext (poppler) instead of the built-in pdf-extract;
+    // whichever is primary, the other one serves as fallback
+    pub prefer_pdftotext: bool,
+}
+
+static PREFER_PDFTOTEXT: AtomicBool = AtomicBool::new(false);
+
+// ponytail: process-wide flag instead of threading config through every parse call chain
+pub fn configure(config: &Config) {
+    PREFER_PDFTOTEXT.store(config.prefer_pdftotext, Ordering::Relaxed);
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ParsedReceiptTransaction {
@@ -135,7 +151,7 @@ pub fn parse_preview_files(
     parse_mem_preview(&files)
 }
 
-fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
+fn extract_with_pdf_extract(buf: &[u8]) -> Result<String, Box<dyn Error>> {
     let mut buffer = Vec::<u8>::new();
     let doc = pdf_extract::Document::load_mem(buf)?;
 
@@ -143,8 +159,59 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Er
         &doc,
         &mut pdf_extract::PlainTextOutput::new(&mut buffer as &mut dyn std::io::Write),
     )?;
-    let body = fix_broken_glyphs(std::str::from_utf8(&buffer)?)
-        .replace("Depot-Nr.", "Depot-Nr.Depot-Nr."); // Look-ahead not supported by the regex engine
+    Ok(fix_broken_glyphs(std::str::from_utf8(&buffer)?))
+}
+
+fn extract_with_pdftotext(buf: &[u8]) -> Result<String, Box<dyn Error>> {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    let mut child = Command::new("pdftotext")
+        .args(["-layout", "-", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()?;
+    // pdftotext needs the full file (xref at the end) before it writes output,
+    // so writing all of stdin before reading stdout cannot deadlock
+    child.stdin.take().unwrap().write_all(buf)?;
+    let out = child.wait_with_output()?;
+    if !out.status.success() {
+        return Err(format!("pdftotext failed with {}", out.status).into());
+    }
+    Ok(String::from_utf8(out.stdout)?)
+}
+
+fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
+    type Extractor = (&'static str, fn(&[u8]) -> Result<String, Box<dyn Error>>);
+    const PDF_EXTRACT: Extractor = ("pdf-extract", extract_with_pdf_extract);
+    const PDFTOTEXT: Extractor = ("pdftotext", extract_with_pdftotext);
+
+    let (primary, fallback) = if PREFER_PDFTOTEXT.load(Ordering::Relaxed) {
+        (PDFTOTEXT, PDF_EXTRACT)
+    } else {
+        (PDF_EXTRACT, PDFTOTEXT)
+    };
+
+    match primary.1(buf).and_then(|body| parse_body(&body)) {
+        Ok(ts) => Ok(ts),
+        Err(e) => {
+            warn!(
+                "parsing via {} failed ({}), retrying with {}",
+                primary.0, e, fallback.0
+            );
+            fallback
+                .1(buf)
+                .and_then(|body| parse_body(&body))
+                .map_err(|e2| {
+                    format!("{}: {}; {}: {}", primary.0, e, fallback.0, e2).into()
+                })
+        }
+    }
+}
+
+fn parse_body(body: &str) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
+    let body = body.replace("Depot-Nr.", "Depot-Nr.Depot-Nr."); // Look-ahead not supported by the regex engine
     debug!("body of PDF: {}", &body);
 
     let mut ts = Vec::new();
