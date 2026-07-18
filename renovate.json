@@ -13,6 +13,11 @@
     {
       "matchUpdateTypes": ["digest"],
       "automerge": true
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
     }
   ]
 }
