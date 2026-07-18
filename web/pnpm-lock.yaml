@@ -132,9 +132,6 @@ importers:
       prettier:
         specifier: ^3.8.3
         version: 3.9.5
-      typescript:
-        specifier: ^6.0.3
-        version: 6.0.3
       vite:
         specifier: ^8.0.14
         version: 8.1.4
@@ -2516,11 +2513,6 @@ packages:
 
   typeface-roboto@1.1.13:
     resolution: {integrity: sha512-YXvbd3a1QTREoD+FJoEkl0VQNJoEjewR2H11IjVv4bp6ahuIcw0yyw/3udC4vJkHw3T3cUh85FTg8eWef3pSaw==}
-
-  typescript@6.0.3:
-    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
-    engines: {node: '>=14.17'}
-    hasBin: true
 
   unbox-primitive@1.1.0:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
@@ -5353,8 +5345,6 @@ snapshots:
   typeface-oxygen@1.1.13: {}
 
   typeface-roboto@1.1.13: {}
-
-  typescript@6.0.3: {}
 
   unbox-primitive@1.1.0:
     dependencies:
