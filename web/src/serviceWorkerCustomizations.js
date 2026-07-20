@@ -12,11 +12,9 @@
 //   console.log(e);
 // });
 
-// eslint-disable-next-line no-unused-vars
-self.addEventListener('fetch', e => {
+self.addEventListener('fetch', () => {
   // this needs to be here, even if it does not do anything.
   // console.log('workbox "fetch" event fired');
-  // console.log(e);
 });
 
 self.addEventListener('push', e => {
