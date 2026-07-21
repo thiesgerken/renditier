@@ -6,6 +6,7 @@ import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import prettierPlugin from 'eslint-plugin-prettier';
 import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,12 +22,14 @@ export default [
     ignores: ['node_modules/**', 'build/**', 'src/semantic/**'],
   },
   ...fixupConfigRules(compat.extends('airbnb', 'prettier')),
+  ...tseslint.configs.recommended,
   {
-    files: ['src/**/*.{js,jsx}'],
+    files: ['src/**/*.{js,jsx,ts,tsx}'],
     plugins: {
       prettier: prettierPlugin,
     },
     languageOptions: {
+      parser: tseslint.parser,
       ecmaVersion: 'latest',
       sourceType: 'module',
       globals: {
@@ -64,6 +67,22 @@ export default [
       'default-param-last': 'off',
       'arrow-body-style': 'off',
       'import/prefer-default-export': 'off',
+      // React 19's automatic JSX runtime: importing React is unnecessary, and
+      // with noUnusedLocals it is an error.
+      'react/react-in-jsx-scope': 'off',
+      'react/jsx-filename-extension': ['error', { extensions: ['.jsx', '.tsx'] }],
+      // TypeScript covers these; the airbnb JS equivalents misfire on .tsx.
+      'react/prop-types': 'off',
+      'react/require-default-props': 'off',
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+      'no-shadow': 'off',
+      'import/extensions': 'off',
+      'import/no-unresolved': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
     },
   },
 ];

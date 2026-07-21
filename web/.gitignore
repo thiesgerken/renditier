@@ -8,5 +8,5 @@ pnpm-debug.log
 /src/semantic
 /build
 /public/custom-sw.js
-/src/git.js
+/src/git.ts
 /public/serviceWorkerCustomizations.js
