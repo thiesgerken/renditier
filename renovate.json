@@ -16,7 +16,8 @@
     },
     {
       "matchManagers": ["npm"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": ["patch"],
+      "groupName": "npm patch dependencies",
       "automerge": true
     }
   ]
