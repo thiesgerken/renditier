@@ -24,7 +24,7 @@ pub async fn compute_historic_portfolio(
                     .ok()?
                     .and_utc();
 
-            portfolio::compute(c, *uid, date).ok().map(Json)
+            portfolio::compute(c, *uid, None, date).ok().map(Json)
         })
         .await
 }
@@ -37,7 +37,26 @@ pub async fn compute_realtime_portfolio(
     connection
         .run(move |c| {
             let now = Utc::now();
-            portfolio::compute(c, *uid, now).ok().map(Json)
+            portfolio::compute(c, *uid, None, now).ok().map(Json)
+        })
+        .await
+}
+
+/// The same portfolio narrowed to one account. Its own path rather than a filter on the two
+/// routes above, because the pair already tells itself apart by whether a query parameter is
+/// present at all -- adding one to both makes them equally wild matchers, and rocket then refuses
+/// to mount either. Negative ranks would say it too, but the macro takes no negative literal, and
+/// positive ones lose the request to the static-file catch-all.
+#[get("/accounts/<id>/portfolio")]
+pub async fn compute_account_portfolio(
+    uid: UserId,
+    connection: DbConn,
+    id: i32,
+) -> Option<Json<Portfolio<RealtimePrice>>> {
+    connection
+        .run(move |c| {
+            let now = Utc::now();
+            portfolio::compute(c, *uid, Some(id), now).ok().map(Json)
         })
         .await
 }
