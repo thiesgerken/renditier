@@ -131,7 +131,17 @@ where
         (au + t.units, ac + (t.amount + t.fees) as f64 / 100.0)
     });
 
-    let value = price.as_ref().map(|x| units * x.price.value());
+    // A position that has been sold out is worth nothing, price or no price -- and a stock
+    // nobody holds any more is precisely the one whose price stops being fetched. Without this
+    // a single such position leaves the whole depot's `value` at None, since the total is a
+    // try_fold over the parts: one position with a holding of zero cost the whole depot its
+    // market value. The tolerance is there because fractional units bought and sold
+    // back do not cancel exactly in binary.
+    let value = if units.abs() < 1e-9 {
+        Some(0.0)
+    } else {
+        price.as_ref().map(|x| units * x.price.value())
+    };
 
     let irr = if let Some(x) = price.as_ref() {
         // is guaranteed to have the same length as positions
@@ -156,5 +166,73 @@ where
         invested,
         irr,
         data_source: price,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use chrono::TimeZone;
+
+    fn transaction(units: f64, amount: i64, day: u32) -> Transaction {
+        Transaction {
+            id: day as i32,
+            account_id: 1,
+            isin: "DE0001234567".to_owned(),
+            date: Utc.with_ymd_and_hms(2024, 1, day, 12, 0, 0).unwrap(),
+            units,
+            amount,
+            fees: 0,
+            onvista_exchange_id: None,
+            comments: String::new(),
+            exchange: None,
+            receipt_number: None,
+        }
+    }
+
+    /// The case that hid a whole depot's market value: bought and sold again, so nobody fetches
+    /// a price for it any more, and the portfolio total is a try_fold over the positions.
+    #[test]
+    fn a_position_sold_out_is_worth_nothing_rather_than_unknown() {
+        let ts = vec![
+            transaction(10.0, -100_000, 1),
+            transaction(-10.0, 120_000, 2),
+        ];
+
+        let position: Position<RealtimePrice> =
+            compute_position("DE0001234567".to_owned(), &ts, None);
+
+        assert_eq!(position.units, 0.0);
+        assert_eq!(position.value, Some(0.0));
+    }
+
+    /// Fractional units bought in several goes and sold in one do not add back to a literal
+    /// zero, and a depot must not lose its value over the last bit of floating point.
+    #[test]
+    fn fractional_units_that_cancel_count_as_sold_out() {
+        let ts = vec![
+            transaction(0.1, -1_000, 1),
+            transaction(0.2, -2_000, 2),
+            transaction(-0.3, 3_500, 3),
+        ];
+
+        let position: Position<RealtimePrice> =
+            compute_position("DE0001234567".to_owned(), &ts, None);
+
+        assert_ne!(position.units, 0.0, "0.1 + 0.2 - 0.3 is not exactly zero");
+        assert_eq!(position.value, Some(0.0));
+    }
+
+    /// Still held and unpriced stays unknown: that is a number nobody can state, and saying
+    /// zero would quietly delete it from the total.
+    #[test]
+    fn a_held_position_without_a_price_has_no_value() {
+        let ts = vec![transaction(10.0, -100_000, 1)];
+
+        let position: Position<RealtimePrice> =
+            compute_position("DE0001234567".to_owned(), &ts, None);
+
+        assert_eq!(position.value, None);
     }
 }
