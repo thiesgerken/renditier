@@ -88,7 +88,14 @@ pub fn generate_token() -> String {
 /// request instead of once per login. A plain digest also means the lookup is an index hit rather
 /// than a verify against every user's hash in turn.
 pub fn hash_token(token: &str) -> String {
-    format!("{:x}", Sha256::digest(token.as_bytes()))
+    // Written out byte by byte rather than through `{:x}`: sha2 0.10 handed back a
+    // `GenericArray`, which implements `LowerHex`, and 0.11 hands back a `hybrid_array::Array`,
+    // which does not. Both are a `[u8]`, so this survives the next such swap -- and the test
+    // below is what catches it if the digest itself ever changes shape.
+    Sha256::digest(token.as_bytes())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
 }
 
 #[cfg(test)]
