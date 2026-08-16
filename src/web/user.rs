@@ -4,8 +4,8 @@ use crate::web::{Config, DbConn};
 use crate::{hash_token, verify_password};
 
 use diesel::prelude::*;
-use log::{info, warn};
-use rocket::http::{Cookie, CookieJar, Status};
+use log::{debug, info, warn};
+use rocket::http::{Cookie, CookieJar, Method, Status};
 use rocket::request::{FromRequest, Outcome};
 use rocket::serde::json::Json;
 use rocket::{Request, State};
@@ -38,24 +38,43 @@ impl<'r> FromRequest<'r> for UserId {
         }
 
         // A bearer token is the way in for something that is not a browser, so it is only looked
-        // at when no session cookie answered first.
-        match bearer_token(request) {
-            Some(token) => match resolve_token(request, token).await {
-                Some(id) => Outcome::Success(UserId(id)),
-                None => Outcome::Error((Status::Unauthorized, ())),
-            },
+        // at when no session cookie answered first. It reads and never writes: a token carries no
+        // second factor and cannot be asked to confirm anything, so a leaked one must not be able
+        // to delete an account. Widening this later is easy; narrowing it after tokens are in use
+        // is not.
+        let id = match bearer_token(request) {
+            Some(_) if request.method() != Method::Get => {
+                warn!(
+                    "Attempt to use an API token on a {} request; tokens authenticate GET only",
+                    request.method()
+                );
+
+                None
+            }
+            Some(token) => resolve_token(request, token).await,
+            None => None,
+        };
+
+        match id {
+            Some(id) => Outcome::Success(UserId(id)),
             None => Outcome::Error((Status::Unauthorized, ())),
         }
     }
 }
 
 fn bearer_token(request: &Request<'_>) -> Option<String> {
-    request
+    let (scheme, token) = request
         .headers()
         .get_one("Authorization")?
-        .strip_prefix("Bearer ")
-        .map(|t| t.trim().to_owned())
-        .filter(|t| !t.is_empty())
+        .split_once(' ')?;
+
+    // The scheme is case-insensitive per RFC 7235, and refusing `bearer` would look from the
+    // outside exactly like a rejected token.
+    if !scheme.eq_ignore_ascii_case("bearer") {
+        return None;
+    }
+
+    Some(token.trim().to_owned()).filter(|t| !t.is_empty())
 }
 
 async fn resolve_token(request: &Request<'_>, token: String) -> Option<i32> {
@@ -73,7 +92,8 @@ async fn resolve_token(request: &Request<'_>, token: String) -> Option<i32> {
         .await;
 
     match id {
-        Some(id) => info!("Successful authentication with an API token of user {}", id),
+        // One line per API request at info would drown the log; the failure is the interesting one.
+        Some(id) => debug!("Successful authentication with an API token of user {}", id),
         None => warn!("Attempt to authenticate with an unknown API token"),
     }
 
