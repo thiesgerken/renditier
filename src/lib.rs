@@ -22,6 +22,8 @@ extern crate rocket;
 extern crate rust_embed;
 
 use argonautica::{Hasher, Verifier};
+use base64::prelude::BASE64_URL_SAFE_NO_PAD;
+use base64::Engine;
 use diesel::prelude::*;
 use diesel::{
     pg::PgConnection,
@@ -29,10 +31,13 @@ use diesel::{
 };
 use diesel_migrations::{EmbeddedMigrations, HarnessWithOutput, MigrationHarness};
 use log::{error, info};
+use sha2::{Digest, Sha256};
 use simplelog::{
     format_description, ColorChoice, LevelFilter, SimpleLogger, TermLogger, TerminalMode,
 };
 use std::error::Error;
+use std::fs::File;
+use std::io::Read;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
@@ -61,6 +66,52 @@ pub fn hash_password(pw: &str) -> String {
         .with_password(pw)
         .hash()
         .unwrap()
+}
+
+/// A fresh API token, url-safe so it survives a shell and a header untouched. Only its hash is
+/// ever stored, so this is the one moment the caller can see it.
+pub fn generate_token() -> String {
+    let mut bytes = [0u8; 32];
+
+    // ponytail: /dev/urandom rather than a rng crate. Unix only, which is where this runs; swap
+    // in getrandom if that ever stops being true.
+    File::open("/dev/urandom")
+        .and_then(|mut f| f.read_exact(&mut bytes))
+        .expect("Unable to read from /dev/urandom");
+
+    BASE64_URL_SAFE_NO_PAD.encode(bytes)
+}
+
+/// SHA-256 rather than the password hasher, on purpose. A token is 32 bytes of randomness, so
+/// there is no dictionary to walk and nothing for a slow hash to defend; argon2's cost exists to
+/// make guessing human-chosen passwords expensive, and here it would be paid on every single API
+/// request instead of once per login. A plain digest also means the lookup is an index hit rather
+/// than a verify against every user's hash in turn.
+pub fn hash_token(token: &str) -> String {
+    format!("{:x}", Sha256::digest(token.as_bytes()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tokens_are_random_and_long_enough() {
+        let a = generate_token();
+        let b = generate_token();
+
+        assert_ne!(a, b);
+        assert_eq!(BASE64_URL_SAFE_NO_PAD.decode(&a).unwrap().len(), 32);
+    }
+
+    #[test]
+    fn token_hashing_is_sha256() {
+        assert_eq!(
+            hash_token("abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+        assert_ne!(hash_token("abc"), hash_token("abd"));
+    }
 }
 
 #[derive(QueryableByName, Debug)]

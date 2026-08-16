@@ -101,6 +101,7 @@ table! {
         name -> Text,
         full_name -> Text,
         hash -> Text,
+        api_token_hash -> Nullable<Text>,
     }
 }
 

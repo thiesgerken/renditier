@@ -8,6 +8,23 @@ Tool to query and analyze stock and ETF investments using realtime and historica
 - `openssl ecparam -genkey -name prime256v1 -out vapid.pem` to obtain private key for push
 - `openssl ec -in vapid.pem -pubout -outform DER | tail -c 65 | base64 | tr '/+' '_-' | tr -d '\n'` to obtain base64 encoded public key for use in js
 
+## API tokens
+
+The API otherwise expects a browser: a session cookie, or the `Remote-User` header from the
+proxy. A program gets in with a token instead.
+
+```shell
+stockdb user --token <name>          # issue one, replacing any existing token
+stockdb user --revoke-token <name>   # take it away again
+```
+
+The token is printed once at issue time and only its hash is stored, so a lost one is reissued
+rather than looked up. Present it as `Authorization: Bearer <token>`; it sees exactly what its
+user sees.
+
+`GET /api/accounts/<id>/portfolio` is the same computation as `/api/analysis/portfolio` narrowed
+to one account, which is what a caller after the current value of a single depot wants.
+
 ## Testing receipt parsing
 
 Use the dedicated parse-only binary to test receipt parsing on local PDF files without connecting to PostgreSQL or writing any transactions:

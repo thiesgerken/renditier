@@ -29,19 +29,30 @@ pub struct Position<T> {
     pub transactions: Vec<Transaction>,
 }
 
+/// `account_id` narrows the portfolio to a single account; `None` is the whole user. The user
+/// filter stays either way, so an account belonging to somebody else yields an empty portfolio
+/// rather than theirs.
 pub fn compute<T>(
     connection: &mut diesel::PgConnection,
     user_id: i32,
+    account_id: Option<i32>,
     date: DateTime<Utc>,
 ) -> Result<Portfolio<T>, Box<dyn Error>>
 where
     T: Price + Sized,
 {
     // read all transactions for the user from db
-    let ts = transactions::table
+    let mut query = transactions::table
         .inner_join(accounts::table)
         .filter(accounts::user_id.eq(user_id))
         .filter(transactions::date.le(date))
+        .into_boxed();
+
+    if let Some(account_id) = account_id {
+        query = query.filter(transactions::account_id.eq(account_id));
+    }
+
+    let ts = query
         .order(transactions::date.asc())
         .load::<(Transaction, Account)>(connection)?
         .into_iter()

@@ -1,7 +1,7 @@
 use crate::models::*;
 use crate::schema::*;
-use crate::verify_password;
 use crate::web::{Config, DbConn};
+use crate::{hash_token, verify_password};
 
 use diesel::prelude::*;
 use log::{info, warn};
@@ -33,11 +33,51 @@ impl<'r> FromRequest<'r> for UserId {
             .get_private("user_id")
             .and_then(|c| c.value().parse().ok());
 
-        match id {
-            Some(id) => Outcome::Success(UserId(id)),
+        if let Some(id) = id {
+            return Outcome::Success(UserId(id));
+        }
+
+        // A bearer token is the way in for something that is not a browser, so it is only looked
+        // at when no session cookie answered first.
+        match bearer_token(request) {
+            Some(token) => match resolve_token(request, token).await {
+                Some(id) => Outcome::Success(UserId(id)),
+                None => Outcome::Error((Status::Unauthorized, ())),
+            },
             None => Outcome::Error((Status::Unauthorized, ())),
         }
     }
+}
+
+fn bearer_token(request: &Request<'_>) -> Option<String> {
+    request
+        .headers()
+        .get_one("Authorization")?
+        .strip_prefix("Bearer ")
+        .map(|t| t.trim().to_owned())
+        .filter(|t| !t.is_empty())
+}
+
+async fn resolve_token(request: &Request<'_>, token: String) -> Option<i32> {
+    let connection = request.guard::<DbConn>().await.succeeded()?;
+    let presented = hash_token(&token);
+
+    let id = connection
+        .run(move |c| {
+            users::table
+                .filter(users::api_token_hash.eq(presented))
+                .select(users::id)
+                .first::<i32>(c)
+                .ok()
+        })
+        .await;
+
+    match id {
+        Some(id) => info!("Successful authentication with an API token of user {}", id),
+        None => warn!("Attempt to authenticate with an unknown API token"),
+    }
+
+    id
 }
 
 pub struct OptionalUserId(Option<UserId>);
