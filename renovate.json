@@ -19,6 +19,13 @@
       "matchUpdateTypes": ["patch"],
       "groupName": "npm patch dependencies",
       "automerge": true
+    },
+    {
+      "description": "pnpm releases often and its minor/patch bumps are routine; the groupName splits them out of the grouped update PR so they can merge on green by themselves",
+      "matchDepNames": ["pnpm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "pnpm",
+      "automerge": true
     }
   ]
 }
