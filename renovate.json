@@ -9,6 +9,20 @@
     "enabled": true,
     "automerge": true
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/",
+        "/^\\.gitea/workflows/.*\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "npm (?:i|install) -g pnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "pnpm",
+      "datasourceTemplate": "npm"
+    }
+  ],
   "packageRules": [
     {
       "matchUpdateTypes": ["digest"],

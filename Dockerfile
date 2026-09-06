@@ -8,7 +8,7 @@ COPY web /build/web
 COPY .git /build/.git
 WORKDIR /build/web
 
-RUN corepack enable
+RUN npm install -g pnpm@12.3.4
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 

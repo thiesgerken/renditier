@@ -2,10 +2,10 @@
   "name": "stockdb",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@12.3.1",
+  "packageManager": "pnpm@12.3.4",
   "engines": {
     "node": ">=24",
-    "pnpm": ">=11"
+    "pnpm": ">=12"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
