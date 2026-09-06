@@ -8,7 +8,7 @@ COPY web /build/web
 COPY .git /build/.git
 WORKDIR /build/web
 
-RUN corepack enable && corepack prepare pnpm@11.3.0 --activate
+RUN corepack enable
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
