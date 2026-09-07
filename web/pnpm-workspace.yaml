@@ -1,5 +1,6 @@
 autoInstallPeers: false
 nodeLinker: hoisted
+pmOnFail: ignore
 peerDependencyRules:
   allowedVersions:
     '@mui/icons-material': '9'
