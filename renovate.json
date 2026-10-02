@@ -3,7 +3,8 @@
   "extends": [
     "config:best-practices",
     ":preserveSemverRanges",
-    "group:allNonMajor"
+    "group:allNonMajor",
+    "local>renovate/renovate-config"
   ],
   "lockFileMaintenance": {
     "enabled": true,
@@ -24,10 +25,6 @@
     }
   ],
   "packageRules": [
-    {
-      "matchUpdateTypes": ["digest"],
-      "automerge": true
-    },
     {
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["patch"],
