@@ -1,4 +1,4 @@
-FROM node:24-trixie@sha256:be40f6a87b9b22215ddb20da0a2320a5c6d583fe3ee3b0024d9fa4f05b40c8fd AS builder-frontend
+FROM node:24-trixie@sha256:c62c1553d064ddfb62d9f7de1a4b16243101bddd2c58b6069f3364fc6c233eec AS builder-frontend
 
 RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get update -y && apt-get install -y --no-install-recommends git \
@@ -12,7 +12,7 @@ RUN npm install -g pnpm@12.9.0
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
-FROM rust:1.99-trixie@sha256:3745c050d12adc738eff16ebfc81ed044bfb2cc27c6828850ff1666beb1c7a49 AS builder-backend
+FROM rust:1.99-trixie@sha256:15ad267e7a4cb2dce5905c90c76765adb6714945c5ea6d7c82673897a5e4067b AS builder-backend
 
 RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev pkg-config gcc clang libclang-dev \
@@ -33,7 +33,7 @@ RUN touch src/lib.rs && touch src/bin/stockdb.rs && touch src/bin/sandbox.rs && 
 RUN cargo build --release
 RUN strip -s target/release/stockdb
 
-FROM debian:trixie-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a
+FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && apt-get dist-upgrade -y \
