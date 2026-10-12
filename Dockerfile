@@ -8,7 +8,7 @@ COPY web /build/web
 COPY .git /build/.git
 WORKDIR /build/web
 
-RUN npm install -g pnpm@12.10.1
+RUN npm install -g pnpm@12.11.0
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
