@@ -6,6 +6,9 @@
     "group:allNonMajor",
     "local>renovate/renovate-config"
   ],
+  "nix": {
+    "enabled": true
+  },
   "lockFileMaintenance": {
     "enabled": true,
     "automerge": true

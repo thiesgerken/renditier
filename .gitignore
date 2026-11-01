@@ -7,4 +7,4 @@ zsh-completions
 bash-completions
 vapid.pem
 /.vscode
-*-export.json
+*-export.json.direnv
