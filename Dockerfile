@@ -12,7 +12,7 @@ RUN npm install -g pnpm@12.16.1
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
-FROM rust:1.99-trixie@sha256:09027f873d45b8ecd1dc86f1fa13b7a62b875c961f017a0e331267b350430137 AS builder-backend
+FROM rust:1.99-trixie@sha256:4c4c8ec55be09785e6d6ac45ea9853525a73c15db74009100ac08952e773dfb8 AS builder-backend
 
 RUN apt-get update -y && apt-get dist-upgrade -y \
   && apt-get update -y && apt-get install -y --no-install-recommends libc-dev libssl-dev pkg-config gcc clang libclang-dev \
