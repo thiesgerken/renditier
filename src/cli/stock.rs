@@ -128,10 +128,14 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
                 last_realtime_update: info.last_realtime_update,
                 ..new_info
             };
-            diesel::update(stock_infos.filter(isin.eq(info.isin.clone())))
+            if let Err(e) = diesel::update(stock_infos.filter(isin.eq(info.isin.clone())))
                 .set(new_info.clone())
                 .execute(&mut connection)
-                .expect("error updating stock info");
+            {
+                error!("error saving stock info for {}: {}", info.isin, e);
+                failed_isins.push(info.isin.as_str());
+                continue;
+            }
 
             info!("updated stock info for {}", &info.isin);
             debug!("new info: {:?}", &new_info);
