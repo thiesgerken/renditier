@@ -39,7 +39,7 @@ pub async fn fetch_realtime(
                     warn!("Throwing away {} realtime data record(s) (of {}) for {} because they belong to unknown exchanges",
                         original_len - data.len(),
                         original_len,
-                        &s.isin);
+                        s.isin);
                 }
 
                 let row_count = diesel::insert_into(crate::schema::realtime_prices::table)
@@ -51,11 +51,11 @@ pub async fn fetch_realtime(
                     "Inserted {} row(s) of realtime data (of {}) for {}",
                     row_count,
                     data.len(),
-                    &s.isin
+                    s.isin
                 );
             }
             Err(e) => {
-                error!("Error obtaining realtime data for {}: {}", &s.isin, e);
+                error!("Error obtaining realtime data for {}: {}", s.isin, e);
             }
         }
 
@@ -132,12 +132,12 @@ pub async fn fetch_historical(
                             "Upserted {} row(s) of historical data (of {}) for {} @ {}",
                             row_count,
                             batch.len(),
-                            &s.isin,
+                            s.isin,
                             ex.code
                         );
                     }
                     Err(x) => {
-                        error!("Error updating data for {} @ {}: {:?}", &s.isin, ex.code, x)
+                        error!("Error updating data for {} @ {}: {:?}", s.isin, ex.code, x)
                     }
                 }
 

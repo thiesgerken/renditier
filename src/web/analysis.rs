@@ -20,7 +20,7 @@ pub async fn compute_historic_portfolio(
     connection
         .run(move |c| {
             let date =
-                NaiveDateTime::parse_from_str(&format!("{} 17:30:00", &date), "%Y-%m-%d %H:%M:%S")
+                NaiveDateTime::parse_from_str(&format!("{} 17:30:00", date), "%Y-%m-%d %H:%M:%S")
                     .ok()?
                     .and_utc();
 

@@ -65,7 +65,7 @@ pub async fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches, con
             .expect("error loading subscription")
             .into_iter()
             .next()
-            .unwrap_or_else(|| panic!("there is no subscription with endpoint '{}'!", &s_pid));
+            .unwrap_or_else(|| panic!("there is no subscription with endpoint '{}'!", s_pid));
 
         let mut file = File::open(config.key_file).unwrap();
         let mut private_key = Vec::new();
@@ -86,11 +86,11 @@ pub async fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches, con
             .expect("error loading subscription")
             .into_iter()
             .next()
-            .unwrap_or_else(|| panic!("there is no subscription with endpoint '{}'!", &s_pid));
+            .unwrap_or_else(|| panic!("there is no subscription with endpoint '{}'!", s_pid));
 
         diesel::delete(push_subscriptions.find(&s_pid))
             .execute(connection)
-            .unwrap_or_else(|_| panic!("unable to delete subscription {}", &s_pid));
+            .unwrap_or_else(|_| panic!("unable to delete subscription {}", s_pid));
 
         info!("deleted subscription '{}'", s_pid);
     } else if *sub_matches.get_one::<bool>("clear").unwrap() {
