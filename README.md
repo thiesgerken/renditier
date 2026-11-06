@@ -7,6 +7,9 @@ Tool to query and analyze stock and ETF investments using realtime and historica
 With Nix, the dev shell (`direnv allow` or `nix develop`) brings Rust, node, npm and the openssl
 and libpq the backend links against.
 
+The container image is built with Nix as well, for x86_64-linux only: `nix build .#image` yields a
+script that streams the image as a tarball, e.g. `./result | docker load`.
+
 ## Install
 
 - `openssl rand -base64 32` to obtain secret key

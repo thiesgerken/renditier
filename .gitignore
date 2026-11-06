@@ -8,4 +8,5 @@ zsh-completions
 bash-completions
 vapid.pem
 /.vscode
-*-export.json.direnv
+*-export.json
+result
