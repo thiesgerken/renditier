@@ -52,39 +52,6 @@ jobs:
       - name: Build image
         run: nix build .#image
 
-      - name: Smoke-test image (temporary, for PR verification)
-        shell: nix shell --inputs-from . nixpkgs#gnutar nixpkgs#jq nixpkgs#gnugrep nixpkgs#docker-client --command bash -eo pipefail {0}
-        env:
-          REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_GITEA }}
-        run: |
-          img="$RUNNER_TEMP/img"
-          rm -rf "$img" && mkdir -p "$img"
-          ./result | tar -x -C "$img"
-          config="$img/$(jq -r '.[0].Config' "$img/manifest.json")"
-          jq '.config' "$config"
-          mapfile -t envs < <(jq -r '.config.Env[]' "$config")
-          for layer in $(jq -r '.[0].Layers[]' "$img/manifest.json"); do tar -tf "$img/$layer"; done > "$img/files"
-          grep -E 'bin/(stockdb|pdftotext)$|ca-bundle.crt$' "$img/files"
-          env -i "${envs[@]}" stockdb --help
-          env -i "${envs[@]}" pdftotext -v
-          cert=$(printf '%s\n' "${envs[@]}" | sed -n 's/^SSL_CERT_FILE=//p'); grep -q "${cert#/}$" "$img/files" && test -s "$cert" && echo "cert ok: $cert"
-          if docker info >/dev/null 2>&1; then
-            ref=$(./result | docker load | sed -n 's/^Loaded image: //p')
-            docker run --rm "$ref" stockdb --help
-            docker image rm "$ref"
-          else
-            echo "no docker access for this user"
-          fi
-          # Same skopeo invocation as the push step, but into a local OCI layout instead of the registry.
-          export REGISTRY_AUTH_FILE="$RUNNER_TEMP/registry-auth.json"
-          # The runner host has no /etc/containers/policy.json, and the policy only governs which
-          # images skopeo accepts as a source, here our own fresh build.
-          skopeo() { nix run --inputs-from . nixpkgs#skopeo -- --insecure-policy "$@"; }
-          skopeo login --username thies --password-stdin gitea.gerken.haus <<< "$REGISTRY_PASSWORD"
-          ./result | skopeo copy docker-archive:/dev/stdin "oci:$img/oci:test"
-          du -sh "$img/oci"
-          rm -rf "$img"
-
       - name: Push image
         if: github.event_name == 'push'
         env:
