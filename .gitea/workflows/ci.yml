@@ -54,6 +54,8 @@ jobs:
 
       - name: Smoke-test image (temporary, for PR verification)
         shell: nix shell --inputs-from . nixpkgs#gnutar nixpkgs#jq nixpkgs#gnugrep nixpkgs#docker-client --command bash -eo pipefail {0}
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_GITEA }}
         run: |
           img="$RUNNER_TEMP/img"
           rm -rf "$img" && mkdir -p "$img"
@@ -73,6 +75,12 @@ jobs:
           else
             echo "no docker access for this user"
           fi
+          # Same skopeo invocation as the push step, but into a local OCI layout instead of the registry.
+          export REGISTRY_AUTH_FILE="$RUNNER_TEMP/registry-auth.json"
+          skopeo() { nix run --inputs-from . nixpkgs#skopeo -- "$@"; }
+          skopeo login --username thies --password-stdin gitea.gerken.haus <<< "$REGISTRY_PASSWORD"
+          ./result | skopeo copy docker-archive:/dev/stdin "oci:$img/oci:test"
+          du -sh "$img/oci"
           rm -rf "$img"
 
       - name: Push image
