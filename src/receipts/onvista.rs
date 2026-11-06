@@ -37,7 +37,7 @@ static TRADE_DATE_AND_PLACE: LazyLock<Regex> = LazyLock::new(|| {
 static EXCHANGE_WITH_CURRENCY: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(\w+)/\w{3}").unwrap());
 
-pub fn parse_onvista_dividends(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
+pub fn parse_dividends(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     let isin = ISIN.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
 
     let receipt_number = RECEIPT_NUMBER
@@ -100,7 +100,7 @@ pub fn parse_onvista_dividends(s: &str) -> Result<ParsedReceiptTransaction, Box<
     })
 }
 
-pub fn parse_onvista_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
+pub fn parse_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     let isin = ISIN.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
 
     let receipt_number = RECEIPT_NUMBER
@@ -168,7 +168,7 @@ pub fn parse_onvista_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn
     })
 }
 
-pub fn parse_onvista_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
+pub fn parse_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     let isin = ISIN.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
 
     let receipt_number = RECEIPT_NUMBER

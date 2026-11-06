@@ -230,13 +230,13 @@ fn parse_body(body: &str) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error
 
             if s.contains("Dividendengutschrift") {
                 debug!("Parsing as onvista dividends");
-                ts.push(onvista::parse_onvista_dividends(s)?);
+                ts.push(onvista::parse_dividends(s)?);
             } else if s.contains("Erträgnisgutschrift") {
                 debug!("Parsing as onvista payout");
-                ts.push(onvista::parse_onvista_payout(s)?);
+                ts.push(onvista::parse_payout(s)?);
             } else if ONVISTA_PURCHASE.is_match(s) {
                 debug!("Parsing as onvista purchase");
-                ts.push(onvista::parse_onvista_purchase(s)?);
+                ts.push(onvista::parse_purchase(s)?);
             } else if s.contains("Steuerbelastung\naus Wertpapieren") {
                 debug!("Ignoring page with tax information");
             } else if !s.contains("SEITENNUMMER=1\n") {
@@ -249,17 +249,17 @@ fn parse_body(body: &str) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error
     } else if body.contains("comdirect") {
         if body.contains("Wertpapierkauf") || body.contains("Wertpapierverkauf") {
             debug!("Parsing as comdirect purchase");
-            ts.push(comdirect::parse_comdirect_purchase(&body)?);
+            ts.push(comdirect::parse_purchase(&body)?);
         } else if body.contains("für die Verwahrung Ihres Wertpapieres") {
             debug!("Parsing as comdirect fees");
-            ts.push(comdirect::parse_comdirect_fees(&body)?);
+            ts.push(comdirect::parse_fees(&body)?);
         } else if body.contains("Ertragsgutschrift") {
             if body.contains("Verrechnung über Konto") {
                 debug!("Parsing as comdirect payout (Ertragsgutschrift layout)");
-                ts.push(comdirect::parse_comdirect_ertragsgutschrift(&body)?);
+                ts.push(comdirect::parse_ertragsgutschrift(&body)?);
             } else {
                 debug!("Parsing as comdirect payout");
-                ts.push(comdirect::parse_comdirect_payout(&body)?);
+                ts.push(comdirect::parse_payout(&body)?);
             }
         } else {
             info!("{}", body);

@@ -51,7 +51,7 @@ static ERTRAGSGUTSCHRIFT_DATE_AND_AMOUNT: LazyLock<Regex> = LazyLock::new(|| {
 static ERTRAGSGUTSCHRIFT_ACCOUNT_NUMBER: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"Depotnr\.:\s*(\d+)").unwrap());
 
-pub fn parse_comdirect_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
+pub fn parse_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     debug!("Parsing isin");
     let isin = PURCHASE_ISIN
         .captures_iter(s)
@@ -153,7 +153,7 @@ pub fn parse_comdirect_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box
     })
 }
 
-pub fn parse_comdirect_fees(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
+pub fn parse_fees(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     debug!("Parsing isin");
     let wkn = FEES_WKN.captures_iter(s).next().ok_or("no wkn match")?[1].to_owned();
     let mut isin = format!("DE000{}", &wkn); // without check digit
@@ -205,7 +205,7 @@ pub fn parse_comdirect_fees(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn
     })
 }
 
-pub fn parse_comdirect_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
+pub fn parse_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     debug!("Parsing isin");
     let isin = PAYOUT_ISIN.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();
 
@@ -251,9 +251,7 @@ pub fn parse_comdirect_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<d
     })
 }
 
-pub fn parse_comdirect_ertragsgutschrift(
-    s: &str,
-) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
+pub fn parse_ertragsgutschrift(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     debug!("Parsing isin");
     let isin = ERTRAGSGUTSCHRIFT_ISIN
         .captures_iter(s)
@@ -337,13 +335,12 @@ Verwahrungs-Art: GIROSAMMELDEPOT
 
     #[test]
     fn parses_comdirect_purchase_account_from_iban_block_for_2026_05_15_receipt() {
-        let parsed =
-            parse_comdirect_purchase(COMDIRECT_PURCHASE_2026_05_15_TEXT).unwrap_or_else(|_| {
-                panic!(
-                    "failed to parse receipt fixture {}",
-                    COMDIRECT_PURCHASE_2026_05_15_FILENAME
-                )
-            });
+        let parsed = parse_purchase(COMDIRECT_PURCHASE_2026_05_15_TEXT).unwrap_or_else(|_| {
+            panic!(
+                "failed to parse receipt fixture {}",
+                COMDIRECT_PURCHASE_2026_05_15_FILENAME
+            )
+        });
 
         assert_eq!(
             parsed.account_number, "DE00000000000000000000",
@@ -391,7 +388,7 @@ Ihre comdirect\n";
 
     #[test]
     fn parses_comdirect_ertragsgutschrift_for_2026_05_29_receipt() {
-        let parsed = parse_comdirect_ertragsgutschrift(COMDIRECT_ERTRAGSGUTSCHRIFT_2026_05_29_TEXT)
+        let parsed = parse_ertragsgutschrift(COMDIRECT_ERTRAGSGUTSCHRIFT_2026_05_29_TEXT)
             .unwrap_or_else(|_| {
                 panic!(
                     "failed to parse receipt fixture {}",
