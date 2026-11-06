@@ -77,7 +77,9 @@ jobs:
           fi
           # Same skopeo invocation as the push step, but into a local OCI layout instead of the registry.
           export REGISTRY_AUTH_FILE="$RUNNER_TEMP/registry-auth.json"
-          skopeo() { nix run --inputs-from . nixpkgs#skopeo -- "$@"; }
+          # The runner host has no /etc/containers/policy.json, and the policy only governs which
+          # images skopeo accepts as a source, here our own fresh build.
+          skopeo() { nix run --inputs-from . nixpkgs#skopeo -- --insecure-policy "$@"; }
           skopeo login --username thies --password-stdin gitea.gerken.haus <<< "$REGISTRY_PASSWORD"
           ./result | skopeo copy docker-archive:/dev/stdin "oci:$img/oci:test"
           du -sh "$img/oci"
@@ -89,7 +91,9 @@ jobs:
           REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_GITEA }}
         run: |
           export REGISTRY_AUTH_FILE="$RUNNER_TEMP/registry-auth.json"
-          skopeo() { nix run --inputs-from . nixpkgs#skopeo -- "$@"; }
+          # The runner host has no /etc/containers/policy.json, and the policy only governs which
+          # images skopeo accepts as a source, here our own fresh build.
+          skopeo() { nix run --inputs-from . nixpkgs#skopeo -- --insecure-policy "$@"; }
           skopeo login --username thies --password-stdin gitea.gerken.haus <<< "$REGISTRY_PASSWORD"
           ./result | skopeo copy docker-archive:/dev/stdin docker://gitea.gerken.haus/thies/stockdb:${{ github.ref_name }}
 
