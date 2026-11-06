@@ -3,7 +3,6 @@ pub mod cli;
 pub mod data;
 pub mod models;
 pub mod onvista;
-pub mod push;
 pub mod receipts;
 pub mod schema;
 pub mod serialization;

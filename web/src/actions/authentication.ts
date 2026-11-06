@@ -1,4 +1,3 @@
-import { subscribe } from './notifications';
 import { navigateTo } from '../navigation';
 
 import type { UserInfo } from '../types/api';
@@ -90,7 +89,6 @@ export const login =
         if (res.error) throw res.error;
 
         dispatch(loginSuccess(res));
-        dispatch(subscribe());
       })
       .catch((e: unknown) => dispatch(loginError(e as StoredError)));
   };
@@ -110,7 +108,6 @@ export const checkLogin = (): AppThunk => dispatch =>
       if (!res.id && !res.name) throw new Error(JSON.stringify(res));
 
       dispatch(loginSuccess(res));
-      dispatch(subscribe());
     })
     .catch((e: unknown) => {
       dispatch(loginError(e as StoredError, false));

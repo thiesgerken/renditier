@@ -2,7 +2,6 @@ pub mod account;
 pub mod data;
 pub mod export;
 pub mod import;
-pub mod push;
 pub mod serve;
 pub mod stock;
 pub mod transaction;
@@ -39,7 +38,6 @@ pub fn build() -> Command {
         .subcommand(user::build())
         .subcommand(account::build())
         .subcommand(transaction::build())
-        .subcommand(push::build())
         .subcommand(stock::build())
         .subcommand(data::build())
         .subcommand(import::build())
@@ -54,7 +52,6 @@ pub struct Config {
     pub verbosity: i64,
     pub database: String,
     pub web: serve::Config,
-    pub push: push::Config,
     pub receipts: crate::receipts::Config,
 }
 
@@ -64,7 +61,6 @@ impl Default for Config {
             database: "postgres://localhost/stocks".into(),
             verbosity: 0,
             web: Default::default(),
-            push: Default::default(),
             receipts: Default::default(),
         }
     }

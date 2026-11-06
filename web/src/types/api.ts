@@ -134,17 +134,6 @@ export interface User {
   hash: string;
 }
 
-// Rust: models::PushSubscription — stored server-side, never returned by any route.
-export interface PushSubscription {
-  endpoint: string;
-  userId: number;
-  auth: string;
-  p256dh: string;
-  created: IsoDateTime;
-  lastContact: IsoDateTime;
-  lastNotification: IsoDateTime | null;
-}
-
 // Rust: models::StockInfo — the raw DB row. Not returned directly by any route;
 // GET /api/stocks{,/<isin>} return the derived `Stock` type below, which drops
 // `benchmarkIndex` / `instrumentId` and adds `exchanges` / `index`.
@@ -268,8 +257,6 @@ export interface UserInfo {
   id: number | null;
   name: string | null;
   fullName: string | null;
-  // VAPID application server key for the Push API
-  applicationServerKey: string | null;
   // Only ever non-null on the 401 response of GET /api/user, when the server is
   // configured with an external authentication redirect.
   redirect: string | null;
@@ -280,26 +267,6 @@ export interface UserInfo {
 export interface LoginData {
   userName: string;
   password: string;
-}
-
-// ---------------------------------------------------------------------------
-// Push subscriptions (src/web/push.rs — types come from the `web-push` crate)
-// ---------------------------------------------------------------------------
-
-// Rust: web_push::SubscriptionKeys (no rename_all)
-export interface SubscriptionKeys {
-  // Public key, base64 URL-safe, unpadded
-  p256dh: string;
-  // Authentication secret, base64 URL-safe, unpadded
-  auth: string;
-}
-
-// Rust: web_push::SubscriptionInfo
-// Routes: POST /api/push/subscribe, POST /api/push/unsubscribe (request bodies).
-// Matches the browser's PushSubscription.toJSON() shape.
-export interface SubscriptionInfo {
-  endpoint: string;
-  keys: SubscriptionKeys;
 }
 
 // ---------------------------------------------------------------------------
