@@ -1,10 +1,10 @@
-use crate::analysis::price::EitherPrice;
+use crate::analysis::price::{market_time, to_market_time, EitherPrice, MARKET_CLOSE, MARKET_OPEN};
 use crate::data::exchange_comparison;
 use crate::models::*;
 use crate::schema::*;
 
 use chrono::offset::TimeZone;
-use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use itertools::Itertools;
 use log::{debug, info};
@@ -52,14 +52,6 @@ pub enum DataSourceSelection {
     Automatic,
 }
 
-fn option_almost_eq(a: Option<f64>, b: Option<f64>) -> bool {
-    match (a, b) {
-        (None, None) => true,
-        (Some(a), Some(b)) => (b - a).abs() < 0.01,
-        (_, _) => false,
-    }
-}
-
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
 /// Prices older than this (relative to a data point) are considered stale.
@@ -69,24 +61,11 @@ const MAX_PRICE_AGE: Duration = Duration::days(7);
 /// otherwise historical opening and closing prices.
 const INTRADAY_RANGE: Duration = Duration::weeks(3);
 
-// Historical prices are stored per day; these are the times their opening and closing
-// prices are attributed to (see `EitherPrice::date`).
-const MARKET_OPEN: NaiveTime = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
-const MARKET_CLOSE: NaiveTime = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
-
 fn is_trading_day(date: NaiveDate) -> bool {
     date.weekday().number_from_monday() <= 5
 }
 
-fn local_to_utc(time: NaiveDateTime) -> DateTime<Utc> {
-    Local
-        .from_local_datetime(&time)
-        .earliest()
-        .expect("market hours never fall into a DST gap")
-        .with_timezone(&Utc)
-}
-
-/// Local times at which a plot backed by historical prices is sampled: the close of every
+/// Exchange times at which a plot backed by historical prices is sampled: the close of every
 /// trading day, and for short ranges also the open, because then the intraday move is the
 /// only detail the plot can show. For longer ranges, opening prices would only add noise.
 fn historical_sample_times(start_date: NaiveDate, end_date: NaiveDate) -> Vec<NaiveDateTime> {
@@ -138,7 +117,7 @@ fn choose_and_query_points(
     {
         let dates = historical_sample_times(start_date, end_date)
             .into_iter()
-            .map(local_to_utc)
+            .map(market_time)
             .collect::<Vec<_>>();
 
         let mut prices = load_preceding_closes(connection, exchanges, start_date)?;
@@ -162,8 +141,8 @@ fn choose_and_query_points(
 
         Ok((dates, prices))
     } else {
-        let start_time = local_to_utc(start_date.and_time(MARKET_OPEN));
-        let end_time = min(local_to_utc(end_date.and_time(MARKET_CLOSE)), Utc::now());
+        let start_time = market_time(start_date.and_time(MARKET_OPEN));
+        let end_time = min(market_time(end_date.and_time(MARKET_CLOSE)), Utc::now());
 
         // sample many dates between start and end, but at most once every 5min
         let interval = max((end_time - start_time) / 400, Duration::minutes(5));
@@ -173,10 +152,8 @@ fn choose_and_query_points(
         let dates = successors(Some(start_time), |x| x.checked_add_signed(interval))
             .take_while(|d| d <= &end_time)
             .filter(|d| {
-                let local = d.with_timezone(&Local);
-                is_trading_day(local.date_naive())
-                    && local.time() >= MARKET_OPEN
-                    && local.time() <= MARKET_CLOSE
+                let t = to_market_time(*d);
+                is_trading_day(t.date()) && t.time() >= MARKET_OPEN && t.time() <= MARKET_CLOSE
             })
             .collect::<Vec<_>>();
 
@@ -332,12 +309,7 @@ pub fn compute_portfolio_plot(
             .filter_map(|x| x.as_ref())
             .cloned()
             .collect::<Vec<_>>(),
-        points: points
-            .into_iter()
-            .dedup_by(|x, y| {
-                option_almost_eq(x.value, y.value) && (x.invested - y.invested).abs() < 0.01
-            })
-            .collect::<Vec<_>>(),
+        points,
     })
 }
 
@@ -433,15 +405,7 @@ pub fn compute_stock_plot(
 
     Ok(StockPlot {
         exchanges: exs,
-        points: points
-            .into_iter()
-            .dedup_by(|x, y| {
-                option_almost_eq(x.value, y.value)
-                    && (x.invested - y.invested).abs() < 0.01
-                    && x.price == y.price
-                    && x.price_date == y.price_date
-            })
-            .collect::<Vec<_>>(),
+        points,
     })
 }
 
