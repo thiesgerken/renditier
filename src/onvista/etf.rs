@@ -1,11 +1,11 @@
 use super::json_utils::*;
-use super::{get_instrument_json, parse_base_info, EntityType};
+use super::{parse_base_info, EntityType};
 use crate::models::StockInfo;
 
 use serde_json::Value;
 use std::error::Error;
 
-pub async fn parse_info(snapshot: &Value) -> Result<StockInfo, Box<dyn Error>> {
+pub fn parse_info(snapshot: &Value, breakdowns: &Value) -> Result<StockInfo, Box<dyn Error>> {
     let base_data = &snapshot["fundsBaseData"];
     let details = &snapshot["fundsDetails"];
 
@@ -27,16 +27,21 @@ pub async fn parse_info(snapshot: &Value) -> Result<StockInfo, Box<dyn Error>> {
     let benchmark = get_string(&snapshot["fundsBenchmarkList"]["list"][0]["instrument"]["name"])
         .ok_or("error parsing benchmark")?;
 
-    let breakdowns = get_instrument_json(EntityType::Fund, &info.isin, "breakdowns").await?;
+    let breakdown = |name: &str| {
+        Some(&breakdowns[name]["list"])
+            .filter(|list| list.is_array())
+            .map(Value::to_string)
+            .ok_or_else(|| format!("error parsing {name}"))
+    };
 
     Ok(StockInfo {
         fonds_type: Some(fonds_type),
         focus: Some(focus),
-        holdings: Some(breakdowns["fundsHoldingList"]["list"].to_string()),
-        industry_breakdown: Some(breakdowns["branchBreakdown"]["list"].to_string()),
-        instrument_breakdown: Some(breakdowns["instrumentBreakdown"]["list"].to_string()),
-        country_breakdown: Some(breakdowns["countryBreakdown"]["list"].to_string()),
-        currency_breakdown: Some(breakdowns["currencyBreakdown"]["list"].to_string()),
+        holdings: Some(breakdown("fundsHoldingList")?),
+        industry_breakdown: Some(breakdown("branchBreakdown")?),
+        instrument_breakdown: Some(breakdown("instrumentBreakdown")?),
+        country_breakdown: Some(breakdown("countryBreakdown")?),
+        currency_breakdown: Some(breakdown("currencyBreakdown")?),
         launch_date: Some(launch_date),
         payout_type: Some(payout_type),
         ter: Some(ter / 100.),

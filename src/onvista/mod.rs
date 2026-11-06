@@ -87,8 +87,14 @@ pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), B
 
     let snapshot = get_instrument_json(entity_type, &isin, "snapshot").await?;
     let info = match entity_type {
-        EntityType::Fund => etf::parse_info(&snapshot).await?,
-        EntityType::Stock => stock::parse_info(&snapshot).await?,
+        EntityType::Fund => etf::parse_info(
+            &snapshot,
+            &get_instrument_json(entity_type, &isin, "breakdowns").await?,
+        )?,
+        EntityType::Stock => stock::parse_info(
+            &snapshot,
+            &get_instrument_json(entity_type, &isin, "company_snapshot").await?,
+        )?,
         EntityType::Derivative => etc::parse_info(&snapshot)?,
     };
     let exchanges = quotes(&snapshot)?
@@ -115,15 +121,10 @@ pub async fn get_data_historical(
     start: NaiveDate,
 ) -> Result<Vec<HistoricalPrice>, Box<dyn Error>> {
     let entity_type = EntityType::from_kind(&stock.kind)?;
-    let instrument_id = stock.instrument_id.as_ref().ok_or_else(|| {
-        format!(
-            "{} has no onvista instrument id, run `stockdb stock --update` to obtain it",
-            stock.isin
-        )
-    })?;
     let history = get_json(&format!(
-        "instruments/{}/{instrument_id}/eod_history?idNotation={onvista_record_id}&range=Y5&startDate={}",
+        "instruments/{}/ISIN:{}/eod_history?idNotation={onvista_record_id}&range=Y5&startDate={}",
         entity_type.api_name(),
+        stock.isin,
         start.format("%Y-%m-%d"),
     ))
     .await?;
