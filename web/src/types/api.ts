@@ -135,8 +135,8 @@ export interface User {
 }
 
 // Rust: models::StockInfo — the raw DB row. Not returned directly by any route;
-// GET /api/stocks{,/<isin>} return the derived `Stock` type below, which drops
-// `benchmarkIndex` / `instrumentId` and adds `exchanges` / `index`.
+// GET /api/stocks{,/<isin>} return the derived `Stock` type below, which adds
+// `exchanges` / `index`.
 export interface StockInfo {
   isin: string;
   wkn: string;
@@ -219,6 +219,8 @@ export interface Stock {
   payoutType: string | null;
   ter: number | null;
   description: string | null;
+  benchmarkIndex: string | null;
+  instrumentId: string | null;
   exchanges: Exchange[];
   // Derived server-side from `description` via a regex over index names
   // (MSCI / iSTOXX / STOXX / S&P / Dow Jones).

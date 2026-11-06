@@ -35,10 +35,7 @@ pub struct StockInfo {
     pub payout_type: Option<String>,
     pub ter: Option<f64>,
     pub description: Option<String>,
-    // kept out of the web API, whose `web::stocks::Stock` flattens this struct
-    #[serde(skip_serializing)]
     pub benchmark_index: Option<String>,
-    #[serde(skip_serializing)]
     pub instrument_id: Option<String>,
 }
 
