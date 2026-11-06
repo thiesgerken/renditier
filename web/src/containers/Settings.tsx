@@ -2,13 +2,13 @@ import { connect } from 'react-redux';
 import type { ConnectedProps } from 'react-redux';
 import React from 'react';
 import moment from 'moment';
-import 'moment/locale/de';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 
 import { subscribe, unsubscribe } from '../actions/notifications';
 import { buildCommit, buildDate } from '../git';
+import { formatDateTime } from '../format';
 import type { AppDispatch } from '../types/actions';
 import type { RootState } from '../types/store';
 
@@ -19,12 +19,10 @@ const Settings = ({
   pushUnsubscribe,
   updateAvailable,
 }: Props) => {
-  moment.locale('de');
-
   return (
     <div>
       <div>
-        Version #{buildCommit}, gebaut {moment(buildDate).format('LLL')} (
+        Version #{buildCommit}, gebaut {formatDateTime(buildDate)} (
         {moment(buildDate).fromNow()})
       </div>
       {updateAvailable && (

@@ -1,25 +1,18 @@
-import type { CSSProperties } from 'react';
-
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
-import moment from 'moment';
 import { useTheme, useMediaQuery, Button, Tooltip } from '@mui/material';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import type {
-  DataSource,
-  EitherPrice,
-  PositionPerformance,
-  Stock,
-} from '../../types/api';
+import type { PositionPerformance, Stock } from '../../types/api';
+import { getPrice } from '../../selectors/performance';
 import { abbreviateTitle } from '../../selectors/stocks';
+import { formatChange, formatPriceSource } from '../../format';
 import OnvistaButton from '../OnvistaButton';
 import Hidden from '../Hidden';
+import useTableFormat from '../useTableFormat';
 
 // PositionsTable spreads the ISIN (the key of PortfolioPerformance.positions)
 // onto each entry before handing it over.
 type PositionRowData = PositionPerformance & { isin: string };
-
-type PositionDataSource = DataSource<EitherPrice> | null;
 
 interface Props {
   data: PositionRowData;
@@ -31,108 +24,31 @@ const PositionRow = ({ data, stock = null, push }: Props) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const colorize = (v: number | null): CSSProperties =>
-    v === null || v === 0.0
-      ? {}
-      : {
-          color:
-            v < 0 ? theme.palette.secondary.dark : theme.palette.primary.dark,
-        };
+  const { money, units, irr, signColor } = useTableFormat();
 
-  const formatPercentage = (value: number | null): string =>
-    value === null
-      ? ''
-      : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(xsDown ? 1 : 2)}%`;
-
-  const formatAmount = (
-    value: number | null | undefined,
-    unit?: string
-  ): string =>
-    value === null || value === undefined
-      ? '\u2014'
-      : `${value.toFixed(xsDown ? 0 : 2)}${unit === undefined ? '€' : unit}`;
-
-  const formatUnits = (value: number | null): string => {
-    if (value === null) return '\u2014';
-
-    return value.toFixed(xsDown ? 0 : 2);
-  };
-
-  const getPrice = (dataSource: PositionDataSource): number | null => {
-    if (dataSource === null) return null;
-
-    // `price` only exists on the RealtimePrice variant of EitherPrice, so the
-    // original `price !== undefined` test is exactly this discriminant check.
-    if (dataSource.price.type === 'RealtimePrice')
-      return dataSource.price.price;
-    return dataSource.price.closing;
-  };
-
-  const formatDataSource = (dataSource: PositionDataSource): string => {
-    if (!dataSource) return '';
-
-    if (dataSource.price.type === 'RealtimePrice') {
-      return `${formatAmount(dataSource.price.price)} am ${moment(
-        dataSource.price.date
-      ).format('L LT')} (${dataSource.exchange.name})`;
-    }
-
-    return `${formatAmount(dataSource.price.closing)} am ${moment(
-      dataSource.price.date
-    ).format('L')} (${dataSource.exchange.name})`;
-  };
-
-  const getPriceTooltip = (
-    dsStart: PositionDataSource,
-    dsEnd: PositionDataSource
-  ) => (
+  const priceTooltip = (
     <>
-      {formatDataSource(dsStart)}
-      {dsStart !== null && dsEnd !== null && <br />}
-      {formatDataSource(dsEnd)}
+      {formatPriceSource(data.start.dataSource)}
+      {data.start.dataSource !== null && data.end.dataSource !== null && <br />}
+      {formatPriceSource(data.end.dataSource)}
     </>
   );
-
-  const chooseIrr = (x: PositionRowData): string => {
-    if (moment(x.end.date).diff(moment(x.start.date), 'days') < 32) {
-      return x.irrPeriod === null ? '' : formatPercentage(x.irrPeriod);
-    }
-
-    return x.irrAnnual === null ? '' : `${formatPercentage(x.irrAnnual)} p.a.`;
-  };
-
-  const fromTo = (
-    v1: number | null,
-    v2: number | null,
-    showDifference?: boolean,
-    unit?: string,
-    fmt?: (value: number | null, unit?: string) => string
-  ): string => {
-    const formatter = fmt === undefined ? formatAmount : fmt;
-
-    if (v1 === 0.0) return formatter(v2, unit);
-
-    let arr = '→';
-    if (v1 !== null && v2 !== null && v2 !== v1) arr = v2 > v1 ? '↗' : '↘';
-
-    let s = `${formatter(v1)} ${arr} ${formatter(v2, unit)}`;
-
-    if (showDifference && v1 !== null && v2 !== null && v2 !== v1 && v1 !== 0)
-      s += ` (${v2 >= v1 ? '+' : ''}${formatter(v2 - v1, unit)})`;
-
-    return s;
-  };
 
   const feesInfo = (
     <>
       <span>
-        {`davon Gebühren: ${fromTo(-1 * data.start.fees, -1 * data.end.fees)}`}
+        {`davon Gebühren: ${formatChange(
+          -1 * data.start.fees,
+          -1 * data.end.fees,
+          money
+        )}`}
       </span>
       <br />
       <span>
-        {`ohne Gebühren: ${fromTo(
+        {`ohne Gebühren: ${formatChange(
           -1 * data.start.invested + data.start.fees,
-          -1 * data.end.invested + data.end.fees
+          -1 * data.end.invested + data.end.fees,
+          money
         )}`}
       </span>
     </>
@@ -177,19 +93,17 @@ const PositionRow = ({ data, stock = null, push }: Props) => {
       </TableCell>
       <Hidden xsDown>
         <TableCell align="right">
-          {fromTo(data.start.units, data.end.units, true, '', formatUnits)}
+          {formatChange(data.start.units, data.end.units, units, 'absolute')}
         </TableCell>
       </Hidden>
       <Hidden xsDown>
         <TableCell align="right">
-          <Tooltip
-            title={getPriceTooltip(data.start.dataSource, data.end.dataSource)}
-            arrow
-          >
+          <Tooltip title={priceTooltip} arrow>
             <span>
-              {fromTo(
+              {formatChange(
                 getPrice(data.start.dataSource),
-                getPrice(data.end.dataSource)
+                getPrice(data.end.dataSource),
+                money
               )}
             </span>
           </Tooltip>
@@ -197,17 +111,21 @@ const PositionRow = ({ data, stock = null, push }: Props) => {
         <TableCell align="right">
           <Tooltip title={feesInfo}>
             <span>
-              {fromTo(-1 * data.start.invested, -1 * data.end.invested)}
+              {formatChange(
+                -1 * data.start.invested,
+                -1 * data.end.invested,
+                money
+              )}
             </span>
           </Tooltip>
         </TableCell>
       </Hidden>
       <TableCell align="right">
-        {fromTo(data.start.value, data.end.value)}
+        {formatChange(data.start.value, data.end.value, money)}
       </TableCell>
       <TableCell
         align="right"
-        style={colorize(
+        style={signColor(
           // `value` is `number | null`; `?? 0` reproduces the coercion the
           // original relied on when JS added `null` into the sum.
           // FIXME(tsx-migration): the original guarded `data.start === null`,
@@ -218,14 +136,15 @@ const PositionRow = ({ data, stock = null, push }: Props) => {
             ((data.start.value ?? 0) + data.start.invested)
         )}
       >
-        {fromTo(
+        {formatChange(
           safeAdd(data.start.value, data.start.invested),
           safeAdd(data.end.value, data.end.invested),
-          true
+          money,
+          'absolute'
         )}
       </TableCell>
-      <TableCell align="right" style={colorize(data.irrAnnual)}>
-        {chooseIrr(data)}
+      <TableCell align="right" style={signColor(data.irrAnnual)}>
+        {irr(data)}
       </TableCell>
       <Hidden lgDown>
         <TableCell align="center">

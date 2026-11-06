@@ -30,6 +30,7 @@ import {
 import type { Stock } from '../../types/api';
 import type { PerformanceState, StocksState } from '../../types/store';
 import { findStock, abbreviateTitle } from '../../selectors/stocks';
+import { formatCurrency, formatPercent } from '../../format';
 
 const formControlSx = { m: 1, minWidth: 120 };
 
@@ -188,11 +189,11 @@ const PositionsPie = ({ performance, stocks }: Props) => {
                         const stock = findStock(stocks, isin);
                         const percentage =
                           valueSum !== 0.0
-                            ? ` (${((v / valueSum) * 100).toFixed(1)}%)`
+                            ? ` (${formatPercent(v / valueSum, { digits: 1 })})`
                             : '';
 
                         return [
-                          `${v.toFixed(2)}€${percentage}`,
+                          `${formatCurrency(v)}${percentage}`,
                           stock ? stock.title : isin,
                         ];
                       }}

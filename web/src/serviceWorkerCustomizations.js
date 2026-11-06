@@ -45,15 +45,24 @@ self.addEventListener('push', e => {
       data.end.invested -
       (data.start.value + data.start.invested);
 
-    body = `Gewinn ${desc}: ${diff.toFixed(2)}€`;
+    // This file is copied into the build verbatim, so it cannot import the
+    // formatting helpers in src/format.ts.
+    const currency = new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    });
+    const percent = new Intl.NumberFormat('de-DE', {
+      style: 'percent',
+      minimumFractionDigits: 2,
+      signDisplay: 'exceptZero',
+    });
+
+    body = `Gewinn ${desc}: ${currency.format(diff)}`;
     if (data.start.value !== 0.0)
-      body += ` (${diff >= 0 ? '+' : ''}${(
-        (diff / data.start.value) *
-        100
-      ).toFixed(2)}%)`;
-    body += `; Gewinn Insgesamt: ${(data.end.value + data.end.invested).toFixed(
-      2
-    )}€`;
+      body += ` (${percent.format(diff / data.start.value)})`;
+    body += `; Gewinn Insgesamt: ${currency.format(
+      data.end.value + data.end.invested
+    )}`;
   } else {
     // console.error('unknown payload format in the push message');
     // console.error(data);

@@ -8,12 +8,14 @@ import { pink, teal } from '@mui/material/colors';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import moment from 'moment';
+import 'moment/dist/locale/de';
 
 import App from './containers/App';
 import ServiceWorker from './containers/ServiceWorker';
 import { createAppStore } from './store';
 
 it('renders without crashing', () => {
+  moment.locale('de');
   const store = createAppStore();
 
   const theme = createTheme({
@@ -37,6 +39,7 @@ it('renders without crashing', () => {
           <LocalizationProvider
             dateAdapter={AdapterMoment}
             dateLibInstance={moment}
+            adapterLocale="de"
           >
             <ServiceWorker />
             <App />

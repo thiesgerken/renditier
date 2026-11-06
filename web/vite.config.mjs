@@ -200,6 +200,14 @@ function manualChunks(id) {
 
 export default defineConfig({
   plugins: [patchMissingEmotionInit(), react()],
+  resolve: {
+    alias: [
+      // The dev dependency optimizer bundles moment's CommonJS build once for
+      // the app and once more into its locale, so a loaded locale never reached
+      // the app's instance. The ESM build and its ESM locales share one module.
+      { find: /^moment$/, replacement: 'moment/dist/moment.js' },
+    ],
+  },
   build: {
     outDir: 'build',
     rolldownOptions: {

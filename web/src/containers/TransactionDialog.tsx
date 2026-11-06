@@ -31,6 +31,7 @@ import {
 import NumberInput from '../components/NumberInput';
 import { findAccount, findAccountByName } from '../selectors/accounts';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
+import { formatCurrency } from '../format';
 import type { AppDispatch } from '../types/actions';
 import type { Exchange, Transaction } from '../types/api';
 import type { RootState } from '../types/store';
@@ -218,10 +219,11 @@ const TransactionDialog = ({
     isValidFloat(transaction.amount) &&
     parseFloat(String(transaction.units)) !== 0.0
   )
-    price = `${(
+    price = formatCurrency(
       parseFloat(String(transaction.amount)) /
-      parseFloat(String(transaction.units))
-    ).toFixed(4)}€`;
+        parseFloat(String(transaction.units)),
+      { digits: 4 }
+    );
 
   // console.log(initialTransaction);
   // console.log(transaction);

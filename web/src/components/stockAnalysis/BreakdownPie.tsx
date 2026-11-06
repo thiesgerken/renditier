@@ -15,6 +15,7 @@ import {
 import { useTheme, useMediaQuery } from '@mui/material';
 
 import type { StockBreakdownEntry } from '../../types/api';
+import { formatPercent } from '../../format';
 
 interface Props {
   breakdown: StockBreakdownEntry[];
@@ -96,7 +97,7 @@ const BreakdownPie = ({ breakdown }: Props) => {
         </Pie>
         {/* `percentage` is this chart's only dataKey, so the value is a number. */}
         <Tooltip
-          formatter={(v, name) => [`${(v as number).toFixed(2)}%`, name]}
+          formatter={(v, name) => [formatPercent((v as number) / 100), name]}
         />
       </PieChart>
     </ResponsiveContainer>
