@@ -24,13 +24,7 @@ pub async fn fetch_realtime(
         .load::<StockExchange>(&mut connection)?;
 
     for s in stocks {
-        let s_exs = exs
-            .iter()
-            .filter(|e| e.isin == s.isin)
-            .cloned()
-            .collect::<Vec<_>>();
-
-        match onvista::get_data_realtime(s, &s_exs).await {
+        match onvista::get_data_realtime(s).await {
             Ok(data) => {
                 let original_len = data.len();
                 let data = data
