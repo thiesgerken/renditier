@@ -96,8 +96,8 @@ pub async fn get_data_historical_new(
         .iter()
         .map(|s| get_f64(s).ok_or_else(|| format!("error parsing {}", s)))
         .collect::<Result<Vec<_>, String>>()?;
-    let closings = get_array(&json["first"])
-        .ok_or("error obtaining first prices")?
+    let closings = get_array(&json["last"])
+        .ok_or("error obtaining last prices")?
         .iter()
         .map(|s| get_f64(s).ok_or_else(|| format!("error parsing {}", s)))
         .collect::<Result<Vec<_>, String>>()?;
@@ -352,6 +352,7 @@ mod tests {
 
         // (this might actually fail, the exchange could be inactive for the stock)
         assert_ne!(data.len(), 0);
+        assert!(data.iter().any(|p| p.closing != p.opening));
     }
 
     #[test(tokio::test)]
@@ -391,6 +392,7 @@ mod tests {
 
         // (this might actually fail, the exchange could be inactive for the stock)
         assert_ne!(data.len(), 0);
+        assert!(data.iter().any(|p| p.closing != p.opening));
     }
 
     #[test(tokio::test)]
@@ -430,5 +432,6 @@ mod tests {
 
         // (this might actually fail, the exchange could be inactive for the stock)
         assert_ne!(data.len(), 0);
+        assert!(data.iter().any(|p| p.closing != p.opening));
     }
 }

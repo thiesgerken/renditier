@@ -8,6 +8,7 @@ use chrono::{Duration, TimeZone, Utc};
 use diesel::{
     prelude::*,
     r2d2::{ConnectionManager, Pool},
+    upsert::excluded,
 };
 use log::{error, info, warn};
 use std::error::Error;
@@ -115,14 +116,26 @@ pub async fn fetch_historical(
                 .await
                 {
                     Ok(batch) => {
-                        let row_count =
-                            diesel::insert_into(crate::schema::historical_prices::table)
-                                .values(&batch)
-                                .on_conflict_do_nothing()
-                                .execute(&mut connection)?;
+                        // a re-fetch must overwrite already stored days, so that corrected
+                        // prices actually reach the database
+                        let row_count = diesel::insert_into(historical_prices::table)
+                            .values(&batch)
+                            .on_conflict((
+                                historical_prices::date,
+                                historical_prices::onvista_record_id,
+                            ))
+                            .do_update()
+                            .set((
+                                historical_prices::opening.eq(excluded(historical_prices::opening)),
+                                historical_prices::closing.eq(excluded(historical_prices::closing)),
+                                historical_prices::high.eq(excluded(historical_prices::high)),
+                                historical_prices::low.eq(excluded(historical_prices::low)),
+                                historical_prices::volume.eq(excluded(historical_prices::volume)),
+                            ))
+                            .execute(&mut connection)?;
 
                         info!(
-                            "Inserted {} row(s) of historical data (of {}) for {} @ {}",
+                            "Upserted {} row(s) of historical data (of {}) for {} @ {}",
                             row_count,
                             batch.len(),
                             &s.isin,
