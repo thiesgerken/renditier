@@ -1,139 +1,118 @@
-pub mod etc;
-pub mod etf;
+mod etc;
+mod etf;
 mod json_utils;
-pub mod stock;
+mod stock;
 
 use crate::models::*;
 use crate::onvista::json_utils::*;
 
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, NaiveDate};
 use itertools::izip;
 use log::debug;
 use serde_json::Value;
 use std::error::Error;
 
-pub const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64; rv:97.0) Gecko/20100101 Firefox/97.0";
+const API_URL: &str = "https://api.onvista.de/api/v1";
+const WEBSITE_URL: &str = "https://www.onvista.de";
+const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64; rv:97.0) Gecko/20100101 Firefox/97.0";
+
+/// onvista's classification of instruments, which decides the API endpoints to use.
+#[derive(Debug, Clone, Copy)]
+enum EntityType {
+    Fund,
+    Stock,
+    Derivative,
+}
+
+impl EntityType {
+    const ALL: [EntityType; 3] = [Self::Fund, Self::Stock, Self::Derivative];
+
+    fn from_api_name(name: &str) -> Result<Self, String> {
+        Self::ALL
+            .iter()
+            .copied()
+            .find(|t| t.api_name() == name)
+            .ok_or_else(|| format!("unsupported onvista entity type {name}"))
+    }
+
+    fn from_kind(kind: &str) -> Result<Self, String> {
+        match kind {
+            // stocks of an older stockdb version still carry this kind
+            "ETN" => Ok(Self::Derivative),
+            _ => Self::ALL
+                .iter()
+                .copied()
+                .find(|t| t.kind() == kind)
+                .ok_or_else(|| format!("unsupported stock kind {kind}")),
+        }
+    }
+
+    fn api_name(self) -> &'static str {
+        match self {
+            Self::Fund => "FUND",
+            Self::Stock => "STOCK",
+            Self::Derivative => "DERIVATIVE",
+        }
+    }
+
+    fn api_path(self) -> &'static str {
+        match self {
+            Self::Fund => "funds",
+            Self::Stock => "stocks",
+            Self::Derivative => "derivatives",
+        }
+    }
+
+    /// value of `StockInfo::kind`
+    fn kind(self) -> &'static str {
+        match self {
+            Self::Fund => "ETF",
+            Self::Stock => "Aktie",
+            Self::Derivative => "ETC",
+        }
+    }
+}
 
 pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), Box<dyn Error>> {
     let params = qstring::QString::new(vec![("searchValue", needle)]);
-    let client = reqwest::Client::new();
-    let resp = client
-        .get(format!("https://www.onvista.de/suche/?{}", params))
-        .header("User-Agent", USER_AGENT)
-        .send()
-        .await?;
+    let results = get_json(&format!("instruments/query?{params}")).await?;
+    let hit = get_array(&results["list"])
+        .and_then(|list| list.first())
+        .ok_or_else(|| format!("onvista search for {needle} returned nothing"))?;
+    let entity_type = EntityType::from_api_name(
+        &get_string(&hit["entityType"]).ok_or("error parsing entity type")?,
+    )?;
+    let isin = get_string(&hit["isin"]).ok_or("error parsing isin")?;
+    debug!("recognized {needle} as {entity_type:?} {isin}");
 
-    if !resp.status().is_success() {
-        return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
-    }
+    let snapshot = get_instrument_json(entity_type, &isin, "snapshot").await?;
+    let info = match entity_type {
+        EntityType::Fund => etf::parse_info(
+            &snapshot,
+            &get_instrument_json(entity_type, &isin, "breakdowns").await?,
+        )?,
+        EntityType::Stock => stock::parse_info(
+            &snapshot,
+            &get_instrument_json(entity_type, &isin, "company_snapshot").await?,
+        )?,
+        EntityType::Derivative => etc::parse_info(&snapshot)?,
+    };
+    let exchanges = quotes(&snapshot)?
+        .iter()
+        .map(|q| parse_exchange(&info.isin, q).ok_or_else(|| format!("error parsing quote {q}")))
+        .collect::<Result<Vec<_>, _>>()?;
 
-    let url = resp.url().as_str().to_owned();
-    debug!("Search was redirected to {}", &url);
-    if url.starts_with("https://www.onvista.de/etf/") {
-        debug!("recognized {} as an ETF", needle);
-        etf::parse_info(url, resp).await
-    } else if url.starts_with("https://www.onvista.de/aktien/") {
-        debug!("recognized {} as a stock", needle);
-        stock::parse_info(url, resp).await
-    } else if url.starts_with("https://www.onvista.de/derivate/ETCs/") {
-        debug!("recognized {} as an ETC or ETN", needle);
-        etc::parse_info(url, resp).await
-    } else {
-        Err(format!("unrecognized url type: {}", url).into())
-    }
+    Ok((info, exchanges))
 }
 
-pub async fn get_data_realtime(
-    stock: &StockInfo,
-    exchanges: &[StockExchange],
-) -> Result<Vec<RealtimePrice>, Box<dyn Error>> {
-    match stock.kind.as_str() {
-        "ETF" => etf::get_data_realtime(stock).await,
-        "ETC" | "ETN" => etc::get_data_realtime(exchanges).await,
-        "Aktie" => stock::get_data_realtime(stock).await,
-        s => Err(format!("unrecognized stock type: {}", s).into()),
-    }
-}
+pub async fn get_data_realtime(stock: &StockInfo) -> Result<Vec<RealtimePrice>, Box<dyn Error>> {
+    let entity_type = EntityType::from_kind(&stock.kind)?;
+    let snapshot = get_instrument_json(entity_type, &stock.isin, "snapshot").await?;
 
-pub async fn get_data_historical_new(
-    stock: &StockInfo,
-    onvista_record_id: i32,
-    start: NaiveDate,
-) -> Result<Vec<HistoricalPrice>, Box<dyn Error>> {
-    let url = format!("https://api.onvista.de/api/v1/instruments/FUND/{}/eod_history?idNotation={}&range=Y5&startDate={}",
-  stock.instrument_id.clone().ok_or("ETF without instrument id")?,   onvista_record_id, start.format("%Y-%m-%d"),
-       );
-    debug!("Making request to {url:?}");
-    let client = reqwest::Client::new();
-    let resp = client
-        .get(&url)
-        .header("User-Agent", USER_AGENT)
-        .send()
-        .await?;
-
-    if !resp.status().is_success() {
-        return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
-    }
-
-    let body = resp.text().await?;
-    let json: Value = serde_json::from_str(&body).map_err(|e| e.to_string())?;
-
-    let dates = get_array(&json["datetimeLast"])
-        .ok_or("error obtaining datetimes")?
+    Ok(quotes(&snapshot)?
         .iter()
-        .map(|s| {
-            Ok(DateTime::<Utc>::from_timestamp(
-                get_i64(s).ok_or_else(|| format!("error parsing {}", s))?,
-                0,
-            )
-            .unwrap()
-            .naive_local()
-            .date())
-        })
-        .collect::<Result<Vec<_>, String>>()?;
-    let openings = get_array(&json["first"])
-        .ok_or("error obtaining first prices")?
-        .iter()
-        .map(|s| get_f64(s).ok_or_else(|| format!("error parsing {}", s)))
-        .collect::<Result<Vec<_>, String>>()?;
-    let closings = get_array(&json["first"])
-        .ok_or("error obtaining first prices")?
-        .iter()
-        .map(|s| get_f64(s).ok_or_else(|| format!("error parsing {}", s)))
-        .collect::<Result<Vec<_>, String>>()?;
-    let lows = get_array(&json["low"])
-        .ok_or("error obtaining low prices")?
-        .iter()
-        .map(|s| get_f64(s).ok_or_else(|| format!("error parsing {}", s)))
-        .collect::<Result<Vec<_>, String>>()?;
-    let highs = get_array(&json["high"])
-        .ok_or("error obtaining high prices")?
-        .iter()
-        .map(|s| get_f64(s).ok_or_else(|| format!("error parsing {}", s)))
-        .collect::<Result<Vec<_>, String>>()?;
-    let volumes = get_array(&json["volume"])
-        .ok_or("error obtaining volumes")?
-        .iter()
-        .map(|s| {
-            get_f64(s)
-                .ok_or_else(|| format!("error parsing {}", s))
-                .map(|x| x as i32)
-        })
-        .collect::<Result<Vec<_>, String>>()?;
-
-    Ok(izip!(dates, openings, closings, lows, highs, volumes)
-        .map(
-            |(date, opening, closing, low, high, volume)| HistoricalPrice {
-                date,
-                opening,
-                closing,
-                low,
-                high,
-                volume,
-                onvista_record_id,
-            },
-        )
-        .collect::<Vec<_>>())
+        .map(|q| parse_price(q).ok_or_else(|| format!("error parsing quote {q}")))
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 pub async fn get_data_historical(
@@ -141,170 +120,155 @@ pub async fn get_data_historical(
     onvista_record_id: i32,
     start: NaiveDate,
 ) -> Result<Vec<HistoricalPrice>, Box<dyn Error>> {
-    if stock.kind == "ETF" || stock.kind == "Aktie" {
-        return get_data_historical_new(stock, onvista_record_id, start).await;
-    }
+    let entity_type = EntityType::from_kind(&stock.kind)?;
+    let history = get_json(&format!(
+        "instruments/{}/ISIN:{}/eod_history?idNotation={onvista_record_id}&range=Y5&startDate={}",
+        entity_type.api_name(),
+        stock.isin,
+        start.format("%Y-%m-%d"),
+    ))
+    .await?;
 
-    let url =        format!("https://www.onvista.de/derivative/snapshotHistoryCSV?kag=false&timeSpan=5Y&datetimeTzStartRange={}&idNotation={}&codeResolution=1D",
-        start.format("%d.%m.%Y"),
-        onvista_record_id);
+    let dates = get_array(&history["datetimeLast"])
+        .ok_or("error obtaining dates")?
+        .iter()
+        .map(|t| {
+            get_i64(t)
+                .and_then(|secs| DateTime::from_timestamp(secs, 0))
+                .map(|datetime| datetime.date_naive())
+                .ok_or_else(|| format!("error parsing date {t}"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let column = |name: &str| {
+        get_array(&history[name])
+            .ok_or_else(|| format!("error obtaining {name} values"))?
+            .iter()
+            .map(|x| get_f64(x).ok_or_else(|| format!("error parsing {name} value {x}")))
+            .collect::<Result<Vec<_>, _>>()
+    };
 
-    debug!("{}", url);
-    let client = reqwest::Client::new();
-    let resp = client
+    Ok(izip!(
+        dates,
+        column("first")?,
+        column("last")?,
+        column("low")?,
+        column("high")?,
+        column("volume")?
+    )
+    .map(
+        |(date, opening, closing, low, high, volume)| HistoricalPrice {
+            date,
+            opening,
+            closing,
+            low,
+            high,
+            volume: volume as i32,
+            onvista_record_id,
+        },
+    )
+    .collect())
+}
+
+/// Fills the fields that all kinds of instruments share and leaves the kind-specific ones empty.
+fn parse_base_info(
+    snapshot: &Value,
+    entity_type: EntityType,
+    title: String,
+    company: String,
+    currency: String,
+) -> Result<StockInfo, Box<dyn Error>> {
+    let instrument = &snapshot["instrument"];
+    let website = get_string(&instrument["urls"]["WEBSITE"]).ok_or("error parsing website url")?;
+    let onvista_url = website
+        .strip_prefix(WEBSITE_URL)
+        .ok_or_else(|| format!("website url {website} does not begin with {WEBSITE_URL}"))?
+        .to_string();
+
+    Ok(StockInfo {
+        isin: get_string(&instrument["isin"]).ok_or("error parsing isin")?,
+        wkn: get_string(&instrument["wkn"]).ok_or("error parsing wkn")?,
+        title,
+        kind: entity_type.kind().to_string(),
+        company,
+        fonds_type: None,
+        focus: None,
+        persistent: false,
+        onvista_url,
+        last_historical_update: None,
+        last_realtime_update: None,
+        industry_breakdown: None,
+        instrument_breakdown: None,
+        country_breakdown: None,
+        currency_breakdown: None,
+        holdings: None,
+        launch_date: None,
+        currency: Some(currency),
+        management_type: None,
+        payout_type: None,
+        ter: None,
+        description: None,
+        benchmark_index: None,
+        instrument_id: Some(
+            get_string(&instrument["entityValue"]).ok_or("error parsing instrument id")?,
+        ),
+    })
+}
+
+/// Fetches one of the per-instrument endpoints, e.g. `snapshot`.
+async fn get_instrument_json(
+    entity_type: EntityType,
+    isin: &str,
+    endpoint: &str,
+) -> Result<Value, Box<dyn Error>> {
+    get_json(&format!(
+        "{}/ISIN:{isin}/{endpoint}",
+        entity_type.api_path()
+    ))
+    .await
+}
+
+async fn get_json(path: &str) -> Result<Value, Box<dyn Error>> {
+    let url = format!("{API_URL}/{path}");
+    debug!("Making request to {url}");
+    let resp = reqwest::Client::new()
         .get(&url)
         .header("User-Agent", USER_AGENT)
         .send()
         .await?;
+
     if !resp.status().is_success() {
-        return Err(format!("Data request unsuccessful: status {}", resp.status()).into());
+        return Err(format!("Request to {url} unsuccessful: status {}", resp.status()).into());
     }
 
-    let body = resp.text().await?;
-
-    let mut rdr = csv::ReaderBuilder::new()
-        .delimiter(b';')
-        .trim(csv::Trim::All)
-        .from_reader(body.trim().as_bytes());
-
-    let headers = rdr.headers()?;
-    if headers == vec!["Datum", "Eröffnung", "Hoch", "Tief", "Schluss", "Volumen"]
-        || headers == vec!["Datum", "Eroeffnung", "Hoch", "Tief", "Schluss", "Volumen"]
-    // cSpell: disable-line
-    {
-        let mut res = Vec::new();
-        for s in rdr.records() {
-            let r = s?;
-
-            if let Some(x) = parse_historical_row(onvista_record_id, &r) {
-                res.push(x);
-            } else {
-                return Err(format!("Could not parse csv row '{:?}'", r).into());
-            }
-        }
-
-        Ok(res)
-    } else if headers == vec!["Datum", "Eröffnung", "Schluss", "Hoch", "Tief"] {
-        let mut res = Vec::new();
-        for s in rdr.records() {
-            let r = s?;
-
-            if let Some(x) = parse_historical_row_novol(onvista_record_id, &r) {
-                res.push(x);
-            } else {
-                return Err(format!("Could not parse csv row '{:?}'", r).into());
-            }
-        }
-
-        Ok(res)
-    } else {
-        debug!("{:?}", headers);
-        Err("Unexpected CSV headers".into())
-    }
+    Ok(serde_json::from_str(&resp.text().await?)?)
 }
 
-fn parse_historical_row(
-    onvista_record_id: i32,
-    record: &csv::StringRecord,
-) -> Option<HistoricalPrice> {
-    if record.len() != 6 {
-        return None;
-    }
+/// One entry per exchange the instrument is traded on.
+fn quotes(snapshot: &Value) -> Result<&Vec<Value>, &'static str> {
+    get_array(&snapshot["quoteList"]["list"]).ok_or("error parsing quote list")
+}
 
-    let date_splits = record.get(0)?.trim().split('.').collect::<Vec<_>>();
-    let date = NaiveDate::from_ymd_opt(
-        date_splits[2].parse().ok()?,
-        date_splits[1].parse().ok()?,
-        date_splits[0].parse().ok()?,
-    )
-    .unwrap();
-
-    let opening = record
-        .get(1)?
-        .replace('.', "")
-        .replace(',', ".")
-        .parse()
-        .ok()?;
-    let high = record
-        .get(2)?
-        .replace('.', "")
-        .replace(',', ".")
-        .parse()
-        .ok()?;
-    let low = record
-        .get(3)?
-        .replace('.', "")
-        .replace(',', ".")
-        .parse()
-        .ok()?;
-    let closing = record
-        .get(4)?
-        .replace('.', "")
-        .replace(',', ".")
-        .parse()
-        .ok()?;
-    let volume = record.get(5)?.replace('.', "").parse().ok()?;
-
-    Some(HistoricalPrice {
-        date,
-        opening,
-        closing,
-        high,
-        low,
-        volume,
-        onvista_record_id,
+fn parse_exchange(isin: &str, quote: &Value) -> Option<StockExchange> {
+    Some(StockExchange {
+        isin: isin.to_string(),
+        onvista_exchange_id: None,
+        onvista_record_id: get_i64(&quote["market"]["idNotation"])? as i32,
+        code: get_string(&quote["market"]["codeExchange"])?,
+        quality: Some(get_string(&quote["codeQualityPrice"])?),
+        name: get_string(&quote["market"]["name"])?,
     })
 }
 
-fn parse_historical_row_novol(
-    onvista_record_id: i32,
-    record: &csv::StringRecord,
-) -> Option<HistoricalPrice> {
-    if record.len() != 5 {
-        return None;
-    }
+fn parse_price(quote: &Value) -> Option<RealtimePrice> {
+    // some exchanges (e.g. Xetra for ETCs) only publish one of the two
+    let (price, date) = get_f64(&quote["last"])
+        .zip(get_timestamp(&quote["datetimeLast"]))
+        .or_else(|| get_f64(&quote["bid"]).zip(get_timestamp(&quote["datetimeBid"])))?;
 
-    let date_splits = record.get(0)?.trim().split('.').collect::<Vec<_>>();
-    let date = NaiveDate::from_ymd_opt(
-        date_splits[2].parse().ok()?,
-        date_splits[1].parse().ok()?,
-        date_splits[0].parse().ok()?,
-    )
-    .unwrap();
-
-    let opening = record
-        .get(1)?
-        .replace('.', "")
-        .replace(',', ".")
-        .parse()
-        .ok()?;
-    let high = record
-        .get(3)?
-        .replace('.', "")
-        .replace(',', ".")
-        .parse()
-        .ok()?;
-    let low = record
-        .get(4)?
-        .replace('.', "")
-        .replace(',', ".")
-        .parse()
-        .ok()?;
-    let closing = record
-        .get(2)?
-        .replace('.', "")
-        .replace(',', ".")
-        .parse()
-        .ok()?;
-
-    Some(HistoricalPrice {
+    Some(RealtimePrice {
+        onvista_record_id: get_i64(&quote["market"]["idNotation"])? as i32,
+        price,
         date,
-        opening,
-        closing,
-        high,
-        low,
-        volume: 0,
-        onvista_record_id,
     })
 }
 
@@ -315,120 +279,86 @@ mod tests {
     use chrono::{Duration, Local};
     use test_log::test;
 
-    #[test(tokio::test)]
-    async fn test_stock_info() {
-        let (info, exs) = get_info("DE0007164600").await.unwrap();
+    async fn check_info(isin: &str, kind: &str) {
+        let (info, exs) = get_info(isin).await.unwrap();
 
         log::info!("{info:?}");
         log::info!("{exs:?}");
 
-        assert_eq!(info.isin, "DE0007164600");
+        assert_eq!(info.isin, isin);
+        assert_eq!(info.kind, kind);
         assert_ne!(exs.len(), 0);
+    }
+
+    async fn check_realtime(isin: &str) {
+        let (info, _) = get_info(isin).await.unwrap();
+
+        let data = get_data_realtime(&info).await.unwrap();
+        assert_ne!(data.len(), 0)
+    }
+
+    async fn check_historical(isin: &str) {
+        let (info, exs) = get_info(isin).await.unwrap();
+
+        let data = get_data_historical(
+            &info,
+            exs[0].onvista_record_id,
+            Local::now()
+                .naive_local()
+                .date()
+                .checked_sub_signed(Duration::weeks(2))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+        // (this might actually fail, the exchange could be inactive for the stock)
+        assert_ne!(data.len(), 0);
+        assert!(data.iter().any(|p| p.closing != p.opening));
+    }
+
+    #[test(tokio::test)]
+    async fn test_stock_info() {
+        check_info("DE0007164600", "Aktie").await
     }
 
     #[test(tokio::test)]
     async fn test_stock_realtime() {
-        let (info, exs) = get_info("DE0007164600").await.unwrap();
-
-        let data = get_data_realtime(&info, &exs).await.unwrap();
-        assert_ne!(data.len(), 0)
+        check_realtime("DE0007164600").await
     }
 
     #[test(tokio::test)]
     async fn test_stock_historical() {
-        let (info, exs) = get_info("DE0007164600").await.unwrap();
-
-        let data = get_data_historical(
-            &info,
-            exs[0].onvista_record_id,
-            Local::now()
-                .naive_local()
-                .date()
-                .checked_sub_signed(Duration::weeks(2))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-        // (this might actually fail, the exchange could be inactive for the stock)
-        assert_ne!(data.len(), 0);
+        check_historical("DE0007164600").await
     }
 
     #[test(tokio::test)]
     async fn test_etf_info() {
-        let (info, exs) = get_info("IE00BK5BQT80").await.unwrap();
-
-        log::info!("{info:?}");
-        log::info!("{exs:?}");
-
-        assert_eq!(info.isin, "IE00BK5BQT80");
-        assert_ne!(exs.len(), 0);
+        check_info("IE00BK5BQT80", "ETF").await
     }
 
     #[test(tokio::test)]
     async fn test_etf_realtime() {
-        let (info, exs) = get_info("IE00BK5BQT80").await.unwrap();
-
-        let data = get_data_realtime(&info, &exs).await.unwrap();
-        assert_ne!(data.len(), 0)
+        check_realtime("IE00BK5BQT80").await
     }
 
     #[test(tokio::test)]
     async fn test_etf_historical() {
-        let (info, exs) = get_info("IE00BK5BQT80").await.unwrap();
-
-        let data = get_data_historical(
-            &info,
-            exs[0].onvista_record_id,
-            Local::now()
-                .naive_local()
-                .date()
-                .checked_sub_signed(Duration::weeks(2))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-        // (this might actually fail, the exchange could be inactive for the stock)
-        assert_ne!(data.len(), 0);
+        check_historical("IE00BK5BQT80").await
     }
 
     #[test(tokio::test)]
     async fn test_etc_info() {
-        let (info, exs) = get_info("DE000EWG2LD7").await.unwrap();
-
-        log::info!("{info:?}");
-        log::info!("{exs:?}");
-
-        assert_eq!(info.isin, "DE000EWG2LD7");
-        assert_ne!(exs.len(), 0);
+        check_info("DE000EWG2LD7", "ETC").await
     }
 
     #[test(tokio::test)]
     async fn test_etc_realtime() {
-        let (info, exs) = get_info("DE000EWG2LD7").await.unwrap();
-
-        let data = get_data_realtime(&info, &exs).await.unwrap();
-        assert_ne!(data.len(), 0)
+        check_realtime("DE000EWG2LD7").await
     }
 
     #[test(tokio::test)]
     async fn test_etc_historical() {
-        let (info, exs) = get_info("DE000EWG2LD7").await.unwrap();
-
-        let data = get_data_historical(
-            &info,
-            exs[0].onvista_record_id,
-            Local::now()
-                .naive_local()
-                .date()
-                .checked_sub_signed(Duration::weeks(2))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-        // (this might actually fail, the exchange could be inactive for the stock)
-        assert_ne!(data.len(), 0);
+        check_historical("DE000EWG2LD7").await
     }
 }
