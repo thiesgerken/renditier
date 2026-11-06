@@ -11,22 +11,39 @@ import {
 import type { SelectChangeEvent } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import moment from 'moment';
-import { useState, Fragment, useCallback, useEffect } from 'react';
-import type { ReactNode } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Area,
   CartesianGrid,
   ComposedChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
+  Legend,
+  Line,
   YAxis,
 } from 'recharts';
 
-import { getPeriodDescription } from '../../selectors/performance';
-import StockTooltipContent from './StockTooltipContent';
+import {
+  getPeriodDescription,
+  getPeriodRange,
+} from '../../selectors/performance';
+import { formatCurrency, formatNumber, formatPercent } from '../../format';
 import ProgressPaper from '../ProgressPaper';
-import type { DataSourceSelection, IsoDate } from '../../types/api';
+import PlotArea from '../plot/PlotArea';
+import type { TooltipRow } from '../plot/PlotTooltip';
+import {
+  currencyTick,
+  formatPointDate,
+  hasIntradayPoints,
+  numberTick,
+  percentTick,
+} from '../plot/axes';
+import { assignTrades } from '../plot/trades';
+import { TRADES_AXIS, tradeMarkers, tradeRows } from '../plot/tradeMarkers';
+import { pointTooltip, signedArea, timeXAxis } from '../plot/elements';
+import type {
+  DataSourceSelection,
+  IsoDate,
+  Transaction,
+} from '../../types/api';
 import type {
   PerformanceState,
   StockPlotItem,
@@ -36,6 +53,8 @@ import type {
 interface Props {
   isin: string;
   performance: PerformanceState;
+  // all buys and sells of this stock
+  transactions: Transaction[];
   data: StockPlotItem[];
   updateData: (
     isin: string,
@@ -72,12 +91,49 @@ function getData(
 
 const formControlSx = { m: 1, minWidth: 120 };
 
-const StockPlot = ({ isin, performance, data, updateData }: Props) => {
+const UNITS_AXIS = 'units';
+
+type Mode =
+  | 'price'
+  | 'priceRelStart'
+  | 'units'
+  | 'priceAndUnits'
+  | 'investedAndValue'
+  | 'value'
+  | 'valueRelStart'
+  | 'invested'
+  | 'investedRelStart'
+  | 'earnings'
+  | 'earningsRelInvestment';
+
+// Modes that show one series, colored by its sign.
+const SIGNED_SERIES: Partial<
+  Record<Mode, { name: string; key: keyof StoredStockPlotPoint }>
+> = {
+  earnings: { name: 'Gewinn', key: 'earnings' },
+  earningsRelInvestment: {
+    name: 'Gewinn rel. zu Kaufpreis',
+    key: 'earningsRelInvestment',
+  },
+  priceRelStart: { name: 'Kursveränderung', key: 'priceRelStart' },
+  valueRelStart: { name: 'Wertveränderung', key: 'valueRelStart' },
+  investedRelStart: {
+    name: 'Kaufpreisveränderung',
+    key: 'investedRelStart',
+  },
+};
+
+const StockPlot = ({
+  isin,
+  performance,
+  transactions,
+  data,
+  updateData,
+}: Props) => {
   const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const [period, setPeriod] = useState(0);
-  const [mode, setMode] = useState('priceAndUnits');
+  const [mode, setMode] = useState<Mode>('priceAndUnits');
   const [source, setSource] = useState<DataSourceSelection>('auto');
   const [dates, setDates] = useState<moment.Moment[]>([
     moment().startOf('year'),
@@ -89,7 +145,7 @@ const StockPlot = ({ isin, performance, data, updateData }: Props) => {
     setPeriod(event.target.value);
   }, []);
 
-  const handleModeChange = useCallback((event: SelectChangeEvent<string>) => {
+  const handleModeChange = useCallback((event: SelectChangeEvent<Mode>) => {
     setMode(event.target.value);
   }, []);
 
@@ -104,22 +160,13 @@ const StockPlot = ({ isin, performance, data, updateData }: Props) => {
     setDates(v);
   }, []);
 
-  const nextWeekDay = (date: moment.MomentInput) => {
-    let d = moment(date);
-    while (d.day() === 0 || d.day() === 6) d = d.add(1, 'days');
-    return d;
-  };
-
   let plotData: StockPlotItem | null = null;
   let sd: IsoDate | null = null;
   let ed: IsoDate | null = null;
 
   if (performance.data !== null && period < performance.data.length) {
     if (period >= 0) {
-      sd = nextWeekDay(
-        moment(performance.data[period].start.date).add(1, 'days')
-      ).format('YYYY-MM-DD');
-      ed = performance.data[period].end.date;
+      [sd, ed] = getPeriodRange(performance.data[period]);
     } else {
       sd = (dates[0].isValid() ? dates[0] : moment().startOf('year')).format(
         'YYYY-MM-DD'
@@ -146,352 +193,212 @@ const StockPlot = ({ isin, performance, data, updateData }: Props) => {
     return undefined;
   }, [isin, sd, ed, source, updateData]);
 
-  const points: StoredStockPlotPoint[] =
-    plotData !== null && plotData.data !== null ? plotData.data.points : [];
+  const points = assignTrades(
+    plotData !== null && plotData.data !== null ? plotData.data.points : [],
+    transactions
+  );
+  type Point = (typeof points)[number];
 
-  let axisTimeFormat = 'L';
-  if (points.length === 1) {
-    axisTimeFormat = 'L LT';
-  } else if (points.length >= 2) {
-    const fd = moment(points[0].date);
-    const ld = moment(points[points.length - 1].date);
+  const epochs = points.map(p => p.epoch);
+  const intraday = hasIntradayPoints(epochs);
+  const signedSeries = SIGNED_SERIES[mode];
 
-    if (fd.isSame(ld, 'year')) axisTimeFormat = 'DD.MM.';
+  let valueTick = currencyTick;
+  if (mode.includes('Rel')) valueTick = percentTick;
+  else if (mode === 'units') valueTick = numberTick;
 
-    // `.valueOf()` is what the original `ld - fd` relied on implicitly.
+  const tooltipRows = (p: Point): TooltipRow[] => {
+    const rows: TooltipRow[] = [
+      { label: 'Kurs', value: formatCurrency(p.price) },
+      { label: 'Einheiten', value: formatNumber(p.units, { digits: 3 }) },
+      { label: 'Wert', value: formatCurrency(p.value) },
+      { label: 'Investiert', value: formatCurrency(p.invested) },
+      {
+        label: 'Gewinn',
+        value:
+          p.earningsRelInvestment === null
+            ? formatCurrency(p.earnings)
+            : `${formatCurrency(p.earnings)} (${formatPercent(
+                p.earningsRelInvestment / 100,
+                { signed: true }
+              )})`,
+      },
+    ];
+    if (signedSeries !== undefined && signedSeries.key.endsWith('RelStart'))
+      rows.push({
+        label: signedSeries.name,
+        value: formatPercent(
+          ((p[signedSeries.key] as number | null) ?? 0) / 100,
+          {
+            signed: true,
+          }
+        ),
+      });
+    // Prices can be older than the point, e.g. on holidays.
     if (
-      moment.duration(ld.valueOf() - fd.valueOf()) <=
-      moment.duration(10, 'days')
+      p.priceDate !== null &&
+      formatPointDate(moment(p.priceDate).valueOf(), intraday) !==
+        formatPointDate(p.epoch, intraday)
     )
-      axisTimeFormat += ' LT';
-  }
+      rows.push({
+        label: 'Kurs vom',
+        value: formatPointDate(moment(p.priceDate).valueOf(), true),
+      });
 
-  // to color the areas differently
-  const makeOffset = (f: (point: StoredStockPlotPoint) => number | null) => {
-    // `?? 0` reproduces the original coercion of null to 0 inside Math.max/min.
-    const values = points.map(p => f(p) ?? 0);
-    const dataMax = Math.max(...values);
-    const dataMin = Math.min(...values);
-
-    if (dataMax <= 0) {
-      return 0;
-    }
-    if (dataMin >= 0) {
-      return 1;
-    }
-
-    return dataMax / (dataMax - dataMin);
+    return [...rows, ...tradeRows(p.trades, true)];
   };
 
-  const earningsOffset = makeOffset(i => i.earnings);
-  const earningsRelInvestmentOffset = makeOffset(i => i.earningsRelInvestment);
-  const valueRelStartOffset = makeOffset(i => i.valueRelStart);
-  const investedRelStartOffset = makeOffset(i => i.investedRelStart);
-  const priceRelStartOffset = makeOffset(i => i.priceRelStart);
-
-  const interpolation = 'monotone';
-  const showDots = points.length < 100;
-  const dot = showDots
-    ? {
-        stroke: '#00000033',
-        strokeWidth: 1,
-        fill: '#00000033',
-      }
-    : false;
-
-  const activeDot = {
-    stroke: '#00000033',
-    strokeWidth: 1,
-    fill: '#eeeeee',
-  };
-
-  let unit = '';
-  if (mode.indexOf('Rel') >= 0) unit = '%';
-  else if (mode !== 'units') unit = '€';
+  const loading =
+    plotData === null || plotData.isFetching || performance.isFetching;
 
   return (
     <Container maxWidth="xl" style={{ padding: '0px' }}>
       <ProgressPaper
-        loading={
-          plotData === null || plotData.isFetching || performance.isFetching
-        }
+        loading={loading}
         style={{ width: '100%', padding: theme.spacing(1) }}
       >
         <Grid container style={{ width: '100%' }}>
           <Grid size={12}>
-            <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
+            <PlotArea isEmpty={points.length === 0} isLoading={loading}>
               <ComposedChart data={points}>
-                <XAxis
-                  dataKey="epoch"
-                  type="number"
-                  scale="utc"
-                  domain={['dataMin', 'dataMax']}
-                  tickFormatter={(d: number) =>
-                    moment(d).format(axisTimeFormat)
-                  }
+                {timeXAxis(epochs)}
+                <YAxis
+                  tickFormatter={valueTick}
+                  domain={['auto', 'auto']}
+                  width={90}
+                  hide={xsDown}
                 />
-                <YAxis unit={unit} hide={xsDown} domain={['auto', 'auto']} />
-                <CartesianGrid strokeDasharray="5 5" />
-                <defs>
-                  {[
-                    {
-                      offset: earningsOffset,
-                      name: 'earnings',
-                    },
-                    {
-                      offset: earningsRelInvestmentOffset,
-                      name: 'earningsRelInvestment',
-                    },
-                    {
-                      offset: valueRelStartOffset,
-                      name: 'valueRelStart',
-                    },
-                    {
-                      offset: investedRelStartOffset,
-                      name: 'investedRelStart',
-                    },
-                    {
-                      offset: priceRelStartOffset,
-                      name: 'priceRelStart',
-                    },
-                  ].map(({ offset, name }) => (
-                    <Fragment key={name}>
-                      <linearGradient
-                        id={`${name}Color`}
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset={offset}
-                          stopColor={theme.palette.primary.dark}
-                          stopOpacity={1}
-                        />
-                        <stop
-                          offset={offset}
-                          stopColor={theme.palette.secondary.dark}
-                          stopOpacity={1}
-                        />
-                      </linearGradient>
-                      <linearGradient
-                        id={`${name}Fill`}
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset={offset}
-                          stopColor={theme.palette.primary.main}
-                          stopOpacity={0.8}
-                        />
-                        <stop
-                          offset={offset}
-                          stopColor={theme.palette.secondary.main}
-                          stopOpacity={0.8}
-                        />
-                      </linearGradient>
-                    </Fragment>
-                  ))}
-                </defs>
+                <YAxis yAxisId={TRADES_AXIS} domain={[0, 1]} hide />
+                {mode === 'priceAndUnits' && (
+                  <YAxis
+                    yAxisId={UNITS_AXIS}
+                    orientation="right"
+                    tickFormatter={numberTick}
+                    domain={[0, 'auto']}
+                    hide={xsDown}
+                    label={{
+                      value: 'Einheiten',
+                      angle: 90,
+                      position: 'insideRight',
+                      fill: theme.palette.text.secondary,
+                    }}
+                  />
+                )}
+                <CartesianGrid
+                  vertical={false}
+                  stroke={theme.palette.divider}
+                />
 
-                {(mode === 'investedAndValue' || mode === 'invested') && (
+                {signedSeries !== undefined &&
+                  signedArea(
+                    signedSeries.key,
+                    signedSeries.name,
+                    points.map(p => p[signedSeries.key] as number | null),
+                    mode === 'investedRelStart' ? 'stepAfter' : 'linear',
+                    theme
+                  )}
+
+                {mode === 'price' && (
                   <Area
-                    type={interpolation}
-                    dataKey="invested"
-                    stroke={
-                      mode === 'investedAndValue'
-                        ? theme.palette.secondary.dark
-                        : theme.palette.info.dark
-                    }
-                    fill={
-                      mode === 'investedAndValue'
-                        ? theme.palette.secondary.main
-                        : theme.palette.info.main
-                    }
+                    type="linear"
+                    dataKey="price"
+                    name="Kurs"
+                    stroke={theme.palette.info.dark}
+                    fill={theme.palette.info.main}
+                    fillOpacity={0.15}
                     strokeWidth={1.4}
-                    unit="€"
-                    dot={dot}
-                    activeDot={activeDot}
-                    name="Investiert"
-                    fillOpacity={0.2}
+                    dot={false}
+                    isAnimationActive={false}
+                  />
+                )}
+
+                {mode === 'priceAndUnits' && [
+                  <Line
+                    key="price"
+                    type="linear"
+                    dataKey="price"
+                    name="Kurs"
+                    stroke={theme.palette.info.dark}
+                    strokeWidth={1.4}
+                    dot={false}
+                    isAnimationActive={false}
+                  />,
+                  <Line
+                    key="units"
+                    yAxisId={UNITS_AXIS}
+                    type="stepAfter"
+                    dataKey="units"
+                    name="Einheiten"
+                    stroke={theme.palette.warning.dark}
+                    strokeWidth={1.4}
+                    dot={false}
+                    isAnimationActive={false}
+                  />,
+                ]}
+
+                {mode === 'units' && (
+                  <Area
+                    type="stepAfter"
+                    dataKey="units"
+                    name="Einheiten"
+                    stroke={theme.palette.warning.dark}
+                    fill={theme.palette.warning.main}
+                    fillOpacity={0.15}
+                    strokeWidth={1.4}
+                    dot={false}
+                    isAnimationActive={false}
                   />
                 )}
 
                 {(mode === 'investedAndValue' || mode === 'value') && (
                   <Area
-                    type={interpolation}
+                    type="linear"
                     dataKey="value"
-                    unit="€"
-                    stroke={
-                      mode === 'investedAndValue'
-                        ? theme.palette.primary.dark
-                        : theme.palette.info.dark
-                    }
-                    fill={
-                      mode === 'investedAndValue'
-                        ? theme.palette.primary.main
-                        : theme.palette.info.main
-                    }
-                    strokeWidth={1.4}
                     name="Wert"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
-                  />
-                )}
-
-                {mode === 'earnings' && (
-                  <Area
-                    type={interpolation}
-                    dataKey="earnings"
-                    unit="€"
-                    stroke="url(#earningsColor)"
+                    stroke={theme.palette.primary.dark}
+                    fill={theme.palette.primary.main}
+                    fillOpacity={0.15}
                     strokeWidth={1.4}
-                    fill="url(#earningsFill)"
-                    name="Gewinn"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
+                    dot={false}
+                    isAnimationActive={false}
                   />
                 )}
 
-                {(mode === 'price' || mode === 'priceAndUnits') && (
+                {mode === 'invested' && (
                   <Area
-                    type={interpolation}
-                    dataKey="price"
-                    unit="€"
-                    stroke={theme.palette.info.dark}
-                    fill={theme.palette.info.main}
+                    type="stepAfter"
+                    dataKey="invested"
+                    name="Investiert"
+                    stroke={theme.palette.secondary.dark}
+                    fill={theme.palette.secondary.main}
+                    fillOpacity={0.15}
                     strokeWidth={1.4}
-                    name="Kurs"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
+                    dot={false}
+                    isAnimationActive={false}
                   />
                 )}
 
-                {mode === 'units' && (
-                  <Area
-                    type={interpolation}
-                    dataKey="units"
-                    unit=""
-                    stroke={theme.palette.info.dark}
-                    fill={theme.palette.info.main}
+                {mode === 'investedAndValue' && (
+                  <Line
+                    type="stepAfter"
+                    dataKey="invested"
+                    name="Investiert"
+                    stroke={theme.palette.secondary.dark}
                     strokeWidth={1.4}
-                    name="Einheiten"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
+                    dot={false}
+                    isAnimationActive={false}
                   />
                 )}
 
-                {mode === 'priceAndUnits' && (
-                  <Area
-                    type={interpolation}
-                    dataKey="units"
-                    unit=""
-                    stroke={theme.palette.warning.dark}
-                    fill={theme.palette.warning.main}
-                    strokeWidth={1.4}
-                    name="Einheiten"
-                    yAxisId={1}
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
-                  />
+                {tradeMarkers(theme)}
+
+                {(mode === 'priceAndUnits' || mode === 'investedAndValue') && (
+                  <Legend />
                 )}
 
-                {mode === 'priceAndUnits' && (
-                  <YAxis
-                    unit=""
-                    yAxisId={1}
-                    hide={xsDown}
-                    orientation="right"
-                    domain={['auto', 'auto']}
-                  />
-                )}
-
-                {mode === 'priceRelStart' && (
-                  <Area
-                    type={interpolation}
-                    dataKey="priceRelStart"
-                    unit="%"
-                    stroke="url(#priceRelStartColor)"
-                    fill="url(#priceRelStartFill)"
-                    strokeWidth={1.4}
-                    name="Kursveränderung"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
-                  />
-                )}
-
-                {mode === 'earningsRelInvestment' && (
-                  <Area
-                    type={interpolation}
-                    dataKey="earningsRelInvestment"
-                    unit="%"
-                    stroke="url(#earningsRelInvestmentColor)"
-                    strokeWidth={1.4}
-                    fill="url(#earningsRelInvestmentFill)"
-                    name="Gewinn rel. zu Kaufpreis"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
-                  />
-                )}
-
-                {mode === 'valueRelStart' && (
-                  <Area
-                    type={interpolation}
-                    dataKey="valueRelStart"
-                    unit="%"
-                    stroke="url(#valueRelStartColor)"
-                    strokeWidth={1.4}
-                    fill="url(#valueRelStartFill)"
-                    name="Gewinnveränderung"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
-                  />
-                )}
-
-                {mode === 'investedRelStart' && (
-                  <Area
-                    type={interpolation}
-                    dataKey="investedRelStart"
-                    unit="%"
-                    stroke="url(#investedRelStartColor)"
-                    strokeWidth={1.4}
-                    fill="url(#investedRelStartFill)"
-                    name="Kaufpreisveränderung"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
-                  />
-                )}
-
-                <Tooltip
-                  content={
-                    <StockTooltipContent
-                      showPriceDate={
-                        ['units', 'investedRelStart', 'invested'].indexOf(
-                          mode
-                        ) < 0
-                      }
-                    />
-                  }
-                  // every series plotted here is numeric
-                  formatter={v => (v as number).toFixed(2)}
-                  // the tooltip label is the `epoch` dataKey, i.e. a number
-                  labelFormatter={(d: ReactNode) =>
-                    moment(d as number).format('LLLL')
-                  }
-                />
+                {pointTooltip(intraday, tooltipRows)}
               </ComposedChart>
-            </ResponsiveContainer>
+            </PlotArea>
           </Grid>
           <Grid size={9}>
             <FormControl sx={formControlSx} variant="standard">
@@ -574,7 +481,7 @@ const StockPlot = ({ isin, performance, data, updateData }: Props) => {
                 <DatePicker
                   label="Start"
                   value={dates[0]}
-                  format="DD/MM/YYYY"
+                  format="L"
                   maxDate={dates[1]}
                   // FIXME(tsx-migration): clearing the picker used to push `null`
                   // into `dates`, which then threw in `dates[0].isValid()` above.
@@ -591,7 +498,7 @@ const StockPlot = ({ isin, performance, data, updateData }: Props) => {
                 <DatePicker
                   label="Ende"
                   value={dates[1]}
-                  format="DD/MM/YYYY"
+                  format="L"
                   minDate={dates[0]}
                   // FIXME(tsx-migration): see the "Start" picker above.
                   onChange={d => handleDateChange([dates[0], d ?? dates[1]])}

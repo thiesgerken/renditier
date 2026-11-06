@@ -22,6 +22,13 @@ import {
 } from '../actions/api';
 import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
 import { findStock, capitalizeTitle } from '../selectors/stocks';
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatPercent,
+  formatPriceSource,
+} from '../format';
 import StockPerformanceTable from '../components/stockAnalysis/StockPerformanceTable';
 import OnvistaButton from '../components/OnvistaButton';
 import Hidden from '../components/Hidden';
@@ -32,9 +39,7 @@ import BreakdownPie from '../components/stockAnalysis/BreakdownPie';
 
 import type { StockPerformancePeriod } from '../components/stockAnalysis/StockPerformanceRow';
 import type {
-  DataSource,
   DataSourceSelection,
-  EitherPrice,
   IsoDate,
   StockBreakdownEntry,
   StockHolding,
@@ -61,31 +66,6 @@ const StockAnalysis = ({
 }: Props) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const formatAmount = (
-    value: number | null,
-    precision?: number,
-    unit?: string
-  ) =>
-    value === null
-      ? '\u2014'
-      : `${value.toFixed(Number.isInteger(precision) ? precision : 2)}${
-          unit === undefined ? '€' : unit
-        }`;
-
-  const formatDataSource = (dataSource: DataSource<EitherPrice> | null) => {
-    if (!dataSource) return '';
-
-    if (dataSource.price.type === 'RealtimePrice') {
-      return `${formatAmount(dataSource.price.price)} (am ${moment(
-        dataSource.price.date
-      ).format('L [um] LT')} bei ${dataSource.exchange.name})`;
-    }
-
-    return `${formatAmount(dataSource.price.closing)} (am ${moment(
-      dataSource.price.date
-    ).format('L')} bei ${dataSource.exchange.name})`;
-  };
 
   updatePerformance();
   updateStocks();
@@ -145,7 +125,7 @@ const StockAnalysis = ({
     : null;
   let currentPriceInfo;
   if (currentPrice !== null)
-    currentPriceInfo = `Aktueller Kurs: ${formatDataSource(currentPrice)}`;
+    currentPriceInfo = `Aktueller Kurs: ${formatPriceSource(currentPrice)}`;
 
   const transactions = totalPerformance ? totalPerformance.transactions : [];
   const transactionVolume = sumBy(transactions, t => Math.abs(t.amount));
@@ -159,15 +139,15 @@ const StockAnalysis = ({
   if (firstTransaction === undefined || lastTransaction === undefined)
     transactionInfo = 'Transaktionen: bisher nicht gehandelt';
   else if (transactions.length === 1)
-    transactionInfo = `Transaktionen: eine, getätigt am ${firstTransaction.format(
-      'L [um] LT [Uhr]'
+    transactionInfo = `Transaktionen: eine, getätigt am ${formatDateTime(
+      firstTransaction
     )}`;
   else
     transactionInfo = `Transaktionen: ${
       transactions.length
-    }, getätigt im Zeitraum von ${firstTransaction.format(
-      'L'
-    )} bis ${lastTransaction.format('L')}`;
+    }, getätigt im Zeitraum von ${formatDate(
+      firstTransaction
+    )} bis ${formatDate(lastTransaction)}`;
 
   let typeInfo;
   if (stock.kind === 'ETF')
@@ -214,9 +194,9 @@ const StockAnalysis = ({
                     <ListItem>{`Herausgeber: ${stock.company}`}</ListItem>
                     <ListItem>{transactionInfo}</ListItem>
                     <ListItem>
-                      {`Transaktionsvolumen: ${formatAmount(
+                      {`Transaktionsvolumen: ${formatCurrency(
                         transactionVolume / 100
-                      )}; dazu ${formatAmount(
+                      )}; dazu ${formatCurrency(
                         transactionFees / 100
                       )} an Gebühren`}
                     </ListItem>
@@ -240,7 +220,7 @@ const StockAnalysis = ({
                       )}
                       {stock.launchDate !== null && (
                         <StyledListItem>
-                          Auflagedatum: {moment(stock.launchDate).format('L')}
+                          Auflagedatum: {formatDate(stock.launchDate)}
                         </StyledListItem>
                       )}{' '}
                       {stock.index !== null && (
@@ -252,9 +232,9 @@ const StockAnalysis = ({
                     <List>
                       <StyledListItem>{transactionInfo}</StyledListItem>
                       <StyledListItem>
-                        {`Transaktionsvolumen: ${formatAmount(
+                        {`Transaktionsvolumen: ${formatCurrency(
                           transactionVolume / 100
-                        )}; dazu ${formatAmount(
+                        )}; dazu ${formatCurrency(
                           transactionFees / 100
                         )} an Gebühren`}
                       </StyledListItem>
@@ -268,7 +248,7 @@ const StockAnalysis = ({
                       )}
                       {stock.ter !== null && (
                         <StyledListItem>
-                          {`Kosten: ${(stock.ter * 100).toFixed(2)}% p.a.`}
+                          {`Kosten: ${formatPercent(stock.ter)} p.a.`}
                         </StyledListItem>
                       )}
                     </List>
@@ -283,6 +263,7 @@ const StockAnalysis = ({
         <Grid size={12} style={{ padding: theme.spacing(1) }}>
           <StockPlot
             isin={isin}
+            transactions={transactions}
             data={stockPlotData}
             updateData={updateStockPlotData}
             performance={performance}

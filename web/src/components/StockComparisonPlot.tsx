@@ -16,19 +16,8 @@ import { DatePicker } from '@mui/x-date-pickers';
 import moment from 'moment';
 import type { Moment } from 'moment';
 import { map, every, mapValues, sortBy } from 'lodash';
-import type { ReactNode } from 'react';
 import { useState, useCallback, useEffect } from 'react';
-import {
-  Area,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  Legend,
-  AreaChart,
-} from 'recharts';
-import type { TooltipValueType } from 'recharts';
+import { CartesianGrid, ComposedChart, Legend, Line, YAxis } from 'recharts';
 import {
   red,
   blue,
@@ -48,7 +37,16 @@ import type {
   StocksState,
   StoredStockPlotPoint,
 } from '../types/store';
-import { getPeriodDescription } from '../selectors/performance';
+import { getPeriodDescription, getPeriodRange } from '../selectors/performance';
+import { formatPercent } from '../format';
+import PlotArea from './plot/PlotArea';
+import { pointTooltip, timeXAxis } from './plot/elements';
+import {
+  growthFactorAxis,
+  growthFactorTick,
+  hasIntradayPoints,
+  percentTick,
+} from './plot/axes';
 import ProgressPaper from './ProgressPaper';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
 
@@ -165,10 +163,10 @@ const StockComparisonPlot = ({
   updateData,
 }: Props) => {
   const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const [period, setPeriod] = useState(0);
   const [source, setSource] = useState<DataSourceSelection>('auto');
+  const [logScale, setLogScale] = useState(true);
   const [dates, setDates] = useState<[Moment | null, Moment | null]>([
     moment().subtract(2, 'years').startOf('year'),
     moment(),
@@ -189,6 +187,10 @@ const StockComparisonPlot = ({
     []
   );
 
+  const handleScaleChange = useCallback((event: SelectChangeEvent) => {
+    setLogScale(event.target.value === 'log');
+  }, []);
+
   const handleDateChange = useCallback((v: [Moment | null, Moment | null]) => {
     setDates(v);
   }, []);
@@ -197,12 +199,6 @@ const StockComparisonPlot = ({
     // `multiple` is set, so MUI always reports an array here; the type also
     // covers the single-select case, where the value would be a plain string.
     setIsins(event.target.value as string[]);
-  };
-
-  const nextWeekDay = (date: Moment): Moment => {
-    let d = moment(date);
-    while (d.day() === 0 || d.day() === 6) d = d.add(1, 'days');
-    return d;
   };
 
   const colorNames = [
@@ -216,7 +212,6 @@ const StockComparisonPlot = ({
     deepPurple,
     red,
   ];
-  const colors = colorNames.map(c => c[400]);
   const colorsAccent = colorNames.map(c => c['500']);
 
   const plotData: Record<string, StockPlotItem | null> = {};
@@ -256,10 +251,7 @@ const StockComparisonPlot = ({
 
   if (performance.data !== null) {
     if (period >= 0 && period < performance.data.length) {
-      sd = nextWeekDay(
-        moment(performance.data[period].start.date).add(1, 'days')
-      ).format('YYYY-MM-DD');
-      ed = performance.data[period].end.date;
+      [sd, ed] = getPeriodRange(performance.data[period]);
     } else {
       // FIXME(tsx-migration): the DatePickers below hand `null` to
       // handleDateChange when their field is cleared, so `dates[0]` / `dates[1]`
@@ -307,106 +299,106 @@ const StockComparisonPlot = ({
   );
   const unifiedPoints = unifyPoints(points, currentIsins);
 
-  let axisTimeFormat = 'L';
-  // FIXME(tsx-migration): `points` is the object returned by mapValues, so
-  // `points.length` was always undefined and neither branch ever ran; the
-  // intended subject is the unified list of plotted points.
-  if (unifiedPoints.length === 1) {
-    axisTimeFormat = 'L LT';
-  } else if (unifiedPoints.length >= 2) {
-    const fd = moment(unifiedPoints[0].date);
-    const ld = moment(unifiedPoints[unifiedPoints.length - 1].date);
-
-    if (fd.isSame(ld, 'year')) axisTimeFormat = 'DD.MM.';
-
-    if (moment.duration(ld.diff(fd)) <= moment.duration(10, 'days'))
-      axisTimeFormat += ' LT';
-  }
-
-  const interpolation = 'monotone';
-  const showDots = false;
-  const dot = showDots
-    ? {
-        stroke: '#00000033',
-        strokeWidth: 1,
-        fill: '#00000033',
-      }
-    : false;
-
-  const activeDot = {
-    stroke: '#00000033',
-    strokeWidth: 1,
-    fill: '#eeeeee',
+  // On a log axis, equal ratios get equal heights, so a stock that went up
+  // sixfold does not flatten all others. Log space needs the growth factor,
+  // which is not positive for a total loss, so such values are left out.
+  const plotted = (relative: number | null): number | null => {
+    if (relative === null || !logScale) return relative;
+    const factor = 1 + relative / 100;
+    return factor > 0 ? factor : null;
   };
+
+  // the ISIN keys of a unified point hold `priceRelStart` values
+  const relativeOf = (p: UnifiedPoint, isin: string): number | null =>
+    (p[isin] ?? null) as number | null;
+
+  const chartPoints = unifiedPoints.map(p => ({
+    epoch: p.epoch as number,
+    relative: p,
+    ...Object.fromEntries(
+      currentIsins.map(isin => [isin, plotted(relativeOf(p, isin))])
+    ),
+  }));
+  type ChartPoint = (typeof chartPoints)[number];
+
+  const epochs = unifiedPoints.map(p => p.epoch as number);
+  const intraday = hasIntradayPoints(epochs);
+
+  const plottedValues = unifiedPoints
+    .flatMap(p => currentIsins.map(isin => plotted(relativeOf(p, isin))))
+    .filter((v): v is number => v !== null);
+  const yAxis = logScale
+    ? growthFactorAxis(plottedValues)
+    : { domain: ['auto', 'auto'] as const, ticks: undefined };
+
+  const stockName = (isin: string): string => {
+    const s = findStock(stocks, isin);
+    return s === null ? isin : abbreviateTitle(s.title, true);
+  };
+
+  const colorOf = (isin: string, i: number): string => {
+    const idx =
+      stocks.data === null ? -1 : stocks.data.findIndex(s => s.isin === isin);
+    return colorsAccent[(idx >= 0 ? idx : i) % colorsAccent.length];
+  };
+
+  const percentTooltip = (relative: number | null): string =>
+    formatPercent(relative === null ? null : relative / 100, {
+      signed: true,
+    });
+
+  const loading =
+    !every(plotData, p => p !== null && !p.isFetching) ||
+    performance.isFetching;
 
   return (
     <Container maxWidth="xl" style={{ padding: '0px' }}>
       <ProgressPaper
-        loading={
-          !every(plotData, p => p !== null && !p.isFetching) ||
-          performance.isFetching
-        }
+        loading={loading}
         style={{ width: '100%', padding: theme.spacing(1) }}
       >
         <Grid container style={{ width: '100%' }}>
           <Grid size={12}>
-            <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
-              <AreaChart data={unifiedPoints}>
-                <XAxis
-                  dataKey="epoch"
-                  type="number"
-                  scale="utc"
-                  domain={['dataMin', 'dataMax']}
-                  tickFormatter={(d: number) =>
-                    moment(d).format(axisTimeFormat)
-                  }
+            <PlotArea isEmpty={chartPoints.length === 0} isLoading={loading}>
+              <ComposedChart data={chartPoints}>
+                {timeXAxis(epochs)}
+                <YAxis
+                  scale={logScale ? 'log' : 'auto'}
+                  domain={yAxis.domain}
+                  ticks={yAxis.ticks}
+                  allowDataOverflow={logScale}
+                  tickFormatter={logScale ? growthFactorTick : percentTick}
+                  width={90}
+                  hide={xsDown}
                 />
-                <YAxis unit="%" hide={xsDown} domain={['auto', 'auto']} />
+                <CartesianGrid
+                  vertical={false}
+                  stroke={theme.palette.divider}
+                />
 
-                <CartesianGrid strokeDasharray="5 5" />
-
-                {map(currentIsins, (isin, i) => {
-                  let s = null;
-                  let colorIdx = i;
-
-                  if (stocks.data !== null)
-                    for (let j = 0; j < stocks.data.length; j += 1)
-                      if (stocks.data[j].isin === isin) {
-                        s = stocks.data[j];
-                        colorIdx = j;
-                      }
-
-                  return (
-                    <Area
-                      type={interpolation}
-                      dataKey={isin}
-                      unit="%"
-                      name={s === null ? isin : abbreviateTitle(s.title, true)}
-                      dot={dot}
-                      key={isin}
-                      activeDot={activeDot}
-                      stroke={colorsAccent[colorIdx % colorsAccent.length]}
-                      strokeWidth={1.4}
-                      fill={colors[colorIdx % colors.length]}
-                      fillOpacity={0.2}
-                      connectNulls
-                    />
-                  );
-                })}
+                {currentIsins.map((isin, i) => (
+                  <Line
+                    key={isin}
+                    type="linear"
+                    dataKey={isin}
+                    name={stockName(isin)}
+                    stroke={colorOf(isin, i)}
+                    strokeWidth={1.6}
+                    dot={false}
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                ))}
                 <Legend />
-                <Tooltip
-                  // Every series value is a `priceRelStart`, i.e. a number;
-                  // recharts types the argument as the wider ValueType.
-                  formatter={(v: TooltipValueType | undefined) =>
-                    (v as number).toFixed(2)
-                  }
-                  // The label is the `epoch` value of the numeric X axis.
-                  labelFormatter={(d: ReactNode) =>
-                    moment(d as number).format('LLLL')
-                  }
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+                {pointTooltip(intraday, (point: ChartPoint) =>
+                  currentIsins.map((isin, i) => ({
+                    label: stockName(isin),
+                    value: percentTooltip(relativeOf(point.relative, isin)),
+                    color: colorOf(isin, i),
+                  }))
+                )}
+              </ComposedChart>
+            </PlotArea>
           </Grid>
           <Grid container size={9}>
             <Grid size={3}>
@@ -479,6 +471,19 @@ const StockComparisonPlot = ({
                 </Select>
               </FormControl>
               <FormControl sx={formControlSx} variant="standard">
+                <InputLabel id="scale-select-label">Skala</InputLabel>
+                <Select
+                  labelId="scale-select-label"
+                  id="scale-select"
+                  label="Skala"
+                  value={logScale ? 'log' : 'linear'}
+                  onChange={handleScaleChange}
+                >
+                  <MenuItem value="log">Logarithmisch</MenuItem>
+                  <MenuItem value="linear">Linear</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl sx={formControlSx} variant="standard">
                 <InputLabel id="period-select-label">Zeit</InputLabel>
                 <Select
                   labelId="period-select-label"
@@ -516,7 +521,7 @@ const StockComparisonPlot = ({
                   <DatePicker
                     label="Start"
                     value={dates[0]}
-                    format="DD/MM/YYYY"
+                    format="L"
                     // `undefined` rather than `null`: an empty field means "no bound".
                     maxDate={dates[1] ?? undefined}
                     onChange={d => handleDateChange([d, dates[1]])}
@@ -532,7 +537,7 @@ const StockComparisonPlot = ({
                   <DatePicker
                     label="Ende"
                     value={dates[1]}
-                    format="DD/MM/YYYY"
+                    format="L"
                     minDate={dates[0] ?? undefined}
                     onChange={d => handleDateChange([dates[0], d])}
                     disableFuture
