@@ -6,13 +6,42 @@ on:
       - main
       - devel
   pull_request:
-    branches:
-      - main
-      - devel
 
 jobs:
+  check:
+    # Runs directly on the runner host, whose Nix store is warm between runs.
+    runs-on: nix
+    defaults:
+      run:
+        shell: nix develop --command bash -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - run: cargo fmt --all -- --check
+
+      - name: Install frontend dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      # The backend embeds web/build, so the frontend is built before clippy and tests.
+      - name: Build frontend
+        working-directory: web
+        run: pnpm run build
+
+      - name: Test frontend
+        working-directory: web
+        run: |
+          pnpm test:types
+          pnpm test:lint:js
+          pnpm test
+
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
   build-docker:
-    # needs: [test-backend, test-frontend]
+    needs: check
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devel')
     steps:
@@ -43,45 +72,6 @@ jobs:
             gitea.gerken.haus/thies/stockdb:${{ github.ref_name }}
           cache-from: type=registry,ref=gitea.gerken.haus/thies/stockdb:${{ github.ref_name }}
           cache-to: type=inline
-
-  # test-backend:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-
-  #     - name: Install dependencies
-  #       run: |
-  #         apt-get update -y && apt-get install -y --no-install-recommends libssl-dev gcc clang
-  #         mkdir -p web/build
-  #         touch web/build/index.html
-
-  #     - uses: actions-rust-lang/setup-rust-toolchain@ac90e63697ac2784f4ecfe2964e1a285c304003a # v1
-  #       with:
-  #         components: rustfmt, clippy
-
-  #     - run: cargo check
-  #     # - run: cargo test
-  #     # - run: cargo fmt --all -- --check
-  #     # - run: cargo clippy -- -D warnings
-  #     # - run: cargo build
-
-  # test-frontend:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-  #     - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-  #       with:
-  #         node-version: "24"
-  #         cache: "pnpm"
-  #         cache-dependency-path: "web/pnpm-lock.yaml"
-
-  #     - name: Install dependencies and test
-  #       run: |
-  #         cd web
-  #         corepack enable
-  #         pnpm install --frozen-lockfile
-  #         pnpm run git && pnpm test --all && pnpm test:lint:js
-  #         pnpm run build && pnpm run analyze
 
   deploy:
     runs-on: ubuntu-latest
