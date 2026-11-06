@@ -39,10 +39,18 @@ import TransactionDialog from './TransactionDialog';
 import type { TransactionDraft } from './TransactionDialog';
 import ReceiptUploadDialog from './ReceiptUploadDialog';
 import useTableFormat from '../components/useTableFormat';
-import { formatCurrency, formatDate, formatDateTime } from '../format';
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatNumber,
+} from '../format';
 
 // One DataGrid row: the transaction plus the resolved exchange name.
 type TransactionRow = Transaction & { exchangeDisplay: string | null };
+
+// Savings plans buy fractional units, so units keep all their decimals.
+const UNIT_DIGITS = 6;
 
 function useQuery(
   key: string
@@ -149,7 +157,7 @@ const Transactions = ({
     transactions.isFetching || stocks.isFetching || accounts.isFetching;
 
   const formatAmount = (cents: number) => (
-    <span style={signColor(cents)}>
+    <span style={signColor(cents / 100, mdUp ? 2 : 0)}>
       {formatCurrency(cents / 100, { digits: mdUp ? 2 : 0 })}
     </span>
   );
@@ -236,7 +244,12 @@ const Transactions = ({
       field: 'units',
       headerName: 'Einheiten',
       renderCell: (params: GridRenderCellParams<TransactionRow, number>) => (
-        <span style={signColor(params.value)}>{params.value}</span>
+        <span style={signColor(params.value, UNIT_DIGITS)}>
+          {formatNumber(params.value ?? null, {
+            digits: 0,
+            maxDigits: UNIT_DIGITS,
+          })}
+        </span>
       ),
     },
     {

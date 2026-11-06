@@ -53,7 +53,7 @@ const TransactionRow = ({ transaction, currentPrice = null }: Props) => {
       </Hidden>
       <TableCell
         align="right"
-        style={signColor(transaction.amount + transaction.fees)}
+        style={signColor((transaction.amount + transaction.fees) / 100)}
       >
         <Tooltip
           title={

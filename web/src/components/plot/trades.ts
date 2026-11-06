@@ -36,9 +36,11 @@ const addTrade = (trades: Trades, t: Transaction): Trades => {
 };
 
 // Attaches every buy and sell to the first point at or after it, which is
-// where its effect on the invested amount shows up. Points are sampled at
-// most once per day, so trades on the day of the first point still belong to
-// the plotted range. Dividends (no units) are not trades.
+// where its effect on the invested amount shows up. Plotted ranges consist of
+// whole days, so a trade on the first day belongs to the range even when it
+// happened before that day's first point (its close, or its opening for
+// intraday data); it then shows up at that first point. Dividends (no units)
+// are not trades.
 export const assignTrades = <P extends { epoch: number }>(
   points: P[],
   transactions: Transaction[]

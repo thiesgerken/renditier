@@ -37,6 +37,10 @@ describe('number formatting', () => {
   it('formats plain numbers', () => {
     expect(formatNumber(1234.5)).toBe('1.234,50');
     expect(formatNumber(-2, { digits: 0, signed: true })).toBe('-2');
+    expect(formatNumber(0.123456, { digits: 0, maxDigits: 6 })).toBe(
+      '0,123456'
+    );
+    expect(formatNumber(3, { digits: 0, maxDigits: 6 })).toBe('3');
   });
 });
 

@@ -13,7 +13,7 @@ interface Props {
 }
 
 const PerformanceRow = ({ data }: Props) => {
-  const { money, irr, signColor } = useTableFormat();
+  const { money, irr, signColor, irrColor } = useTableFormat();
 
   const feesInfo = (
     <>
@@ -79,7 +79,7 @@ const PerformanceRow = ({ data }: Props) => {
           'absolute'
         )}
       </TableCell>
-      <TableCell align="right" style={signColor(data.irrAnnual)}>
+      <TableCell align="right" style={irrColor(data.irrAnnual)}>
         {irr(data)}
       </TableCell>
     </TableRow>

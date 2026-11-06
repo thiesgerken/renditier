@@ -8,8 +8,10 @@ const LOCALE = 'de-DE';
 const MISSING = '\u2014';
 
 export interface NumberOptions {
-  // fixed number of fraction digits
+  // number of fraction digits
   digits?: number;
+  // allows up to this many fraction digits instead of exactly `digits`
+  maxDigits?: number;
   // show a plus sign for positive values
   signed?: boolean;
 }
@@ -20,9 +22,9 @@ const numberFormats = new Map<string, Intl.NumberFormat>();
 
 const numberFormat = (
   style: 'decimal' | 'currency' | 'percent',
-  { digits = 2, signed = false }: NumberOptions
+  { digits = 2, maxDigits = digits, signed = false }: NumberOptions
 ): Intl.NumberFormat => {
-  const key = `${style}/${digits}/${signed}`;
+  const key = `${style}/${digits}/${maxDigits}/${signed}`;
   let format = numberFormats.get(key);
 
   if (format === undefined) {
@@ -30,7 +32,7 @@ const numberFormat = (
       style,
       currency: style === 'currency' ? 'EUR' : undefined,
       minimumFractionDigits: digits,
-      maximumFractionDigits: digits,
+      maximumFractionDigits: maxDigits,
       signDisplay: signed ? 'exceptZero' : 'auto',
     });
     numberFormats.set(key, format);

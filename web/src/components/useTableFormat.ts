@@ -5,9 +5,6 @@ import { useTheme } from '@mui/material/styles';
 import { formatCurrency, formatIrr, formatNumber } from '../format';
 import type { Formatter } from '../format';
 
-// Below this, a value is rounding noise rather than a gain or loss.
-const EPSILON = 1e-6;
-
 // Number formatting for table cells. Phones only have room for whole euros and
 // units and one decimal of percentages.
 const useTableFormat = () => {
@@ -21,12 +18,20 @@ const useTableFormat = () => {
   const units: Formatter = (value, options) =>
     formatNumber(value, { digits, ...options });
 
-  const irr = (period: Parameters<typeof formatIrr>[0]) =>
-    formatIrr(period, xsDown ? 1 : 2);
+  const percentDigits = xsDown ? 1 : 2;
 
-  // gains in the primary, losses in the secondary color
-  const signColor = (value: number | null | undefined): CSSProperties =>
-    value === null || value === undefined || Math.abs(value) < EPSILON
+  const irr = (period: Parameters<typeof formatIrr>[0]) =>
+    formatIrr(period, percentDigits);
+
+  // Gains in the primary, losses in the secondary color. Values that are
+  // displayed as zero at `shownDigits` fraction digits stay neutral.
+  const signColor = (
+    value: number | null | undefined,
+    shownDigits = digits
+  ): CSSProperties =>
+    value === null ||
+    value === undefined ||
+    Math.abs(value) < 0.5 * 10 ** -shownDigits
       ? {}
       : {
           color:
@@ -35,7 +40,11 @@ const useTableFormat = () => {
               : theme.palette.primary.dark,
         };
 
-  return { money, units, irr, signColor, percentDigits: xsDown ? 1 : 2 };
+  // IRRs are ratios, shown as percentages
+  const irrColor = (ratio: number | null) =>
+    signColor(ratio, percentDigits + 2);
+
+  return { money, units, irr, signColor, irrColor, percentDigits };
 };
 
 export default useTableFormat;

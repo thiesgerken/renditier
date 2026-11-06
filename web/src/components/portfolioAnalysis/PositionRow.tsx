@@ -24,7 +24,7 @@ const PositionRow = ({ data, stock = null, push }: Props) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const { money, units, irr, signColor } = useTableFormat();
+  const { money, units, irr, signColor, irrColor } = useTableFormat();
 
   const priceTooltip = (
     <>
@@ -143,7 +143,7 @@ const PositionRow = ({ data, stock = null, push }: Props) => {
           'absolute'
         )}
       </TableCell>
-      <TableCell align="right" style={signColor(data.irrAnnual)}>
+      <TableCell align="right" style={irrColor(data.irrAnnual)}>
         {irr(data)}
       </TableCell>
       <Hidden lgDown>

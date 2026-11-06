@@ -38,10 +38,10 @@ import type {
   StoredStockPlotPoint,
 } from '../types/store';
 import { getPeriodDescription, getPeriodRange } from '../selectors/performance';
-import { formatPercent } from '../format';
 import PlotArea from './plot/PlotArea';
 import { pointTooltip, timeXAxis } from './plot/elements';
 import {
+  formatPlotPercent,
   growthFactorAxis,
   growthFactorTick,
   hasIntradayPoints,
@@ -342,11 +342,6 @@ const StockComparisonPlot = ({
     return colorsAccent[(idx >= 0 ? idx : i) % colorsAccent.length];
   };
 
-  const percentTooltip = (relative: number | null): string =>
-    formatPercent(relative === null ? null : relative / 100, {
-      signed: true,
-    });
-
   const loading =
     !every(plotData, p => p !== null && !p.isFetching) ||
     performance.isFetching;
@@ -393,7 +388,7 @@ const StockComparisonPlot = ({
                 {pointTooltip(intraday, (point: ChartPoint) =>
                   currentIsins.map((isin, i) => ({
                     label: stockName(isin),
-                    value: percentTooltip(relativeOf(point.relative, isin)),
+                    value: formatPlotPercent(relativeOf(point.relative, isin)),
                     color: colorOf(isin, i),
                   }))
                 )}

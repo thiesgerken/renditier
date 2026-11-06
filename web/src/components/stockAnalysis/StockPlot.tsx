@@ -25,12 +25,14 @@ import {
   getPeriodDescription,
   getPeriodRange,
 } from '../../selectors/performance';
-import { formatCurrency, formatNumber, formatPercent } from '../../format';
+import { formatCurrency, formatNumber } from '../../format';
 import ProgressPaper from '../ProgressPaper';
 import PlotArea from '../plot/PlotArea';
 import type { TooltipRow } from '../plot/PlotTooltip';
 import {
   currencyTick,
+  formatAmountWithChange,
+  formatPlotPercent,
   formatPointDate,
   hasIntradayPoints,
   numberTick,
@@ -93,35 +95,51 @@ const formControlSx = { m: 1, minWidth: 120 };
 
 const UNITS_AXIS = 'units';
 
-type Mode =
-  | 'price'
-  | 'priceRelStart'
-  | 'units'
-  | 'priceAndUnits'
-  | 'investedAndValue'
-  | 'value'
-  | 'valueRelStart'
-  | 'invested'
-  | 'investedRelStart'
-  | 'earnings'
-  | 'earningsRelInvestment';
+interface ModeSpec {
+  label: string;
+  tick: (value: number) => string;
+  // a single series, colored by its sign
+  signed?: {
+    key: keyof StoredStockPlotPoint;
+    curve: 'linear' | 'stepAfter';
+  };
+}
 
-// Modes that show one series, colored by its sign.
-const SIGNED_SERIES: Partial<
-  Record<Mode, { name: string; key: keyof StoredStockPlotPoint }>
-> = {
-  earnings: { name: 'Gewinn', key: 'earnings' },
-  earningsRelInvestment: {
-    name: 'Gewinn rel. zu Kaufpreis',
-    key: 'earningsRelInvestment',
+const MODES = {
+  price: { label: 'Kurs', tick: currencyTick },
+  priceRelStart: {
+    label: 'Kursveränderung',
+    tick: percentTick,
+    signed: { key: 'priceRelStart', curve: 'linear' },
   },
-  priceRelStart: { name: 'Kursveränderung', key: 'priceRelStart' },
-  valueRelStart: { name: 'Wertveränderung', key: 'valueRelStart' },
+  units: { label: 'Einheiten', tick: numberTick },
+  priceAndUnits: { label: 'Kurs und Einheiten', tick: currencyTick },
+  investedAndValue: { label: 'Kaufpreis und Wert', tick: currencyTick },
+  value: { label: 'Wert', tick: currencyTick },
+  valueRelStart: {
+    label: 'Wertveränderung',
+    tick: percentTick,
+    signed: { key: 'valueRelStart', curve: 'linear' },
+  },
+  invested: { label: 'Kaufpreis', tick: currencyTick },
   investedRelStart: {
-    name: 'Kaufpreisveränderung',
-    key: 'investedRelStart',
+    label: 'Kaufpreisveränderung',
+    tick: percentTick,
+    signed: { key: 'investedRelStart', curve: 'stepAfter' },
   },
-};
+  earnings: {
+    label: 'Gewinn',
+    tick: currencyTick,
+    signed: { key: 'earnings', curve: 'linear' },
+  },
+  earningsRelInvestment: {
+    label: 'Gewinn rel. zu Kaufpreis',
+    tick: percentTick,
+    signed: { key: 'earningsRelInvestment', curve: 'linear' },
+  },
+} satisfies Record<string, ModeSpec>;
+
+type Mode = keyof typeof MODES;
 
 const StockPlot = ({
   isin,
@@ -201,52 +219,41 @@ const StockPlot = ({
 
   const epochs = points.map(p => p.epoch);
   const intraday = hasIntradayPoints(epochs);
-  const signedSeries = SIGNED_SERIES[mode];
+  const { tick, signed }: ModeSpec = MODES[mode];
 
-  let valueTick = currencyTick;
-  if (mode.includes('Rel')) valueTick = percentTick;
-  else if (mode === 'units') valueTick = numberTick;
+  // Prices can be older than the point, e.g. on holidays. Historical prices
+  // carry no time of day, only realtime quotes do.
+  const priceIsOlder = (p: Point): boolean =>
+    p.priceDate !== null &&
+    !moment(p.priceDate).isSame(p.epoch, intraday ? 'minute' : 'day');
 
-  const tooltipRows = (p: Point): TooltipRow[] => {
-    const rows: TooltipRow[] = [
-      { label: 'Kurs', value: formatCurrency(p.price) },
-      { label: 'Einheiten', value: formatNumber(p.units, { digits: 3 }) },
-      { label: 'Wert', value: formatCurrency(p.value) },
-      { label: 'Investiert', value: formatCurrency(p.invested) },
-      {
-        label: 'Gewinn',
-        value:
-          p.earningsRelInvestment === null
-            ? formatCurrency(p.earnings)
-            : `${formatCurrency(p.earnings)} (${formatPercent(
-                p.earningsRelInvestment / 100,
-                { signed: true }
-              )})`,
-      },
-    ];
-    if (signedSeries !== undefined && signedSeries.key.endsWith('RelStart'))
-      rows.push({
-        label: signedSeries.name,
-        value: formatPercent(
-          ((p[signedSeries.key] as number | null) ?? 0) / 100,
+  const tooltipRows = (p: Point): TooltipRow[] => [
+    { label: 'Kurs', value: formatCurrency(p.price) },
+    { label: 'Einheiten', value: formatNumber(p.units, { digits: 3 }) },
+    { label: 'Wert', value: formatCurrency(p.value) },
+    { label: 'Investiert', value: formatCurrency(p.invested) },
+    {
+      label: 'Gewinn',
+      value: formatAmountWithChange(p.earnings, p.earningsRelInvestment),
+    },
+    ...(signed !== undefined && signed.key.endsWith('RelStart')
+      ? [
           {
-            signed: true,
-          }
-        ),
-      });
-    // Prices can be older than the point, e.g. on holidays.
-    if (
-      p.priceDate !== null &&
-      formatPointDate(moment(p.priceDate).valueOf(), intraday) !==
-        formatPointDate(p.epoch, intraday)
-    )
-      rows.push({
-        label: 'Kurs vom',
-        value: formatPointDate(moment(p.priceDate).valueOf(), true),
-      });
-
-    return [...rows, ...tradeRows(p.trades, true)];
-  };
+            label: MODES[mode].label,
+            value: formatPlotPercent(p[signed.key] as number | null),
+          },
+        ]
+      : []),
+    ...(priceIsOlder(p)
+      ? [
+          {
+            label: 'Kurs vom',
+            value: formatPointDate(moment(p.priceDate).valueOf(), intraday),
+          },
+        ]
+      : []),
+    ...tradeRows(p.trades, true),
+  ];
 
   const loading =
     plotData === null || plotData.isFetching || performance.isFetching;
@@ -263,7 +270,7 @@ const StockPlot = ({
               <ComposedChart data={points}>
                 {timeXAxis(epochs)}
                 <YAxis
-                  tickFormatter={valueTick}
+                  tickFormatter={tick}
                   domain={['auto', 'auto']}
                   width={90}
                   hide={xsDown}
@@ -289,12 +296,12 @@ const StockPlot = ({
                   stroke={theme.palette.divider}
                 />
 
-                {signedSeries !== undefined &&
+                {signed !== undefined &&
                   signedArea(
-                    signedSeries.key,
-                    signedSeries.name,
-                    points.map(p => p[signedSeries.key] as number | null),
-                    mode === 'investedRelStart' ? 'stepAfter' : 'linear',
+                    signed.key,
+                    MODES[mode].label,
+                    points.map(p => p[signed.key] as number | null),
+                    signed.curve,
                     theme
                   )}
 
@@ -411,21 +418,11 @@ const StockPlot = ({
                 autoWidth
                 onChange={handleModeChange}
               >
-                <MenuItem value="price">Kurs</MenuItem>
-                <MenuItem value="priceRelStart">Kursveränderung</MenuItem>
-                <MenuItem value="units">Einheiten</MenuItem>
-                <MenuItem value="priceAndUnits">Kurs und Einheiten</MenuItem>
-                <MenuItem value="investedAndValue">Kaufpreis und Wert</MenuItem>
-                <MenuItem value="value">Wert</MenuItem>
-                <MenuItem value="valueRelStart">Wertveränderung</MenuItem>
-                <MenuItem value="invested">Kaufpreis</MenuItem>
-                <MenuItem value="investedRelStart">
-                  Kaufpreisveränderung
-                </MenuItem>
-                <MenuItem value="earnings">Gewinn</MenuItem>
-                <MenuItem value="earningsRelInvestment">
-                  Gewinn rel. zu Kaufpreis
-                </MenuItem>
+                {Object.entries(MODES).map(([value, { label }]) => (
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <FormControl sx={formControlSx} variant="standard">

@@ -113,9 +113,21 @@ const tickDigits = (value: number): number => (Number.isInteger(value) ? 0 : 2);
 export const currencyTick = (value: number): string =>
   formatCurrency(value, { digits: tickDigits(value) });
 
-// for values that already are percentages, i.e. 12.5 for 12,5 %
+// Plot data holds relative changes in percent, i.e. 12.5 for +12,5 %.
 export const percentTick = (value: number): string =>
   formatPercent(value / 100, { digits: tickDigits(value), signed: true });
+
+export const formatPlotPercent = (value: number | null): string =>
+  formatPercent(value === null ? null : value / 100, { signed: true });
+
+// "12.345,67 € (+12,34 %)", or just the amount when the change is unknown
+export const formatAmountWithChange = (
+  amount: number | null,
+  percent: number | null
+): string =>
+  percent === null
+    ? formatCurrency(amount)
+    : `${formatCurrency(amount)} (${formatPlotPercent(percent)})`;
 
 export const numberTick = (value: number): string =>
   formatNumber(value, { digits: tickDigits(value) });

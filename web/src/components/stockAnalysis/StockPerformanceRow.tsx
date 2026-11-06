@@ -19,7 +19,7 @@ interface Props {
 }
 
 const StockPerformanceRow = ({ data }: Props) => {
-  const { money, units, irr, signColor } = useTableFormat();
+  const { money, units, irr, signColor, irrColor } = useTableFormat();
 
   const priceStart = getPrice(data.start.dataSource);
   const priceEnd = getPrice(data.end.dataSource);
@@ -107,7 +107,7 @@ const StockPerformanceRow = ({ data }: Props) => {
         )}
       </TableCell>
       <Hidden xsDown>
-        <TableCell align="right" style={signColor(data.irrAnnual)}>
+        <TableCell align="right" style={irrColor(data.irrAnnual)}>
           {irr(data)}
         </TableCell>
       </Hidden>

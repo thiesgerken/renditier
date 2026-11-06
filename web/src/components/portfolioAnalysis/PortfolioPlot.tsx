@@ -26,11 +26,17 @@ import {
   getPeriodDescription,
   getPeriodRange,
 } from '../../selectors/performance';
-import { formatCurrency, formatPercent } from '../../format';
+import { formatCurrency } from '../../format';
 import ProgressPaper from '../ProgressPaper';
 import PlotArea from '../plot/PlotArea';
 import type { TooltipRow } from '../plot/PlotTooltip';
-import { currencyTick, hasIntradayPoints, percentTick } from '../plot/axes';
+import {
+  currencyTick,
+  formatAmountWithChange,
+  formatPlotPercent,
+  hasIntradayPoints,
+  percentTick,
+} from '../plot/axes';
 import { assignTrades } from '../plot/trades';
 import { TRADES_AXIS, tradeMarkers, tradeRows } from '../plot/tradeMarkers';
 import { pointTooltip, signedArea, timeXAxis } from '../plot/elements';
@@ -60,30 +66,43 @@ const formControlSx = { m: 1, minWidth: 120 };
 // [startDate, endDate, source] of the last range that was actually requested.
 type PlotRange = [IsoDate, IsoDate, DataSourceSelection];
 
-type Mode =
-  | 'earnings'
-  | 'investedAndValue'
-  | 'invested'
-  | 'investedRelStart'
-  | 'value'
-  | 'valueRelStart'
-  | 'earningsRelInvested';
+interface ModeSpec {
+  label: string;
+  tick: (value: number) => string;
+  // a single series, colored by its sign
+  signed?: {
+    key: keyof StoredPortfolioPlotPoint;
+    curve: 'linear' | 'stepAfter';
+  };
+}
 
-// Modes that show one series, colored by its sign.
-const SIGNED_SERIES: Partial<
-  Record<Mode, { name: string; key: keyof StoredPortfolioPlotPoint }>
-> = {
-  earnings: { name: 'Gewinn', key: 'earnings' },
-  valueRelStart: { name: 'Wertveränderung', key: 'valueRelStart' },
+const MODES = {
+  earnings: {
+    label: 'Gewinn',
+    tick: currencyTick,
+    signed: { key: 'earnings', curve: 'linear' },
+  },
+  investedAndValue: { label: 'Kaufpreis und Wert', tick: currencyTick },
+  invested: { label: 'Kaufpreis', tick: currencyTick },
   investedRelStart: {
-    name: 'Kaufpreisveränderung',
-    key: 'investedRelStart',
+    label: 'Kaufpreisveränderung',
+    tick: percentTick,
+    signed: { key: 'investedRelStart', curve: 'stepAfter' },
+  },
+  value: { label: 'Wert', tick: currencyTick },
+  valueRelStart: {
+    label: 'Wertveränderung',
+    tick: percentTick,
+    signed: { key: 'valueRelStart', curve: 'linear' },
   },
   earningsRelInvested: {
-    name: 'Gewinn rel. Kaufpreis',
-    key: 'earningsRelInvested',
+    label: 'Gewinn rel. zu Kaufpreis',
+    tick: percentTick,
+    signed: { key: 'earningsRelInvested', curve: 'linear' },
   },
-};
+} satisfies Record<string, ModeSpec>;
+
+type Mode = keyof typeof MODES;
 
 interface Props {
   data: PortfolioPlotItem[];
@@ -175,40 +194,25 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
 
   const epochs = points.map(p => p.epoch);
   const intraday = hasIntradayPoints(epochs);
-  const isRelative =
-    mode.endsWith('RelStart') || mode === 'earningsRelInvested';
-  const signedSeries = SIGNED_SERIES[mode];
+  const { tick, signed }: ModeSpec = MODES[mode];
 
-  const tooltipRows = (p: Point): TooltipRow[] => {
-    const rows: TooltipRow[] = [
-      { label: 'Wert', value: formatCurrency(p.value) },
-      { label: 'Investiert', value: formatCurrency(p.invested) },
-      {
-        label: 'Gewinn',
-        value:
-          p.earningsRelInvested === null
-            ? formatCurrency(p.earnings)
-            : `${formatCurrency(p.earnings)} (${formatPercent(
-                p.earningsRelInvested / 100,
-                { signed: true }
-              )})`,
-      },
-    ];
-    if (mode === 'valueRelStart')
-      rows.push({
-        label: 'Wertveränderung',
-        value: formatPercent((p.valueRelStart ?? 0) / 100, { signed: true }),
-      });
-    if (mode === 'investedRelStart')
-      rows.push({
-        label: 'Kaufpreisveränderung',
-        value: formatPercent((p.investedRelStart ?? 0) / 100, {
-          signed: true,
-        }),
-      });
-
-    return [...rows, ...tradeRows(p.trades, false)];
-  };
+  const tooltipRows = (p: Point): TooltipRow[] => [
+    { label: 'Wert', value: formatCurrency(p.value) },
+    { label: 'Investiert', value: formatCurrency(p.invested) },
+    {
+      label: 'Gewinn',
+      value: formatAmountWithChange(p.earnings, p.earningsRelInvested),
+    },
+    ...(signed !== undefined && signed.key.endsWith('RelStart')
+      ? [
+          {
+            label: MODES[mode].label,
+            value: formatPlotPercent(p[signed.key] as number | null),
+          },
+        ]
+      : []),
+    ...tradeRows(p.trades, false),
+  ];
 
   const loading =
     plotData === null || plotData.isFetching || performance.isFetching;
@@ -225,7 +229,7 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
               <ComposedChart data={points}>
                 {timeXAxis(epochs)}
                 <YAxis
-                  tickFormatter={isRelative ? percentTick : currencyTick}
+                  tickFormatter={tick}
                   domain={['auto', 'auto']}
                   width={90}
                   hide={xsDown}
@@ -236,12 +240,12 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
                   stroke={theme.palette.divider}
                 />
 
-                {signedSeries !== undefined &&
+                {signed !== undefined &&
                   signedArea(
-                    signedSeries.key,
-                    signedSeries.name,
-                    points.map(p => p[signedSeries.key] as number | null),
-                    mode === 'investedRelStart' ? 'stepAfter' : 'linear',
+                    signed.key,
+                    MODES[mode].label,
+                    points.map(p => p[signed.key] as number | null),
+                    signed.curve,
                     theme
                   )}
 
@@ -302,17 +306,11 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
                 autoWidth
                 onChange={handleModeChange}
               >
-                <MenuItem value="earnings">Gewinn</MenuItem>
-                <MenuItem value="investedAndValue">Kaufpreis und Wert</MenuItem>
-                <MenuItem value="invested">Kaufpreis</MenuItem>
-                <MenuItem value="investedRelStart">
-                  Kaufpreisveränderung
-                </MenuItem>
-                <MenuItem value="value">Wert</MenuItem>
-                <MenuItem value="valueRelStart">Wertveränderung</MenuItem>
-                <MenuItem value="earningsRelInvested">
-                  Gewinn rel. zu Kaufpreis
-                </MenuItem>
+                {Object.entries(MODES).map(([value, { label }]) => (
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <FormControl sx={formControlSx} variant="standard">
