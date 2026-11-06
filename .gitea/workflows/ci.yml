@@ -23,19 +23,19 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: web
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       # The backend embeds web/build, so the frontend is built before clippy and tests.
       - name: Build frontend
         working-directory: web
-        run: pnpm run build
+        run: npm run build
 
       - name: Test frontend
         working-directory: web
         run: |
-          pnpm test:types
-          pnpm test:lint:js
-          pnpm test
+          npm run test:types
+          npm run test:lint:js
+          npm test
 
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test

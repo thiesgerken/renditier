@@ -4,7 +4,7 @@ Tool to query and analyze stock and ETF investments using realtime and historica
 
 ## Development
 
-With Nix, the dev shell (`direnv allow` or `nix develop`) brings Rust, node, pnpm and the openssl
+With Nix, the dev shell (`direnv allow` or `nix develop`) brings Rust, node, npm and the openssl
 and libpq the backend links against.
 
 ## Install
