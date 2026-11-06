@@ -109,12 +109,18 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
             .load::<StockInfo>(&mut connection)
             .expect("error querying infos");
 
+        let mut failed_isins = Vec::new();
         for info in infos.iter() {
             debug!("updating stock info for {}", &info.isin);
 
-            let (new_info, _) = onvista::get_info(&info.isin)
-                .await
-                .expect("error obtaining stock info");
+            let new_info = match onvista::get_info(&info.isin).await {
+                Ok((new_info, _)) => new_info,
+                Err(e) => {
+                    error!("error obtaining stock info for {}: {}", info.isin, e);
+                    failed_isins.push(info.isin.as_str());
+                    continue;
+                }
+            };
             // onvista only provides the instrument data, the rest is our own bookkeeping
             let new_info = StockInfo {
                 persistent: info.persistent,
@@ -129,6 +135,15 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
 
             info!("updated stock info for {}", &info.isin);
             debug!("new info: {:?}", &new_info);
+        }
+
+        if !failed_isins.is_empty() {
+            error!(
+                "could not update {} stock info(s): {}",
+                failed_isins.len(),
+                failed_isins.join(", ")
+            );
+            std::process::exit(1);
         }
     } else if let Some(isin_) = sub_matches.get_one::<String>("remove") {
         let isin_ = isin_.to_uppercase();
