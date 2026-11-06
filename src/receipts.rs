@@ -200,19 +200,16 @@ fn parse_receipt(buf: &[u8]) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Er
                 "parsing via {} failed ({}), retrying with {}",
                 primary.0, e, fallback.0
             );
-            fallback
-                .1(buf)
+            fallback.1(buf)
                 .and_then(|body| parse_body(&body))
-                .map_err(|e2| {
-                    format!("{}: {}; {}: {}", primary.0, e, fallback.0, e2).into()
-                })
+                .map_err(|e2| format!("{}: {}; {}: {}", primary.0, e, fallback.0, e2).into())
         }
     }
 }
 
 fn parse_body(body: &str) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
     let body = body.replace("Depot-Nr.", "Depot-Nr.Depot-Nr."); // Look-ahead not supported by the regex engine
-    debug!("body of PDF: {}", &body);
+    debug!("body of PDF: {}", body);
 
     let mut ts = Vec::new();
 
@@ -573,7 +570,7 @@ fn parse_comdirect_fees(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Err
     debug!("Parsing isin");
     let re = Regex::new(r"WKN\s([A-Z0-9]{6}),").unwrap();
     let wkn = re.captures_iter(s).next().ok_or("no wkn match")?[1].to_owned();
-    let mut isin = format!("DE000{}", &wkn); // without check digit
+    let mut isin = format!("DE000{}", wkn); // without check digit
     isin.push(calculate_isin_checksum(&isin)?);
 
     debug!("Parsing amount");
@@ -658,9 +655,7 @@ fn parse_comdirect_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn E
     })
 }
 
-fn parse_comdirect_ertragsgutschrift(
-    s: &str,
-) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
+fn parse_comdirect_ertragsgutschrift(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     debug!("Parsing isin");
     let re = Regex::new(r"STK\s+[\d\.,]+\s+([A-Z]{2}[A-Z0-9]{10})").unwrap();
     let isin = re.captures_iter(s).next().ok_or("no isin match")?[1].to_owned();

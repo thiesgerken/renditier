@@ -28,7 +28,7 @@ pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), B
     }
 
     let url = resp.url().as_str().to_owned();
-    debug!("Search was redirected to {}", &url);
+    debug!("Search was redirected to {}", url);
     if url.starts_with("https://www.onvista.de/etf/") {
         debug!("recognized {} as an ETF", needle);
         etf::parse_info(url, resp).await

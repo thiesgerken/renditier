@@ -19,7 +19,7 @@ pub async fn parse_info(
 
     let expected_prefix = "https://www.onvista.de";
     if !url.starts_with(expected_prefix) {
-        return Err(format!("ETC url does not begin with '{}'", &expected_prefix).into());
+        return Err(format!("ETC url does not begin with '{}'", expected_prefix).into());
     }
     let url = url[expected_prefix.len()..].to_string();
 

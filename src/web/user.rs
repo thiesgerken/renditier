@@ -200,7 +200,7 @@ pub async fn info(
             if let Ok(u) = u {
                 info!(
                     "Successful login with username from trusted header: '{}'",
-                    &user_name
+                    user_name
                 );
                 cookies.add_private(Cookie::new("user_id", u.id.to_string()));
 
@@ -214,7 +214,7 @@ pub async fn info(
             } else {
                 warn!(
                 "Attempt to login with non-existing username via trusted header: '{}'; ignoring.",
-                &user_name
+                user_name
             );
             }
         }
@@ -254,7 +254,7 @@ pub async fn login(
     match u {
         Ok(u) => {
             if verify_password(&login.password, &u.hash) {
-                info!("Successful login with username '{}'", &login.user_name);
+                info!("Successful login with username '{}'", login.user_name);
                 cookies.add_private(Cookie::new("user_id", u.id.to_string()));
 
                 Ok(Json(UserInfo::new(
@@ -264,7 +264,7 @@ pub async fn login(
             } else {
                 warn!(
                     "Attempt to login with wrong password for user '{}'",
-                    &login.user_name
+                    login.user_name
                 );
 
                 Err(Status::Unauthorized)
@@ -273,7 +273,7 @@ pub async fn login(
         _ => {
             warn!(
                 "Attempt to login with non-existing username '{}'",
-                &login.user_name
+                login.user_name
             );
 
             Err(Status::Unauthorized)

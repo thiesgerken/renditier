@@ -16,7 +16,7 @@ pub async fn parse_info(
 
     let expected_prefix = "https://www.onvista.de";
     if !url.starts_with(expected_prefix) {
-        return Err(format!("ETF url does not begin with '{}'", &expected_prefix).into());
+        return Err(format!("ETF url does not begin with '{}'", expected_prefix).into());
     }
     let url = url[expected_prefix.len()..].to_string();
 
@@ -40,7 +40,7 @@ pub async fn parse_info(
         get_timestamp(&snapshot["fundsBaseData"]["dateEmission"]).ok_or_else(|| {
             format!(
                 "error parsing launch date {}",
-                &snapshot["fundsBaseData"]["dateEmission"]
+                snapshot["fundsBaseData"]["dateEmission"]
             )
         })?;
     let currency = get_string(&snapshot["fundsBaseData"]["isoCurrencyFund"])
@@ -135,7 +135,7 @@ pub async fn get_data_realtime(stock: &StockInfo) -> Result<Vec<RealtimePrice>, 
     let url = if stock.onvista_url.starts_with(expected_prefix) {
         stock.onvista_url.clone()
     } else {
-        format!("https://www.onvista.de/{}", &stock.onvista_url)
+        format!("https://www.onvista.de/{}", stock.onvista_url)
     };
     debug!("Querying realtime data from {}", url);
     let client = reqwest::Client::new();
