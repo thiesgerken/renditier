@@ -60,7 +60,7 @@ pub async fn parse_info(
             isin,
             wkn,
             onvista_url: url,
-            kind: "ETF".to_string(),
+            kind: "ETC".to_string(),
             fonds_type: None,
             focus: None,
             company,
