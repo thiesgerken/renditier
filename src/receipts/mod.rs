@@ -220,7 +220,7 @@ static ONVISTA_PURCHASE: LazyLock<Regex> = LazyLock::new(|| {
 
 fn parse_body(body: &str) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
     let body = body.replace("Depot-Nr.", "Depot-Nr.Depot-Nr."); // Look-ahead not supported by the regex engine
-    debug!("body of PDF: {}", &body);
+    debug!("body of PDF: {}", body);
 
     let mut ts = Vec::new();
 

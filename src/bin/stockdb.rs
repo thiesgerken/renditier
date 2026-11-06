@@ -33,7 +33,7 @@ fn main() {
             .try_deserialize()
             .expect("unable to parse settings into Config struct");
 
-        debug!("config={:?}", &config);
+        debug!("config={:?}", config);
         receipts::configure(&config.receipts);
 
         let mut connection =

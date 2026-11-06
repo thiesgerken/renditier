@@ -156,7 +156,7 @@ pub fn parse_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error
 pub fn parse_fees(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
     debug!("Parsing isin");
     let wkn = FEES_WKN.captures_iter(s).next().ok_or("no wkn match")?[1].to_owned();
-    let mut isin = format!("DE000{}", &wkn); // without check digit
+    let mut isin = format!("DE000{}", wkn); // without check digit
     isin.push(calculate_isin_checksum(&isin)?);
 
     debug!("Parsing amount");

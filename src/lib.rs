@@ -179,9 +179,9 @@ pub async fn add_missing_stocks(pool: Pool<ConnectionManager<PgConnection>>) {
                     .execute(&mut connection)
                     .expect("Error saving exchanges");
 
-                info!("Added stock {} and {} exchanges", &isin, exs.len());
+                info!("Added stock {} and {} exchanges", isin, exs.len());
             }
-            Err(e) => error!("Error obtaining stock infos for {}: {}", &isin, e),
+            Err(e) => error!("Error obtaining stock infos for {}: {}", isin, e),
         }
     }
 }
