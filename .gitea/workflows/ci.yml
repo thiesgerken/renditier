@@ -53,8 +53,8 @@ jobs:
         run: nix build .#image
 
       - name: Smoke-test image (temporary, for PR verification)
+        shell: nix shell --inputs-from . nixpkgs#gnutar nixpkgs#jq nixpkgs#gnugrep nixpkgs#docker-client --command bash -eo pipefail {0}
         run: |
-          jq() { nix run --inputs-from . nixpkgs#jq -- "$@"; }
           img="$RUNNER_TEMP/img"
           rm -rf "$img" && mkdir -p "$img"
           ./result | tar -x -C "$img"
