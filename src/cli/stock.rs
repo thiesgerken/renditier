@@ -115,6 +115,13 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
             let (new_info, _) = onvista::get_info(&info.isin)
                 .await
                 .expect("error obtaining stock info");
+            // onvista only provides the instrument data, the rest is our own bookkeeping
+            let new_info = StockInfo {
+                persistent: info.persistent,
+                last_historical_update: info.last_historical_update,
+                last_realtime_update: info.last_realtime_update,
+                ..new_info
+            };
             diesel::update(stock_infos.filter(isin.eq(info.isin.clone())))
                 .set(new_info.clone())
                 .execute(&mut connection)
