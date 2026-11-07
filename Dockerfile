@@ -8,9 +8,8 @@ COPY web /build/web
 COPY .git /build/.git
 WORKDIR /build/web
 
-RUN npm install -g pnpm@12.17.0
-RUN pnpm install --frozen-lockfile
-RUN pnpm run build
+RUN npm ci
+RUN npm run build
 
 FROM rust:1.99-trixie@sha256:8a4e90c7946b74626488b1446f712c0fe0ed1a596cbd3d871684bc9c5433ae07 AS builder-backend
 

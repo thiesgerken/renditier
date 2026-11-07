@@ -2,10 +2,8 @@
   "name": "stockdb",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@12.17.0",
   "engines": {
-    "node": ">=24",
-    "pnpm": ">=12"
+    "node": ">=24"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -57,9 +55,13 @@
     "vite": "^8.2.2",
     "vitest": "^5.0.0"
   },
+  "overrides": {
+    "eslint": "$eslint",
+    "eslint-plugin-react-hooks": "$eslint-plugin-react-hooks"
+  },
   "scripts": {
-    "start": "pnpm run git && vite --host 0.0.0.0",
-    "build": "pnpm run git && vite build && node -e \"require('node:fs').copyFileSync('src/serviceWorkerCustomizations.js', 'build/service-worker.js');\"",
+    "start": "npm run git && vite --host 0.0.0.0",
+    "build": "npm run git && vite build && node -e \"require('node:fs').copyFileSync('src/serviceWorkerCustomizations.js', 'build/service-worker.js');\"",
     "test": "vitest run",
     "test:lint:js": "eslint \"src/**/*.{js,ts,tsx}\"",
     "test:types": "tsc --noEmit",
