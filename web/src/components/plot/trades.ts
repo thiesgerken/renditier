@@ -1,4 +1,3 @@
-import moment from 'moment';
 import { sortBy } from 'lodash';
 
 import type { Transaction } from '../../types/api';
@@ -48,11 +47,15 @@ export const assignTrades = <P extends { epoch: number }>(
   const result = points.map(p => ({ ...p, trades: null as Trades | null }));
   if (result.length === 0) return result;
 
-  const rangeStart = moment(result[0].epoch).startOf('day').valueOf();
+  const rangeStart = Temporal.Instant.fromEpochMilliseconds(result[0].epoch)
+    .toZonedDateTimeISO(Temporal.Now.timeZoneId())
+    .startOfDay().epochMilliseconds;
+  const epochOf = (t: Transaction) =>
+    Temporal.Instant.from(t.date).epochMilliseconds;
   let i = 0;
 
-  sortBy(transactions, t => moment(t.date).valueOf()).forEach(t => {
-    const epoch = moment(t.date).valueOf();
+  sortBy(transactions, epochOf).forEach(t => {
+    const epoch = epochOf(t);
     if (t.units === 0 || epoch < rangeStart) return;
 
     while (i < result.length && result[i].epoch < epoch) i += 1;

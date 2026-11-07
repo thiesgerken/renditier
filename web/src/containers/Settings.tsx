@@ -4,33 +4,9 @@ import {
   CardHeader,
   CardTitle,
 } from '../components/ui/card';
-import { formatDateTime } from '../format';
+import { formatDateTime, formatSince } from '../format';
 import { buildCommit, buildDate } from '../git';
 import { useAppSelector } from '../store';
-
-const UNITS = [
-  'years',
-  'months',
-  'days',
-  'hours',
-  'minutes',
-  'seconds',
-] as const;
-
-const relativeTime = new Intl.RelativeTimeFormat('de');
-
-// "vor 3 Tagen": the largest unit the time span reaches.
-export const formatSince = (
-  instant: Temporal.Instant,
-  now: Temporal.ZonedDateTime
-): string => {
-  const since = now.since(instant.toZonedDateTimeISO(now.timeZoneId), {
-    largestUnit: 'years',
-  });
-  const unit = UNITS.find(u => since[u] !== 0) ?? 'seconds';
-
-  return relativeTime.format(-since[unit], unit);
-};
 
 const Settings = () => {
   const updateAvailable = useAppSelector(

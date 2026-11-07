@@ -63,10 +63,8 @@ const vendorChunkGroups = [
   ],
   ['vendor-mui-system', ['@mui/system', '@mui/utils']],
   ['vendor-mui-icons', ['@mui/icons-material']],
-  ['vendor-mui-pickers', ['@mui/x-date-pickers']],
   ['vendor-emotion', ['@emotion/react', '@emotion/styled']],
   ['vendor-d3-shape', ['d3-shape']],
-  ['vendor-date', ['moment']],
   ['vendor-utils', ['lodash', 'classnames']],
 ];
 
@@ -215,10 +213,6 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
-      // The dev dependency optimizer bundles moment's CommonJS build once for
-      // the app and once more into its locale, so a loaded locale never reached
-      // the app's instance. The ESM build and its ESM locales share one module.
-      { find: /^moment$/, replacement: 'moment/dist/moment.js' },
     ],
   },
   build: {

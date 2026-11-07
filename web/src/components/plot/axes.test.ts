@@ -1,17 +1,18 @@
-import moment from 'moment';
-import 'moment/dist/locale/de';
+import {
+  formatPointDate,
+  growthFactorAxis,
+  hasIntradayPoints,
+  timeAxis,
+} from './axes';
 
-import { growthFactorAxis, hasIntradayPoints, timeAxis } from './axes';
-
-const at = (s: string) => moment(s).valueOf();
+// local time, like the plots
+const at = (s: string) =>
+  Temporal.PlainDateTime.from(s).toZonedDateTime(Temporal.Now.timeZoneId())
+    .epochMilliseconds;
 const labels = (start: string, end: string) => {
   const axis = timeAxis(at(start), at(end));
   return axis.ticks.map(axis.format);
 };
-
-beforeAll(() => {
-  moment.locale('de');
-});
 
 describe('timeAxis', () => {
   it('uses years for long ranges', () => {
@@ -35,7 +36,7 @@ describe('timeAxis', () => {
       'Juni 2026',
       'Juli 2026',
       'Aug. 2026',
-      'Sep. 2026',
+      'Sept. 2026',
       'Okt. 2026',
       'Nov. 2026',
     ]);
@@ -67,6 +68,17 @@ describe('timeAxis', () => {
     const end = at('2026-09-20T18:00');
     const { ticks } = timeAxis(start, end);
     expect(ticks.every(t => t >= start && t <= end)).toBe(true);
+  });
+});
+
+describe('formatPointDate', () => {
+  it('names the weekday, and the time for intraday data', () => {
+    expect(formatPointDate(at('2026-11-06T10:15'), false)).toBe(
+      'Fr., 06.11.2026'
+    );
+    expect(formatPointDate(at('2026-11-06T10:15'), true)).toBe(
+      'Fr., 06.11.2026, 10:15'
+    );
   });
 });
 

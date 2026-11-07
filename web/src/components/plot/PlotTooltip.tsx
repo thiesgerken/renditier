@@ -1,5 +1,3 @@
-import { Paper, Typography } from '@mui/material';
-
 export interface TooltipRow {
   label: string;
   value: string;
@@ -12,32 +10,17 @@ interface Props {
 }
 
 const PlotTooltip = ({ title, rows }: Props) => (
-  <Paper elevation={3} sx={{ px: 1.5, py: 1 }}>
-    <Typography variant="subtitle2" gutterBottom>
-      {title}
-    </Typography>
-    {/* Tailwind's preflight collapses borders, which turns off the spacing. */}
-    <table
-      style={{
-        borderCollapse: 'separate',
-        borderSpacing: '12px 2px',
-        margin: '0 -12px',
-      }}
-    >
-      <tbody>
-        {rows.map(({ label, value, color }) => (
-          <tr key={label} style={{ color }}>
-            <td>{label}</td>
-            <td
-              style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
-            >
-              {value}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </Paper>
+  <div className="rounded-lg bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10">
+    <div className="mb-1 font-medium">{title}</div>
+    <div className="grid grid-cols-[auto_auto] gap-x-3 gap-y-0.5">
+      {rows.map(({ label, value, color }) => (
+        <div key={label} className="contents" style={{ color }}>
+          <span>{label}</span>
+          <span className="text-right tabular-nums">{value}</span>
+        </div>
+      ))}
+    </div>
+  </div>
 );
 
 export default PlotTooltip;

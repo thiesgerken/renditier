@@ -1,6 +1,3 @@
-import moment from 'moment';
-import type { MomentInput } from 'moment';
-
 import { getPrice } from './selectors/performance';
 import type { DataSource, EitherPrice } from './types/api';
 
@@ -62,17 +59,60 @@ export const formatNumber = (
 ): string =>
   value === null ? MISSING : numberFormat('decimal', options).format(value);
 
+// The API sends days ("2026-11-06") and instants ("2026-11-06T18:30:00Z") as
+// ISO strings. Instants are shown in the browser's time zone.
+export type DateInput = string | Temporal.PlainDate | Temporal.Instant;
+
+const toTemporal = (date: DateInput) => {
+  if (typeof date !== 'string') return date;
+  return date.includes('T')
+    ? Temporal.Instant.from(date)
+    : Temporal.PlainDate.from(date);
+};
+
+export const formatTemporal = (
+  date: DateInput,
+  options: Intl.DateTimeFormatOptions
+): string => toTemporal(date).toLocaleString(LOCALE, options);
+
+const DATE = { day: '2-digit', month: '2-digit', year: 'numeric' } as const;
+const TIME = { hour: '2-digit', minute: '2-digit' } as const;
+
 // 06.11.2026
-export const formatDate = (date: MomentInput): string =>
-  moment(date).format('L');
+export const formatDate = (date: DateInput): string =>
+  formatTemporal(date, DATE);
 
 // 19:30
-export const formatTime = (date: MomentInput): string =>
-  moment(date).format('LT');
+export const formatTime = (date: DateInput): string =>
+  formatTemporal(date, TIME);
 
 // 06.11.2026, 19:30
-export const formatDateTime = (date: MomentInput): string =>
-  moment(date).format('L, LT');
+export const formatDateTime = (date: DateInput): string =>
+  formatTemporal(date, { ...DATE, ...TIME });
+
+const UNITS = [
+  'years',
+  'months',
+  'days',
+  'hours',
+  'minutes',
+  'seconds',
+] as const;
+
+const relativeTime = new Intl.RelativeTimeFormat(LOCALE);
+
+// "vor 3 Tagen": the largest unit the time span reaches.
+export const formatSince = (
+  instant: Temporal.Instant,
+  now: Temporal.ZonedDateTime
+): string => {
+  const since = now.since(instant.toZonedDateTimeISO(now.timeZoneId), {
+    largestUnit: 'years',
+  });
+  const unit = UNITS.find(u => since[u] !== 0) ?? 'seconds';
+
+  return relativeTime.format(-since[unit], unit);
+};
 
 export type Formatter = (
   value: number | null,
@@ -112,7 +152,9 @@ export interface IrrPeriod {
 
 // An annualized rate is misleading for periods shorter than about a month.
 export const isShortPeriod = (period: Pick<IrrPeriod, 'start' | 'end'>) =>
-  moment(period.end.date).diff(moment(period.start.date), 'days') < 32;
+  Temporal.PlainDate.from(period.end.date)
+    .since(Temporal.PlainDate.from(period.start.date))
+    .total('days') < 32;
 
 // Short periods show the rate of the period itself.
 export const formatIrr = (period: IrrPeriod, digits = 2): string => {

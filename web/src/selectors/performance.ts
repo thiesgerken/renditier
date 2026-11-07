@@ -1,5 +1,3 @@
-import moment from 'moment';
-
 import type {
   DataSource,
   EitherPrice,
@@ -28,9 +26,11 @@ export const getPeriodDescription = (item: PerformancePeriod): string => {
     case 'YearToDate':
       return 'Dieses Jahr';
     case 'YearToYear':
-      return moment(item.end.date).format('YYYY');
-    case 'MonthToMonth':
-      return moment(item.end.date).format('MM/YYYY');
+      return `${Temporal.PlainDate.from(item.end.date).year}`;
+    case 'MonthToMonth': {
+      const { month, year } = Temporal.PlainDate.from(item.end.date);
+      return `${String(month).padStart(2, '0')}/${year}`;
+    }
     default:
       return '';
   }
@@ -108,11 +108,9 @@ export const getPrice = (
     : dataSource.price.closing;
 };
 
-const nextWeekDay = (date: moment.Moment): moment.Moment => {
-  const d = moment(date);
-  while (d.day() === 0 || d.day() === 6) d.add(1, 'days');
-  return d;
-};
+// dayOfWeek counts from Monday = 1 to Sunday = 7
+const nextWeekDay = (date: Temporal.PlainDate): Temporal.PlainDate =>
+  date.dayOfWeek > 5 ? date.add({ days: 8 - date.dayOfWeek }) : date;
 
 // The plotted range of a period. A period's start date is the last day before
 // it, whose closing prices it compares against, so the plot starts on the next
@@ -120,7 +118,9 @@ const nextWeekDay = (date: moment.Moment): moment.Moment => {
 export const getPeriodRange = (
   period: PortfolioPerformance
 ): [IsoDate, IsoDate] => [
-  nextWeekDay(moment(period.start.date).add(1, 'days')).format('YYYY-MM-DD'),
+  nextWeekDay(
+    Temporal.PlainDate.from(period.start.date).add({ days: 1 })
+  ).toString(),
   period.end.date,
 ];
 

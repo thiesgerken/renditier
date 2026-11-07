@@ -50,7 +50,7 @@ export type BreakdownKind =
   | 'currencyBreakdown';
 
 // onvista names the same country differently depending on the fund.
-const normalizeCountry = (name: string): string =>
+export const normalizeCountry = (name: string): string =>
   name === 'Vereinigte Staaten' || name === 'Vereinigte Staaten von Amerika'
     ? 'USA'
     : name;

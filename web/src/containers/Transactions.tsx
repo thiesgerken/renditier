@@ -4,18 +4,15 @@ import {
   Building2,
   CalendarDays,
   ChartLine,
-  CircleMinus,
-  CirclePlus,
   Euro,
-  HandCoins,
   MessageSquare,
   Plus,
   Upload,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import DataTable, { dataTableFeatures } from '../components/DataTable';
+import { KindIcon, kindOf } from '../components/TransactionKind';
 import useTableFormat from '../components/useTableFormat';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -76,34 +73,6 @@ const toRow = (
   };
 };
 
-interface Kind {
-  label: string;
-  icon: LucideIcon;
-  className: string;
-}
-
-// Transactions without units only move money: dividends. The colours stay
-// clear of teal and pink, which mean gain and loss in the amounts next to them.
-const kindOf = ({ units }: Transaction): Kind => {
-  if (units > 0)
-    return {
-      label: 'Kauf',
-      icon: CirclePlus,
-      className: 'text-sky-600 dark:text-sky-400',
-    };
-  if (units < 0)
-    return {
-      label: 'Verkauf',
-      icon: CircleMinus,
-      className: 'text-violet-600 dark:text-violet-400',
-    };
-  return {
-    label: 'Dividende',
-    icon: HandCoins,
-    className: 'text-amber-600 dark:text-amber-400',
-  };
-};
-
 // Phones only have room for whole euros.
 const Money = ({ cents }: { cents: number }) => {
   const { signColor } = useTableFormat();
@@ -138,15 +107,7 @@ const columns = column.columns([
   column.accessor(row => kindOf(row).label, {
     id: 'kind',
     header: 'Art',
-    cell: ({ row }) => {
-      const { label, icon: Icon, className } = kindOf(row.original);
-      return (
-        <span title={label}>
-          <Icon aria-hidden className={`size-4 ${className}`} />
-          <span className="sr-only">{label}</span>
-        </span>
-      );
-    },
+    cell: ({ row }) => <KindIcon transaction={row.original} />,
   }),
   column.accessor(row => Temporal.Instant.from(row.date).epochMilliseconds, {
     id: 'date',

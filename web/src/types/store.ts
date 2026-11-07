@@ -84,7 +84,7 @@ export interface ReceiptsState {
 
 export interface DerivedPlotFields {
   earnings: number | null;
-  // moment(point.date).valueOf()
+  // point.date in epoch milliseconds, for the time axis
   epoch: number;
   valueRelStart: number | null;
   investedRelStart: number | null;

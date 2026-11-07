@@ -1,5 +1,4 @@
 import type { ReactElement } from 'react';
-import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { ResponsiveContainer } from 'recharts';
 
 interface Props {
@@ -11,32 +10,18 @@ interface Props {
 
 // Fixed-height frame for a chart; tells an empty result apart from one that is
 // still loading.
-const PlotArea = ({ isEmpty, isLoading, children }: Props) => {
-  const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const height = mdUp ? 400 : 260;
-
-  if (isEmpty)
-    return (
-      <Box
-        sx={{
-          height,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {!isLoading && (
-          <Typography color="text.secondary">Keine Daten</Typography>
-        )}
-      </Box>
-    );
-
-  return (
-    <ResponsiveContainer width="100%" height={height}>
-      {children}
-    </ResponsiveContainer>
-  );
-};
+const PlotArea = ({ isEmpty, isLoading, children }: Props) => (
+  <div className="h-[260px] md:h-[400px]">
+    {isEmpty ? (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        {!isLoading && 'Keine Daten'}
+      </div>
+    ) : (
+      <ResponsiveContainer width="100%" height="100%">
+        {children}
+      </ResponsiveContainer>
+    )}
+  </div>
+);
 
 export default PlotArea;

@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
 import { cn } from 'cn';
 import { sumBy } from 'lodash';
+import type { LucideIcon } from 'lucide-react';
 
 import { formatPercent } from '../format';
 
@@ -68,6 +70,7 @@ export const barRows = (
 
 interface Props {
   title: string;
+  icon?: LucideIcon;
   items: BarItem[];
   maxRows: number;
   // what the shares are relative to, e.g. 100 for a fund's composition in
@@ -77,17 +80,21 @@ interface Props {
   formatValue?: (value: number) => string;
   // shown below the list, e.g. what could not be included
   note?: string;
+  // shown before the label of an item, but not of a remainder
+  marker?: (label: string) => ReactNode;
 }
 
 // A horizontal bar per item, longest first; negative items get the loss
 // color.
 const BarList = ({
   title,
+  icon: Icon,
   items,
   maxRows,
   total,
   formatValue,
   note,
+  marker,
 }: Props) => {
   const rows = barRows(items, maxRows, total);
   if (rows.length === 0) return null;
@@ -108,7 +115,10 @@ const BarList = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="font-medium">{title}</h3>
+      <h3 className="flex items-center gap-2 font-medium">
+        {Icon && <Icon aria-hidden className="size-4 text-muted-foreground" />}
+        {title}
+      </h3>
       <div
         className={cn(
           'grid items-baseline gap-x-3 text-sm tabular-nums',
@@ -121,9 +131,13 @@ const BarList = ({
           <div key={r.label} className="contents">
             <span
               title={r.title}
-              className={cn('truncate', r.remainder && 'text-muted-foreground')}
+              className={cn(
+                'flex min-w-0 items-center gap-1.5',
+                r.remainder && 'text-muted-foreground'
+              )}
             >
-              {r.label}
+              {marker && !r.remainder && marker(r.label)}
+              <span className="truncate">{r.label}</span>
             </span>
             {formatValue && (
               <span className="text-right">{formatValue(r.value)}</span>

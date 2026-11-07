@@ -6,14 +6,10 @@ import ProgressCard from '../ProgressCard';
 import { CardContent } from '../ui/card';
 import BarList from '../BarList';
 import type { BarItem } from '../BarList';
+import { BREAKDOWNS } from '../breakdowns';
 import { formatCurrency } from '../../format';
 import { isHeld } from '../../selectors/performance';
-import {
-  breakdownShares,
-  capitalizeTitle,
-  findStock,
-  holdingShares,
-} from '../../selectors/stocks';
+import { capitalizeTitle, findStock } from '../../selectors/stocks';
 import type { FundShare } from '../../selectors/stocks';
 
 interface HeldPosition {
@@ -47,33 +43,6 @@ const breakdown = (
   return [...amounts].map(([label, value]) => ({ label, value }));
 };
 
-// Ten rows show a fund's top holdings and nearly all countries; industries get
-// eleven so that all GICS sectors fit; currencies beyond the top five are
-// noise.
-const LISTS = [
-  {
-    title: 'Einzeltitel',
-    maxRows: 10,
-    // a stock without holdings data, e.g. a share, is its own single holding
-    shares: (s: Stock) => holdingShares(s) ?? [{ label: s.title, value: 100 }],
-  },
-  {
-    title: 'Branchen',
-    maxRows: 11,
-    shares: (s: Stock) => breakdownShares(s, 'industryBreakdown'),
-  },
-  {
-    title: 'Währungen',
-    maxRows: 5,
-    shares: (s: Stock) => breakdownShares(s, 'currencyBreakdown'),
-  },
-  {
-    title: 'Länder',
-    maxRows: 10,
-    shares: (s: Stock) => breakdownShares(s, 'countryBreakdown'),
-  },
-];
-
 interface Props {
   // the positions at the end of this period
   period: PortfolioPerformance | undefined;
@@ -106,11 +75,18 @@ const Breakdowns = ({ period, loading, stocks }: Props) => {
             </p>
           )}
         <div className="grid gap-6 md:grid-cols-2">
-          {LISTS.map(({ title, maxRows, shares }) => (
+          {BREAKDOWNS.map(({ title, icon, maxRows, shares, marker }) => (
             <BarList
               key={title}
               title={title}
-              items={breakdown(invested, shares)}
+              icon={icon}
+              marker={marker}
+              // a stock without holdings data, e.g. a share, is its own
+              // single holding
+              items={breakdown(
+                invested,
+                s => shares(s) ?? [{ label: s.title, value: 100 }]
+              )}
               maxRows={maxRows}
               total={sumBy(invested, 'invested')}
               formatValue={v => formatCurrency(v, { digits: 0 })}
