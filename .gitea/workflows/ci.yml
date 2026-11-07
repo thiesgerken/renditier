@@ -45,7 +45,19 @@ jobs:
           npm test
 
       - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test
+
+      # Jobs run on the runner host, so there is no `services:` container. The devshell's Postgres
+      # runs inside the step instead, reachable only through a socket in its own temp dir, so
+      # concurrent jobs can't collide on a port. `--include-ignored` runs the tests that need it,
+      # which fail rather than skip without RENDITIER_TEST_DATABASE.
+      # ponytail: a cancelled run can leave this Postgres behind, clean up by hand if that piles up.
+      - name: Test backend
+        run: |
+          pg=$(mktemp -d)
+          trap 'pg_ctl --pgdata "$pg" --mode immediate stop; rm -rf "$pg"' EXIT
+          initdb --pgdata "$pg" --auth trust --username postgres --no-sync >/dev/null
+          pg_ctl --pgdata "$pg" --log "$pg/log" --options "-k $pg -c listen_addresses=''" --wait start
+          RENDITIER_TEST_DATABASE="postgres:///postgres?host=$pg&user=postgres" cargo test -- --include-ignored
 
   image:
     needs: check
