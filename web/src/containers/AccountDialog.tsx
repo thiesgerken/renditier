@@ -1,19 +1,27 @@
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Grid,
-  TextField,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
-import Alert from '@mui/material/Alert';
-import React, { useState } from 'react';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { useState } from 'react';
+import { CircleAlert, Trash2 } from 'lucide-react';
 
+import { Alert, AlertDescription } from '../components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
+import { Button } from '../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import {
   deleteAccount,
   createAccount,
@@ -31,61 +39,37 @@ interface Props {
   onClose: () => void;
 }
 
-const AccountDialog = ({ initialAccount, open, onClose }: Props) => {
+const toIBAN = (s: string | null): string | null => {
+  if (s === null) return null;
+
+  const iban = s.trim().toUpperCase();
+  if (iban === '' || /^[A-Z]{2}[0-9]{2}[0-9A-Z]{12,30}$/.test(iban))
+    return iban;
+
+  return null;
+};
+
+const toAccount = (t: AccountDraft): AccountDraft | null => {
+  const iban = toIBAN(t.iban);
+  if (t.name.trim() === '') return null;
+
+  return {
+    userId: -1,
+    id: t.id,
+    name: t.name.trim(),
+    iban: iban !== '' ? iban : null,
+  };
+};
+
+// Mounted only while the dialog is open, so every opening starts from
+// `initialAccount` again.
+const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
   const dispatch = useAppDispatch();
-  const toIBAN = (s: string | null): string | null => {
-    if (s === null) return null;
-
-    const iban = s.trim().toUpperCase();
-    if (iban === '' || /^[A-Z]{2}[0-9]{2}[0-9A-Z]{12,30}$/.test(iban))
-      return iban;
-
-    return null;
-  };
-
-  const toAccount = (t: AccountDraft): AccountDraft | null => {
-    const iban = toIBAN(t.iban);
-    if (t.name.trim() === '') return null;
-
-    const ret = {
-      userId: -1,
-      id: t.id,
-      name: t.name.trim(),
-      iban: iban !== '' ? iban : null,
-    };
-
-    return ret;
-  };
-
-  const toEditable = (t: AccountDraft): AccountDraft => ({ ...t });
-
-  const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
-
-  const [account, setAccount] = useState(toEditable(initialAccount));
+  const [account, setAccount] = useState(initialAccount);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
 
-  const reset = () => {
-    setAccount(toEditable(initialAccount));
-    setTriedToSave(false);
-  };
-
-  const wasOpen = React.useRef(false);
-  React.useEffect(() => {
-    if (open && !wasOpen.current) reset();
-    wasOpen.current = open;
-  });
-
-  const handleDialogClose = (_event: object, reason: string) => {
-    if (reason === 'backdropClick') return;
-
-    reset();
-    onClose();
-  };
-
   const onDelete = () => {
-    setConfirmOpen(false);
     // The delete button only renders when `account.id !== null`.
     if (account.id !== null) dispatch(deleteAccount(account.id));
     onClose();
@@ -110,100 +94,101 @@ const AccountDialog = ({ initialAccount, open, onClose }: Props) => {
 
   return (
     <>
-      <Dialog fullScreen={!mdUp} open={open} onClose={handleDialogClose}>
-        <DialogTitle id="form-dialog-title">
-          {account.id !== null ? 'Depot bearbeiten' : 'Depot erstellen'}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={1}>
-            <Grid size={12}>
-              <TextField
-                margin="dense"
-                label="Name"
-                variant="standard"
-                fullWidth
-                value={account.name}
-                onChange={(v: React.ChangeEvent<HTMLInputElement>) =>
-                  setAccount({
-                    ...account,
-                    name: v.target.value,
-                  })
-                }
-                error={account.name.trim() === '' && triedToSave}
-              />
-            </Grid>
-            <Grid size={12}>
-              <TextField
-                margin="dense"
-                label="IBAN"
-                variant="standard"
-                fullWidth
-                value={account.iban || ''}
-                onChange={(v: React.ChangeEvent<HTMLInputElement>) =>
-                  setAccount({
-                    ...account,
-                    iban: v.target.value !== '' ? v.target.value : null,
-                  })
-                }
-                error={
-                  toIBAN(account.iban) === null &&
-                  account.iban !== null &&
-                  triedToSave
-                }
-              />
-            </Grid>
-          </Grid>
-          {toAccount(account) === null && triedToSave && (
-            <Alert severity="error">Depot ist unvollständig!</Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
+      <form
+        className="grid gap-4"
+        onSubmit={event => {
+          event.preventDefault();
+          onSave();
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>
+            {account.id !== null ? 'Depot bearbeiten' : 'Depot erstellen'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-2">
+          <Label htmlFor="account-name">Name</Label>
+          <Input
+            id="account-name"
+            value={account.name}
+            onChange={event =>
+              setAccount({ ...account, name: event.target.value })
+            }
+            aria-invalid={account.name.trim() === '' && triedToSave}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="account-iban">IBAN</Label>
+          <Input
+            id="account-iban"
+            value={account.iban ?? ''}
+            onChange={event =>
+              setAccount({
+                ...account,
+                iban: event.target.value !== '' ? event.target.value : null,
+              })
+            }
+            aria-invalid={
+              toIBAN(account.iban) === null &&
+              account.iban !== null &&
+              triedToSave
+            }
+          />
+        </div>
+        {toAccount(account) === null && triedToSave && (
+          <Alert variant="destructive">
+            <CircleAlert />
+            <AlertDescription>Depot ist unvollständig!</AlertDescription>
+          </Alert>
+        )}
+        <DialogFooter>
           {account.id !== null && (
             <Button
-              variant="outlined"
-              color="secondary"
-              startIcon={<DeleteIcon />}
+              type="button"
+              variant="destructive"
+              className="sm:mr-auto"
               onClick={() => setConfirmOpen(true)}
             >
+              <Trash2 />
               Löschen
             </Button>
           )}
-          <Button color="primary" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             Abbrechen
           </Button>
-          <Button color="primary" onClick={onSave}>
-            Speichern
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Depot wirklich löschen? Dies würde auch alle Transaktionen dieses
-            Depots löschen!
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setConfirmOpen(false)}
-            color="primary"
-            // eslint-disable-next-line jsx-a11y/no-autofocus -- the safe choice of a destructive confirmation
-            autoFocus
-          >
-            Nein
-          </Button>
-          <Button onClick={onDelete} color="primary">
-            Ja
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Button type="submit">Speichern</Button>
+        </DialogFooter>
+      </form>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Depot löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dies würde auch alle Transaktionen dieses Depots löschen!
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Nein</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={onDelete}>
+              Ja, löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
+
+const AccountDialog = ({ initialAccount, open, onClose }: Props) => (
+  <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
+    <DialogContent
+      showCloseButton={false}
+      // A stray click next to the form must not throw away the input.
+      onInteractOutside={event => event.preventDefault()}
+    >
+      <AccountForm initialAccount={initialAccount} onClose={onClose} />
+    </DialogContent>
+  </Dialog>
+);
 
 export default AccountDialog;
