@@ -1,7 +1,22 @@
-# StockDB
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo/renditier-lockup-reversed.png">
+    <img alt="Renditier" src="docs/brand/logo/renditier-lockup.png" width="360">
+  </picture>
+</h1>
 
-Tool to query and analyze stock, ETF and crypto currency investments using realtime and historical
-price data.
+Renditier tracks stock, ETF and crypto currency investments with realtime and historical prices:
+what the depots are worth, what they earned, and how the positions compare. The name is *Rendite*
+(return) plus *Rentier*, the reindeer and the person who lives off their investments.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dashboard-dark.png">
+  <img alt="The dashboard: depot value, invested amount, gain and its development since 2019" src="docs/screenshots/dashboard-light.png">
+</picture>
+
+The screenshots show the demo user Rudolph, whose transactions are made up
+([`docs/demo/rudolph.json`](docs/demo/rudolph.json)); the prices are real. Brand, colours and
+fonts are in [`docs/brand/styleguide.md`](docs/brand/styleguide.md).
 
 ## Development
 
