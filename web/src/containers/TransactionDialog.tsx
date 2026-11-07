@@ -19,20 +19,18 @@ import moment from 'moment';
 import type { Moment } from 'moment';
 import type { ElementType } from 'react';
 import React, { useState } from 'react';
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import {
-  deleteTransaction as deleteTransactionAction,
-  createTransaction as createTransactionAction,
-  updateTransaction as updateTransactionAction,
+  deleteTransaction,
+  createTransaction,
+  updateTransaction,
 } from '../slices/transactions';
 import NumberInput from '../components/NumberInput';
 import { findAccount, findAccountByName } from '../selectors/accounts';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
 import { formatCurrency } from '../format';
-import type { AppDispatch, RootState } from '../store';
+import { useAppDispatch, useAppSelector } from '../store';
 import type { Exchange, Transaction } from '../types/api';
 
 // What `Transactions` hands in: a real transaction when editing, or a blank one
@@ -71,16 +69,16 @@ interface EditableTransaction {
   receiptNumber: number | null;
 }
 
-const TransactionDialog = ({
-  stocks,
-  accounts,
-  initialTransaction,
-  open,
-  onClose,
-  deleteTransaction,
-  createTransaction,
-  updateTransaction,
-}: Props) => {
+interface Props {
+  initialTransaction: TransactionDraft;
+  open: boolean;
+  onClose: () => void;
+}
+
+const TransactionDialog = ({ initialTransaction, open, onClose }: Props) => {
+  const dispatch = useAppDispatch();
+  const stocks = useAppSelector(state => state.stocks);
+  const accounts = useAppSelector(state => state.accounts);
   const parseISIN = (s: string | null): string | null => {
     if (!s) return null;
 
@@ -254,7 +252,7 @@ const TransactionDialog = ({
   const onDelete = () => {
     setConfirmOpen(false);
     // The delete button only renders when `transaction.id !== null`.
-    if (transaction.id !== null) deleteTransaction(transaction.id);
+    if (transaction.id !== null) dispatch(deleteTransaction(transaction.id));
     onClose();
   };
 
@@ -267,9 +265,9 @@ const TransactionDialog = ({
     }
 
     if (t.id === null) {
-      createTransaction(t);
+      dispatch(createTransaction(t));
     } else {
-      updateTransaction({ ...t, id: t.id });
+      dispatch(updateTransaction({ ...t, id: t.id }));
     }
 
     onClose();
@@ -602,28 +600,4 @@ const TransactionDialog = ({
   );
 };
 
-const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  deleteTransaction: (id: number) => dispatch(deleteTransactionAction(id)),
-  createTransaction: (t: TransactionPayload) =>
-    dispatch(createTransactionAction(t)),
-  updateTransaction: (t: Transaction) => dispatch(updateTransactionAction(t)),
-});
-
-const mapStateToProps = (state: RootState) => {
-  const { stocks, accounts } = state;
-
-  return {
-    stocks,
-    accounts,
-  };
-};
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-type Props = ConnectedProps<typeof connector> & {
-  initialTransaction: TransactionDraft;
-  open: boolean;
-  onClose: () => void;
-};
-
-export default connector(TransactionDialog);
+export default TransactionDialog;

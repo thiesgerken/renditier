@@ -1,5 +1,4 @@
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
+import { useCallback, useEffect } from 'react';
 import { Grid, Typography, Container, Paper, useTheme } from '@mui/material';
 import { find, filter, max, min, map } from 'lodash';
 import moment from 'moment';
@@ -8,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { fetchPerformance } from '../slices/performance';
 import { fetchStocks } from '../slices/stocks';
-import { updatePortfolioPlot as updatePortfolioPlotAction } from '../slices/portfolioPlot';
+import { updatePortfolioPlot } from '../slices/portfolioPlot';
 import PerformanceTable from '../components/portfolioAnalysis/PerformanceTable';
 import PortfolioPlot from '../components/portfolioAnalysis/PortfolioPlot';
 import PositionsTable from '../components/portfolioAnalysis/PositionsTable';
@@ -17,24 +16,29 @@ import Hidden from '../components/Hidden';
 import Breakdowns from '../components/portfolioAnalysis/Breakdowns';
 import { formatDateTime } from '../format';
 
-import type { AppDispatch, RootState } from '../store';
+import { useAppDispatch, useAppSelector } from '../store';
 import type { DataSourceSelection, IsoDate } from '../types/api';
 
-type Props = ConnectedProps<typeof connector>;
-
-const Dashboard = ({
-  performance,
-  updatePerformance,
-  stocks,
-  updateStocks,
-  portfolioPlotData,
-  updatePortfolioPlotData,
-}: Props) => {
+const Dashboard = () => {
   const navigate = useNavigate();
   const theme = useTheme();
+  const dispatch = useAppDispatch();
+  const performance = useAppSelector(state => state.performance);
+  const stocks = useAppSelector(state => state.stocks);
+  const portfolioPlotData = useAppSelector(state => state.portfolioPlot.items);
+  const updatePortfolioPlotData = useCallback(
+    (
+      startDate: IsoDate | null,
+      endDate: IsoDate | null,
+      source: DataSourceSelection | null
+    ) => dispatch(updatePortfolioPlot(startDate, endDate, source)),
+    [dispatch]
+  );
 
-  updatePerformance();
-  updateStocks();
+  useEffect(() => {
+    dispatch(fetchPerformance());
+    dispatch(fetchStocks());
+  });
 
   let oldestTodayData: string | null = null;
   let newestTodayData: string | null = null;
@@ -123,26 +127,4 @@ const Dashboard = ({
   );
 };
 
-const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updatePerformance: () => dispatch(fetchPerformance()),
-  updateStocks: () => dispatch(fetchStocks()),
-  updatePortfolioPlotData: (
-    startDate: IsoDate | null,
-    endDate: IsoDate | null,
-    source: DataSourceSelection | null
-  ) => dispatch(updatePortfolioPlotAction(startDate, endDate, source)),
-});
-
-const mapStateToProps = (state: RootState) => {
-  const { performance, stocks, portfolioPlot } = state;
-
-  return {
-    performance,
-    stocks,
-    portfolioPlotData: portfolioPlot.items,
-  };
-};
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-export default connector(Dashboard);
+export default Dashboard;

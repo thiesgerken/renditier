@@ -1,12 +1,14 @@
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
 import moment from 'moment';
 
 import { buildCommit, buildDate } from '../git';
 import { formatDateTime } from '../format';
-import type { RootState } from '../store';
+import { useAppSelector } from '../store';
 
-const Settings = ({ updateAvailable }: Props) => {
+const Settings = () => {
+  const updateAvailable = useAppSelector(
+    state => state.notifications.updateAvailable
+  );
+
   return (
     <div>
       <div>
@@ -23,12 +25,4 @@ const Settings = ({ updateAvailable }: Props) => {
   );
 };
 
-const mapStateToProps = ({ notifications }: RootState) => ({
-  updateAvailable: notifications.updateAvailable,
-});
-
-const connector = connect(mapStateToProps);
-
-type Props = ConnectedProps<typeof connector>;
-
-export default connector(Settings);
+export default Settings;

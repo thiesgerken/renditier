@@ -12,29 +12,27 @@ import {
 } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import React, { useState } from 'react';
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import {
-  deleteAccount as deleteAccountAction,
-  createAccount as createAccountAction,
-  updateAccount as updateAccountAction,
+  deleteAccount,
+  createAccount,
+  updateAccount,
 } from '../slices/accounts';
-import type { AppDispatch } from '../store';
+import { useAppDispatch } from '../store';
 import type { Account } from '../types/api';
 
 // The dialog doubles as the "create" form, where there is no id yet.
 export type AccountDraft = Omit<Account, 'id'> & { id: number | null };
 
-const AccountDialog = ({
-  initialAccount,
-  open,
-  onClose,
-  deleteAccount,
-  createAccount,
-  updateAccount,
-}: Props) => {
+interface Props {
+  initialAccount: AccountDraft;
+  open: boolean;
+  onClose: () => void;
+}
+
+const AccountDialog = ({ initialAccount, open, onClose }: Props) => {
+  const dispatch = useAppDispatch();
   const toIBAN = (s: string | null): string | null => {
     if (s === null) return null;
 
@@ -89,7 +87,7 @@ const AccountDialog = ({
   const onDelete = () => {
     setConfirmOpen(false);
     // The delete button only renders when `account.id !== null`.
-    if (account.id !== null) deleteAccount(account.id);
+    if (account.id !== null) dispatch(deleteAccount(account.id));
     onClose();
   };
 
@@ -102,9 +100,9 @@ const AccountDialog = ({
     }
 
     if (t.id === null) {
-      createAccount(t);
+      dispatch(createAccount(t));
     } else {
-      updateAccount({ ...t, id: t.id });
+      dispatch(updateAccount({ ...t, id: t.id }));
     }
 
     onClose();
@@ -208,18 +206,4 @@ const AccountDialog = ({
   );
 };
 
-const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  deleteAccount: (id: number) => dispatch(deleteAccountAction(id)),
-  createAccount: (t: AccountDraft) => dispatch(createAccountAction(t)),
-  updateAccount: (t: Account) => dispatch(updateAccountAction(t)),
-});
-
-const connector = connect(null, mapDispatchToProps);
-
-type Props = ConnectedProps<typeof connector> & {
-  initialAccount: AccountDraft;
-  open: boolean;
-  onClose: () => void;
-};
-
-export default connector(AccountDialog);
+export default AccountDialog;

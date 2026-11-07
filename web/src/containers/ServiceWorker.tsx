@@ -1,26 +1,17 @@
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
-
 import * as serviceWorker from '../serviceWorker';
-import { updateAvailable as updateAvailableAction } from '../slices/notifications';
-import type { AppDispatch } from '../store';
+import { updateAvailable } from '../slices/notifications';
+import { useAppDispatch } from '../store';
 
-const ServiceWorker = ({ updateAvailable }: Props) => {
+const ServiceWorker = () => {
+  const dispatch = useAppDispatch();
+
   serviceWorker.register({
     onUpdate: () => {
-      updateAvailable();
+      dispatch(updateAvailable());
     },
   });
 
   return <></>;
 };
 
-const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updateAvailable: () => dispatch(updateAvailableAction()),
-});
-
-const connector = connect(null, mapDispatchToProps);
-
-type Props = ConnectedProps<typeof connector>;
-
-export default connector(ServiceWorker);
+export default ServiceWorker;

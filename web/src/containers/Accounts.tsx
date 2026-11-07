@@ -1,5 +1,3 @@
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
 import React, { useEffect } from 'react';
 import { find } from 'lodash';
 import {
@@ -23,7 +21,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { fetchAccounts } from '../slices/accounts';
-import type { AppDispatch, RootState } from '../store';
+import { useAppDispatch, useAppSelector } from '../store';
 import type { Account } from '../types/api';
 import AccountDialog from './AccountDialog';
 import type { AccountDraft } from './AccountDialog';
@@ -46,7 +44,9 @@ function useQuery(
   return [query.get(key), set];
 }
 
-const Accounts = ({ accounts, updateAccounts }: Props) => {
+const Accounts = () => {
+  const dispatch = useAppDispatch();
+  const accounts = useAppSelector(state => state.accounts);
   const [accountId, setAccountId] = useQuery('id');
   const [page, setPage] = useQuery('page');
   const theme = useTheme();
@@ -54,7 +54,7 @@ const Accounts = ({ accounts, updateAccounts }: Props) => {
   const [pageSize, setPageSize] = React.useState(10);
 
   useEffect(() => {
-    updateAccounts();
+    dispatch(fetchAccounts());
   });
 
   let initialAccount: AccountDraft = {
@@ -154,20 +154,4 @@ const Accounts = ({ accounts, updateAccounts }: Props) => {
   );
 };
 
-const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updateAccounts: () => dispatch(fetchAccounts()),
-});
-
-const mapStateToProps = (state: RootState) => {
-  const { accounts } = state;
-
-  return {
-    accounts,
-  };
-};
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-type Props = ConnectedProps<typeof connector>;
-
-export default connector(Accounts);
+export default Accounts;
