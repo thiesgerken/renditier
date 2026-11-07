@@ -9,7 +9,8 @@ import {
   formatPercent,
 } from '../format';
 import type { Formatter } from '../format';
-import { useSchemePalette } from '../muiTheme';
+
+export type Tone = 'gain' | 'loss' | null;
 
 // Number formatting for table cells. Phones only have room for whole euros and
 // units and one decimal of percentages.
@@ -32,27 +33,31 @@ const useTableFormat = () => {
   const irr = (period: Parameters<typeof formatIrr>[0]) =>
     formatIrr(period, percentDigits);
 
-  const palette = useSchemePalette();
+  // Whether a value is a gain or a loss; values that are displayed as zero at
+  // `shownDigits` fraction digits are neither.
+  const signTone = (
+    value: number | null | undefined,
+    shownDigits = digits
+  ): Tone => {
+    if (value === null || value === undefined) return null;
+    if (Math.abs(value) < 0.5 * 10 ** -shownDigits) return null;
+    return value < 0 ? 'loss' : 'gain';
+  };
 
-  // Gains in the primary, losses in the secondary color. Values that are
-  // displayed as zero at `shownDigits` fraction digits stay neutral.
+  // the color token of signTone, for inline styles
   const signColor = (
     value: number | null | undefined,
     shownDigits = digits
-  ): CSSProperties =>
-    value === null ||
-    value === undefined ||
-    Math.abs(value) < 0.5 * 10 ** -shownDigits
-      ? {}
-      : {
-          color: value < 0 ? palette.secondary.dark : palette.primary.dark,
-        };
+  ): CSSProperties => {
+    const tone = signTone(value, shownDigits);
+    return tone === null ? {} : { color: `var(--${tone})` };
+  };
 
   // for ratios shown as percentages, e.g. IRRs and relative changes
-  const ratioColor = (ratio: number | null) =>
-    signColor(ratio, percentDigits + 2);
+  const ratioTone = (ratio: number | null) =>
+    signTone(ratio, percentDigits + 2);
 
-  return { money, units, percent, irr, signColor, ratioColor };
+  return { money, units, percent, irr, signTone, signColor, ratioTone };
 };
 
 export default useTableFormat;

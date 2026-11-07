@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material';
+import { cn } from 'cn';
 import { sumBy } from 'lodash';
 
 import { formatPercent } from '../format';
@@ -79,7 +79,7 @@ interface Props {
   note?: string;
 }
 
-// A horizontal bar per item, longest first; negative items get the secondary
+// A horizontal bar per item, longest first; negative items get the loss
 // color.
 const BarList = ({
   title,
@@ -102,66 +102,47 @@ const BarList = ({
     `${Math.min(1, Math.abs(r.value) / largest) * 100}%`;
 
   const barColor = (r: BarRow): string => {
-    if (r.value < 0) return 'secondary.main';
-    return r.remainder ? 'action.disabled' : 'primary.main';
+    if (r.value < 0) return 'bg-loss';
+    return r.remainder ? 'bg-muted-foreground/30' : 'bg-primary';
   };
 
   return (
-    <Box sx={{ p: 1 }}>
-      <Typography variant="subtitle1" component="h3" gutterBottom>
-        {title}
-      </Typography>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: formatValue
-            ? 'minmax(0, 1fr) auto auto'
-            : 'minmax(0, 1fr) auto',
-          columnGap: 1.5,
-          alignItems: 'baseline',
-          fontVariantNumeric: 'tabular-nums',
-        }}
+    <div className="flex flex-col gap-2">
+      <h3 className="font-medium">{title}</h3>
+      <div
+        className={cn(
+          'grid items-baseline gap-x-3 text-sm tabular-nums',
+          formatValue
+            ? 'grid-cols-[minmax(0,1fr)_auto_auto]'
+            : 'grid-cols-[minmax(0,1fr)_auto]'
+        )}
       >
         {rows.map(r => (
-          <Box key={r.label} sx={{ display: 'contents' }}>
-            <Typography
-              variant="body2"
-              noWrap
+          <div key={r.label} className="contents">
+            <span
               title={r.title}
-              sx={{ color: r.remainder ? 'text.secondary' : 'text.primary' }}
+              className={cn('truncate', r.remainder && 'text-muted-foreground')}
             >
               {r.label}
-            </Typography>
+            </span>
             {formatValue && (
-              <Typography variant="body2" sx={{ textAlign: 'right' }}>
-                {formatValue(r.value)}
-              </Typography>
+              <span className="text-right">{formatValue(r.value)}</span>
             )}
-            <Typography
-              variant="body2"
-              sx={{ textAlign: 'right', color: 'text.secondary' }}
-            >
+            <span className="text-right text-muted-foreground">
               {formatPercent(r.share, { digits: 1 })}
-            </Typography>
-            <Box
-              sx={{
-                gridColumn: '1 / -1',
-                height: 6,
-                mb: 1,
-                borderRadius: 1,
-                bgcolor: barColor(r),
-                width: barWidth(r),
-              }}
+            </span>
+            <div
+              className={cn(
+                'col-span-full mb-2 h-1.5 rounded-full',
+                barColor(r)
+              )}
+              style={{ width: barWidth(r) }}
             />
-          </Box>
+          </div>
         ))}
-      </Box>
-      {note && (
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          {note}
-        </Typography>
-      )}
-    </Box>
+      </div>
+      {note && <p className="text-xs text-muted-foreground">{note}</p>}
+    </div>
   );
 };
 

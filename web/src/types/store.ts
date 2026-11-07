@@ -76,6 +76,11 @@ export interface NotificationsState {
   updateIgnored: boolean;
 }
 
+// The dashboard's period, as a periodKey (see selectors/performance).
+export interface PeriodState {
+  selected: string;
+}
+
 // POST /api/receipts returns one entry per uploaded file.
 export interface ReceiptsState {
   isUploading: boolean;

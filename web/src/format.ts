@@ -103,19 +103,22 @@ export const formatChange = (
   return shown === zero ? null : shown;
 };
 
-interface IrrPeriod {
+export interface IrrPeriod {
   start: { date: string };
   end: { date: string };
   irrAnnual: number | null;
   irrPeriod: number | null;
 }
 
-// An annualized rate is misleading for periods shorter than about a month, so
-// those show the rate of the period itself.
+// An annualized rate is misleading for periods shorter than about a month.
+export const isShortPeriod = (period: Pick<IrrPeriod, 'start' | 'end'>) =>
+  moment(period.end.date).diff(moment(period.start.date), 'days') < 32;
+
+// Short periods show the rate of the period itself.
 export const formatIrr = (period: IrrPeriod, digits = 2): string => {
   const options = { digits, signed: true };
 
-  if (moment(period.end.date).diff(moment(period.start.date), 'days') < 32)
+  if (isShortPeriod(period))
     return period.irrPeriod === null
       ? ''
       : formatPercent(period.irrPeriod, options);
