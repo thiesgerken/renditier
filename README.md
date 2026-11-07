@@ -26,6 +26,49 @@ and libpq the backend links against.
 The container image is built with Nix as well, for x86_64-linux only: `nix build .#image` yields a
 script that streams the image as a tarball, e.g. `./result | docker load`.
 
+## Backups
+
+`renditier export > backup.json` writes all users with their accounts and transactions as JSON,
+`renditier import < backup.json` reads such a backup back in. The import replaces the users the backup
+contains, matched by name: an existing user with the same name is deleted together with their
+accounts and transactions, then recreated from the backup. Every other user stays untouched, so
+importing one user's backup into a database shared with others is safe.
+
+All rows get fresh ids from the database, the backup's ids only link its rows among each other.
+Replacing a user therefore changes their id and ends their sessions. A backup whose ids are
+ambiguous (a user name or id twice) or dangling (an account of a user that is not in the backup)
+is rejected before anything is written, and any error rolls the whole import back.
+
+## Demo data
+
+[`docs/demo/rudolph.json`](docs/demo/rudolph.json) holds the made-up user `Rudolph` with three
+accounts and a few years of buys, sells, dividends and a custody fee in well-known stocks, ETFs and
+Bitcoin. Use it for screenshots and for trying things out without real data. To edit it, change the
+JSON by hand: ids only need to be unique within the file.
+
+Against a local database (never the production one):
+
+```shell
+export RENDITIER__DATABASE=postgres://user@localhost/stocks
+renditier import < docs/demo/rudolph.json
+renditier -v stock --fetch    # adds the stocks the transactions reference
+renditier -v data --fetch     # prices from onvista, takes a minute
+```
+
+Then serve it with `RENDITIER__WEB__TRUSTED_HEADER_AUTHENTICATION=true renditier serve` and let the
+Vite dev server (`npm start` in `web`) log you in as Rudolph by adding the header to its proxy in
+`web/vite.config.mjs`:
+
+```js
+proxy: {
+  '/api': { target: 'http://localhost:8383', headers: { 'Remote-User': 'Rudolph' } },
+},
+```
+
+The import test against a real database runs with
+`RENDITIER_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (it rolls back
+everything it writes). CI starts a throwaway Postgres for it and runs it on every push.
+
 ## Install
 
 - `openssl rand -base64 32` to obtain secret key

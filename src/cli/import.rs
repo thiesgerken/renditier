@@ -1,4 +1,3 @@
-use crate::schema::*;
 use crate::serialization::*;
 
 use clap::ArgAction;
@@ -11,36 +10,27 @@ use std::io;
 pub fn build() -> Command {
     Command::new("import")
         .about("Importing of data via stdin")
+        .long_about(
+            "Importing of data via stdin.\n\n\
+            A backup (as written by `export`) replaces the users it contains, matched by name: \
+            an existing user with the same name loses all their accounts and transactions, \
+            which are replaced by the ones from the backup. All other users stay untouched. \
+            Rows get fresh ids, the ones in the backup only link its rows among each other. \
+            A backup whose ids are ambiguous or dangling is rejected before anything is written, \
+            and any error rolls the whole import back.",
+        )
         .arg(
             Arg::new("moneydb")
                 .long("moneydb")
                 .action(ArgAction::SetTrue)
                 .help("import from moneydb json data"),
         )
-        .arg(
-            Arg::new("clean")
-                .long("clean")
-                .help("clean database contents before importing (use with caution!)"),
-        )
 }
 
 pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
-    if *sub_matches.get_one::<bool>("clean").unwrap() {
-        // diesel::delete(stock_infos::table)
-        //     .execute(connection)
-        //     .expect("Unable to delete stocks!");
-
-        diesel::delete(users::table)
-            .execute(connection)
-            .expect("Unable to delete users!");
-
-        warn!("removed all users, accounts and transactions.");
-    }
-
     if *sub_matches.get_one::<bool>("moneydb").unwrap() {
         let p: MoneyDBFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse moneydb input");
-        // debug!("{:?}", p);
 
         p.write_to(connection);
         warn!(
@@ -52,9 +42,10 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
     } else {
         let p: NativeFormat =
             serde_json::from_reader(io::stdin()).expect("Could not parse native input");
-        // debug!("{:?}", p);
 
-        p.write_to(connection);
+        if let Err(e) = p.write_to(connection) {
+            panic!("Could not import backup, nothing was written: {e}");
+        }
         warn!(
             "Imported from backup. You might want to run `renditier -v stock --fetch && renditier -v data --fetch` now."
         )
