@@ -95,6 +95,16 @@ const Breakdowns = ({ period, loading, stocks }: Props) => {
   return (
     <ProgressCard loading={loading}>
       <CardContent className="flex flex-col gap-6">
+        {/* onvista only has the funds' composition of today; running periods
+            end today, finished ones do not */}
+        {period !== undefined &&
+          (period.kind === 'YearToYear' || period.kind === 'MonthToMonth') && (
+            <p className="text-xs text-muted-foreground">
+              Die Zusammensetzung der Fonds (Einzeltitel, Branchen, Währungen,
+              Länder) ist immer die heutige von onvista, auch für vergangene
+              Zeiträume.
+            </p>
+          )}
         <div className="grid gap-6 md:grid-cols-2">
           {LISTS.map(({ title, maxRows, shares }) => (
             <BarList
