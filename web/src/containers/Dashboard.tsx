@@ -13,6 +13,12 @@ import PortfolioPlot from '../components/portfolioAnalysis/PortfolioPlot';
 import PositionsTable from '../components/portfolioAnalysis/PositionsTable';
 import PositionsBars from '../components/portfolioAnalysis/PositionsBars';
 import Breakdowns from '../components/portfolioAnalysis/Breakdowns';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '../components/ui/tabs';
 import { formatDate, formatDateTime } from '../format';
 import {
   findSelectedPeriod,
@@ -22,6 +28,7 @@ import {
 } from '../selectors/performance';
 
 import { useAppDispatch, useAppSelector } from '../store';
+import useQueryParam from '../useQueryParam';
 import type {
   DataSourceSelection,
   IsoDate,
@@ -45,12 +52,26 @@ const priceDates = (period: PortfolioPerformance): [string, string] | null => {
     : [formatDateTime(oldest), formatDateTime(newest)];
 };
 
+// short enough for all four to fit next to each other on a phone
+const TABS = {
+  chart: 'Entwicklung',
+  positions: 'Positionen',
+  composition: 'Anteile',
+  periods: 'Zeiträume',
+};
+
+const isTab = (value: string | null): value is keyof typeof TABS =>
+  value !== null && value in TABS;
+
 const Dashboard = () => {
   const dispatch = useAppDispatch();
   const performance = useAppSelector(state => state.performance);
   const stocks = useAppSelector(state => state.stocks);
   const selectedKey = useAppSelector(state => state.period.selected);
   const portfolioPlotData = useAppSelector(state => state.portfolioPlot.items);
+  const [tabParam, setTab] = useQueryParam('tab', { replace: true });
+  // a stale or mistyped link still shows the dashboard
+  const tab = isTab(tabParam) ? tabParam : 'chart';
   const updatePortfolioPlotData = useCallback(
     (
       startDate: IsoDate | null,
@@ -70,8 +91,6 @@ const Dashboard = () => {
   // the performance data has loaded.
   const period = findSelectedPeriod(periods, selectedKey);
   const total = periods.find(p => p.kind === 'Total');
-  const hasPositions =
-    total === undefined || Object.keys(total.positions).length > 0;
   const realtimeDates = total === undefined ? null : priceDates(total);
   const range = period === undefined ? null : getPeriodRange(period);
 
@@ -97,45 +116,56 @@ const Dashboard = () => {
 
       {period !== undefined && <KpiHeader period={period} />}
 
-      {hasPositions && (
-        <div className="hidden sm:block">
+      <Tabs
+        value={tab}
+        onValueChange={value => setTab(value === 'chart' ? null : value)}
+      >
+        <TabsList className="w-full sm:w-fit">
+          {Object.entries(TABS).map(([value, label]) => (
+            <TabsTrigger key={value} value={value} className="sm:px-3">
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value="chart">
           <PortfolioPlot
             data={portfolioPlotData}
             updateData={updatePortfolioPlotData}
             performance={performance}
             period={period}
           />
-        </div>
-      )}
+        </TabsContent>
 
-      {hasPositions && (
-        <PositionsTable
-          period={period}
-          loading={performance.isFetching}
-          stocks={stocks}
-        />
-      )}
-
-      <PerformanceTable
-        periods={periods}
-        loading={performance.isFetching}
-        selected={period === undefined ? null : periodKey(period)}
-      />
-
-      {hasPositions && (
-        <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
+        <TabsContent value="positions" className="flex flex-col gap-4">
+          <PositionsTable
+            period={period}
+            loading={performance.isFetching}
+            stocks={stocks}
+          />
           <PositionsBars
             period={period}
             loading={performance.isFetching}
             stocks={stocks}
           />
+        </TabsContent>
+
+        <TabsContent value="composition">
           <Breakdowns
             period={period}
             loading={stocks.isFetching || performance.isFetching}
             stocks={stocks}
           />
-        </div>
-      )}
+        </TabsContent>
+
+        <TabsContent value="periods">
+          <PerformanceTable
+            periods={periods}
+            loading={performance.isFetching}
+            selected={period === undefined ? null : periodKey(period)}
+          />
+        </TabsContent>
+      </Tabs>
 
       {realtimeDates !== null && (
         <p className="px-1 text-xs text-muted-foreground">
