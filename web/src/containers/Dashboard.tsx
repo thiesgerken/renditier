@@ -66,6 +66,8 @@ const Dashboard = () => {
   });
 
   const periods = performance.data ?? [];
+  // The backend always sends a Total period, so this is undefined only until
+  // the performance data has loaded.
   const period = findSelectedPeriod(periods, selectedKey);
   const total = periods.find(p => p.kind === 'Total');
   const hasPositions =

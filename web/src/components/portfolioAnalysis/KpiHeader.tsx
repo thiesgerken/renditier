@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-import type { PortfolioPerformance, PortfolioSnapshot } from '../../types/api';
+import type { PortfolioPerformance } from '../../types/api';
+import { periodGain } from '../../selectors/performance';
 import {
   formatChange,
   formatCurrency,
@@ -55,7 +56,7 @@ const KpiTile = ({ icon: Icon, label, value, detail, tone }: TileProps) => {
         >
           <Icon className="size-4" />
         </span>
-        <span className="truncate">{label}</span>
+        <span className="leading-tight">{label}</span>
       </div>
       <div
         className={cn(
@@ -71,9 +72,6 @@ const KpiTile = ({ icon: Icon, label, value, detail, tone }: TileProps) => {
   );
 };
 
-const profit = (snapshot: PortfolioSnapshot) =>
-  snapshot.value === null ? null : snapshot.value + snapshot.invested;
-
 const count = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
 
@@ -88,10 +86,7 @@ const KpiHeader = ({ period }: Props) => {
   const { signTone } = useTableFormat();
   const { start, end } = period;
 
-  const startProfit = profit(start);
-  const endProfit = profit(end);
-  const gain =
-    startProfit === null || endProfit === null ? null : endProfit - startProfit;
+  const gain = periodGain(period);
   const gainTone = signTone(gain, 0);
 
   // `fees` are negative and add up over time
@@ -128,7 +123,7 @@ const KpiHeader = ({ period }: Props) => {
       />
       <KpiTile
         icon={gainTone === 'loss' ? TrendingDown : TrendingUp}
-        label="Gewinn"
+        label="Gewinn im Zeitraum"
         value={euros(gain, { signed: true })}
         detail={
           period.irrPeriod === null

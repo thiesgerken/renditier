@@ -27,7 +27,7 @@ import type {
   PortfolioPlotItem,
   StoredPortfolioPlotPoint,
 } from '../../types/store';
-import { getPeriodRange } from '../../selectors/performance';
+import { getPeriodRange, periodKey } from '../../selectors/performance';
 import { formatCurrency } from '../../format';
 import ProgressCard from '../ProgressCard';
 import PlotArea from '../plot/PlotArea';
@@ -128,7 +128,10 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
   const theme = useTheme();
   const palette = useSchemePalette();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
-  const [customRange, setCustomRange] = useState(false);
+  // The period that the custom range was set up for: picking another period
+  // ends it, so that the plot follows the dashboard again.
+  const [customFor, setCustomFor] = useState<string | null>(null);
+  const customRange = period !== undefined && customFor === periodKey(period);
   const [mode, setMode] = useState<Mode>('earnings');
   const [source, setSource] = useState<DataSourceSelection>('auto');
   const [dates, setDates] = useState<[Moment | null, Moment | null]>([
@@ -151,6 +154,18 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
   const handleDateChange = useCallback((v: [Moment | null, Moment | null]) => {
     setDates(v);
   }, []);
+
+  // starts from the period's range, so that switching it on changes nothing
+  // until the dates are edited
+  const handleCustomRange = (on: boolean) => {
+    if (!on || period === undefined) {
+      setCustomFor(null);
+      return;
+    }
+    const [start, end] = getPeriodRange(period);
+    setDates([moment(start), moment(end)]);
+    setCustomFor(periodKey(period));
+  };
 
   let plotData: PortfolioPlotItem | null = null;
   let sd: IsoDate | null = null;
@@ -334,7 +349,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
             control={
               <Switch
                 checked={customRange}
-                onChange={e => setCustomRange(e.target.checked)}
+                onChange={e => handleCustomRange(e.target.checked)}
               />
             }
             label="Eigener Zeitraum"

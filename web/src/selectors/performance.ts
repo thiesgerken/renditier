@@ -36,6 +36,27 @@ export const getPeriodDescription = (item: PerformancePeriod): string => {
   }
 };
 
+interface Snapshot {
+  value: number | null;
+  invested: number;
+}
+
+// What the holdings of a snapshot are worth beyond what was paid for them;
+// null without a price. Sold holdings keep their realized profit or loss.
+export const profit = (snapshot: Snapshot): number | null =>
+  snapshot.value === null ? null : snapshot.value + snapshot.invested;
+
+// The profit made within a period, as opposed to profit(period.end), which
+// is everything made up to its end.
+export const periodGain = (period: {
+  start: Snapshot;
+  end: Snapshot;
+}): number | null => {
+  const start = profit(period.start);
+  const end = profit(period.end);
+  return start === null || end === null ? null : end - start;
+};
+
 // Identifies a period across reloads of the performance data: the running
 // periods exist once each and keep their key from day to day, finished years
 // and months are told apart by their end.
@@ -50,7 +71,7 @@ export const RUNNING_PERIODS: { kind: PerformanceKind; label: string }[] = [
   { kind: 'WeekToDate', label: 'Woche' },
   { kind: 'MonthToDate', label: 'Monat' },
   { kind: 'YearToDate', label: 'Jahr' },
-  { kind: 'Total', label: 'Gesamt' },
+  { kind: 'Total', label: 'Insgesamt' },
 ];
 
 // The selected period, or the whole time if it is gone from the data, e.g. a

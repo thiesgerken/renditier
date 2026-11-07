@@ -44,7 +44,7 @@ const StockPerformanceTable = ({ performance }: Props) => (
         <TableRow>
           <ColumnHead column="period" />
           <ColumnHead column="price" />
-          <ColumnHead column="units" className="hidden lg:table-cell" />
+          <ColumnHead column="units" className="hidden xl:table-cell" />
           <ColumnHead column="invested" className="hidden sm:table-cell" />
           <ColumnHead column="value" />
           <ColumnHead column="profit" />
@@ -61,7 +61,7 @@ const StockPerformanceTable = ({ performance }: Props) => (
               <TableRow key={periodKey(p)}>
                 <TableCell>{getPeriodDescription(p)}</TableCell>
                 <PriceCell period={p} />
-                <UnitsCell period={p} className="hidden lg:table-cell" />
+                <UnitsCell period={p} className="hidden xl:table-cell" />
                 <InvestedCell period={p} className="hidden sm:table-cell" />
                 <ValueCell period={p} />
                 <ProfitCell period={p} />

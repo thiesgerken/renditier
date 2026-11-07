@@ -51,7 +51,7 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="hidden lg:table-cell">ISIN</TableHead>
+              <TableHead className="hidden xl:table-cell">ISIN</TableHead>
               <TableHead>Name</TableHead>
               <ColumnHead column="units" className="hidden sm:table-cell" />
               <ColumnHead column="price" className="hidden sm:table-cell" />
@@ -59,7 +59,7 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
               <ColumnHead column="value" />
               <ColumnHead column="profit" />
               <ColumnHead column="irr" />
-              <TableHead className="hidden lg:table-cell" />
+              <TableHead className="hidden xl:table-cell" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -68,7 +68,7 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
 
               return (
                 <TableRow key={p.isin}>
-                  <TableCell className="hidden lg:table-cell">
+                  <TableCell className="hidden xl:table-cell">
                     {p.isin}
                   </TableCell>
                   <TableCell className="min-w-32 whitespace-normal sm:min-w-40">
@@ -101,7 +101,7 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
                   <ValueCell period={p} />
                   <ProfitCell period={p} />
                   <IrrCell period={p} />
-                  <TableCell className="hidden text-center lg:table-cell">
+                  <TableCell className="hidden text-center xl:table-cell">
                     {stock !== null && (
                       <OnvistaButton relativeUrl={stock.onvistaUrl} />
                     )}

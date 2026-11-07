@@ -14,7 +14,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 
 import type { PortfolioSnapshot, PositionSnapshot } from '../types/api';
-import { getPrice } from '../selectors/performance';
+import { getPrice, profit } from '../selectors/performance';
 import { formatChange, formatPriceSource } from '../format';
 import type { IrrPeriod } from '../format';
 import useTableFormat from './useTableFormat';
@@ -237,9 +237,6 @@ export const ValueCell = ({ period, className }: CellProps<Period>) => {
     </NumberCell>
   );
 };
-
-const profit = (snapshot: PortfolioSnapshot) =>
-  snapshot.value === null ? null : snapshot.value + snapshot.invested;
 
 export const ProfitCell = ({ period, className }: CellProps<Period>) => {
   const { money, signTone } = useTableFormat();

@@ -7,7 +7,7 @@ import type {
 } from '../../types/api';
 import type { StocksState } from '../../types/store';
 import { findStock, capitalizeTitle } from '../../selectors/stocks';
-import { isHeld } from '../../selectors/performance';
+import { isHeld, periodGain } from '../../selectors/performance';
 import { formatCurrency } from '../../format';
 import ProgressCard from '../ProgressCard';
 import BarList from '../BarList';
@@ -21,12 +21,9 @@ import {
   SelectValue,
 } from '../ui/select';
 
-const profit = (p: PositionPerformance) =>
-  p.end.value === null ? null : p.end.invested + p.end.value;
-
 // The amount of a position per mode; null when it is unknown because the
 // position has no price. Sold positions are no part of what is invested or
-// held, but their realized profit or loss counts.
+// held, but what they gained or lost within the period counts.
 const MODES = {
   invested: {
     label: 'Kaufpreis',
@@ -37,16 +34,16 @@ const MODES = {
     amount: (p: PositionPerformance) => p.end.value,
   },
   profit: {
-    label: 'Gewinn',
+    label: 'Gewinn im Zeitraum',
     amount: (p: PositionPerformance) => {
-      const x = profit(p);
+      const x = periodGain(p);
       return x === null ? null : Math.max(0, x);
     },
   },
   loss: {
-    label: 'Verlust',
+    label: 'Verlust im Zeitraum',
     amount: (p: PositionPerformance) => {
-      const x = profit(p);
+      const x = periodGain(p);
       return x === null ? null : Math.max(0, -x);
     },
   },
