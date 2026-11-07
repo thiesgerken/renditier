@@ -109,6 +109,8 @@ export const DateRangeFields = ({
       <DatePicker
         id="plot-end"
         value={end}
+        // prices only exist up to today
+        max={Temporal.Now.plainDateISO()}
         // an end before the start moves the start along
         onChange={d =>
           onChange([Temporal.PlainDate.compare(d, start) < 0 ? d : start, d])

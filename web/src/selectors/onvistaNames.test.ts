@@ -12,6 +12,8 @@ describe('countryCode', () => {
     expect(countryCode('Global')).toBeNull();
     expect(countryCode('Barmittel')).toBeNull();
     expect(countryCode('andere Länder')).toBeNull();
+    expect(countryCode('Eurozone')).toBeNull();
+    expect(countryCode('Äußeres Ozeanien')).toBeNull();
   });
 });
 

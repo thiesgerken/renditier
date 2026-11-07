@@ -4,8 +4,6 @@ import type { DotItemDotProps } from 'recharts';
 import { formatCurrency, formatNumber } from '../../format';
 import type { Trades } from './trades';
 import type { TooltipRow } from './PlotTooltip';
-import { useSchemePalette } from '../../muiTheme';
-import type { SchemePalette } from '../../muiTheme';
 
 export const TRADES_AXIS = 'trades';
 
@@ -52,9 +50,9 @@ const markerLine = (
 
 // Buy and sell markers; the chart needs a hidden YAxis with id `TRADES_AXIS`
 // and domain [0, 1].
-export const tradeMarkers = (palette: SchemePalette) => [
-  markerLine('buys', t => t.boughtUnits > 0, 'up', palette.primary.main),
-  markerLine('sells', t => t.soldUnits > 0, 'down', palette.secondary.main),
+export const tradeMarkers = () => [
+  markerLine('buys', t => t.boughtUnits > 0, 'up', 'var(--gain)'),
+  markerLine('sells', t => t.soldUnits > 0, 'down', 'var(--loss)'),
 ];
 
 export const tradeRows = (
@@ -95,13 +93,12 @@ export const TradeLegend = ({
 }: {
   points: { trades: Trades | null }[];
 }) => {
-  const palette = useSchemePalette();
   if (points.every(p => p.trades === null)) return null;
 
   return (
     <div className="flex justify-center gap-4 text-xs">
-      <span style={{ color: palette.primary.main }}>▲ Kauf</span>
-      <span style={{ color: palette.secondary.main }}>▼ Verkauf</span>
+      <span className="text-gain">▲ Kauf</span>
+      <span className="text-loss">▼ Verkauf</span>
     </div>
   );
 };

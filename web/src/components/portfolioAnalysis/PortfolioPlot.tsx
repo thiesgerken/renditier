@@ -32,7 +32,6 @@ import {
   tradeRows,
 } from '../plot/tradeMarkers';
 import { pointTooltip, signedArea, timeXAxis } from '../plot/elements';
-import { useSchemePalette } from '../../muiTheme';
 import useMediaQuery, { PHONE } from '../../useMediaQuery';
 import {
   DateRangeFields,
@@ -118,7 +117,6 @@ interface Props {
 }
 
 const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
-  const palette = useSchemePalette();
   const phone = useMediaQuery(PHONE);
   // The period that the custom range was set up for: picking another period
   // ends it, so that the plot follows the dashboard again.
@@ -221,15 +219,14 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
               hide={phone}
             />
             <YAxis yAxisId={TRADES_AXIS} domain={[0, 1]} hide />
-            <CartesianGrid vertical={false} stroke={palette.divider} />
+            <CartesianGrid vertical={false} stroke="var(--border)" />
 
             {signed !== undefined &&
               signedArea(
                 signed.key,
                 MODES[mode].label,
                 points.map(p => p[signed.key] as number | null),
-                signed.curve,
-                palette
+                signed.curve
               )}
 
             {(mode === 'investedAndValue' || mode === 'value') && (
@@ -237,8 +234,8 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
                 type="linear"
                 dataKey="value"
                 name="Wert"
-                stroke={palette.primary.dark}
-                fill={palette.primary.main}
+                stroke="var(--gain)"
+                fill="var(--gain)"
                 fillOpacity={0.15}
                 strokeWidth={1.4}
                 dot={false}
@@ -251,8 +248,8 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
                 type="stepAfter"
                 dataKey="invested"
                 name="Investiert"
-                stroke={palette.secondary.dark}
-                fill={palette.secondary.main}
+                stroke="var(--loss)"
+                fill="var(--loss)"
                 fillOpacity={0.15}
                 strokeWidth={1.4}
                 dot={false}
@@ -265,14 +262,14 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
                 type="stepAfter"
                 dataKey="invested"
                 name="Investiert"
-                stroke={palette.secondary.dark}
+                stroke="var(--loss)"
                 strokeWidth={1.4}
                 dot={false}
                 isAnimationActive={false}
               />
             )}
 
-            {tradeMarkers(palette)}
+            {tradeMarkers()}
 
             {pointTooltip(intraday, tooltipRows)}
           </ComposedChart>

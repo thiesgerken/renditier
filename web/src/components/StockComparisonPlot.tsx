@@ -37,7 +37,6 @@ import {
 } from './ui/dropdown-menu';
 import { Label } from './ui/label';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
-import { useSchemePalette } from '../muiTheme';
 import useMediaQuery, { PHONE } from '../useMediaQuery';
 
 function getData(
@@ -150,7 +149,6 @@ const StockComparisonPlot = ({
   data,
   updateData,
 }: Props) => {
-  const palette = useSchemePalette();
   const phone = useMediaQuery(PHONE);
   // an index into performance.data, or CUSTOM
   const [period, setPeriod] = useState(0);
@@ -316,7 +314,7 @@ const StockComparisonPlot = ({
             width={90}
             hide={phone}
           />
-          <CartesianGrid vertical={false} stroke={palette.divider} />
+          <CartesianGrid vertical={false} stroke="var(--border)" />
 
           {currentIsins.map((isin, i) => (
             <Line

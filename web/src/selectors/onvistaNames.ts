@@ -32,9 +32,16 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 let countries: Map<string, string> | undefined;
 let currencies: Map<string, string> | undefined;
 
+// The Eurozone and the private-use codes (QM to QZ, XA to XZ) name regions
+// that have no flag.
+const hasFlag = (code: string) =>
+  code !== 'EZ' && !code.startsWith('Q') && !code.startsWith('X');
+
 const countryCodes = () => {
   const names = new Intl.DisplayNames('de', { type: 'region' });
-  const codes = [...LETTERS].flatMap(a => [...LETTERS].map(b => a + b));
+  const codes = [...LETTERS]
+    .flatMap(a => [...LETTERS].map(b => a + b))
+    .filter(hasFlag);
 
   return lookup([
     ...Object.entries(ONVISTA_COUNTRIES),

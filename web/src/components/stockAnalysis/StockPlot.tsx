@@ -43,7 +43,6 @@ import type {
   StockPlotItem,
   StoredStockPlotPoint,
 } from '../../types/store';
-import { useSchemePalette } from '../../muiTheme';
 import useMediaQuery, { PHONE } from '../../useMediaQuery';
 import {
   DateRangeFields,
@@ -167,7 +166,6 @@ const StockPlot = ({
   data,
   updateData,
 }: Props) => {
-  const palette = useSchemePalette();
   const phone = useMediaQuery(PHONE);
   // an index into performance.data, or CUSTOM
   const [period, setPeriod] = useState(0);
@@ -283,19 +281,18 @@ const StockPlot = ({
                 value: 'Einheiten',
                 angle: 90,
                 position: 'insideRight',
-                fill: palette.text.secondary,
+                fill: 'var(--muted-foreground)',
               }}
             />
           )}
-          <CartesianGrid vertical={false} stroke={palette.divider} />
+          <CartesianGrid vertical={false} stroke="var(--border)" />
 
           {signed !== undefined &&
             signedArea(
               signed.key,
               MODES[mode].label,
               points.map(p => p[signed.key] as number | null),
-              signed.curve,
-              palette
+              signed.curve
             )}
 
           {mode === 'price' && (
@@ -303,8 +300,8 @@ const StockPlot = ({
               type="linear"
               dataKey="price"
               name="Kurs"
-              stroke={palette.info.dark}
-              fill={palette.info.main}
+              stroke="var(--chart-price)"
+              fill="var(--chart-price)"
               fillOpacity={0.15}
               strokeWidth={1.4}
               dot={false}
@@ -318,7 +315,7 @@ const StockPlot = ({
               type="linear"
               dataKey="price"
               name="Kurs"
-              stroke={palette.info.dark}
+              stroke="var(--chart-price)"
               strokeWidth={1.4}
               dot={false}
               isAnimationActive={false}
@@ -329,7 +326,7 @@ const StockPlot = ({
               type="stepAfter"
               dataKey="units"
               name="Einheiten"
-              stroke={palette.warning.dark}
+              stroke="var(--chart-units)"
               strokeWidth={1.4}
               dot={false}
               isAnimationActive={false}
@@ -341,8 +338,8 @@ const StockPlot = ({
               type="stepAfter"
               dataKey="units"
               name="Einheiten"
-              stroke={palette.warning.dark}
-              fill={palette.warning.main}
+              stroke="var(--chart-units)"
+              fill="var(--chart-units)"
               fillOpacity={0.15}
               strokeWidth={1.4}
               dot={false}
@@ -355,8 +352,8 @@ const StockPlot = ({
               type="linear"
               dataKey="value"
               name="Wert"
-              stroke={palette.primary.dark}
-              fill={palette.primary.main}
+              stroke="var(--gain)"
+              fill="var(--gain)"
               fillOpacity={0.15}
               strokeWidth={1.4}
               dot={false}
@@ -369,8 +366,8 @@ const StockPlot = ({
               type="stepAfter"
               dataKey="invested"
               name="Investiert"
-              stroke={palette.secondary.dark}
-              fill={palette.secondary.main}
+              stroke="var(--loss)"
+              fill="var(--loss)"
               fillOpacity={0.15}
               strokeWidth={1.4}
               dot={false}
@@ -383,14 +380,14 @@ const StockPlot = ({
               type="stepAfter"
               dataKey="invested"
               name="Investiert"
-              stroke={palette.secondary.dark}
+              stroke="var(--loss)"
               strokeWidth={1.4}
               dot={false}
               isAnimationActive={false}
             />
           )}
 
-          {tradeMarkers(palette)}
+          {tradeMarkers()}
 
           {(mode === 'priceAndUnits' || mode === 'investedAndValue') && (
             <Legend />
