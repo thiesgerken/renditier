@@ -16,7 +16,14 @@ const PlotTooltip = ({ title, rows }: Props) => (
     <Typography variant="subtitle2" gutterBottom>
       {title}
     </Typography>
-    <table style={{ borderSpacing: '12px 2px', margin: '0 -12px' }}>
+    {/* Tailwind's preflight collapses borders, which turns off the spacing. */}
+    <table
+      style={{
+        borderCollapse: 'separate',
+        borderSpacing: '12px 2px',
+        margin: '0 -12px',
+      }}
+    >
       <tbody>
         {rows.map(({ label, value, color }) => (
           <tr key={label} style={{ color }}>

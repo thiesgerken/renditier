@@ -1,12 +1,12 @@
 // Chart elements shared by all time series plots. These are functions rather
 // than components because recharts only recognizes its own elements as direct
 // children of a chart.
-import type { Theme } from '@mui/material';
 import { Area, Tooltip, XAxis } from 'recharts';
 
 import { formatPointDate, timeAxis } from './axes';
 import PlotTooltip from './PlotTooltip';
 import type { TooltipRow } from './PlotTooltip';
+import type { SchemePalette } from '../../muiTheme';
 
 // X axis over the `epoch` of the points.
 export const timeXAxis = (epochs: number[]) => {
@@ -65,19 +65,19 @@ export const signedArea = (
   name: string,
   values: (number | null)[],
   type: 'linear' | 'stepAfter',
-  theme: Theme
+  palette: SchemePalette
 ) => {
   const offset = zeroOffset(values);
 
   return [
     <defs key={`${dataKey}Gradients`}>
       <linearGradient id={`${dataKey}Stroke`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset={offset} stopColor={theme.palette.primary.dark} />
-        <stop offset={offset} stopColor={theme.palette.secondary.dark} />
+        <stop offset={offset} stopColor={palette.primary.dark} />
+        <stop offset={offset} stopColor={palette.secondary.dark} />
       </linearGradient>
       <linearGradient id={`${dataKey}Fill`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset={offset} stopColor={theme.palette.primary.main} />
-        <stop offset={offset} stopColor={theme.palette.secondary.main} />
+        <stop offset={offset} stopColor={palette.primary.main} />
+        <stop offset={offset} stopColor={palette.secondary.main} />
       </linearGradient>
     </defs>,
     <Area

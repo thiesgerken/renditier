@@ -1,11 +1,11 @@
 import { Box, Typography } from '@mui/material';
-import type { Theme } from '@mui/material';
 import { Line } from 'recharts';
 import type { DotItemDotProps } from 'recharts';
 
 import { formatCurrency, formatNumber } from '../../format';
 import type { Trades } from './trades';
 import type { TooltipRow } from './PlotTooltip';
+import type { SchemePalette } from '../../muiTheme';
 
 export const TRADES_AXIS = 'trades';
 
@@ -52,14 +52,9 @@ const markerLine = (
 
 // Buy and sell markers; the chart needs a hidden YAxis with id `TRADES_AXIS`
 // and domain [0, 1].
-export const tradeMarkers = (theme: Theme) => [
-  markerLine('buys', t => t.boughtUnits > 0, 'up', theme.palette.primary.main),
-  markerLine(
-    'sells',
-    t => t.soldUnits > 0,
-    'down',
-    theme.palette.secondary.main
-  ),
+export const tradeMarkers = (palette: SchemePalette) => [
+  markerLine('buys', t => t.boughtUnits > 0, 'up', palette.primary.main),
+  markerLine('sells', t => t.soldUnits > 0, 'down', palette.secondary.main),
 ];
 
 export const tradeRows = (

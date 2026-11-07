@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, useTheme } from '@mui/material/styles';
 import { pink, teal } from '@mui/material/colors';
 
 // The theme of the pages that still use MUI. Its CSS variables switch with
@@ -31,3 +31,14 @@ const muiTheme = createTheme({
 });
 
 export default muiTheme;
+
+// The palette as CSS variables, which follow the color scheme; the values in
+// theme.palette are the light scheme's only.
+export const useSchemePalette = () => {
+  const { vars } = useTheme();
+  if (vars === undefined)
+    throw new Error('the MUI theme needs cssVariables for its color schemes');
+  return vars.palette;
+};
+
+export type SchemePalette = ReturnType<typeof useSchemePalette>;
