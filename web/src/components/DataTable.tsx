@@ -46,7 +46,12 @@ import {
 interface DataTableColumnMeta {
   // Shown next to the header from `md` up; phones get the plain label.
   icon?: LucideIcon;
+  // Hidden on phones, where only the essential columns fit.
+  desktopOnly?: boolean;
 }
+
+const visibility = (meta: DataTableColumnMeta | undefined) =>
+  meta?.desktopOnly ? 'hidden md:table-cell' : undefined;
 
 export const dataTableFeatures = tableFeatures({
   rowSortingFeature,
@@ -162,6 +167,7 @@ function DataTable<T extends RowData>({
                 return (
                   <TableHead
                     key={header.id}
+                    className={visibility(header.column.columnDef.meta)}
                     aria-sort={
                       sorted === 'asc'
                         ? 'ascending'
@@ -211,7 +217,10 @@ function DataTable<T extends RowData>({
               }}
             >
               {row.getAllCells().map(cell => (
-                <TableCell key={cell.id}>
+                <TableCell
+                  key={cell.id}
+                  className={visibility(cell.column.columnDef.meta)}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}
