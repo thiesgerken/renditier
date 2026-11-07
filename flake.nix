@@ -36,8 +36,6 @@
               # reqwest's default TLS links against openssl, diesel's postgres backend against libpq.
               pkgs.openssl
               pkgs.postgresql
-              # argonautica generates its argon2 bindings with bindgen, which needs libclang.
-              pkgs.rustPlatform.bindgenHook
               pkgs.nodejs
             ];
             shellHook = ''
@@ -75,10 +73,7 @@
               ];
             };
             strictDeps = true;
-            nativeBuildInputs = [
-              pkgs.pkg-config
-              pkgs.rustPlatform.bindgenHook
-            ];
+            nativeBuildInputs = [ pkgs.pkg-config ];
             buildInputs = [
               pkgs.openssl
               pkgs.postgresql

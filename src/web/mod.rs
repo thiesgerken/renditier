@@ -1,7 +1,6 @@
 pub mod accounts;
 pub mod analysis;
 pub mod prices;
-pub mod push;
 pub mod receipts;
 pub mod static_files;
 pub mod stocks;
@@ -20,7 +19,6 @@ pub struct Config {
     pub secret_key: Option<String>,
     pub log_level: LogLevel,
     pub database_url: String,
-    pub application_server_key: String,
     pub authentication_redirect: Option<String>,
     pub trusted_header_authentication: bool,
 }
@@ -71,8 +69,6 @@ pub async fn handle(config: Config) {
                 analysis::compute_performance,
                 analysis::compute_stock_plot,
                 analysis::compute_portfolio_plot,
-                push::subscribe,
-                push::unsubscribe,
                 receipts::upload
             ],
         )
