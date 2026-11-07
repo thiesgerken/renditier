@@ -1,5 +1,4 @@
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
+import { useCallback, useEffect } from 'react';
 import {
   Container,
   TableBody,
@@ -14,14 +13,11 @@ import { map } from 'lodash';
 import { styled, useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  updateStocks as updateStocksAction,
-  updatePerformance as updatePerformanceAction,
-} from '../actions/api';
-import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
-import type { AppDispatch } from '../types/actions';
+import { fetchPerformance } from '../slices/performance';
+import { fetchStocks } from '../slices/stocks';
+import { updateStockPlot } from '../slices/stockPlot';
+import { useAppDispatch, useAppSelector } from '../store';
 import type { DataSourceSelection, IsoDate } from '../types/api';
-import type { RootState } from '../types/store';
 import StockRow from '../components/StockRow';
 import ProgressPaper from '../components/ProgressPaper';
 import Hidden from '../components/Hidden';
@@ -33,18 +29,27 @@ const StyledTableCell = styled(TableCell)({
   },
 });
 
-const StockTable = ({
-  stocks,
-  updateStocks,
-  stockPlotData,
-  updateStockPlotData,
-  performance,
-  updatePerformance,
-}: Props) => {
+const StockTable = () => {
   const navigate = useNavigate();
   const theme = useTheme();
-  updateStocks();
-  updatePerformance();
+  const dispatch = useAppDispatch();
+  const stocks = useAppSelector(state => state.stocks);
+  const performance = useAppSelector(state => state.performance);
+  const stockPlotData = useAppSelector(state => state.stockPlot.items);
+  const updateStockPlotData = useCallback(
+    (
+      isin: string | null,
+      startDate: IsoDate | null,
+      endDate: IsoDate | null,
+      source: DataSourceSelection | null
+    ) => dispatch(updateStockPlot(isin, startDate, endDate, source)),
+    [dispatch]
+  );
+
+  useEffect(() => {
+    dispatch(fetchStocks());
+    dispatch(fetchPerformance());
+  });
 
   // TODO: also include some overview analysis of how well the entries perform (not regarding invested money)
   // TODO: also include a checkbox whether we own something of this thing (and ability to hide the others)
@@ -102,29 +107,4 @@ const StockTable = ({
   );
 };
 
-const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updateStocks: () => dispatch(updateStocksAction()),
-  updatePerformance: () => dispatch(updatePerformanceAction()),
-  updateStockPlotData: (
-    isin: string | null,
-    startDate: IsoDate | null,
-    endDate: IsoDate | null,
-    source: DataSourceSelection | null
-  ) => dispatch(updateStockPlotAction(isin, startDate, endDate, source)),
-});
-
-const mapStateToProps = (state: RootState) => {
-  const { stocks, performance, stockPlot } = state;
-
-  return {
-    stocks,
-    performance,
-    stockPlotData: stockPlot.items,
-  };
-};
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-type Props = ConnectedProps<typeof connector>;
-
-export default connector(StockTable);
+export default StockTable;

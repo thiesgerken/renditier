@@ -7,6 +7,13 @@ on:
       - devel
   pull_request:
 
+# Parallel runs on main all push stockdb:main, and the one that finishes last wins the tag even
+# if it built an older commit. Cancelling the older run loses nothing: the newer one builds,
+# pushes and deploys anyway.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     # Runs directly on the runner host, whose Nix store is warm between runs.

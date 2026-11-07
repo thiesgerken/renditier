@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from 'cn';
 import {
@@ -16,7 +15,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-import { ignoreUpdate } from '../actions/notifications';
+import { ignoreUpdate } from '../slices/notifications';
+import { useAppDispatch, useAppSelector } from '../store';
 import {
   Alert,
   AlertAction,
@@ -32,8 +32,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
-import type { AppDispatch } from '../types/actions';
-import type { RootState } from '../types/store';
 
 // `path` is the first segment of the route.
 interface Destination {
@@ -152,7 +150,7 @@ const UserMenu = ({ name, compact, trigger }: UserMenuProps) => {
 };
 
 const UpdateNotice = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
 
   return (
     <Alert className="mx-auto mb-4 max-w-3xl">
@@ -184,11 +182,11 @@ const AppLayout = ({ children }: Props) => {
   const { pathname } = useLocation();
   const current = currentDestination(pathname);
   // App only mounts the layout once logged in, but the state type admits null.
-  const name = useSelector(
-    ({ authentication }: RootState) => authentication.userInfo?.fullName ?? null
+  const name = useAppSelector(
+    ({ authentication }) => authentication.userInfo?.fullName ?? null
   );
-  const updateAvailable = useSelector(
-    ({ notifications }: RootState) =>
+  const updateAvailable = useAppSelector(
+    ({ notifications }) =>
       notifications.updateAvailable && !notifications.updateIgnored
   );
 

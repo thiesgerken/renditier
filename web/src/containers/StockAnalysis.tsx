@@ -1,5 +1,4 @@
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
+import { useCallback, useEffect } from 'react';
 import { map, filter, find, sumBy, min, max } from 'lodash';
 import {
   useTheme,
@@ -16,11 +15,9 @@ import { styled } from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
 import moment from 'moment';
 
-import {
-  updateStocks as updateStocksAction,
-  updatePerformance as updatePerformanceAction,
-} from '../actions/api';
-import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
+import { fetchPerformance } from '../slices/performance';
+import { fetchStocks } from '../slices/stocks';
+import { updateStockPlot } from '../slices/stockPlot';
 import {
   breakdownShares,
   capitalizeTitle,
@@ -43,31 +40,38 @@ import BarList from '../components/BarList';
 
 import type { StockPerformancePeriod } from '../components/stockAnalysis/StockPerformanceRow';
 import type { DataSourceSelection, IsoDate } from '../types/api';
-import type { AppDispatch } from '../types/actions';
-import type { ResourceState, RootState } from '../types/store';
+import { useAppDispatch, useAppSelector } from '../store';
+import type { ResourceState } from '../types/store';
 
 const StyledListItem = styled(ListItem)({
   height: '2em',
 });
 
-type Props = ConnectedProps<typeof connector> & {
+interface Props {
   isin: string;
-};
+}
 
-const StockAnalysis = ({
-  isin,
-  stocks,
-  updateStocks,
-  stockPlotData,
-  updateStockPlotData,
-  performance,
-  updatePerformance,
-}: Props) => {
+const StockAnalysis = ({ isin }: Props) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
+  const dispatch = useAppDispatch();
+  const stocks = useAppSelector(state => state.stocks);
+  const performance = useAppSelector(state => state.performance);
+  const stockPlotData = useAppSelector(state => state.stockPlot.items);
+  const updateStockPlotData = useCallback(
+    (
+      isin: string | null,
+      startDate: IsoDate | null,
+      endDate: IsoDate | null,
+      source: DataSourceSelection | null
+    ) => dispatch(updateStockPlot(isin, startDate, endDate, source)),
+    [dispatch]
+  );
 
-  updatePerformance();
-  updateStocks();
+  useEffect(() => {
+    dispatch(fetchPerformance());
+    dispatch(fetchStocks());
+  });
 
   const stock = findStock(stocks, isin);
   if (stocks.isFetching || performance.isFetching) {
@@ -315,27 +319,4 @@ const StockAnalysis = ({
   );
 };
 
-const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updatePerformance: () => dispatch(updatePerformanceAction()),
-  updateStocks: () => dispatch(updateStocksAction()),
-  updateStockPlotData: (
-    isin: string | null,
-    startDate: IsoDate | null,
-    endDate: IsoDate | null,
-    source: DataSourceSelection | null
-  ) => dispatch(updateStockPlotAction(isin, startDate, endDate, source)),
-});
-
-const mapStateToProps = (state: RootState) => {
-  const { performance, stocks, stockPlot } = state;
-
-  return {
-    performance,
-    stocks,
-    stockPlotData: stockPlot.items,
-  };
-};
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-export default connector(StockAnalysis);
+export default StockAnalysis;
