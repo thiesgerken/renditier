@@ -17,10 +17,8 @@ import {
   Layers,
   Pickaxe,
   PoundSterling,
-  RadioTower,
   Shapes,
   ShoppingBag,
-  ShoppingBasket,
   Zap,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -71,15 +69,11 @@ const CurrencyIcon = ({ name }: { name: string }) => {
   return <Icon aria-hidden className={MARKER} />;
 };
 
-// onvista's broad sectors, which most funds use, and the GICS names some use
-// instead. Thematic funds list free-text industries, which get no icon.
-const SECTOR_ICONS: Partial<Record<string, LucideIcon>> = {
+// onvista's broad sectors, onto which normalizeIndustry maps the other names
+// for them. Thematic funds list free-text industries, which get no icon.
+export const SECTOR_ICONS: Partial<Record<string, LucideIcon>> = {
   'IT/Telekommunikation': Cpu,
-  Informationstechnologie: Cpu,
-  Telekomdienste: RadioTower,
   Konsumgüter: ShoppingBag,
-  'Konsumgüter zyklisch': ShoppingBag,
-  Basiskonsumgüter: ShoppingBasket,
   Finanzen: Landmark,
   Gesundheitswesen: HeartPulse,
   Industrie: Factory,
