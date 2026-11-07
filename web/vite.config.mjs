@@ -1,8 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 const emotionInitCall = 'init_emotion_react_browser_development_esm();';
 const emotionInitName = 'init_emotion_react_browser_development_esm';
@@ -209,9 +211,10 @@ function manualChunks(id) {
 }
 
 export default defineConfig({
-  plugins: [patchMissingEmotionInit(), react()],
+  plugins: [patchMissingEmotionInit(), react(), tailwindcss()],
   resolve: {
     alias: [
+      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
       // The dev dependency optimizer bundles moment's CommonJS build once for
       // the app and once more into its locale, so a loaded locale never reached
       // the app's instance. The ESM build and its ESM locales share one module.

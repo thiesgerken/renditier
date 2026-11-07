@@ -2,19 +2,16 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material';
-import { createTheme } from '@mui/material/styles';
-// Oxygen has no 500 or 600 cut: CSS font matching renders MUI's medium weight
-// with 400 and the tables' 600 with 700. Nothing uses the light 300.
-import '@fontsource/oxygen/400.css';
-import '@fontsource/oxygen/700.css';
-import { pink, teal } from '@mui/material/colors';
+import GlobalStyles from '@mui/material/GlobalStyles';
+import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import moment from 'moment';
 import 'moment/dist/locale/de';
 
+import './index.css';
 import App from './containers/App';
+import muiTheme from './muiTheme';
 import ServiceWorker from './containers/ServiceWorker';
 import { createAppStore } from './store';
 import { setNavigate } from './navigation';
@@ -31,24 +28,6 @@ moment.locale('de');
 
 const store = createAppStore();
 
-const theme = createTheme({
-  typography: {
-    fontFamily: ['Oxygen'].join(','),
-  },
-  palette: {
-    primary: teal,
-    secondary: pink,
-  },
-  components: {
-    MuiTableCell: {
-      styleOverrides: {
-        // right-aligned cells hold numbers, whose digits should line up
-        alignRight: { fontVariantNumeric: 'tabular-nums' },
-      },
-    },
-  },
-});
-
 const container = document.getElementById('root');
 
 if (container === null) throw new Error('missing #root container');
@@ -57,16 +36,24 @@ createRoot(container).render(
   <Provider store={store}>
     <BrowserRouter>
       <NavigationBridge />
-      <ThemeProvider theme={theme}>
-        <LocalizationProvider
-          dateAdapter={AdapterMoment}
-          dateLibInstance={moment}
-          adapterLocale="de"
-        >
-          <ServiceWorker />
-          <App />
-        </LocalizationProvider>
-      </ThemeProvider>
+      {/* MUI's styles go into the `mui` layer. Unlayered, they would beat
+          every Tailwind utility; in this order, Tailwind's preflight cannot
+          reset MUI components, and utilities still win over MUI. The order
+          has to be emitted by emotion, which puts its styles ahead of
+          index.css, and a layer's position is fixed where it first appears. */}
+      <StyledEngineProvider enableCssLayer>
+        <GlobalStyles styles="@layer theme, base, mui, components, utilities;" />
+        <ThemeProvider theme={muiTheme}>
+          <LocalizationProvider
+            dateAdapter={AdapterMoment}
+            dateLibInstance={moment}
+            adapterLocale="de"
+          >
+            <ServiceWorker />
+            <App />
+          </LocalizationProvider>
+        </ThemeProvider>
+      </StyledEngineProvider>
     </BrowserRouter>
   </Provider>
 );

@@ -1,261 +1,262 @@
-import { Box, Container, Collapse } from '@mui/material';
-import AppBar from '@mui/material/AppBar';
-import CssBaseline from '@mui/material/CssBaseline';
-import Divider from '@mui/material/Divider';
-import Drawer from '@mui/material/Drawer';
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import { useTheme } from '@mui/material/styles';
-import type { Theme } from '@mui/material/styles';
-import SwipeableDrawer from '@mui/material/SwipeableDrawer';
-import Stack from '@mui/material/Stack';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import AccountCircle from '@mui/icons-material/AccountCircle';
-import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import CreditCardIcon from '@mui/icons-material/CreditCard';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import MenuIcon from '@mui/icons-material/Menu';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import SettingsIcon from '@mui/icons-material/Settings';
-import Alert from '@mui/material/Alert';
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { cn } from 'cn';
+import {
+  ArrowLeftRight,
+  ChartLine,
+  CircleUser,
+  Landmark,
+  LayoutDashboard,
+  LogOut,
+  RefreshCw,
+  Settings,
+  TrendingUp,
+  X,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 import { ignoreUpdate } from '../slices/notifications';
-import Hidden from '../components/Hidden';
 import { useAppDispatch, useAppSelector } from '../store';
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from '../components/ui/alert';
+import { Button } from '../components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 
-const drawerWidth = 240;
-
-// One entry of the drawer's navigation lists; `key` doubles as the route path.
-interface MenuEntry {
-  key: string;
-  text: string;
-  icon: React.ReactNode;
+// `path` is the first segment of the route.
+interface Destination {
+  path: string;
+  label: string;
+  icon: LucideIcon;
 }
+
+// Four, so that the phone's tab bar has room for every label at 360px.
+const DESTINATIONS: Destination[] = [
+  { path: 'dashboard', label: 'Übersicht', icon: LayoutDashboard },
+  { path: 'stocks', label: 'Wertpapiere', icon: ChartLine },
+  { path: 'transactions', label: 'Transaktionen', icon: ArrowLeftRight },
+  { path: 'accounts', label: 'Depots', icon: Landmark },
+];
+
+const SETTINGS: Destination = {
+  path: 'settings',
+  label: 'Einstellungen',
+  icon: Settings,
+};
+
+// The dashboard is also the page for every unknown path, "/" included.
+const currentDestination = (pathname: string) => {
+  const segment = pathname.split('/')[1];
+  return [...DESTINATIONS, SETTINGS].some(d => d.path === segment)
+    ? segment
+    : 'dashboard';
+};
+
+const Brand = () => (
+  <div className="flex items-center gap-2 font-semibold">
+    <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+      <TrendingUp className="size-4" />
+    </span>
+    Aktienverwaltung
+  </div>
+);
+
+interface LinkProps {
+  destination: Destination;
+  active: boolean;
+}
+
+const SidebarLink = ({ destination, active }: LinkProps) => (
+  <Link
+    to={`/${destination.path}`}
+    aria-current={active ? 'page' : undefined}
+    className={cn(
+      'flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+      active && 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+    )}
+  >
+    <destination.icon
+      className={cn('size-4', active && 'text-sidebar-primary')}
+    />
+    {destination.label}
+  </Link>
+);
+
+const TabBarLink = ({ destination, active }: LinkProps) => (
+  <Link
+    to={`/${destination.path}`}
+    aria-current={active ? 'page' : undefined}
+    className={cn(
+      'flex flex-col items-center gap-1 pt-2 pb-1.5 text-[0.7rem] text-muted-foreground',
+      active && 'font-medium text-primary'
+    )}
+  >
+    <span
+      className={cn(
+        'flex h-7 w-14 items-center justify-center rounded-full transition-colors',
+        active && 'bg-primary/10'
+      )}
+    >
+      <destination.icon className="size-5" />
+    </span>
+    {destination.label}
+  </Link>
+);
+
+interface UserMenuProps {
+  name: string | null;
+  // The phone's trigger is only an icon, and there is no settings link next
+  // to it: the menu then names the user and leads to the settings.
+  compact: boolean;
+  trigger: ReactNode;
+}
+
+const UserMenu = ({ name, compact, trigger }: UserMenuProps) => {
+  const navigate = useNavigate();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-48">
+        {compact && name !== null && (
+          <>
+            <DropdownMenuLabel>{name}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        {compact && (
+          <DropdownMenuItem onSelect={() => navigate(`/${SETTINGS.path}`)}>
+            <SETTINGS.icon />
+            {SETTINGS.label}
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onSelect={() => navigate('/logout')}>
+          <LogOut />
+          Ausloggen
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+const UpdateNotice = () => {
+  const dispatch = useAppDispatch();
+
+  return (
+    <Alert className="mx-auto mb-4 max-w-3xl">
+      <RefreshCw />
+      <AlertTitle>Aktualisierung verfügbar</AlertTitle>
+      <AlertDescription>Bitte die App neu starten.</AlertDescription>
+      <AlertAction>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Hinweis schließen"
+          onClick={() => dispatch(ignoreUpdate())}
+        >
+          <X />
+        </Button>
+      </AlertAction>
+    </Alert>
+  );
+};
 
 interface Props {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-function ResponsiveDrawer({ children }: Props) {
-  const dispatch = useAppDispatch();
-  // App only mounts this layout once logged in, but the state type admits a
-  // missing user.
-  const username = useAppSelector(
-    state => state.authentication.userInfo?.fullName ?? null
+// Desktop: a sidebar with all destinations. Phone: a top bar with the user
+// menu, which also holds the settings, and a tab bar at the bottom within
+// reach of the thumb.
+const AppLayout = ({ children }: Props) => {
+  const { pathname } = useLocation();
+  const current = currentDestination(pathname);
+  // App only mounts the layout once logged in, but the state type admits null.
+  const name = useAppSelector(
+    ({ authentication }) => authentication.userInfo?.fullName ?? null
   );
   const updateAvailable = useAppSelector(
     ({ notifications }) =>
       notifications.updateAvailable && !notifications.updateIgnored
   );
-  const navigate = useNavigate();
-  const location = useLocation();
-  const theme = useTheme();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
-
-  let currentPage = location.pathname.split('/')[1];
-  if (currentPage === '') currentPage = 'dashboard';
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  const makeMenuItem = (x: MenuEntry) => (
-    <ListItem key={x.key} disablePadding>
-      <ListItemButton
-        selected={currentPage === x.key}
-        onClick={() => {
-          navigate(`/${x.key}`);
-          setMobileOpen(false);
-        }}
-      >
-        <ListItemIcon>{x.icon}</ListItemIcon>
-        <ListItemText primary={x.text} />
-      </ListItemButton>
-    </ListItem>
-  );
-
-  const drawer = (
-    <div>
-      <Hidden smDown>
-        <Toolbar />
-        <Divider />
-      </Hidden>
-      <List>
-        {[
-          {
-            key: 'dashboard',
-            text: 'Übersicht',
-            icon: <DashboardIcon />,
-          },
-          {
-            key: 'stocks',
-            text: 'Wertpapiere',
-            icon: <AssessmentOutlinedIcon />,
-          },
-        ].map(makeMenuItem)}
-      </List>
-      <Divider />
-      <List>
-        {[
-          {
-            key: 'transactions',
-            text: 'Transaktionen',
-            icon: <ReceiptIcon />,
-          },
-          {
-            key: 'accounts',
-            text: 'Depots',
-            icon: <CreditCardIcon />,
-          },
-        ].map(makeMenuItem)}
-      </List>
-      <Divider />
-      <List>
-        {[
-          {
-            key: 'settings',
-            text: 'Einstellungen',
-            icon: <SettingsIcon />,
-          },
-        ].map(makeMenuItem)}
-      </List>
-    </div>
-  );
-
-  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
-  const open = Boolean(anchorEl);
-
-  const handleMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <AppBar
-        position="fixed"
-        sx={{ zIndex: (themeValue: Theme) => themeValue.zIndex.drawer + 1 }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-            Aktienverwaltung
-          </Typography>
-          <div>
-            <Stack direction="row" spacing={0} sx={{ alignItems: 'center' }}>
-              <div>{username}</div>
-              <div>
-                <IconButton
-                  aria-label="account of current user"
-                  aria-controls="menu-appbar"
-                  aria-haspopup="true"
-                  onClick={handleMenu}
-                  color="inherit"
-                >
-                  <AccountCircle />
-                </IconButton>
-                <Menu
-                  id="menu-appbar"
-                  anchorEl={anchorEl}
-                  anchorOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                  keepMounted
-                  transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                  open={open}
-                  onClose={handleClose}
-                >
-                  <MenuItem
-                    onClick={() => {
-                      handleClose();
-                      navigate('/logout');
-                    }}
-                  >
-                    Ausloggen
-                  </MenuItem>
-                </Menu>
-              </div>
-            </Stack>
-          </div>
-        </Toolbar>
-      </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-      >
-        <Hidden mdUp>
-          <SwipeableDrawer
-            variant="temporary"
-            anchor={theme.direction === 'rtl' ? 'right' : 'left'}
-            open={mobileOpen}
-            onClose={handleDrawerToggle}
-            onOpen={handleDrawerToggle}
-            disableBackdropTransition
-            slotProps={{ paper: { sx: { width: drawerWidth } } }}
-            ModalProps={{
-              keepMounted: true, // Better open performance on mobile.
-            }}
-          >
-            {drawer}
-          </SwipeableDrawer>
-        </Hidden>
-        <Hidden smDown>
-          <Drawer
-            slotProps={{ paper: { sx: { width: drawerWidth } } }}
-            variant="permanent"
-            open
-          >
-            {drawer}
-          </Drawer>
-        </Hidden>
-      </Box>
-      {/* minWidth: a flex item would otherwise grow to its widest content,
-          e.g. a table, and push the whole page beyond a phone's width */}
-      <Box component="main" sx={{ flexGrow: 1, minWidth: 0, pt: 1 }}>
-        <Toolbar />
-
-        <div style={{ padding: '12px' }}>
-          <Collapse in={updateAvailable}>
-            <Container maxWidth="md" style={{ marginBottom: theme.spacing(3) }}>
-              <Alert
-                elevation={0}
-                severity="info"
-                onClose={() => dispatch(ignoreUpdate())}
-              >
-                Aktualisierung verfügbar, bitte die App neustarten!
-              </Alert>
-            </Container>
-          </Collapse>
-          {children}
+    <div className="min-h-svh">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
+        <div className="flex h-14 items-center px-4">
+          <Brand />
         </div>
-      </Box>
-    </Box>
-  );
-}
+        <nav className="flex flex-1 flex-col gap-1 p-2">
+          {DESTINATIONS.map(d => (
+            <SidebarLink
+              key={d.path}
+              destination={d}
+              active={d.path === current}
+            />
+          ))}
+        </nav>
+        <div className="flex flex-col gap-1 border-t p-2">
+          <SidebarLink
+            destination={SETTINGS}
+            active={current === SETTINGS.path}
+          />
+          <UserMenu
+            name={name}
+            compact={false}
+            trigger={
+              <Button
+                variant="ghost"
+                className="h-9 justify-start gap-3 px-3 font-normal"
+              >
+                <CircleUser className="size-4" />
+                <span className="truncate">{name}</span>
+              </Button>
+            }
+          />
+        </div>
+      </aside>
 
-export default ResponsiveDrawer;
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur md:hidden">
+        <Brand />
+        <UserMenu
+          name={name}
+          compact
+          trigger={
+            <Button variant="ghost" size="icon-lg" aria-label="Benutzermenü">
+              <CircleUser className="size-5" />
+            </Button>
+          }
+        />
+      </header>
+
+      {/* The bottom padding on phones keeps the end of a page above the tab
+          bar. */}
+      <main className="p-3 pb-24 md:ml-60 md:pb-3">
+        {updateAvailable && <UpdateNotice />}
+        {children}
+      </main>
+
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+        {DESTINATIONS.map(d => (
+          <TabBarLink
+            key={d.path}
+            destination={d}
+            active={d.path === current}
+          />
+        ))}
+      </nav>
+    </div>
+  );
+};
+
+export default AppLayout;

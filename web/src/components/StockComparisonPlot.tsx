@@ -49,6 +49,7 @@ import {
 } from './plot/axes';
 import ProgressPaper from './ProgressPaper';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
+import { useSchemePalette } from '../muiTheme';
 
 function getData(
   items: StockPlotItem[],
@@ -163,6 +164,7 @@ const StockComparisonPlot = ({
   updateData,
 }: Props) => {
   const theme = useTheme();
+  const palette = useSchemePalette();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const [period, setPeriod] = useState(0);
   const [source, setSource] = useState<DataSourceSelection>('auto');
@@ -366,10 +368,7 @@ const StockComparisonPlot = ({
                   width={90}
                   hide={xsDown}
                 />
-                <CartesianGrid
-                  vertical={false}
-                  stroke={theme.palette.divider}
-                />
+                <CartesianGrid vertical={false} stroke={palette.divider} />
 
                 {currentIsins.map((isin, i) => (
                   <Line

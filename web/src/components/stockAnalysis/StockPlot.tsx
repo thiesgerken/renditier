@@ -56,6 +56,7 @@ import type {
   StockPlotItem,
   StoredStockPlotPoint,
 } from '../../types/store';
+import { useSchemePalette } from '../../muiTheme';
 
 interface Props {
   isin: string;
@@ -154,6 +155,7 @@ const StockPlot = ({
   updateData,
 }: Props) => {
   const theme = useTheme();
+  const palette = useSchemePalette();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const [period, setPeriod] = useState(0);
   const [mode, setMode] = useState<Mode>('priceAndUnits');
@@ -292,14 +294,11 @@ const StockPlot = ({
                       value: 'Einheiten',
                       angle: 90,
                       position: 'insideRight',
-                      fill: theme.palette.text.secondary,
+                      fill: palette.text.secondary,
                     }}
                   />
                 )}
-                <CartesianGrid
-                  vertical={false}
-                  stroke={theme.palette.divider}
-                />
+                <CartesianGrid vertical={false} stroke={palette.divider} />
 
                 {signed !== undefined &&
                   signedArea(
@@ -307,7 +306,7 @@ const StockPlot = ({
                     MODES[mode].label,
                     points.map(p => p[signed.key] as number | null),
                     signed.curve,
-                    theme
+                    palette
                   )}
 
                 {mode === 'price' && (
@@ -315,8 +314,8 @@ const StockPlot = ({
                     type="linear"
                     dataKey="price"
                     name="Kurs"
-                    stroke={theme.palette.info.dark}
-                    fill={theme.palette.info.main}
+                    stroke={palette.info.dark}
+                    fill={palette.info.main}
                     fillOpacity={0.15}
                     strokeWidth={1.4}
                     dot={false}
@@ -330,7 +329,7 @@ const StockPlot = ({
                     type="linear"
                     dataKey="price"
                     name="Kurs"
-                    stroke={theme.palette.info.dark}
+                    stroke={palette.info.dark}
                     strokeWidth={1.4}
                     dot={false}
                     isAnimationActive={false}
@@ -341,7 +340,7 @@ const StockPlot = ({
                     type="stepAfter"
                     dataKey="units"
                     name="Einheiten"
-                    stroke={theme.palette.warning.dark}
+                    stroke={palette.warning.dark}
                     strokeWidth={1.4}
                     dot={false}
                     isAnimationActive={false}
@@ -353,8 +352,8 @@ const StockPlot = ({
                     type="stepAfter"
                     dataKey="units"
                     name="Einheiten"
-                    stroke={theme.palette.warning.dark}
-                    fill={theme.palette.warning.main}
+                    stroke={palette.warning.dark}
+                    fill={palette.warning.main}
                     fillOpacity={0.15}
                     strokeWidth={1.4}
                     dot={false}
@@ -367,8 +366,8 @@ const StockPlot = ({
                     type="linear"
                     dataKey="value"
                     name="Wert"
-                    stroke={theme.palette.primary.dark}
-                    fill={theme.palette.primary.main}
+                    stroke={palette.primary.dark}
+                    fill={palette.primary.main}
                     fillOpacity={0.15}
                     strokeWidth={1.4}
                     dot={false}
@@ -381,8 +380,8 @@ const StockPlot = ({
                     type="stepAfter"
                     dataKey="invested"
                     name="Investiert"
-                    stroke={theme.palette.secondary.dark}
-                    fill={theme.palette.secondary.main}
+                    stroke={palette.secondary.dark}
+                    fill={palette.secondary.main}
                     fillOpacity={0.15}
                     strokeWidth={1.4}
                     dot={false}
@@ -395,14 +394,14 @@ const StockPlot = ({
                     type="stepAfter"
                     dataKey="invested"
                     name="Investiert"
-                    stroke={theme.palette.secondary.dark}
+                    stroke={palette.secondary.dark}
                     strokeWidth={1.4}
                     dot={false}
                     isAnimationActive={false}
                   />
                 )}
 
-                {tradeMarkers(theme)}
+                {tradeMarkers(palette)}
 
                 {(mode === 'priceAndUnits' || mode === 'investedAndValue') && (
                   <Legend />

@@ -21,7 +21,9 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src"],
   "exclude": ["src/serviceWorkerCustomizations.js"]

@@ -45,6 +45,7 @@ import {
   tradeRows,
 } from '../plot/tradeMarkers';
 import { pointTooltip, signedArea, timeXAxis } from '../plot/elements';
+import { useSchemePalette } from '../../muiTheme';
 
 function getData(
   items: PortfolioPlotItem[],
@@ -121,6 +122,7 @@ interface Props {
 
 const PortfolioPlot = ({ performance, data, updateData }: Props) => {
   const theme = useTheme();
+  const palette = useSchemePalette();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const [period, setPeriod] = useState(0);
   const [mode, setMode] = useState<Mode>('earnings');
@@ -240,10 +242,7 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
                   hide={xsDown}
                 />
                 <YAxis yAxisId={TRADES_AXIS} domain={[0, 1]} hide />
-                <CartesianGrid
-                  vertical={false}
-                  stroke={theme.palette.divider}
-                />
+                <CartesianGrid vertical={false} stroke={palette.divider} />
 
                 {signed !== undefined &&
                   signedArea(
@@ -251,7 +250,7 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
                     MODES[mode].label,
                     points.map(p => p[signed.key] as number | null),
                     signed.curve,
-                    theme
+                    palette
                   )}
 
                 {(mode === 'investedAndValue' || mode === 'value') && (
@@ -259,8 +258,8 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
                     type="linear"
                     dataKey="value"
                     name="Wert"
-                    stroke={theme.palette.primary.dark}
-                    fill={theme.palette.primary.main}
+                    stroke={palette.primary.dark}
+                    fill={palette.primary.main}
                     fillOpacity={0.15}
                     strokeWidth={1.4}
                     dot={false}
@@ -273,8 +272,8 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
                     type="stepAfter"
                     dataKey="invested"
                     name="Investiert"
-                    stroke={theme.palette.secondary.dark}
-                    fill={theme.palette.secondary.main}
+                    stroke={palette.secondary.dark}
+                    fill={palette.secondary.main}
                     fillOpacity={0.15}
                     strokeWidth={1.4}
                     dot={false}
@@ -287,14 +286,14 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
                     type="stepAfter"
                     dataKey="invested"
                     name="Investiert"
-                    stroke={theme.palette.secondary.dark}
+                    stroke={palette.secondary.dark}
                     strokeWidth={1.4}
                     dot={false}
                     isAnimationActive={false}
                   />
                 )}
 
-                {tradeMarkers(theme)}
+                {tradeMarkers(palette)}
 
                 {pointTooltip(intraday, tooltipRows)}
               </ComposedChart>

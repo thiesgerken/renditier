@@ -9,6 +9,7 @@ import {
   formatPercent,
 } from '../format';
 import type { Formatter } from '../format';
+import { useSchemePalette } from '../muiTheme';
 
 // Number formatting for table cells. Phones only have room for whole euros and
 // units and one decimal of percentages.
@@ -31,6 +32,8 @@ const useTableFormat = () => {
   const irr = (period: Parameters<typeof formatIrr>[0]) =>
     formatIrr(period, percentDigits);
 
+  const palette = useSchemePalette();
+
   // Gains in the primary, losses in the secondary color. Values that are
   // displayed as zero at `shownDigits` fraction digits stay neutral.
   const signColor = (
@@ -42,10 +45,7 @@ const useTableFormat = () => {
     Math.abs(value) < 0.5 * 10 ** -shownDigits
       ? {}
       : {
-          color:
-            value < 0
-              ? theme.palette.secondary.dark
-              : theme.palette.primary.dark,
+          color: value < 0 ? palette.secondary.dark : palette.primary.dark,
         };
 
   // for ratios shown as percentages, e.g. IRRs and relative changes
