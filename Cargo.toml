@@ -2,7 +2,7 @@
 name = "stockdb"
 version = "0.1.0"
 authors = ["Thies Gerken <thies@thiesgerken.de>"]
-edition = "2018"
+edition = "2024"
 default-run = "stockdb"
 
 [dependencies]

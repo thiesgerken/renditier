@@ -4,8 +4,8 @@ use clap::{crate_authors, crate_name, crate_version, Arg, ArgAction, ArgGroup, C
 use clap_complete::{generate, Generator, Shell};
 use std::io;
 
-fn print_completions<G: Generator>(gen: G, app: &mut Command) {
-    generate(gen, app, app.get_name().to_string(), &mut io::stdout());
+fn print_completions<G: Generator>(generator: G, app: &mut Command) {
+    generate(generator, app, app.get_name().to_string(), &mut io::stdout());
 }
 
 fn main() {

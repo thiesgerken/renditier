@@ -185,28 +185,28 @@ pub async fn info(
         }
     }
 
-    if config.trusted_header_authentication {
-        if let Some(user_name) = trusted_header.user_name {
-            use crate::schema::users::dsl::*;
-            let uname = user_name.clone();
-            let u: Result<User, _> = connection
-                .run(|c| users.filter(name.eq(uname)).first(c))
-                .await;
+    if config.trusted_header_authentication
+        && let Some(user_name) = trusted_header.user_name
+    {
+        use crate::schema::users::dsl::*;
+        let uname = user_name.clone();
+        let u: Result<User, _> = connection
+            .run(|c| users.filter(name.eq(uname)).first(c))
+            .await;
 
-            if let Ok(u) = u {
-                info!(
-                    "Successful login with username from trusted header: '{}'",
-                    user_name
-                );
-                cookies.add_private(Cookie::new("user_id", u.id.to_string()));
+        if let Ok(u) = u {
+            info!(
+                "Successful login with username from trusted header: '{}'",
+                user_name
+            );
+            cookies.add_private(Cookie::new("user_id", u.id.to_string()));
 
-                return (Status::Ok, Some(Json(UserInfo::new(u))));
-            } else {
-                warn!(
+            return (Status::Ok, Some(Json(UserInfo::new(u))));
+        } else {
+            warn!(
                 "Attempt to login with non-existing username via trusted header: '{}'; ignoring.",
                 user_name
             );
-            }
         }
     }
 
