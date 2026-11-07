@@ -1,5 +1,3 @@
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
 import React, { useEffect } from 'react';
 import moment from 'moment';
 import { find } from 'lodash';
@@ -27,14 +25,14 @@ import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { updateTransactions as updateTransactionsAction } from '../actions/transactions';
-import { updateStocks as updateStocksAction } from '../actions/api';
-import { updateAccounts as updateAccountsAction } from '../actions/accounts';
-import { uploadReceipts as uploadReceiptsAction } from '../actions/receipts';
+import { fetchTransactions } from '../slices/transactions';
+import { fetchStocks } from '../slices/stocks';
+import { fetchAccounts } from '../slices/accounts';
+import { uploadReceipts } from '../slices/receipts';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
-import type { AppDispatch } from '../types/actions';
+import { useAppDispatch, useAppSelector } from '../store';
 import type { Transaction } from '../types/api';
-import type { RootState, StocksState } from '../types/store';
+import type { StocksState } from '../types/store';
 import TransactionDialog from './TransactionDialog';
 import type { TransactionDraft } from './TransactionDialog';
 import ReceiptUploadDialog from './ReceiptUploadDialog';
@@ -98,15 +96,11 @@ const manipulateExchange = (
   };
 };
 
-const Transactions = ({
-  stocks,
-  transactions,
-  accounts,
-  updateStocks,
-  updateTransactions,
-  updateAccounts,
-  uploadReceipts,
-}: Props) => {
+const Transactions = () => {
+  const dispatch = useAppDispatch();
+  const stocks = useAppSelector(state => state.stocks);
+  const transactions = useAppSelector(state => state.transactions);
+  const accounts = useAppSelector(state => state.accounts);
   const [transactionId, setTransactionId] = useQuery('id');
   const [uploading, setUploading] = useQuery('upload');
   const [page, setPage] = useQuery('page');
@@ -148,9 +142,9 @@ const Transactions = ({
   }
 
   useEffect(() => {
-    updateTransactions();
-    updateStocks();
-    updateAccounts();
+    dispatch(fetchTransactions());
+    dispatch(fetchStocks());
+    dispatch(fetchAccounts());
   });
 
   const isLoading =
@@ -294,7 +288,7 @@ const Transactions = ({
                     multiple
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                       setUploading(true);
-                      uploadReceipts(event.target.files ?? []);
+                      dispatch(uploadReceipts(event.target.files ?? []));
                     }}
                   />
                   <CloudUploadIcon />
@@ -357,26 +351,4 @@ const Transactions = ({
   );
 };
 
-const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updateTransactions: () => dispatch(updateTransactionsAction()),
-  updateStocks: () => dispatch(updateStocksAction()),
-  updateAccounts: () => dispatch(updateAccountsAction()),
-  uploadReceipts: (inputFiles: FileList | File[]) =>
-    dispatch(uploadReceiptsAction(inputFiles)),
-});
-
-const mapStateToProps = (state: RootState) => {
-  const { transactions, stocks, accounts } = state;
-
-  return {
-    transactions,
-    stocks,
-    accounts,
-  };
-};
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-type Props = ConnectedProps<typeof connector>;
-
-export default connector(Transactions);
+export default Transactions;

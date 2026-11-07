@@ -26,14 +26,11 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Alert from '@mui/material/Alert';
 import React from 'react';
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { ignoreUpdate as ignoreUpdateAction } from '../actions/notifications';
+import { ignoreUpdate } from '../slices/notifications';
 import Hidden from '../components/Hidden';
-import type { AppDispatch } from '../types/actions';
-import type { RootState } from '../types/store';
+import { useAppDispatch, useAppSelector } from '../store';
 
 const drawerWidth = 240;
 
@@ -44,8 +41,21 @@ interface MenuEntry {
   icon: React.ReactNode;
 }
 
-function ResponsiveDrawer(props: Props) {
-  const { children, username, updateAvailable, ignoreUpdate } = props;
+interface Props {
+  children: React.ReactNode;
+}
+
+function ResponsiveDrawer({ children }: Props) {
+  const dispatch = useAppDispatch();
+  // App only mounts this layout once logged in, but the state type admits a
+  // missing user.
+  const username = useAppSelector(
+    state => state.authentication.userInfo?.fullName ?? null
+  );
+  const updateAvailable = useAppSelector(
+    ({ notifications }) =>
+      notifications.updateAvailable && !notifications.updateIgnored
+  );
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -232,7 +242,11 @@ function ResponsiveDrawer(props: Props) {
         <div style={{ padding: '12px' }}>
           <Collapse in={updateAvailable}>
             <Container maxWidth="md" style={{ marginBottom: theme.spacing(3) }}>
-              <Alert elevation={0} severity="info" onClose={ignoreUpdate}>
+              <Alert
+                elevation={0}
+                severity="info"
+                onClose={() => dispatch(ignoreUpdate())}
+              >
                 Aktualisierung verfügbar, bitte die App neustarten!
               </Alert>
             </Container>
@@ -244,23 +258,4 @@ function ResponsiveDrawer(props: Props) {
   );
 }
 
-const mapStateToProps = ({ authentication, notifications }: RootState) => ({
-  // FIXME(tsx-migration): was `authentication.userInfo.fullName`, which throws
-  // when userInfo is null. App only mounts this layout once logged in, so the
-  // path is unreachable today, but the state type admits null.
-  username: authentication.userInfo?.fullName ?? null,
-  updateAvailable:
-    notifications.updateAvailable && !notifications.updateIgnored,
-});
-
-const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  ignoreUpdate: () => dispatch(ignoreUpdateAction()),
-});
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-type Props = ConnectedProps<typeof connector> & {
-  children: React.ReactNode;
-};
-
-export default connector(ResponsiveDrawer);
+export default ResponsiveDrawer;

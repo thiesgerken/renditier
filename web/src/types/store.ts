@@ -1,6 +1,7 @@
-// Redux state shapes. Every slice's state lives here so that `RootState` can be
-// written explicitly instead of inferred from the reducers — that keeps the
-// reducers importing from this file and nothing importing back out of them.
+// Redux state shapes, declared rather than inferred from the slices so that the
+// nullable fields are explicit and components can type their props with them.
+
+import type { SerializedError } from '@reduxjs/toolkit';
 
 import type {
   Account,
@@ -19,16 +20,11 @@ import type {
 // Epoch milliseconds, as produced by Date.now().
 export type Timestamp = number;
 
-// Everything the app puts in `error` fields comes from either a thrown Error, a
-// rejected fetch, or a `{ message }` literal constructed inline by an action.
-export interface ErrorLike {
-  message: string;
-}
-
-export type StoredError = Error | ErrorLike;
+// What createAsyncThunk makes of whatever a thunk threw.
+export type StoredError = SerializedError;
 
 // --------------------------------------------------------------------------
-// Generic API resource slice (src/apiResources.ts)
+// Generic API resource slice (src/slices/resource.ts)
 // --------------------------------------------------------------------------
 
 export interface ResourceState<T> {
@@ -46,16 +42,12 @@ export type PerformanceState = ResourceState<PortfolioPerformance[]>;
 // Hand-written slices
 // --------------------------------------------------------------------------
 
-export type ModifyMethod = 'POST' | 'PUT' | 'DELETE';
-
 export interface AccountsState {
   isFetching: boolean;
   didInvalidate: boolean;
   items: Account[];
   fetchError: StoredError | null;
   lastUpdated: Timestamp | null;
-  isModifying: boolean;
-  modifyError: StoredError | null;
 }
 
 export interface TransactionsState {
@@ -64,15 +56,11 @@ export interface TransactionsState {
   items: Transaction[];
   fetchError: StoredError | null;
   lastUpdated: Timestamp | null;
-  isModifying: boolean;
-  modifyError: StoredError | null;
 }
 
 export interface AuthenticationState {
   isFetching: boolean;
-  didInvalidate: boolean;
   userInfo: UserInfoState | null;
-  lastUpdated: Timestamp | null;
   error: StoredError | null;
   message: string | null;
   messageType: 'error' | 'success' | null;
@@ -157,18 +145,4 @@ export interface PortfolioPlotState {
 
 export interface StockPlotState {
   items: StockPlotItem[];
-}
-
-// --------------------------------------------------------------------------
-
-export interface RootState {
-  authentication: AuthenticationState;
-  notifications: NotificationsState;
-  portfolioPlot: PortfolioPlotState;
-  stockPlot: StockPlotState;
-  accounts: AccountsState;
-  transactions: TransactionsState;
-  receipts: ReceiptsState;
-  performance: PerformanceState;
-  stocks: StocksState;
 }

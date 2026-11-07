@@ -12,22 +12,21 @@ import {
   ListItemText,
 } from '@mui/material';
 import type { DialogProps } from '@mui/material';
-import { connect } from 'react-redux';
-import type { ConnectedProps } from 'react-redux';
 import { map } from 'lodash';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
 import { formatCurrency, formatDate, formatNumber } from '../format';
+import { useAppSelector } from '../store';
 
-import type { RootState } from '../types/store';
-
-type Props = ConnectedProps<typeof connector> & {
+interface Props {
   open: boolean;
   onClose: () => void;
-};
+}
 
-const ReceiptUploadDialog = ({ receipts, stocks, open, onClose }: Props) => {
+const ReceiptUploadDialog = ({ open, onClose }: Props) => {
+  const receipts = useAppSelector(state => state.receipts);
+  const stocks = useAppSelector(state => state.stocks);
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
 
@@ -67,7 +66,7 @@ const ReceiptUploadDialog = ({ receipts, stocks, open, onClose }: Props) => {
         {!receipts.isUploading && receipts.uploadError !== null && (
           <Alert severity="error">
             <AlertTitle>Fehler beim Upload</AlertTitle>
-            {receipts.uploadError.toString()}
+            {receipts.uploadError.message}
           </Alert>
         )}
         {!receipts.isUploading && receipts.data !== null && (
@@ -110,15 +109,4 @@ const ReceiptUploadDialog = ({ receipts, stocks, open, onClose }: Props) => {
   );
 };
 
-const mapStateToProps = (state: RootState) => {
-  const { receipts, stocks } = state;
-
-  return {
-    receipts,
-    stocks,
-  };
-};
-
-const connector = connect(mapStateToProps);
-
-export default connector(ReceiptUploadDialog);
+export default ReceiptUploadDialog;

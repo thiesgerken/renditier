@@ -26,9 +26,8 @@ const StyledTableCell = styled(TableCell)({
 });
 
 const TransactionsTable = ({ transactions, currentPrice = null }: Props) => {
-  // `.valueOf()` is what the original `moment(b.date) - moment(a.date)` relied
-  // on implicitly.
-  transactions.sort(
+  // Sorts a copy: the store freezes its state.
+  const newestFirst = [...transactions].sort(
     (a, b) => moment(b.date).valueOf() - moment(a.date).valueOf()
   );
 
@@ -49,7 +48,7 @@ const TransactionsTable = ({ transactions, currentPrice = null }: Props) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {map(transactions, t => (
+              {map(newestFirst, t => (
                 <TransactionRow
                   transaction={t}
                   currentPrice={currentPrice}
