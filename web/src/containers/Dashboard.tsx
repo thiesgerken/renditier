@@ -145,7 +145,7 @@ const Dashboard = () => {
           would cover a fifth of the screen. */}
       <div className="-mx-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 md:sticky md:top-0 md:z-20 md:bg-background/90 md:backdrop-blur">
         <div>
-          <h1 className="text-lg font-semibold">
+          <h1 className="text-lg font-medium">
             {period === undefined
               ? t('nav.dashboard')
               : getPeriodDescription(period)}

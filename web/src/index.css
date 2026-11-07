@@ -1,7 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import '@fontsource-variable/geist';
 @import '@fontsource-variable/outfit';
 
 /* There is no theme switch: the app follows the system. */
@@ -17,9 +16,10 @@
   --breakpoint-lg: 1200px;
   --breakpoint-xl: 1536px;
 
-  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
-  /* the wordmark's face, see docs/brand/styleguide.md */
-  --font-brand: 'Outfit Variable', ui-sans-serif, system-ui, sans-serif;
+  /* one face for the app and the wordmark; the wordmark alone is set at 700,
+     see docs/brand/styleguide.md */
+  --font-sans: 'Outfit Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-brand: var(--font-sans);
 }
 
 @theme inline {
@@ -39,6 +39,10 @@
   --color-gain: var(--gain);
   --color-loss: var(--loss);
   --color-brand: var(--brand);
+  --color-kind-buy: var(--kind-buy);
+  --color-kind-sell: var(--kind-sell);
+  --color-kind-fee: var(--kind-fee);
+  --color-kind-dividend: var(--kind-dividend);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -63,76 +67,98 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.511 0.096 186.4);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --background: #f8f9fb;
+  --foreground: #1b2a41;
+  --card: #ffffff;
+  --card-foreground: #1b2a41;
+  --popover: #ffffff;
+  --popover-foreground: #1b2a41;
+  --primary: #1b2a41;
+  --primary-foreground: #f8f9fb;
+  --secondary: #edf0f4;
+  --secondary-foreground: #1b2a41;
+  --muted: #edf0f4;
+  --muted-foreground: #5f6b7e;
+  --accent: #edf0f4;
+  --accent-foreground: #1b2a41;
   --destructive: oklch(0.577 0.245 27.325);
-  /* teal and pink for gains and losses, in tables and plots alike */
-  --gain: #00796b;
-  --loss: #c2185b;
-  /* a stock's price and units, which are neither gain nor loss */
-  --chart-price: #0288d1;
-  --chart-units: #ed6c02;
+  /* green and berry for gains and losses, in tables and plots alike */
+  --gain: #1e7a46;
+  --loss: #b0245e;
   /* the orange of the logo: the new high, never a loss */
   --brand: #d2652a;
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* a stock's price is the logo's price line; its units are neither gain nor loss */
+  --chart-price: var(--brand);
+  --chart-units: #5c7ca8;
+  /* comparison lines: six hues clear of gain, loss and the brand orange */
+  --chart-series-1: #2f6db5;
+  --chart-series-2: #7b5cc4;
+  --chart-series-3: #a8860f;
+  --chart-series-4: #1f8fa3;
+  --chart-series-5: #8c6a4f;
+  --chart-series-6: #4f5d75;
+  /* transaction kinds, also clear of gain, loss and the brand orange */
+  --kind-buy: #2f6db5;
+  --kind-sell: #7b5cc4;
+  --kind-fee: #64748b;
+  --kind-dividend: #8f7410;
+  --border: #e3e7ed;
+  --input: #e3e7ed;
+  --ring: #d2652a;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.511 0.096 186.4);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #f1f3f7;
+  --sidebar-foreground: #1b2a41;
+  --sidebar-primary: #1b2a41;
+  --sidebar-primary-foreground: #f8f9fb;
+  --sidebar-accent: #e5e9f0;
+  --sidebar-accent-foreground: #1b2a41;
+  --sidebar-border: #e3e7ed;
+  --sidebar-ring: #d2652a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.704 0.123 182.5);
-    --primary-foreground: oklch(0.145 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    --background: #0e1522;
+    --foreground: #eef1f5;
+    --card: #172238;
+    --card-foreground: #eef1f5;
+    --popover: #172238;
+    --popover-foreground: #eef1f5;
+    --primary: #eef1f5;
+    --primary-foreground: #1b2a41;
+    --secondary: #1f2d45;
+    --secondary-foreground: #eef1f5;
+    --muted: #1f2d45;
+    --muted-foreground: #9aa6b8;
+    --accent: #1f2d45;
+    --accent-foreground: #eef1f5;
     --destructive: oklch(0.704 0.191 22.216);
-    --gain: #26a69a;
-    --loss: #ec407a;
-    --chart-price: #29b6f6;
-    --chart-units: #ffa726;
+    --gain: #4cc38a;
+    --loss: #f06aa0;
     --brand: #e07a40;
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.704 0.123 182.5);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --chart-price: var(--brand);
+    --chart-units: #8fa9cc;
+    --chart-series-1: #6ea3e6;
+    --chart-series-2: #a68cf0;
+    --chart-series-3: #e3c04f;
+    --chart-series-4: #4fc1d3;
+    --chart-series-5: #c49a78;
+    --chart-series-6: #9aa8bf;
+    --kind-buy: #6ea3e6;
+    --kind-sell: #a68cf0;
+    --kind-fee: #94a3b8;
+    --kind-dividend: #e3c04f;
+    --border: #26344d;
+    --input: #26344d;
+    --ring: #e07a40;
+    --sidebar: #121b2b;
+    --sidebar-foreground: #eef1f5;
+    --sidebar-primary: #eef1f5;
+    --sidebar-primary-foreground: #1b2a41;
+    --sidebar-accent: #1f2d45;
+    --sidebar-accent-foreground: #eef1f5;
+    --sidebar-border: #26344d;
+    --sidebar-ring: #e07a40;
   }
 }
 
@@ -144,7 +170,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background font-light text-foreground antialiased;
   }
   html {
     @apply font-sans;

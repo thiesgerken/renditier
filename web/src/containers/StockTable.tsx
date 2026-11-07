@@ -49,7 +49,7 @@ const ReturnCell = ({ ratio }: { ratio: number | null }) => {
   return (
     <span
       className={cn(
-        'tabular-nums',
+        'font-normal tabular-nums',
         tone === 'gain' && 'text-gain',
         tone === 'loss' && 'text-loss'
       )}

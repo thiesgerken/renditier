@@ -79,7 +79,10 @@ const toRow = (
 const Money = ({ cents }: { cents: number }) => {
   const { signColor } = useTableFormat();
   return (
-    <span className="tabular-nums" style={signColor(cents / 100, 2)}>
+    <span
+      className="font-normal tabular-nums"
+      style={signColor(cents / 100, 2)}
+    >
       <span className="md:hidden">
         {formatCurrency(cents / 100, { digits: 0 })}
       </span>
@@ -94,7 +97,10 @@ const UNIT_DIGITS = 6;
 const Units = ({ units }: { units: number }) => {
   const { signColor } = useTableFormat();
   return (
-    <span className="tabular-nums" style={signColor(units, UNIT_DIGITS)}>
+    <span
+      className="font-normal tabular-nums"
+      style={signColor(units, UNIT_DIGITS)}
+    >
       {formatNumber(units, { digits: 0, maxDigits: UNIT_DIGITS })}
     </span>
   );

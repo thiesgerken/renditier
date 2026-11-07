@@ -75,19 +75,16 @@ style guide roles. In particular shadcn's `--accent` is a hover surface, not the
 portfolio chart line and its end dot. `--destructive` stays red: it marks dangerous actions, not
 losses. Check it next to the berry loss colour.
 
-Colours on `main` that clash with the brand and still need a design decision (one board for Thies in
-the look PR):
+Colours on `main` that clashed with the brand, decided by Thies (P1, S2, see
+[Charts and transaction kinds](styleguide.md#charts-and-transaction-kinds)):
 
-- `--chart-units` (`#ed6c02`, dark `#ffa726`) is practically the brand orange. A units line would read
-  as a highlight or as the "new high" dot. `--chart-price` (`#0288d1`) needs a check against navy and
-  the orange accent. Both are used in `web/src/components/stockAnalysis/StockPlot.tsx`.
-- `web/src/components/StockComparisonPlot.tsx`: `LINE_COLORS` are nine hard-coded hexes (teal, deep
-  orange, blue, orange, pink, green, lime, deep purple, red) with no dark variant. They collide with
-  gain, loss and the brand. Replace them with series tokens in `index.css`, light and dark, none of
-  them near green, berry or orange.
-- `web/src/components/TransactionKind.tsx`: dividends are `amber-600`/`amber-400`, right next to the
-  brand orange. Buy (sky), sell (violet) and fee (slate) need a look against the new palette. The
-  comment there and the one above `--gain`/`--loss` in `index.css` still say "teal and pink".
+- `--chart-price` becomes the brand orange, `--chart-units` steel blue (it was practically the brand
+  orange).
+- `StockComparisonPlot.tsx`: the nine hard-coded `LINE_COLORS` become six `--chart-series-*` tokens;
+  a line whose hue is taken is dashed.
+- `TransactionKind.tsx`: buy, sell, fee and dividend become `--kind-*` tokens; dividends lose the
+  amber that sat next to the orange.
+- The "teal and pink" comments there and in `index.css` go.
 
 No other hard-coded teal, pink, rose, emerald, orange or amber classes are left in `web/src`.
 

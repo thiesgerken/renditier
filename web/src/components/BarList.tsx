@@ -126,7 +126,7 @@ const BarList = ({
       </h3>
       <div
         className={cn(
-          'grid items-baseline gap-x-3 text-sm tabular-nums',
+          'grid items-baseline gap-x-3 text-sm font-normal tabular-nums',
           formatValue
             ? 'grid-cols-[minmax(0,1fr)_auto_auto]'
             : 'grid-cols-[minmax(0,1fr)_auto]'

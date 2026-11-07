@@ -118,7 +118,7 @@ const NumberCell = ({
 }) => (
   <TableCell
     className={cn(
-      'text-right tabular-nums',
+      'text-right font-normal tabular-nums',
       tone !== null && TONE_TEXT[tone],
       className
     )}

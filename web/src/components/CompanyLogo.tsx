@@ -208,7 +208,7 @@ const Monogram = ({
   <span
     aria-hidden
     className={cn(
-      'inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-[9px] font-semibold text-muted-foreground uppercase',
+      'inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-[9px] font-medium text-muted-foreground uppercase',
       className
     )}
   >

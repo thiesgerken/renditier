@@ -286,7 +286,7 @@ function DataTable<T extends RowData>({
               </SelectContent>
             </Select>
           </div>
-          <span className="tabular-nums">
+          <span className="font-normal tabular-nums">
             {t('table.range', {
               first: firstRow,
               last: lastRow,
