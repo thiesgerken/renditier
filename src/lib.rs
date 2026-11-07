@@ -202,7 +202,7 @@ pub fn initialize_logging(verbosity: u32) {
     log_config.add_filter_ignore_str("reqwest");
     log_config.add_filter_ignore_str("selectors");
 
-    // log_config.add_filter_allow_str("stockdb");
+    // log_config.add_filter_allow_str("renditier");
 
     if let Err(e) = TermLogger::init(
         level,

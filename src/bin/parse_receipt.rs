@@ -1,6 +1,6 @@
 use clap::{Arg, ArgAction, Command, crate_authors, crate_version};
-use stockdb::initialize_logging;
-use stockdb::receipts;
+use renditier::initialize_logging;
+use renditier::receipts;
 
 fn main() {
     let matches = Command::new("parse_receipt")
