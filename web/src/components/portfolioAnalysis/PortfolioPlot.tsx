@@ -40,6 +40,7 @@ import {
   SelectField,
 } from '../plot/PlotControls';
 import type { DateRange } from '../plot/PlotControls';
+import { ZoomReset, useDragZoom } from '../plot/zoom';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 
@@ -128,9 +129,23 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
   const [dates, setDates] = useState<DateRange | null>(null);
   const [prevRange, setPrevRange] = useState<PlotRange | null>(null);
 
+  const zoom = useDragZoom({
+    snapshot: { customFor, dates },
+    zoomTo: range => {
+      if (period === undefined) return;
+      setDates(range);
+      setCustomFor(periodKey(period));
+    },
+    restore: before => {
+      setCustomFor(before.customFor);
+      setDates(before.dates);
+    },
+  });
+
   // starts from the period's range, so that switching it on changes nothing
   // until the dates are edited
   const handleCustomRange = (on: boolean) => {
+    zoom.forget();
     if (!on || period === undefined) {
       setCustomFor(null);
       return;
@@ -210,7 +225,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
     <ProgressCard loading={loading} className="px-2">
       <div>
         <PlotArea isEmpty={points.length === 0} isLoading={loading}>
-          <ComposedChart data={points}>
+          <ComposedChart data={points} {...zoom.chartProps}>
             {timeXAxis(epochs)}
             <YAxis
               tickFormatter={tick}
@@ -272,6 +287,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
             {tradeMarkers()}
 
             {pointTooltip(intraday, tooltipRows)}
+            {zoom.elements}
           </ComposedChart>
         </PlotArea>
         <TradeLegend points={points} />
@@ -304,6 +320,10 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
         </div>
         {customRange && dates !== null && (
           <DateRangeFields value={dates} onChange={setDates} />
+        )}
+        {/* another dashboard period ends the custom range, and the zoom */}
+        {zoom.reset !== null && customRange && (
+          <ZoomReset onClick={zoom.reset} />
         )}
       </PlotControls>
     </ProgressCard>

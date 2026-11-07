@@ -51,6 +51,7 @@ import {
   SelectField,
 } from '../plot/PlotControls';
 import type { DateRange } from '../plot/PlotControls';
+import { ZoomReset, useDragZoom } from '../plot/zoom';
 
 interface Props {
   isin: string;
@@ -255,13 +256,25 @@ const StockPlot = ({
     ...tradeRows(p.trades, true),
   ];
 
+  const zoom = useDragZoom({
+    snapshot: { period, dates },
+    zoomTo: range => {
+      setDates(range);
+      setPeriod(CUSTOM);
+    },
+    restore: before => {
+      setPeriod(before.period);
+      setDates(before.dates);
+    },
+  });
+
   const loading =
     plotData === null || plotData.isFetching || performance.isFetching;
 
   return (
     <ProgressCard loading={loading} className="px-2">
       <PlotArea isEmpty={points.length === 0} isLoading={loading}>
-        <ComposedChart data={points}>
+        <ComposedChart data={points} {...zoom.chartProps}>
           {timeXAxis(epochs)}
           <YAxis
             tickFormatter={tick}
@@ -394,6 +407,7 @@ const StockPlot = ({
           )}
 
           {pointTooltip(intraday, tooltipRows)}
+          {zoom.elements}
         </ComposedChart>
       </PlotArea>
       <TradeLegend points={points} />
@@ -426,11 +440,15 @@ const StockPlot = ({
             })),
             { value: String(CUSTOM), label: 'Benutzerdefiniert' },
           ]}
-          onChange={v => setPeriod(Number(v))}
+          onChange={v => {
+            setPeriod(Number(v));
+            zoom.forget();
+          }}
         />
         {period === CUSTOM && (
           <DateRangeFields value={dates} onChange={setDates} />
         )}
+        {zoom.reset !== null && <ZoomReset onClick={zoom.reset} />}
       </PlotControls>
     </ProgressCard>
   );

@@ -142,4 +142,9 @@
   html {
     @apply font-sans;
   }
+  /* Recharts makes a chart focusable for its keyboard tooltip, so dragging
+     across it to zoom would leave a focus ring around the whole chart. */
+  .recharts-wrapper svg:focus:not(:focus-visible) {
+    outline: none;
+  }
 }
