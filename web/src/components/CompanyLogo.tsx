@@ -1,4 +1,23 @@
+import { createElement } from 'react';
 import { cn } from 'cn';
+import {
+  Bot,
+  Brain,
+  Building,
+  Coins,
+  Cpu,
+  Droplet,
+  Euro,
+  Fuel,
+  Gamepad2,
+  Globe,
+  HandCoins,
+  HeartPulse,
+  ScrollText,
+  Sprout,
+  Sun,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   siActivision,
   siAdidas,
@@ -139,6 +158,31 @@ export const LOGOS: Partial<Record<string, SimpleIcon>> = {
   JP3633400001: siToyota,
 };
 
+// What a name says a fund holds, for anything without a logo: mostly funds,
+// but a company called "... Water" gets the droplet too. The first match wins, so themes come before the regions they are often
+// combined with ("Global Water", "MSCI World Energy"). Whole words only:
+// "Goldman" is no gold, "Euronext" no euro.
+const THEMES: [RegExp, LucideIcon][] = [
+  [/\bgold\b/i, Coins],
+  [/\bwater\b/i, Droplet],
+  [/\b(clean energy|solar|renewable)\b/i, Sun],
+  [/\b(oil|energy)\b/i, Fuel],
+  [/\bsemiconductors?\b/i, Cpu],
+  [/\b(artificial intelligence|ai|digitali[sz]ation)\b/i, Brain],
+  [/\b(robotics|automation)\b/i, Bot],
+  [/\b(health ?care|health)\b/i, HeartPulse],
+  [/\b(real estate|reits?|property)\b/i, Building],
+  [/\b(dividends?|aristocrats)\b/i, HandCoins],
+  [/\b(bonds?|treasury|govt|government)\b/i, ScrollText],
+  [/\b(gaming|esports)\b/i, Gamepad2],
+  [/\bemerging markets?\b/i, Sprout],
+  [/\b(euro|eurozone|europe)\b/i, Euro],
+  [/\b(world|acwi|global)\b/i, Globe],
+];
+
+export const themeIcon = (name: string): LucideIcon | undefined =>
+  THEMES.find(([keywords]) => keywords.test(name))?.[1];
+
 // The first letter of a name, in a muted circle the size of a logo, so that
 // names line up whether or not they have one.
 const Monogram = ({
@@ -161,14 +205,23 @@ const Monogram = ({
 
 interface Props {
   isin: string;
-  // for the monogram of a company without a logo
+  // for the theme and the monogram
   name: string;
   className?: string;
 }
 
-// A company's logo in the text colour, or its monogram.
+// A company's logo in the text colour, else its name's theme, else a monogram.
 const CompanyLogo = ({ isin, name, className }: Props) => {
   const logo = LOGOS[isin];
+  const theme = themeIcon(name);
+
+  // createElement, since the icon is a value from the table rather than a
+  // component declared here
+  if (logo === undefined && theme !== undefined)
+    return createElement(theme, {
+      'aria-hidden': true,
+      className: cn('size-4 shrink-0 text-muted-foreground', className),
+    });
   if (logo === undefined) return <Monogram name={name} className={className} />;
 
   return (
