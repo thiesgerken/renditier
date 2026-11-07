@@ -13,8 +13,8 @@ script that streams the image as a tarball, e.g. `./result | docker load`.
 
 ## Backups
 
-`stockdb export > backup.json` writes all users with their accounts and transactions as JSON,
-`stockdb import < backup.json` reads such a backup back in. The import replaces the users the backup
+`renditier export > backup.json` writes all users with their accounts and transactions as JSON,
+`renditier import < backup.json` reads such a backup back in. The import replaces the users the backup
 contains, matched by name: an existing user with the same name is deleted together with their
 accounts and transactions, then recreated from the backup. Every other user stays untouched, so
 importing one user's backup into a database shared with others is safe.
@@ -34,13 +34,13 @@ JSON by hand: ids only need to be unique within the file.
 Against a local database (never the production one):
 
 ```shell
-export STOCKDB__DATABASE=postgres://user@localhost/stocks
-stockdb import < docs/demo/rudolph.json
-stockdb -v stock --fetch    # adds the stocks the transactions reference
-stockdb -v data --fetch     # prices from onvista, takes a minute
+export RENDITIER__DATABASE=postgres://user@localhost/stocks
+renditier import < docs/demo/rudolph.json
+renditier -v stock --fetch    # adds the stocks the transactions reference
+renditier -v data --fetch     # prices from onvista, takes a minute
 ```
 
-Then serve it with `STOCKDB__WEB__TRUSTED_HEADER_AUTHENTICATION=true stockdb serve` and let the
+Then serve it with `RENDITIER__WEB__TRUSTED_HEADER_AUTHENTICATION=true renditier serve` and let the
 Vite dev server (`npm start` in `web`) log you in as Rudolph by adding the header to its proxy in
 `web/vite.config.mjs`:
 
@@ -51,7 +51,7 @@ proxy: {
 ```
 
 The import test against a real database runs with
-`STOCKDB_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (it rolls back
+`RENDITIER_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (it rolls back
 everything it writes).
 
 ## Install
