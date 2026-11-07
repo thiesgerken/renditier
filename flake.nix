@@ -1,5 +1,5 @@
 {
-  description = "StockDB: dev shell and container image";
+  description = "Renditier: dev shell and container image";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -39,7 +39,7 @@
               pkgs.nodejs_26
             ];
             shellHook = ''
-              printf '📈 \033[1m\033[38;2;241;196;15mS\033[38;2;239;184;18mt\033[38;2;237;173;21mo\033[38;2;236;161;24mc\033[38;2;234;149;28mk\033[38;2;232;138;31mD\033[38;2;230;126;34mB\033[0m  \033[2m%s\033[0m\n' 'Rust ${pkgs.rustc.version} · node ${pkgs.nodejs_26.version}'
+              printf '🦌 \033[1mRendi\033[38;2;210;101;42mtier\033[0m  \033[2m%s\033[0m\n' 'Rust ${pkgs.rustc.version} · node ${pkgs.nodejs_26.version}'
               printf '  \033[32m%s\033[0m \033[2m·\033[0m \033[32m%s\033[0m\n' 'cd web && npm run build' 'cargo run'
             '';
           };
@@ -53,7 +53,7 @@
           craneLib = crane.mkLib pkgs;
 
           web = pkgs.buildNpmPackage {
-            pname = "stockdb-web";
+            pname = "renditier-web";
             version = "0.1.0";
             src = ./web;
             nodejs = pkgs.nodejs_26;
@@ -81,11 +81,11 @@
             ];
           };
 
-          stockdb = craneLib.buildPackage (
+          renditier = craneLib.buildPackage (
             cargoArgs
             // {
               cargoArtifacts = craneLib.buildDepsOnly cargoArgs;
-              cargoExtraArgs = "--locked --bin stockdb";
+              cargoExtraArgs = "--locked --bin renditier";
               # rust-embed compiles the frontend into the binary.
               preBuild = "mkdir web && cp -r ${web} web/build";
               # The CI check job runs the tests.
@@ -95,20 +95,20 @@
         in
         {
           image = pkgs.dockerTools.streamLayeredImage {
-            name = "stockdb";
+            name = "renditier";
             config = {
               # Numeric, because the image has no /etc/passwd to resolve a name and Kubernetes'
               # runAsNonRoot can only verify a numeric user.
               User = "65534:65534";
               Cmd = [
-                "stockdb"
+                "renditier"
                 "serve"
               ];
               Env = [
                 # Receipts can be parsed with poppler's pdftotext, run as a subprocess.
                 "PATH=${
                   lib.makeBinPath [
-                    stockdb
+                    renditier
                     pkgs.poppler-utils
                   ]
                 }"

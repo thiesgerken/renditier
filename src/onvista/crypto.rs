@@ -13,7 +13,7 @@ pub fn parse_info(snapshot: &Value) -> Result<StockInfo, Box<dyn Error>> {
             .ok_or("error parsing entity value")?;
         let coin = get_string(&details["isoCurrencyFrom"]).ok_or("error parsing coin")?;
         return Err(format!(
-            "{pair} is quoted in {currency}, stockdb is EUR-only: add {coin}EUR or its ISIN instead"
+            "{pair} is quoted in {currency}, renditier is EUR-only: add {coin}EUR or its ISIN instead"
         )
         .into());
     }
@@ -47,7 +47,7 @@ mod tests {
 
         assert_eq!(
             error.to_string(),
-            "BTCUSD is quoted in USD, stockdb is EUR-only: add BTCEUR or its ISIN instead"
+            "BTCUSD is quoted in USD, renditier is EUR-only: add BTCEUR or its ISIN instead"
         );
     }
 }

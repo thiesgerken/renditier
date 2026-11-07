@@ -36,7 +36,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
         warn!(
             "Successfully imported moneydb data. \
                 If the database was empty, you should run \
-                `stockdb -v stock --fetch && stockdb -v data --fetch` \
+                `renditier -v stock --fetch && renditier -v data --fetch` \
                 and run the import again in order to convert transaction exchanges."
         )
     } else {
@@ -47,7 +47,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
             panic!("Could not import backup, nothing was written: {e}");
         }
         warn!(
-            "Imported from backup. You might want to run `stockdb -v stock --fetch && stockdb -v data --fetch` now."
+            "Imported from backup. You might want to run `renditier -v stock --fetch && renditier -v data --fetch` now."
         )
     }
 }
