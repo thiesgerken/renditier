@@ -1,156 +1,88 @@
-import React, { useEffect } from 'react';
-import { find } from 'lodash';
-import {
-  Box,
-  Container,
-  IconButton,
-  Paper,
-  Tooltip,
-  Typography,
-  useMediaQuery,
-} from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { DataGrid } from '@mui/x-data-grid';
-import type {
-  GridColDef,
-  GridPaginationModel,
-  GridRowParams,
-} from '@mui/x-data-grid';
-import { deDE } from '@mui/x-data-grid/locales';
-import AddIcon from '@mui/icons-material/Add';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
+import { Hash, Plus, Tag } from 'lucide-react';
 
+import DataTable, { dataTableFeatures } from '../components/DataTable';
+import { Button } from '../components/ui/button';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card';
 import { fetchAccounts } from '../slices/accounts';
 import { useAppDispatch, useAppSelector } from '../store';
 import type { Account } from '../types/api';
+import useQueryParam from '../useQueryParam';
 import AccountDialog from './AccountDialog';
 import type { AccountDraft } from './AccountDialog';
 
-function useQuery(
-  key: string
-): [string | null, (value: string | number | null) => void] {
-  const location = useLocation();
-  const query = new URLSearchParams(location.search);
-  const navigate = useNavigate();
+const column = createColumnHelper<typeof dataTableFeatures, Account>();
 
-  const set = (value: string | number | null) => {
-    if (value === null || value === undefined) query.delete(key);
-    else query.set(key, `${value}`);
+const columns = column.columns([
+  column.accessor('name', {
+    header: 'Name',
+    meta: { icon: Tag },
+  }),
+  column.accessor('iban', {
+    header: 'IBAN',
+    meta: { icon: Hash },
+  }),
+]);
 
-    const qs = query.toString();
-    navigate(`${location.pathname}${qs.length ? '?' : ''}${qs}`);
-  };
-
-  return [query.get(key), set];
-}
+const newAccount: AccountDraft = {
+  id: null,
+  userId: -1,
+  name: '',
+  iban: '',
+};
 
 const Accounts = () => {
   const dispatch = useAppDispatch();
   const accounts = useAppSelector(state => state.accounts);
-  const [accountId, setAccountId] = useQuery('id');
-  const [page, setPage] = useQuery('page');
-  const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const [pageSize, setPageSize] = React.useState(10);
+  const [accountId, setAccountId] = useQueryParam('id');
+  const [page, setPage] = useQueryParam('page');
 
   useEffect(() => {
     dispatch(fetchAccounts());
   });
 
-  let initialAccount: AccountDraft = {
-    id: null,
-    userId: -1,
-    name: '',
-    iban: '',
-  };
-  if (
-    accounts.items !== null &&
-    accountId !== null &&
-    parseInt(accountId, 10) >= 0
-  ) {
-    const account = find(
-      accounts.items,
-      item => item.id === parseInt(accountId, 10)
-    );
-    if (account !== undefined) initialAccount = account;
-  }
-
-  const columns: GridColDef[] = [
-    {
-      field: 'id',
-      headerName: 'ID',
-    },
-    {
-      field: 'name',
-      headerName: 'Name',
-      flex: 1,
-      minWidth: 160,
-    },
-    {
-      field: 'iban',
-      headerName: 'IBAN',
-      flex: 1,
-      minWidth: 220,
-    },
-  ];
-
-  const isLoading = accounts.isFetching;
-  const rows = accounts.items ?? [];
-  const pageNumber = page === null ? 0 : parseInt(page, 10);
+  const initialAccount =
+    accounts.items.find(item => String(item.id) === accountId) ?? newAccount;
 
   return (
-    <div style={{ margin: '-4px' }}>
-      <Container maxWidth="xl" style={{ padding: '0px' }}>
-        <Paper>
-          <Box
-            sx={{
-              alignItems: 'center',
-              display: 'flex',
-              justifyContent: 'space-between',
-              px: 2,
-              py: 1,
-            }}
-          >
-            <Typography variant="h6">Depots</Typography>
-            <Tooltip title="Neues Depot">
-              <IconButton onClick={() => setAccountId(-1)}>
-                <AddIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <DataGrid
-            autoHeight
-            rows={rows}
+    <>
+      <Card className="mx-auto max-w-(--breakpoint-xl)">
+        <CardHeader>
+          <CardTitle>Depots</CardTitle>
+          <CardAction>
+            <Button size="sm" onClick={() => setAccountId(-1)}>
+              <Plus />
+              Neues Depot
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            data={accounts.items}
             columns={columns}
-            loading={isLoading}
-            disableRowSelectionOnClick
-            pagination
-            columnVisibilityModel={{ id: false }}
-            initialState={{
-              sorting: { sortModel: [{ field: 'name', sort: 'asc' }] },
-            }}
-            localeText={deDE.components.MuiDataGrid.defaultProps.localeText}
-            pageSizeOptions={mdUp ? [10, 25, 50] : [10]}
-            paginationModel={{ page: pageNumber, pageSize }}
-            onPaginationModelChange={(model: GridPaginationModel) => {
-              setPageSize(model.pageSize);
-              setPage(model.page === 0 ? null : model.page);
-            }}
-            onRowClick={(params: GridRowParams<Account>) =>
-              setAccountId(params.row.id)
-            }
-            sx={{ border: 0 }}
+            getRowId={account => String(account.id)}
+            initialSorting={[{ id: 'name', desc: false }]}
+            isLoading={accounts.isFetching}
+            emptyText="Noch keine Depots"
+            page={page === null ? 0 : parseInt(page, 10)}
+            onPageChange={p => setPage(p === 0 ? null : p)}
+            onRowClick={account => setAccountId(account.id)}
           />
-        </Paper>
-      </Container>
+        </CardContent>
+      </Card>
       <AccountDialog
         initialAccount={initialAccount}
-        open={accountId !== null && !isLoading}
-        onClose={() => {
-          setAccountId(null);
-        }}
+        open={accountId !== null && !accounts.isFetching}
+        onClose={() => setAccountId(null)}
       />
-    </div>
+    </>
   );
 };
 
