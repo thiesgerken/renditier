@@ -1,3 +1,4 @@
+import { Box, Typography } from '@mui/material';
 import type { Theme } from '@mui/material';
 import { Line } from 'recharts';
 import type { DotItemDotProps } from 'recharts';
@@ -89,4 +90,25 @@ export const tradeRows = (
         ]
       : []),
   ];
+};
+
+// Explains the markers. recharts' Legend has no down-pointing triangle, so this
+// is a plain line below the plot.
+export const TradeLegend = ({
+  points,
+}: {
+  points: { trades: Trades | null }[];
+}) => {
+  if (points.every(p => p.trades === null)) return null;
+
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+      <Typography variant="caption" sx={{ color: 'primary.main' }}>
+        ▲ Kauf
+      </Typography>
+      <Typography variant="caption" sx={{ color: 'secondary.main' }}>
+        ▼ Verkauf
+      </Typography>
+    </Box>
+  );
 };

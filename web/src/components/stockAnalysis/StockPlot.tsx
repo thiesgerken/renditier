@@ -39,7 +39,12 @@ import {
   percentTick,
 } from '../plot/axes';
 import { assignTrades } from '../plot/trades';
-import { TRADES_AXIS, tradeMarkers, tradeRows } from '../plot/tradeMarkers';
+import {
+  TRADES_AXIS,
+  TradeLegend,
+  tradeMarkers,
+  tradeRows,
+} from '../plot/tradeMarkers';
 import { pointTooltip, signedArea, timeXAxis } from '../plot/elements';
 import type {
   DataSourceSelection,
@@ -406,6 +411,7 @@ const StockPlot = ({
                 {pointTooltip(intraday, tooltipRows)}
               </ComposedChart>
             </PlotArea>
+            <TradeLegend points={points} />
           </Grid>
           <Grid size={9}>
             <FormControl sx={formControlSx} variant="standard">
