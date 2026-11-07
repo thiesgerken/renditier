@@ -1,6 +1,6 @@
 use super::{
-    calculate_isin_checksum, parse_float, quick_and_dirty_checksum, receipt_time,
-    ParsedReceiptTransaction,
+    ParsedReceiptTransaction, calculate_isin_checksum, parse_float, quick_and_dirty_checksum,
+    receipt_time,
 };
 use crate::models::NewTransaction;
 
@@ -294,8 +294,7 @@ mod tests {
     use crate::receipts::RECEIPT_TIMEZONE;
     use chrono::NaiveDate;
 
-    const COMDIRECT_PURCHASE_2026_05_15_FILENAME: &str =
-        "Wertpapierabrechnung_Kauf_0,412_St._A2JRT5_(FIC-FICT.WORLD_EQ_UEA)_vom_15.05.2026_9F21B7.pdf";
+    const COMDIRECT_PURCHASE_2026_05_15_FILENAME: &str = "Wertpapierabrechnung_Kauf_0,412_St._A2JRT5_(FIC-FICT.WORLD_EQ_UEA)_vom_15.05.2026_9F21B7.pdf";
 
     const COMDIRECT_PURCHASE_2026_05_15_TEXT: &str = r#"
 GESCHÄFTSABRECHNUNG VOM 15.05.2026

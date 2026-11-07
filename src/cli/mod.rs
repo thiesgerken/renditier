@@ -8,7 +8,7 @@ pub mod transaction;
 pub mod user;
 
 use chrono_tz::Tz;
-use clap::{crate_authors, crate_name, crate_version, Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, crate_authors, crate_name, crate_version};
 use config::ConfigError;
 use serde::{Deserialize, Serialize};
 use std::path::Path;

@@ -3,8 +3,8 @@ use stockdb::initialize_logging;
 use stockdb::*;
 
 use diesel::{
-    r2d2::{ConnectionManager, Pool},
     PgConnection,
+    r2d2::{ConnectionManager, Pool},
 };
 use log::debug;
 use tokio::runtime::Builder;

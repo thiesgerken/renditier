@@ -5,7 +5,7 @@ import { Tooltip } from '@mui/material';
 import Hidden from '../Hidden';
 import useTableFormat from '../useTableFormat';
 import { getPrice } from '../../selectors/performance';
-import { formatDate, formatDateTime, formatPercent } from '../../format';
+import { formatDate, formatDateTime } from '../../format';
 import type { DataSource, EitherPrice, Transaction } from '../../types/api';
 
 interface Props {
@@ -14,7 +14,7 @@ interface Props {
 }
 
 const TransactionRow = ({ transaction, currentPrice = null }: Props) => {
-  const { money, units, signColor, percentDigits } = useTableFormat();
+  const { money, units, percent, signColor } = useTableFormat();
 
   let currentValueInfo = '\u2014';
   let valueDevelopment: number | undefined;
@@ -26,9 +26,9 @@ const TransactionRow = ({ transaction, currentPrice = null }: Props) => {
 
     valueDevelopment =
       (transaction.fees + transaction.amount) / 100 + currentValue;
-    currentValueInfo = `${money(currentValue)} (${formatPercent(
+    currentValueInfo = `${money(currentValue)} (${percent(
       ((-1 * valueDevelopment) / (transaction.fees + transaction.amount)) * 100,
-      { digits: percentDigits, signed: true }
+      { signed: true }
     )})`;
   }
 

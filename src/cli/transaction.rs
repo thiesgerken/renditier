@@ -7,7 +7,7 @@ use clap::ArgMatches;
 use clap::{Arg, ArgGroup, Command};
 use diesel::prelude::*;
 use log::info;
-use prettytable::{row, Table};
+use prettytable::{Table, row};
 use std::io;
 
 pub fn build() -> Command {
@@ -110,7 +110,9 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
         let s_units: f64 = s_units.trim_end().parse().expect("Could not parse units");
 
         let mut s_amount = String::new();
-        println!("Please enter the total price (units*price, not including fees, negative value -> sale)");
+        println!(
+            "Please enter the total price (units*price, not including fees, negative value -> sale)"
+        );
         io::stdin().read_line(&mut s_amount).unwrap();
         let s_amount = (s_amount
             .trim_end()

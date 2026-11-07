@@ -1,4 +1,4 @@
-use super::{parse_float, receipt_time, ParsedReceiptTransaction};
+use super::{ParsedReceiptTransaction, parse_float, receipt_time};
 use crate::models::NewTransaction;
 
 use regex::Regex;

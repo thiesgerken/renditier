@@ -79,28 +79,28 @@ export type Formatter = (
   options?: NumberOptions
 ) => string;
 
-// "start ↗ end", optionally followed by the difference, either formatted like
-// the values themselves or relative to the start value.
+// The change from `start` to `end`, formatted like the values themselves or,
+// with `relative`, as a ratio of the start value. "—" when the start is
+// unknown, so that it does not pass for "unchanged". null when there is
+// nothing to show: the end is unknown (and shown as such already), the period
+// started from nothing (e.g. before the first purchase), or the change rounds
+// to zero as displayed.
 export const formatChange = (
   start: number | null,
   end: number | null,
   format: Formatter,
-  difference: 'none' | 'absolute' | 'relative' = 'none'
-): string => {
-  if (start === 0) return format(end);
+  relative?: Formatter
+): string | null => {
+  if (end === null || start === 0) return null;
+  if (start === null) return MISSING;
 
-  let arrow = '→';
-  if (start !== null && end !== null && end !== start)
-    arrow = end > start ? '↗' : '↘';
+  const shown =
+    relative === undefined
+      ? format(end - start, { signed: true })
+      : relative((end - start) / start, { signed: true });
+  const zero = (relative ?? format)(0, { signed: true });
 
-  const s = `${format(start)} ${arrow} ${format(end)}`;
-
-  if (difference === 'none' || start === null || end === null || end === start)
-    return s;
-
-  return difference === 'absolute'
-    ? `${s} (${format(end - start, { signed: true })})`
-    : `${s} (${formatPercent((end - start) / start, { signed: true })})`;
+  return shown === zero ? null : shown;
 };
 
 interface IrrPeriod {

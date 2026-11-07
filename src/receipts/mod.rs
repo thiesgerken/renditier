@@ -11,8 +11,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::str::FromStr;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::LazyLock;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(default)]
@@ -80,7 +80,10 @@ pub fn parse_mem(
         .collect::<Vec<_>>();
 
     if ts.len() < orig_len {
-        warn!("Removed {} of the parsed transactions from the list because they already exist in the database", orig_len - ts.len());
+        warn!(
+            "Removed {} of the parsed transactions from the list because they already exist in the database",
+            orig_len - ts.len()
+        );
     }
 
     // try to replace the exchange names with an id (unless they were traded over the counter)

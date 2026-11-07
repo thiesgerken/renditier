@@ -1,5 +1,5 @@
 use crate::analysis::price::{
-    market_time, to_market_time, DataSource, EitherPrice, Price, PriceMap, MARKET_CLOSE,
+    DataSource, EitherPrice, MARKET_CLOSE, Price, PriceMap, market_time, to_market_time,
 };
 use crate::analysis::{irr, price};
 use crate::models::*;
@@ -345,11 +345,11 @@ fn compute_position(
             ts.push((ep.price.date(), (units + prior_units) * ep.price.value()));
         }
 
-        if prior_units != 0.0 {
-            if let Some(sp) = start_price.as_ref() {
-                // simulated purchase
-                ts.push((sp.price.date(), -prior_units * sp.price.value()));
-            }
+        if prior_units != 0.0
+            && let Some(sp) = start_price.as_ref()
+        {
+            // simulated purchase
+            ts.push((sp.price.date(), -prior_units * sp.price.value()));
         }
 
         ts.extend(

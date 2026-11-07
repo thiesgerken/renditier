@@ -1,7 +1,7 @@
 use crate::models::*;
 use crate::schema::*;
-use crate::web::user::UserId;
 use crate::web::DbConn;
+use crate::web::user::UserId;
 
 use chrono::NaiveDate;
 use diesel::prelude::*;

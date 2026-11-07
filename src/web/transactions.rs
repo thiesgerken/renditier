@@ -1,8 +1,8 @@
 use crate::models::*;
 use crate::schema::*;
+use crate::web::DbConn;
 use crate::web::user::UserId;
 use crate::web::util::log_error_and_500;
-use crate::web::DbConn;
 
 use diesel::prelude::*;
 use log::info;

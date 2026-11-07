@@ -48,7 +48,7 @@ function patchMissingEmotionInit() {
 
 const vendorChunkGroups = [
   ['vendor-react', ['react', 'react-dom', 'react-router', 'react-router-dom']],
-  ['vendor-redux', ['redux', 'react-redux', 'redux-thunk', 'redux-logger']],
+  ['vendor-redux', ['redux', 'react-redux', 'redux-thunk']],
   ['vendor-mui-system', ['@mui/system', '@mui/utils']],
   ['vendor-mui-icons', ['@mui/icons-material']],
   ['vendor-mui-pickers', ['@mui/x-date-pickers']],

@@ -1,4 +1,4 @@
-use crate::analysis::price::{market_time, to_market_time, EitherPrice, MARKET_CLOSE, MARKET_OPEN};
+use crate::analysis::price::{EitherPrice, MARKET_CLOSE, MARKET_OPEN, market_time, to_market_time};
 use crate::data::exchange_comparison;
 use crate::models::*;
 use crate::schema::*;
@@ -174,7 +174,9 @@ fn choose_and_query_points(
         if source_selection == DataSourceSelection::Automatic
             && realtime_prices.len() < 2 * exchanges.len()
         {
-            info!("Falling back to historical data because realtime data does not contain many points");
+            info!(
+                "Falling back to historical data because realtime data does not contain many points"
+            );
             return choose_and_query_points(
                 connection,
                 exchanges,

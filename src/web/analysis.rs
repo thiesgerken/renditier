@@ -9,8 +9,8 @@ use crate::web::user::UserId;
 use crate::web::{Config, DbConn};
 
 use chrono::{NaiveDate, NaiveDateTime, Utc};
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 #[get("/analysis/portfolio?<date>")]
 pub async fn compute_historic_portfolio(

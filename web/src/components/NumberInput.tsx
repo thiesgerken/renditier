@@ -14,7 +14,6 @@ export default function NumberInput(props: Props) {
 
   return (
     <NumericFormat
-      // eslint-disable-next-line react/jsx-props-no-spreading
       {...other}
       getInputRef={inputRef}
       onValueChange={values => {

@@ -37,10 +37,12 @@ pub async fn fetch_realtime(
                     .collect::<Vec<_>>();
 
                 if data.len() < original_len {
-                    warn!("Throwing away {} realtime data record(s) (of {}) for {} because they belong to unknown exchanges",
+                    warn!(
+                        "Throwing away {} realtime data record(s) (of {}) for {} because they belong to unknown exchanges",
                         original_len - data.len(),
                         original_len,
-                        s.isin);
+                        s.isin
+                    );
                 }
 
                 let row_count = diesel::insert_into(crate::schema::realtime_prices::table)
