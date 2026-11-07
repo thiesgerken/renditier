@@ -101,6 +101,9 @@
           image = pkgs.dockerTools.streamLayeredImage {
             name = "stockdb";
             config = {
+              # Numeric, because the image has no /etc/passwd to resolve a name and Kubernetes'
+              # runAsNonRoot can only verify a numeric user.
+              User = "65534:65534";
               Cmd = [
                 "stockdb"
                 "serve"
