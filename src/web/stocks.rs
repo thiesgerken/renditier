@@ -1,14 +1,18 @@
+use crate::analysis::returns::{StockReturns, compute as compute_returns};
 use crate::models::*;
 use crate::schema::*;
 use crate::web::DbConn;
 use crate::web::user::UserId;
+use crate::web::util::log_error_and_500;
 
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use regex::Regex;
+use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket_sync_db_pools::diesel;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Stock {
@@ -140,6 +144,21 @@ fn find_index(s: &StockInfo) -> Option<String> {
             .map(|m| m.as_str().to_owned())
             .find(|m| !m.contains("ETF"))
     })
+}
+
+/// Keyed by ISIN; a static segment, so it takes precedence over `/stocks/<isin>`.
+#[get("/stocks/returns")]
+pub async fn returns(
+    _uid: UserId,
+    connection: DbConn,
+) -> Result<Json<HashMap<String, StockReturns>>, Status> {
+    connection
+        .run(|c| {
+            compute_returns(c, Utc::now())
+                .map(Json)
+                .map_err(log_error_and_500)
+        })
+        .await
 }
 
 #[get("/stocks/<isin>")]
