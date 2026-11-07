@@ -30,6 +30,10 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
   // The tab last scrolled to or reported, so that a `tab` the spy reported
   // itself does not scroll again.
   const shown = useRef<DashboardTab | null>(null);
+  // While a sidebar click glides to its section, the spy waits for the end:
+  // reporting the sections passed on the way would turn the URL back to them
+  // and stop the glide.
+  const gliding = useRef(false);
   const report = useEffectEvent((current: DashboardTab) => onScrollTo(current));
 
   useEffect(() => {
@@ -39,8 +43,15 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
     const behavior = shown.current === null ? 'instant' : smoothly();
     shown.current = tab;
     // The first section is the top of the page, KPIs included.
-    if (tab === DEFAULT_TAB) window.scrollTo({ top: 0, behavior });
-    else elements.current.get(tab)?.scrollIntoView({ behavior });
+    const element = tab === DEFAULT_TAB ? null : elements.current.get(tab);
+    const distance =
+      element === null || element === undefined
+        ? window.scrollY
+        : element.getBoundingClientRect().top - SPY_OFFSET_PX;
+    // Without a distance to go, there is no scrollend to end the glide.
+    gliding.current = behavior === 'smooth' && Math.abs(distance) > 1;
+    if (element === null) window.scrollTo({ top: 0, behavior });
+    else element?.scrollIntoView({ behavior });
   }, [tab, ready]);
 
   useEffect(() => {
@@ -48,6 +59,7 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
 
     let frame = 0;
     const spy = () => {
+      if (gliding.current) return;
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const current =
@@ -63,9 +75,16 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
       });
     };
 
+    const glided = () => {
+      gliding.current = false;
+      spy();
+    };
+
     window.addEventListener('scroll', spy, { passive: true });
+    window.addEventListener('scrollend', glided);
     return () => {
       window.removeEventListener('scroll', spy);
+      window.removeEventListener('scrollend', glided);
       cancelAnimationFrame(frame);
     };
   }, [ready]);
