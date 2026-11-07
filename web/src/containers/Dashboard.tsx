@@ -57,7 +57,7 @@ const priceDates = (period: PortfolioPerformance): [string, string] | null => {
     .flatMap(p =>
       p.end.dataSource === null ? [] : [priceInstant(p.end.dataSource.price)]
     )
-    .sort(Temporal.Instant.compare);
+    .sort((a, b) => Temporal.Instant.compare(a, b));
 
   return dates.length === 0
     ? null
