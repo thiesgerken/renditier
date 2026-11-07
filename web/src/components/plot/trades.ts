@@ -1,4 +1,3 @@
-import moment from 'moment';
 import { sortBy } from 'lodash';
 
 import type { Transaction } from '../../types/api';
@@ -46,19 +45,28 @@ export const assignTrades = <P extends { epoch: number }>(
   transactions: Transaction[]
 ): (P & { trades: Trades | null })[] => {
   const result = points.map(p => ({ ...p, trades: null as Trades | null }));
-  if (result.length === 0) return result;
+  const first = result[0];
+  if (first === undefined) return result;
 
-  const rangeStart = moment(result[0].epoch).startOf('day').valueOf();
+  const rangeStart = Temporal.Instant.fromEpochMilliseconds(first.epoch)
+    .toZonedDateTimeISO(Temporal.Now.timeZoneId())
+    .startOfDay().epochMilliseconds;
+  const epochOf = (t: Transaction) =>
+    Temporal.Instant.from(t.date).epochMilliseconds;
   let i = 0;
 
-  sortBy(transactions, t => moment(t.date).valueOf()).forEach(t => {
-    const epoch = moment(t.date).valueOf();
+  sortBy(transactions, epochOf).forEach(t => {
+    const epoch = epochOf(t);
     if (t.units === 0 || epoch < rangeStart) return;
 
-    while (i < result.length && result[i].epoch < epoch) i += 1;
-    if (i === result.length) return;
+    let point = result[i];
+    while (point !== undefined && point.epoch < epoch) {
+      i += 1;
+      point = result[i];
+    }
+    if (point === undefined) return;
 
-    result[i].trades = addTrade(result[i].trades ?? NO_TRADES, t);
+    point.trades = addTrade(point.trades ?? NO_TRADES, t);
   });
 
   return result;

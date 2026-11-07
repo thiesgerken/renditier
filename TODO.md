@@ -6,13 +6,11 @@
 - invalidate user info as soon as a 401 is encountered anywhere
 - unify querying functions
 - unify api access functions
-- Use new daterange component as soon as it works better https://github.com/mui-org/material-ui-pickers
 - show percentages over all, not only IRR (at least on hover as tooltip)
 - check that redux state is correctly deep cloned on plot data requests
 
 # Ideas
 
-- add crypto currencies
 - add physical commodities like gold
 - proper maintenance of stock data (renew every week?), exchanges are not updated currently at all (except on remove/add, which removes all data)
 - try to find out which index links to each ETF, grab data for those as well. Maybe the user has to make the connection ... -> save link in different table to avoid overwriting it on update; maybe only allow this via CLI

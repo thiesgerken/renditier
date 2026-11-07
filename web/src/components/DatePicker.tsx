@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { CalendarIcon } from 'lucide-react';
-import { de } from 'react-day-picker/locale';
+import { de, enUS } from 'react-day-picker/locale';
+import { useTranslation } from 'react-i18next';
 
+import { formatDate } from '../format';
+import { currentLanguage } from '../i18n';
 import { Button } from './ui/button';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -20,6 +23,9 @@ const toPlainDate = (date: Date) =>
 // The year dropdown starts here; the app holds nothing older.
 const FIRST_MONTH = new Date(2000, 0);
 
+// month and weekday names, and the first day of the week
+const CALENDAR_LOCALES = { de, en: enUS };
+
 interface Props {
   id?: string;
   value: Temporal.PlainDate | null;
@@ -30,6 +36,7 @@ interface Props {
 }
 
 const DatePicker = ({ id, value, onChange, max, invalid }: Props) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const lastMonth = toDate(max ?? Temporal.Now.plainDateISO());
 
@@ -45,20 +52,18 @@ const DatePicker = ({ id, value, onChange, max, invalid }: Props) => {
         >
           <CalendarIcon />
           {value === null ? (
-            <span className="text-muted-foreground">Datum wählen</span>
+            <span className="text-muted-foreground">
+              {t('common.pickDate')}
+            </span>
           ) : (
-            value.toLocaleString('de-DE', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            })
+            formatDate(value)
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
-          locale={de}
+          locale={CALENDAR_LOCALES[currentLanguage()]}
           captionLayout="dropdown"
           startMonth={FIRST_MONTH}
           endMonth={lastMonth}

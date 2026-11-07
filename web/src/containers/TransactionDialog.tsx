@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { reverse, sortBy, sortedUniqBy } from 'lodash';
 import { CircleAlert, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import DatePicker from '../components/DatePicker';
 import FormDialogContent from '../components/FormDialogContent';
 import NumberInput from '../components/NumberInput';
-import { Alert, AlertDescription } from '../components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +43,7 @@ import {
 } from '../slices/transactions';
 import { useAppDispatch, useAppSelector } from '../store';
 import type { Exchange, Transaction } from '../types/api';
+import useChange from '../useChange';
 import type { AccountsState, StocksState } from '../types/store';
 
 // What `Transactions` hands in: a real transaction when editing, or a blank one
@@ -205,6 +207,7 @@ const TransactionForm = ({
   initialTransaction,
   onClose,
 }: Omit<Props, 'open'>) => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const stocks = useAppSelector(state => state.stocks);
   const accounts = useAppSelector(state => state.accounts);
@@ -213,6 +216,7 @@ const TransactionForm = ({
   );
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
+  const { failure, pending, run } = useChange(onClose);
 
   const update = (changes: Partial<EditableTransaction>) =>
     setTransaction({ ...transaction, ...changes });
@@ -242,25 +246,27 @@ const TransactionForm = ({
 
   const onDelete = () => {
     // The delete button only renders when `transaction.id !== null`.
-    if (transaction.id !== null) dispatch(deleteTransaction(transaction.id));
-    onClose();
+    if (transaction.id !== null)
+      void run(
+        dispatch(deleteTransaction(transaction.id)),
+        t('common.deleteFailed')
+      );
   };
 
   const onSave = () => {
-    const t = toTransaction(transaction, accounts, stocks);
+    const payload = toTransaction(transaction, accounts, stocks);
 
-    if (t === null) {
+    if (payload === null) {
       setTriedToSave(true);
       return;
     }
 
-    if (t.id === null) {
-      dispatch(createTransaction(t));
-    } else {
-      dispatch(updateTransaction({ ...t, id: t.id }));
-    }
-
-    onClose();
+    void run(
+      payload.id === null
+        ? dispatch(createTransaction(payload))
+        : dispatch(updateTransaction({ ...payload, id: payload.id })),
+      t('common.saveFailed')
+    );
   };
 
   return (
@@ -275,8 +281,8 @@ const TransactionForm = ({
         <DialogHeader>
           <DialogTitle>
             {transaction.id !== null
-              ? 'Transaktion bearbeiten'
-              : 'Transaktion erstellen'}
+              ? t('transactions.dialog.edit')
+              : t('transactions.dialog.create')}
           </DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-x-3 gap-y-4">
@@ -299,7 +305,9 @@ const TransactionForm = ({
             </datalist>
           </div>
           <div className="col-span-2 grid gap-2">
-            <Label htmlFor="transaction-exchange">Handelsplatz</Label>
+            <Label htmlFor="transaction-exchange">
+              {t('transactions.dialog.exchange')}
+            </Label>
             <Input
               id="transaction-exchange"
               list="transaction-exchanges"
@@ -316,7 +324,9 @@ const TransactionForm = ({
           {((accounts.data ?? []).length > 1 ||
             findAccount(accounts, transaction.accountId) === null) && (
             <div className="col-span-2 grid gap-2">
-              <Label htmlFor="transaction-account">Depot</Label>
+              <Label htmlFor="transaction-account">
+                {t('transactions.dialog.account')}
+              </Label>
               <Select
                 value={
                   transaction.accountId === null
@@ -333,7 +343,9 @@ const TransactionForm = ({
                     findAccount(accounts, transaction.accountId) === null
                   }
                 >
-                  <SelectValue placeholder="Depot wählen" />
+                  <SelectValue
+                    placeholder={t('transactions.dialog.pickAccount')}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {(accounts.data ?? []).map(account => (
@@ -346,7 +358,7 @@ const TransactionForm = ({
             </div>
           )}
           <div className="grid gap-2">
-            <Label htmlFor="transaction-date">Datum</Label>
+            <Label htmlFor="transaction-date">{t('common.date')}</Label>
             <DatePicker
               id="transaction-date"
               value={transaction.when.toPlainDate()}
@@ -358,7 +370,9 @@ const TransactionForm = ({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="transaction-time">Uhrzeit</Label>
+            <Label htmlFor="transaction-time">
+              {t('transactions.dialog.time')}
+            </Label>
             <Input
               id="transaction-time"
               type="time"
@@ -379,7 +393,9 @@ const TransactionForm = ({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="transaction-amount">Kosten</Label>
+            <Label htmlFor="transaction-amount">
+              {t('transactions.dialog.amount')}
+            </Label>
             <NumberInput
               id="transaction-amount"
               value={transaction.amount}
@@ -391,7 +407,9 @@ const TransactionForm = ({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="transaction-fees">Gebühren (zzgl.)</Label>
+            <Label htmlFor="transaction-fees">
+              {t('transactions.dialog.fees')}
+            </Label>
             <NumberInput
               id="transaction-fees"
               value={transaction.fees}
@@ -404,7 +422,9 @@ const TransactionForm = ({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="transaction-units">Einheiten</Label>
+            <Label htmlFor="transaction-units">
+              {t('transactions.dialog.units')}
+            </Label>
             <NumberInput
               id="transaction-units"
               value={transaction.units}
@@ -413,11 +433,15 @@ const TransactionForm = ({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="transaction-price">Kurs</Label>
+            <Label htmlFor="transaction-price">
+              {t('transactions.dialog.price')}
+            </Label>
             <Input id="transaction-price" value={price} disabled />
           </div>
           <div className="col-span-2 grid gap-2">
-            <Label htmlFor="transaction-comments">Kommentare</Label>
+            <Label htmlFor="transaction-comments">
+              {t('transactions.dialog.comments')}
+            </Label>
             <Textarea
               id="transaction-comments"
               rows={3}
@@ -431,37 +455,49 @@ const TransactionForm = ({
             <Alert variant="destructive">
               <CircleAlert />
               <AlertDescription>
-                Transaktion ist unvollständig!
+                {t('transactions.dialog.incomplete')}
               </AlertDescription>
             </Alert>
           )}
+        {failure !== null && (
+          <Alert variant="destructive">
+            <CircleAlert />
+            <AlertTitle>{failure.title}</AlertTitle>
+            <AlertDescription>{failure.message}</AlertDescription>
+          </Alert>
+        )}
         <DialogFooter className="mt-auto">
           {transaction.id !== null && (
             <Button
               type="button"
               variant="destructive"
               className="sm:mr-auto"
+              disabled={pending}
               onClick={() => setConfirmOpen(true)}
             >
               <Trash2 />
-              Löschen
+              {t('common.delete')}
             </Button>
           )}
           <Button type="button" variant="outline" onClick={onClose}>
-            Abbrechen
+            {t('common.cancel')}
           </Button>
-          <Button type="submit">Speichern</Button>
+          <Button type="submit" disabled={pending}>
+            {t('common.save')}
+          </Button>
         </DialogFooter>
       </form>
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Transaktion löschen?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('transactions.dialog.confirmDelete')}
+            </AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Nein</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.no')}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={onDelete}>
-              Ja, löschen
+              {t('common.confirmDelete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

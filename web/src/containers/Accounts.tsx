@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Hash, Plus, Tag } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import DataTable, { dataTableFeatures } from '../components/DataTable';
 import { Button } from '../components/ui/button';
@@ -11,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '../components/ui/card';
+import i18n from '../i18n';
 import { fetchAccounts } from '../slices/accounts';
 import { useAppDispatch, useAppSelector } from '../store';
 import type { Account } from '../types/api';
@@ -20,9 +22,10 @@ import type { AccountDraft } from './AccountDialog';
 
 const column = createColumnHelper<typeof dataTableFeatures, Account>();
 
+// Headers are functions, so that they are translated when rendered.
 const columns = column.columns([
   column.accessor('name', {
-    header: 'Name',
+    header: () => i18n.t('common.name'),
     meta: { icon: Tag },
   }),
   column.accessor('iban', {
@@ -42,13 +45,14 @@ const newAccount: AccountDraft = {
 };
 
 const Accounts = () => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const accounts = useAppSelector(state => state.accounts);
   const [accountId, setAccountId] = useQueryParam('id');
   const [page, setPage] = useQueryParam('page');
 
   useEffect(() => {
-    dispatch(fetchAccounts());
+    void dispatch(fetchAccounts());
   });
 
   const items = accounts.data ?? NO_ACCOUNTS;
@@ -59,11 +63,11 @@ const Accounts = () => {
     <>
       <Card className="mx-auto max-w-(--breakpoint-xl)">
         <CardHeader>
-          <CardTitle>Depots</CardTitle>
+          <CardTitle>{t('accounts.title')}</CardTitle>
           <CardAction>
             <Button size="sm" onClick={() => setAccountId(-1)}>
               <Plus />
-              Neues Depot
+              {t('accounts.new')}
             </Button>
           </CardAction>
         </CardHeader>
@@ -74,7 +78,7 @@ const Accounts = () => {
             getRowId={account => String(account.id)}
             initialSorting={[{ id: 'name', desc: false }]}
             isLoading={accounts.isFetching}
-            emptyText="Noch keine Depots"
+            emptyText={t('accounts.none')}
             pagination={{
               page: page === null ? 0 : parseInt(page, 10),
               onPageChange: p => setPage(p === 0 ? null : p),

@@ -26,3 +26,37 @@ describe('onvista columns', () => {
     ]);
   });
 });
+
+describe('industry names', () => {
+  const industries = (entries: [string, number][]) =>
+    breakdownShares(
+      {
+        industryBreakdown: JSON.stringify(
+          entries.map(([nameBreakdown, investmentPct]) => ({
+            nameBreakdown,
+            investmentPct,
+          }))
+        ),
+      } as Stock,
+      'industryBreakdown'
+    );
+
+  it('maps GICS and sub-names onto the broad sectors and adds them up', () => {
+    expect(
+      industries([
+        ['Informationstechnologie', 20],
+        ['Telekomdienste', 5],
+        ['Basiskonsumgüter', 6],
+        ['Konsumgüter zyklisch', 9],
+        ['Versorger umfassend', 30],
+        ['Vesorger/Strom konventionell/ Enegiefirmen', 10],
+        ['Halbleiterelektronik', 20],
+      ])
+    ).toEqual([
+      { label: 'IT/Telekommunikation', value: 25 },
+      { label: 'Konsumgüter', value: 15 },
+      { label: 'Versorger', value: 40 },
+      { label: 'Halbleiterelektronik', value: 20 },
+    ]);
+  });
+});

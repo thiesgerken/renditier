@@ -4,7 +4,7 @@ use crate::onvista::EXCHANGE_TIMEZONE;
 use crate::schema::*;
 
 use chrono::offset::TimeZone;
-use chrono::{DateTime, Duration, NaiveDateTime, NaiveTime, Utc};
+use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use diesel::prelude::*;
 use log::debug;
 use serde::{Deserialize, Serialize};
@@ -34,6 +34,20 @@ pub fn market_time(time: NaiveDateTime) -> DateTime<Utc> {
 
 pub fn to_market_time(time: DateTime<Utc>) -> NaiveDateTime {
     time.with_timezone(&EXCHANGE_TIMEZONE).naive_local()
+}
+
+pub fn last_trading_day_until(mut day: NaiveDate) -> NaiveDate {
+    while day.weekday().number_from_monday() > 5 {
+        day = day.pred_opt().unwrap();
+    }
+    day
+}
+
+/// The trading day before the one of the newest price: its closing prices are where the
+/// "Heute" period starts. Trading days belong to the exchanges, not to the user's calendar.
+pub fn trading_day_before(newest_price: DateTime<Utc>) -> NaiveDate {
+    let current = last_trading_day_until(to_market_time(newest_price).date());
+    last_trading_day_until(current.pred_opt().unwrap())
 }
 
 pub trait Price {

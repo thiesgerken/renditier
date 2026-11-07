@@ -1,22 +1,18 @@
-import moment from 'moment';
-import 'moment/dist/locale/de';
-
 import {
   formatChange,
   formatCurrency,
   formatDate,
   formatDateTime,
+  formatTime,
   formatIrr,
   formatNumber,
   formatPercent,
+  formatSince,
+  formatUnits,
 } from './format';
 
 // Intl separates number and unit with a no-break space, written as _ here.
 const nbsp = (s: string) => s.replace(/_/g, '\u00a0');
-
-beforeAll(() => {
-  moment.locale('de');
-});
 
 describe('number formatting', () => {
   it('formats euros the German way', () => {
@@ -41,14 +37,46 @@ describe('number formatting', () => {
       '0,123456'
     );
     expect(formatNumber(3, { digits: 0, maxDigits: 6 })).toBe('3');
+    expect(
+      formatNumber(0.0123, { digits: 0, maxDigits: 2, significantDigits: 3 })
+    ).toBe('0,0123');
+  });
+
+  it('keeps three significant digits of units', () => {
+    expect(formatUnits(0.0123, { maxDigits: 2 })).toBe('0,0123');
+    expect(formatUnits(12.345, { maxDigits: 2 })).toBe('12,35');
+    expect(formatUnits(12.345, { maxDigits: 0 })).toBe('12,3');
+    expect(formatUnits(1234, { maxDigits: 2 })).toBe('1.234');
+    expect(formatUnits(1.5, { maxDigits: 2 })).toBe('1,5');
+    expect(formatUnits(-0.0123, { maxDigits: 2, signed: true })).toBe(
+      '-0,0123'
+    );
+    expect(formatUnits(null)).toBe('—');
+  });
+
+  it('keeps only the first significant digit of units where room is short', () => {
+    const phone = { maxDigits: 0, significantDigits: 1 };
+    expect(formatUnits(0.0123, phone)).toBe('0,01');
+    expect(formatUnits(12.345, phone)).toBe('12');
+    expect(formatUnits(1234, phone)).toBe('1.234');
   });
 });
 
 describe('date formatting', () => {
+  // 19:30 in whatever time zone the tests run in
+  const evening = Temporal.PlainDateTime.from('2026-11-06T19:30')
+    .toZonedDateTime(Temporal.Now.timeZoneId())
+    .toInstant();
+
   it('uses German dates and 24h times', () => {
-    const d = moment('2026-11-06T19:30:00');
-    expect(formatDate(d)).toBe('06.11.2026');
-    expect(formatDateTime(d)).toBe('06.11.2026, 19:30');
+    expect(formatDate(evening)).toBe('06.11.2026');
+    expect(formatDateTime(evening)).toBe('06.11.2026, 19:30');
+    expect(formatTime(evening)).toBe('19:30');
+  });
+
+  it("reads the API's days and instants", () => {
+    expect(formatDate('2026-11-06')).toBe('06.11.2026');
+    expect(formatDateTime(evening.toString())).toBe('06.11.2026, 19:30');
   });
 });
 
@@ -99,5 +127,24 @@ describe('formatIrr', () => {
     expect(formatIrr(period('2025-12-31', '2026-11-06'))).toBe(
       nbsp('+10,00_% p.a.')
     );
+  });
+});
+
+const now = Temporal.ZonedDateTime.from(
+  '2026-03-30T12:00:00+02:00[Europe/Berlin]'
+);
+const ago = (iso: string) => formatSince(Temporal.Instant.from(iso), now);
+
+describe('formatSince', () => {
+  it('names the largest unit the span reaches', () => {
+    expect(ago('2026-03-27T09:00:00Z')).toBe('vor 3 Tagen');
+    expect(ago('2026-03-30T09:30:00Z')).toBe('vor 30 Minuten');
+  });
+
+  it('counts whole units instead of naming calendar days or years', () => {
+    // 1 day 23 hours: the day before yesterday, so not "gestern"
+    expect(ago('2026-03-28T12:00:00Z')).toBe('vor 1 Tag');
+    // 1 year 11 months: two calendar years back, so not "letztes Jahr"
+    expect(ago('2024-05-01T00:00:00Z')).toBe('vor 1 Jahr');
   });
 });

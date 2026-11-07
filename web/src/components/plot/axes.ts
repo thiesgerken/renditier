@@ -1,7 +1,9 @@
-import moment from 'moment';
-import type { unitOfTime } from 'moment';
-
-import { formatCurrency, formatNumber, formatPercent } from '../../format';
+import {
+  formatCurrency,
+  formatPercent,
+  formatTemporal,
+  formatUnits,
+} from '../../format';
 
 type TickUnit = 'hour' | 'day' | 'week' | 'month' | 'year';
 
@@ -14,6 +16,8 @@ const UNIT_MILLIS: Record<TickUnit, number> = {
 };
 
 // Candidate tick spacings, finest first.
+const COARSEST_STEP: [number, TickUnit] = [5, 'year'];
+
 const TICK_STEPS: [number, TickUnit][] = [
   [1, 'hour'],
   [2, 'hour'],
@@ -30,44 +34,83 @@ const TICK_STEPS: [number, TickUnit][] = [
   [6, 'month'],
   [1, 'year'],
   [2, 'year'],
-  [5, 'year'],
+  COARSEST_STEP,
 ];
 
 // Upper bound only: recharts drops further ticks when their labels would
 // overlap on narrow screens.
 const MAX_TICKS = 12;
 
-const unitStart = (unit: TickUnit): unitOfTime.StartOf =>
-  unit === 'week' ? 'isoWeek' : unit;
+// Ticks and days are those of the browser's time zone.
+const zoned = (epoch: number): Temporal.ZonedDateTime =>
+  Temporal.Instant.fromEpochMilliseconds(epoch).toZonedDateTimeISO(
+    Temporal.Now.timeZoneId()
+  );
+
+const unitStart = (
+  t: Temporal.ZonedDateTime,
+  unit: TickUnit
+): Temporal.ZonedDateTime => {
+  switch (unit) {
+    case 'hour':
+      return t.round({ smallestUnit: 'hour', roundingMode: 'floor' });
+    case 'day':
+      return t.startOfDay();
+    case 'week':
+      return t.subtract({ days: t.dayOfWeek - 1 }).startOfDay();
+    case 'month':
+      return t.with({ day: 1 }).startOfDay();
+    default:
+      return t.with({ month: 1, day: 1 }).startOfDay();
+  }
+};
+
+const addUnits = (t: Temporal.ZonedDateTime, n: number, unit: TickUnit) =>
+  t.add({ [`${unit}s`]: n });
 
 // Position of a tick within its parent period, to align e.g. every third month
 // to quarters. Days and weeks have no natural grid to align to.
-const alignmentIndex = (t: moment.Moment, unit: TickUnit): number => {
+const alignmentIndex = (t: Temporal.ZonedDateTime, unit: TickUnit): number => {
   switch (unit) {
     case 'hour':
-      return t.hour();
+      return t.hour;
     case 'month':
-      return t.month();
+      return t.month - 1;
     case 'year':
-      return t.year();
+      return t.year;
     default:
       return 0;
   }
 };
 
-const tickFormat = (unit: TickUnit, spansDays: boolean): string => {
+const TIME = { hour: '2-digit', minute: '2-digit' } as const;
+const DATE = { day: '2-digit', month: '2-digit', year: 'numeric' } as const;
+
+const tickFormat = (
+  unit: TickUnit,
+  spansDays: boolean
+): Intl.DateTimeFormatOptions => {
   switch (unit) {
     case 'hour':
-      return spansDays ? 'dd., LT' : 'LT';
+      // "Fr., 10:00" or "10:00"
+      return spansDays ? { weekday: 'short', ...TIME } : TIME;
     case 'day':
     case 'week':
-      return 'DD.MM.';
+      // "06.11."
+      return { day: '2-digit', month: '2-digit' };
     case 'month':
-      return 'MMM YYYY';
+      // "Nov. 2026"
+      return { month: 'short', year: 'numeric' };
     default:
-      return 'YYYY';
+      return { year: 'numeric' };
   }
 };
+
+const formatEpoch = (epoch: number, options: Intl.DateTimeFormatOptions) =>
+  formatTemporal(Temporal.Instant.fromEpochMilliseconds(epoch), options);
+
+const sameDay = (a: number, b: number): boolean =>
+  zoned(a).toPlainDate().equals(zoned(b).toPlainDate());
 
 export interface TimeAxis {
   ticks: number[];
@@ -80,32 +123,43 @@ export const timeAxis = (start: number, end: number): TimeAxis => {
   const span = end - start;
   const [step, unit] =
     TICK_STEPS.find(([n, u]) => span / (n * UNIT_MILLIS[u]) <= MAX_TICKS) ??
-    TICK_STEPS[TICK_STEPS.length - 1];
+    COARSEST_STEP;
 
-  const tick = moment(start).startOf(unitStart(unit));
-  while (tick.valueOf() < start || alignmentIndex(tick, unit) % step !== 0)
-    tick.add(1, unit);
+  let tick = unitStart(zoned(start), unit);
+  while (
+    tick.epochMilliseconds < start ||
+    alignmentIndex(tick, unit) % step !== 0
+  )
+    tick = addUnits(tick, 1, unit);
 
   const ticks: number[] = [];
-  for (; tick.valueOf() <= end; tick.add(step, unit))
-    ticks.push(tick.valueOf());
+  for (; tick.epochMilliseconds <= end; tick = addUnits(tick, step, unit))
+    ticks.push(tick.epochMilliseconds);
 
-  const format = tickFormat(unit, !moment(start).isSame(end, 'day'));
+  const format = tickFormat(unit, !sameDay(start, end));
 
   return {
     ticks: ticks.length > 0 ? ticks : [start],
-    format: (epoch: number) => moment(epoch).format(format),
+    format: (epoch: number) => formatEpoch(epoch, format),
   };
 };
 
 // True when the data has more than one point per day, i.e. when the time of
 // day of a point carries information.
 export const hasIntradayPoints = (epochs: number[]): boolean =>
-  epochs.some((e, i) => i > 0 && moment(e).isSame(epochs[i - 1], 'day'));
+  epochs.some((e, i) => {
+    const previous = epochs[i - 1];
+    return previous !== undefined && sameDay(e, previous);
+  });
 
 // "Fr., 06.11.2026" or "Fr., 06.11.2026, 10:15"
 export const formatPointDate = (epoch: number, intraday: boolean): string =>
-  moment(epoch).format(intraday ? 'dd., L, LT' : 'dd., L');
+  formatEpoch(
+    epoch,
+    intraday
+      ? { weekday: 'short', ...DATE, ...TIME }
+      : { weekday: 'short', ...DATE }
+  );
 
 // Ticks are round numbers, so they only get decimals when they have some.
 const tickDigits = (value: number): number => (Number.isInteger(value) ? 0 : 2);
@@ -129,8 +183,8 @@ export const formatAmountWithChange = (
     ? formatCurrency(amount)
     : `${formatCurrency(amount)} (${formatPlotPercent(percent)})`;
 
-export const numberTick = (value: number): string =>
-  formatNumber(value, { digits: tickDigits(value) });
+export const unitsTick = (value: number): string =>
+  formatUnits(value, { maxDigits: tickDigits(value) });
 
 // Round growth factors for a log axis: +100 % and -50 % are equally far from 0 %.
 const GROWTH_FACTOR_TICKS = [

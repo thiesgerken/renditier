@@ -13,7 +13,7 @@ export default defineConfig(
     ignores: ['node_modules/**', 'build/**', 'src/semantic/**'],
   },
   js.configs.recommended,
-  tseslint.configs.recommended,
+  tseslint.configs.strictTypeChecked,
   react.configs.flat.recommended,
   react.configs.flat['jsx-runtime'],
   reactHooks.configs.flat.recommended,
@@ -21,6 +21,10 @@ export default defineConfig(
   prettierRecommended,
   {
     languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
       globals: {
         ...globals.browser,
         ...globals.jest,
@@ -40,6 +44,23 @@ export default defineConfig(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+      // Flags every `() => dispatch(…)` and `() => navigate(…)` shorthand;
+      // the void they return is never used by mistake.
+      '@typescript-eslint/no-confusing-void-expression': 'off',
+      // Numbers in template literals are meant as they are; formatting goes
+      // through format.ts where it matters.
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        { allowNumber: true },
+      ],
+      // Its findings are generics that name the expected shape of untyped data
+      // (JSON.parse, recharts payloads) at the call site.
+      '@typescript-eslint/no-unnecessary-type-parameters': 'off',
     },
+  },
+  {
+    // the service worker is plain JavaScript outside the TypeScript project
+    files: ['**/*.js'],
+    extends: [tseslint.configs.disableTypeChecked],
   }
 );

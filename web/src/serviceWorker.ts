@@ -72,7 +72,7 @@ function registerValidSW(swUrl: string, config?: ServiceWorkerConfig): void {
 
       serviceWorkerRegistration = registration;
     })
-    .catch(error => {
+    .catch((error: unknown) => {
       console.error('Error during service worker registration:', error);
     });
 }
@@ -93,11 +93,11 @@ function checkValidServiceWorker(
         (contentType != null && contentType.indexOf('javascript') === -1)
       ) {
         // No service worker found. Probably a different app. Reload the page.
-        navigator.serviceWorker.ready.then(registration => {
-          registration.unregister().then(() => {
+        void navigator.serviceWorker.ready
+          .then(registration => registration.unregister())
+          .then(() => {
             window.location.reload();
           });
-        });
       } else {
         // Service worker found. Proceed as normal.
         registerValidSW(swUrl, config);
@@ -132,7 +132,7 @@ export function register(config?: ServiceWorkerConfig): void {
 
         // Add some additional logging to localhost, pointing developers to the
         // service worker/PWA documentation.
-        navigator.serviceWorker.ready.then(() => {
+        void navigator.serviceWorker.ready.then(() => {
           console.log(
             'This web app is being served cache-first by a service ' +
               'worker. To learn more, visit https://bit.ly/CRA-PWA'
@@ -148,14 +148,18 @@ export function register(config?: ServiceWorkerConfig): void {
   }
 }
 
+// The service worker caches nothing, so a reload is all it takes to get the
+// version it announced through `onUpdate`.
+export function installUpdate(): void {
+  window.location.reload();
+}
+
 export function unregister(): void {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready
-      .then(registration => {
-        registration.unregister();
-      })
-      .catch(error => {
-        console.error(error.message);
+      .then(registration => registration.unregister())
+      .catch((error: unknown) => {
+        console.error(error);
       });
   }
 }

@@ -142,7 +142,7 @@ export interface StockInfo {
   wkn: string;
   title: string;
   kind: string;
-  company: string;
+  company: string | null;
   fondsType: string | null;
   focus: string | null;
   persistent: boolean;
@@ -189,6 +189,16 @@ export interface Exchange {
   currentPrice: StockExchangeCurrentPrice | null;
 }
 
+// Rust: analysis::returns::StockReturns
+// Route: GET /api/stocks/returns (returns Record<isin, StockReturns>)
+// How the current realtime price changed since the previous trading day's
+// close and the closes a month and a year back, as ratios (0.05 = +5 %).
+export interface StockReturns {
+  today: number | null;
+  month: number | null;
+  year: number | null;
+}
+
 // Rust: web::stocks::Stock
 // Routes: GET /api/stocks, GET /api/stocks/<isin>
 export interface Stock {
@@ -196,7 +206,7 @@ export interface Stock {
   wkn: string;
   title: string;
   kind: string;
-  company: string;
+  company: string | null;
   fondsType: string | null;
   focus: string | null;
   persistent: boolean;
@@ -243,6 +253,7 @@ export interface StockBreakdownEntry {
 // TODO: verify — onvista may include further keys; only these are consumed today.
 export interface StockHolding {
   instrument: {
+    isin: string;
     name: string;
   };
   investmentPct: number;

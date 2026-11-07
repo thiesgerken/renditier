@@ -11,6 +11,7 @@ import type {
   PortfolioPlot,
   PortfolioPlotDataPoint,
   Stock,
+  StockReturns,
   StockPlot,
   StockPlotDataPoint,
   Transaction,
@@ -37,6 +38,7 @@ export interface ResourceState<T> {
 
 export type StocksState = ResourceState<Stock[]>;
 export type PerformanceState = ResourceState<PortfolioPerformance[]>;
+export type StockReturnsState = ResourceState<Record<string, StockReturns>>;
 export type AccountsState = ResourceState<Account[]>;
 export type TransactionsState = ResourceState<Transaction[]>;
 
@@ -84,7 +86,7 @@ export interface ReceiptsState {
 
 export interface DerivedPlotFields {
   earnings: number | null;
-  // moment(point.date).valueOf()
+  // point.date in epoch milliseconds, for the time axis
   epoch: number;
   valueRelStart: number | null;
   investedRelStart: number | null;

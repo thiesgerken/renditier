@@ -1,5 +1,5 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { ChartLine } from 'lucide-react';
 import { map } from 'lodash';
 
 import type { PortfolioPerformance } from '../../types/api';
@@ -14,6 +14,7 @@ import {
   UnitsCell,
   ValueCell,
 } from '../PerformanceCells';
+import CompanyLogo from '../CompanyLogo';
 import ProgressCard from '../ProgressCard';
 import { Badge } from '../ui/badge';
 import { CardHeader, CardTitle } from '../ui/card';
@@ -34,6 +35,7 @@ interface Props {
 
 // The positions held at the end of the period, largest investment first.
 const PositionsTable = ({ period, loading, stocks }: Props) => {
+  const { t } = useTranslation();
   const positions =
     period === undefined
       ? []
@@ -43,15 +45,16 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
 
   return (
     <ProgressCard loading={loading}>
-      <CardHeader>
-        <CardTitle>Positionen</CardTitle>
+      {/* From md up, the dashboard's section heading names the card. */}
+      <CardHeader className="md:hidden">
+        <CardTitle>{t('dashboard.tabs.positions')}</CardTitle>
       </CardHeader>
       <div className="px-2">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="hidden xl:table-cell">ISIN</TableHead>
-              <TableHead>Name</TableHead>
+              <TableHead>{t('common.name')}</TableHead>
               <ColumnHead column="units" className="hidden sm:table-cell" />
               <ColumnHead column="price" className="hidden sm:table-cell" />
               <ColumnHead column="invested" className="hidden sm:table-cell" />
@@ -75,7 +78,10 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
                         to={`/stocks/${p.isin}`}
                         className="flex items-center gap-2 font-medium text-primary hover:underline"
                       >
-                        <ChartLine className="size-4 shrink-0" />
+                        <CompanyLogo
+                          isin={p.isin}
+                          name={stock?.title ?? p.isin}
+                        />
                         <span className="line-clamp-3 sm:line-clamp-2">
                           {stock === null
                             ? p.isin

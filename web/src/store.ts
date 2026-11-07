@@ -13,6 +13,7 @@ import performance from './slices/performance';
 import portfolioPlot from './slices/portfolioPlot';
 import receipts from './slices/receipts';
 import stockPlot from './slices/stockPlot';
+import stockReturns from './slices/stockReturns';
 import stocks from './slices/stocks';
 import transactions from './slices/transactions';
 
@@ -27,6 +28,7 @@ const rootReducer = combineReducers({
   receipts,
   performance,
   stocks,
+  stockReturns,
 });
 
 export const createAppStore = () =>

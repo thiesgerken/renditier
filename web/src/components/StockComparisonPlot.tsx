@@ -1,34 +1,8 @@
-import {
-  Container,
-  FormControl,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  useMediaQuery,
-  useTheme,
-  Input,
-  ListItemText,
-  Checkbox,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers';
-import moment from 'moment';
-import type { Moment } from 'moment';
 import { map, every, mapValues, sortBy } from 'lodash';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ChevronDownIcon } from 'lucide-react';
 import { CartesianGrid, ComposedChart, Legend, Line, YAxis } from 'recharts';
-import {
-  red,
-  blue,
-  deepOrange,
-  teal,
-  pink,
-  lime,
-  green,
-  deepPurple,
-  orange,
-} from '@mui/material/colors';
 
 import type { DataSourceSelection, IsoDate, IsoDateTime } from '../types/api';
 import type {
@@ -47,9 +21,25 @@ import {
   hasIntradayPoints,
   percentTick,
 } from './plot/axes';
-import ProgressPaper from './ProgressPaper';
+import ProgressCard from './ProgressCard';
+import {
+  DateRangeFields,
+  PlotControls,
+  SelectField,
+  SourceField,
+} from './plot/PlotControls';
+import type { DateRange } from './plot/PlotControls';
+import { ZoomReset, useDragZoom } from './plot/zoom';
+import { Button } from './ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { Label } from './ui/label';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
-import { useSchemePalette } from '../muiTheme';
+import useMediaQuery, { PHONE } from '../useMediaQuery';
 
 function getData(
   items: StockPlotItem[],
@@ -73,22 +63,20 @@ function getData(
   return item;
 }
 
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
-// FIXME(tsx-migration): this was `PaperProps`, which MUI dropped from Menu's
-// props, so the dropdown's height cap and width were silently ignored.
-const MenuProps = {
-  slotProps: {
-    paper: {
-      style: {
-        maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-        width: 250,
-      },
-    },
-  },
-};
+// Material's 500 shades, distinct enough for up to nine lines.
+const LINE_COLORS = [
+  '#009688',
+  '#ff5722',
+  '#2196f3',
+  '#ff9800',
+  '#e91e63',
+  '#4caf50',
+  '#cddc39',
+  '#673ab7',
+  '#f44336',
+];
 
-const formControlSx = { m: 1, minWidth: 120 };
+const CUSTOM = -1;
 
 // One row of the chart's data: the shared timestamp plus one `priceRelStart`
 // entry per ISIN, keyed by the ISIN itself.
@@ -98,51 +86,44 @@ interface UnifiedPoint {
   [isin: string]: string | number | null;
 }
 
-const unifyPoints = (
+// A point per date that any of the stocks has. Stocks without a point on that
+// date get null; stocks whose series has already ended get no entry.
+export const unifyPoints = (
   points: Record<string, StoredStockPlotPoint[]>,
   isins: string[]
 ): UnifiedPoint[] => {
+  const cursors = isins.map(isin => ({
+    isin,
+    series: points[isin] ?? [],
+    next: 0,
+  }));
   const unifiedPoints: UnifiedPoint[] = [];
 
-  if (points !== null) {
-    const idx = map(isins, () => 0);
-    let allFinished = false;
-    while (!allFinished) {
-      let epoch: number | null = null;
-      let date: IsoDateTime | null = null;
-
-      for (let i = 0; i < idx.length; i += 1)
-        if (points[isins[i]] !== null && idx[i] < points[isins[i]].length) {
-          const e = points[isins[i]][idx[i]].epoch;
-          const d = points[isins[i]][idx[i]].date;
-          if (epoch === null || e < epoch) {
-            date = d;
-            epoch = e;
-          }
-        }
-
-      allFinished = date === null;
-      if (!allFinished) {
-        const rec: UnifiedPoint = { date, epoch };
-
-        for (let i = 0; i < idx.length; i += 1)
-          if (points[isins[i]] !== null && idx[i] < points[isins[i]].length) {
-            const d = points[isins[i]][idx[i]].date;
-
-            if (d === date) {
-              rec[isins[i]] = points[isins[i]][idx[i]].priceRelStart;
-              idx[i] += 1;
-            } // else if (unifiedPoints.length > 0)
-            //   rec[isins[i]] = unifiedPoints[unifiedPoints.length - 1][isins[i]];
-            else rec[isins[i]] = null;
-          }
-
-        unifiedPoints.push(rec);
-      }
+  for (;;) {
+    // the earliest point not taken yet, across all series
+    let earliest: StoredStockPlotPoint | undefined;
+    for (const { series, next } of cursors) {
+      const point = series[next];
+      if (
+        point !== undefined &&
+        (earliest === undefined || point.epoch < earliest.epoch)
+      )
+        earliest = point;
     }
-  }
+    if (earliest === undefined) return unifiedPoints;
 
-  return unifiedPoints;
+    const rec: UnifiedPoint = { date: earliest.date, epoch: earliest.epoch };
+    for (const cursor of cursors) {
+      const point = cursor.series[cursor.next];
+      if (point === undefined) continue;
+
+      if (point.date === earliest.date) {
+        rec[cursor.isin] = point.priceRelStart;
+        cursor.next += 1;
+      } else rec[cursor.isin] = null;
+    }
+    unifiedPoints.push(rec);
+  }
 };
 
 interface Props {
@@ -163,68 +144,31 @@ const StockComparisonPlot = ({
   data,
   updateData,
 }: Props) => {
-  const theme = useTheme();
-  const palette = useSchemePalette();
-  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
+  const { t } = useTranslation();
+  const phone = useMediaQuery(PHONE);
+  // an index into performance.data, or CUSTOM
   const [period, setPeriod] = useState(0);
   const [source, setSource] = useState<DataSourceSelection>('auto');
   const [logScale, setLogScale] = useState(true);
-  const [dates, setDates] = useState<[Moment | null, Moment | null]>([
-    moment().subtract(2, 'years').startOf('year'),
-    moment(),
-  ]);
+  const [dates, setDates] = useState<DateRange>(() => {
+    const today = Temporal.Now.plainDateISO();
+    return [today.subtract({ years: 2 }).with({ month: 1, day: 1 }), today];
+  });
   const [prevRange, setPrevRange] = useState<
     [IsoDate | null, IsoDate | null, DataSourceSelection] | null
   >(null);
   let [isins, setIsins] = useState<string[] | null>(null); // eslint-disable-line prefer-const
-
-  const handlePeriodChange = useCallback((event: SelectChangeEvent<number>) => {
-    setPeriod(event.target.value);
-  }, []);
-
-  const handleSourceChange = useCallback(
-    (event: SelectChangeEvent<DataSourceSelection>) => {
-      setSource(event.target.value);
-    },
-    []
-  );
-
-  const handleScaleChange = useCallback((event: SelectChangeEvent) => {
-    setLogScale(event.target.value === 'log');
-  }, []);
-
-  const handleDateChange = useCallback((v: [Moment | null, Moment | null]) => {
-    setDates(v);
-  }, []);
-
-  const handleIsinChange = (event: SelectChangeEvent<string[]>) => {
-    // `multiple` is set, so MUI always reports an array here; the type also
-    // covers the single-select case, where the value would be a plain string.
-    setIsins(event.target.value as string[]);
-  };
-
-  const colorNames = [
-    teal,
-    deepOrange,
-    blue,
-    orange,
-    pink,
-    green,
-    lime,
-    deepPurple,
-    red,
-  ];
-  const colorsAccent = colorNames.map(c => c['500']);
 
   const plotData: Record<string, StockPlotItem | null> = {};
 
   if (isins === null) {
     isins = [];
 
-    if (performance.data !== null && performance.data.length > 0) {
+    const firstPeriod = performance.data?.[0];
+    if (firstPeriod !== undefined) {
       isins = map(
         sortBy(
-          map(performance.data[0].positions, (p, isin) => ({
+          map(firstPeriod.positions, (p, isin) => ({
             perf: p,
             isin,
           })),
@@ -252,20 +196,12 @@ const StockComparisonPlot = ({
   let ed: IsoDate | null = null;
 
   if (performance.data !== null) {
-    if (period >= 0 && period < performance.data.length) {
-      [sd, ed] = getPeriodRange(performance.data[period]);
+    const selected = performance.data[period];
+    if (selected !== undefined) {
+      [sd, ed] = getPeriodRange(selected);
     } else {
-      // FIXME(tsx-migration): the DatePickers below hand `null` to
-      // handleDateChange when their field is cleared, so `dates[0]` / `dates[1]`
-      // can be null here and calling .isValid() on them threw a TypeError.
-      sd = (
-        dates[0] !== null && dates[0].isValid()
-          ? dates[0]
-          : moment().startOf('year')
-      ).format('YYYY-MM-DD');
-      ed = (
-        dates[1] !== null && dates[1].isValid() ? dates[1] : moment()
-      ).format('YYYY-MM-DD');
+      sd = dates[0].toString();
+      ed = dates[1].toString();
     }
 
     currentIsins.forEach(isin => {
@@ -341,215 +277,154 @@ const StockComparisonPlot = ({
   const colorOf = (isin: string, i: number): string => {
     const idx =
       stocks.data === null ? -1 : stocks.data.findIndex(s => s.isin === isin);
-    return colorsAccent[(idx >= 0 ? idx : i) % colorsAccent.length];
+    const color = LINE_COLORS[(idx >= 0 ? idx : i) % LINE_COLORS.length];
+    if (color === undefined) throw new Error('no line colours');
+    return color;
   };
+
+  const toggleIsin = (isin: string, on: boolean) =>
+    setIsins(
+      on
+        ? [...currentIsins, isin]
+        : currentIsins.filter(selected => selected !== isin)
+    );
+
+  // the names are long, so several are only counted
+  const [firstIsin, ...moreIsins] = currentIsins;
+  const selectionSummary =
+    firstIsin === undefined
+      ? t('stockComparison.none')
+      : moreIsins.length === 0
+        ? stockName(firstIsin)
+        : t('stockComparison.selected', { count: currentIsins.length });
+
+  const zoom = useDragZoom({
+    snapshot: { period, dates },
+    zoomTo: range => {
+      setDates(range);
+      setPeriod(CUSTOM);
+    },
+    restore: before => {
+      setPeriod(before.period);
+      setDates(before.dates);
+    },
+  });
 
   const loading =
     !every(plotData, p => p !== null && !p.isFetching) ||
     performance.isFetching;
 
   return (
-    <Container maxWidth="xl" style={{ padding: '0px' }}>
-      <ProgressPaper
-        loading={loading}
-        style={{ width: '100%', padding: theme.spacing(1) }}
-      >
-        <Grid container style={{ width: '100%' }}>
-          <Grid size={12}>
-            <PlotArea isEmpty={chartPoints.length === 0} isLoading={loading}>
-              <ComposedChart data={chartPoints}>
-                {timeXAxis(epochs)}
-                <YAxis
-                  scale={logScale ? 'log' : 'auto'}
-                  domain={yAxis.domain}
-                  ticks={yAxis.ticks}
-                  allowDataOverflow={logScale}
-                  tickFormatter={logScale ? growthFactorTick : percentTick}
-                  width={90}
-                  hide={xsDown}
-                />
-                <CartesianGrid vertical={false} stroke={palette.divider} />
+    <ProgressCard loading={loading} className="px-2">
+      <PlotArea isEmpty={chartPoints.length === 0} isLoading={loading}>
+        <ComposedChart data={chartPoints} {...zoom.chartProps}>
+          {timeXAxis(epochs)}
+          <YAxis
+            scale={logScale ? 'log' : 'auto'}
+            domain={yAxis.domain}
+            ticks={yAxis.ticks}
+            allowDataOverflow={logScale}
+            tickFormatter={logScale ? growthFactorTick : percentTick}
+            width={90}
+            hide={phone}
+          />
+          <CartesianGrid vertical={false} stroke="var(--border)" />
 
-                {currentIsins.map((isin, i) => (
-                  <Line
-                    key={isin}
-                    type="linear"
-                    dataKey={isin}
-                    name={stockName(isin)}
-                    stroke={colorOf(isin, i)}
-                    strokeWidth={1.6}
-                    dot={false}
-                    connectNulls
-                    isAnimationActive={false}
-                  />
-                ))}
-                <Legend />
-                {pointTooltip(intraday, (point: ChartPoint) =>
-                  currentIsins.map((isin, i) => ({
-                    label: stockName(isin),
-                    value: formatPlotPercent(relativeOf(point.relative, isin)),
-                    color: colorOf(isin, i),
-                  }))
-                )}
-              </ComposedChart>
-            </PlotArea>
-          </Grid>
-          <Grid container size={9}>
-            <Grid size={3}>
-              <FormControl
-                variant="standard"
-                sx={{ ...formControlSx, width: '100%', pr: 2 }}
-                style={{
-                  width: '100%',
-                  paddingRight: theme.spacing(2),
-                }}
+          {currentIsins.map((isin, i) => (
+            <Line
+              key={isin}
+              type="linear"
+              dataKey={isin}
+              name={stockName(isin)}
+              stroke={colorOf(isin, i)}
+              strokeWidth={1.6}
+              dot={false}
+              connectNulls
+              isAnimationActive={false}
+            />
+          ))}
+          <Legend />
+          {pointTooltip(intraday, (point: ChartPoint) =>
+            currentIsins.map((isin, i) => ({
+              label: stockName(isin),
+              value: formatPlotPercent(relativeOf(point.relative, isin)),
+              color: colorOf(isin, i),
+            }))
+          )}
+          {zoom.elements}
+        </ComposedChart>
+      </PlotArea>
+      <PlotControls>
+        <div className="grid gap-1.5">
+          <Label
+            htmlFor="comparison-isins"
+            className="text-xs text-muted-foreground"
+          >
+            {t('stockComparison.securities')}
+          </Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                id="comparison-isins"
+                variant="outline"
+                className="w-60 justify-between font-normal"
               >
-                <InputLabel id="isin-checkbox-label">Wertpapiere</InputLabel>
-                <Select
-                  labelId="isin-checkbox-label"
-                  id="isin-checkbox"
-                  label="Wertpapiere"
-                  multiple
-                  value={currentIsins}
-                  onChange={handleIsinChange}
-                  input={
-                    <Input
-                      fullWidth
-                      style={{
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    />
-                  }
-                  renderValue={selected => {
-                    const selIsins = map(selected, isin => {
-                      const s = findStock(stocks, isin);
-                      if (s !== null) return abbreviateTitle(s.title, true);
-                      return isin;
-                    });
-
-                    if (selIsins.length === 0) return '(keine)';
-                    if (selIsins.length === 1) return selIsins[0];
-                    if (selIsins.length === 2) return selIsins.join(', ');
-
-                    return `${selIsins[0]} und ${selIsins.length - 1} weitere`;
-                  }}
-                  MenuProps={MenuProps}
+                <span className="truncate">{selectionSummary}</span>
+                <ChevronDownIcon className="text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="max-h-72 w-72">
+              {(stocks.data ?? []).map(s => (
+                <DropdownMenuCheckboxItem
+                  key={s.isin}
+                  checked={currentIsins.includes(s.isin)}
+                  onCheckedChange={on => toggleIsin(s.isin, on)}
+                  // keeps the menu open for picking several
+                  onSelect={event => event.preventDefault()}
                 >
-                  {stocks.data !== null &&
-                    stocks.data.map(s => (
-                      <MenuItem key={s.isin} value={s.isin}>
-                        <Checkbox checked={currentIsins.indexOf(s.isin) > -1} />
-                        <ListItemText
-                          primary={abbreviateTitle(s.title, true)}
-                        />
-                      </MenuItem>
-                    ))}
-                </Select>
-              </FormControl>{' '}
-            </Grid>
-            <Grid size={9}>
-              <FormControl sx={formControlSx} variant="standard">
-                <InputLabel id="source-select-label">Datenquelle</InputLabel>
-                <Select
-                  labelId="source-select-label"
-                  id="source-select"
-                  label="Datenquelle"
-                  value={source}
-                  fullWidth
-                  onChange={handleSourceChange}
-                >
-                  <MenuItem value="auto">Automatisch</MenuItem>
-                  <MenuItem value="historical">Historisch</MenuItem>
-                  <MenuItem value="realtime">Echtzeit</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl sx={formControlSx} variant="standard">
-                <InputLabel id="scale-select-label">Skala</InputLabel>
-                <Select
-                  labelId="scale-select-label"
-                  id="scale-select"
-                  label="Skala"
-                  value={logScale ? 'log' : 'linear'}
-                  onChange={handleScaleChange}
-                >
-                  <MenuItem value="log">Logarithmisch</MenuItem>
-                  <MenuItem value="linear">Linear</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl sx={formControlSx} variant="standard">
-                <InputLabel id="period-select-label">Zeit</InputLabel>
-                <Select
-                  labelId="period-select-label"
-                  id="period-select"
-                  label="Zeit"
-                  autoWidth
-                  value={
-                    performance.data === null || performance.data.length === 0
-                      ? -1
-                      : period
-                  }
-                  onChange={handlePeriodChange}
-                >
-                  {performance.data !== null &&
-                    performance.data.map((item, i) => (
-                      <MenuItem value={i} key={i}>
-                        {getPeriodDescription(item)}
-                      </MenuItem>
-                    ))}
-                  <MenuItem value={-1} key={-1}>
-                    Benutzerdefiniert
-                  </MenuItem>
-                </Select>
-              </FormControl>
-              {period < 0 && (
-                <>
-                  {/* <DateRangePicker
-                  startText="Start"
-                  endText="Ende"
-                  value={dates}
-                  onChange={handleDateChange}
-                  disableFuture
-                  sx={formControlSx}
-                /> */}
-                  <DatePicker
-                    label="Start"
-                    value={dates[0]}
-                    format="L"
-                    // `undefined` rather than `null`: an empty field means "no bound".
-                    maxDate={dates[1] ?? undefined}
-                    onChange={d => handleDateChange([d, dates[1]])}
-                    disableFuture
-                    disabled={period >= 0}
-                    slotProps={{
-                      textField: {
-                        sx: formControlSx,
-                        helperText: null,
-                      },
-                    }}
-                  />
-                  <DatePicker
-                    label="Ende"
-                    value={dates[1]}
-                    format="L"
-                    minDate={dates[0] ?? undefined}
-                    onChange={d => handleDateChange([dates[0], d])}
-                    disableFuture
-                    disabled={period >= 0}
-                    slotProps={{
-                      textField: {
-                        sx: formControlSx,
-                        helperText: null,
-                      },
-                    }}
-                  />
-                </>
-              )}
-            </Grid>
-          </Grid>
-        </Grid>
-      </ProgressPaper>
-    </Container>
+                  {abbreviateTitle(s.title, true)}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <SourceField
+          id="comparison-source"
+          value={source}
+          onChange={setSource}
+        />
+        <SelectField
+          id="comparison-scale"
+          label={t('stockComparison.scale')}
+          value={logScale ? 'log' : 'linear'}
+          options={[
+            { value: 'log', label: t('stockComparison.logarithmic') },
+            { value: 'linear', label: t('stockComparison.linear') },
+          ]}
+          onChange={v => setLogScale(v === 'log')}
+        />
+        <SelectField
+          id="comparison-period"
+          label={t('plot.period')}
+          value={String(performance.data?.length ? period : CUSTOM)}
+          options={[
+            ...(performance.data ?? []).map((item, i) => ({
+              value: String(i),
+              label: getPeriodDescription(item),
+            })),
+            { value: String(CUSTOM), label: t('plot.custom') },
+          ]}
+          onChange={v => {
+            setPeriod(Number(v));
+            zoom.forget();
+          }}
+        />
+        {period === CUSTOM && (
+          <DateRangeFields value={dates} onChange={setDates} />
+        )}
+        {zoom.reset !== null && <ZoomReset onClick={zoom.reset} />}
+      </PlotControls>
+    </ProgressCard>
   );
 };
 

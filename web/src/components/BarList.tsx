@@ -1,13 +1,20 @@
+import type { ReactNode } from 'react';
 import { cn } from 'cn';
 import { sumBy } from 'lodash';
+import type { LucideIcon } from 'lucide-react';
 
 import { formatPercent } from '../format';
+import i18n from '../i18n';
 
 export interface BarItem {
   label: string;
   value: number;
   // shown on hover, e.g. the full name behind an abbreviated label
   title?: string;
+  // for an item that is a company
+  isin?: string;
+  // the ISO code of an item that is a country or a currency
+  code?: string;
 }
 
 export interface BarRow extends BarItem {
@@ -23,8 +30,8 @@ export interface BarRow extends BarItem {
 const ROUNDING_SLACK = 0.01;
 
 // The rows of a bar list: the `maxRows` largest positive items, the remaining
-// positive ones folded into "Sonstige" (unless that would be a single item),
-// the part of `total` that no item accounts for as "Unbekannt", and every
+// positive ones folded into "Other" (unless that would be a single item),
+// the part of `total` that no item accounts for as "Unknown", and every
 // negative item. Negative items are never folded, because a remainder would
 // silently net them against the rest.
 export const barRows = (
@@ -51,7 +58,7 @@ export const barRows = (
       ? [
           row(
             {
-              label: `Sonstige (${folded.length})`,
+              label: i18n.t('barList.other', { count: folded.length }),
               value: sumBy(folded, 'value'),
               title: folded.map(i => i.label).join(', '),
             },
@@ -60,7 +67,7 @@ export const barRows = (
         ]
       : []),
     ...(total > 0 && unattributed > ROUNDING_SLACK * total
-      ? [row({ label: 'Unbekannt', value: unattributed }, true)]
+      ? [row({ label: i18n.t('barList.unknown'), value: unattributed }, true)]
       : []),
     ...negative.map(i => row(i)),
   ];
@@ -68,6 +75,7 @@ export const barRows = (
 
 interface Props {
   title: string;
+  icon?: LucideIcon;
   items: BarItem[];
   maxRows: number;
   // what the shares are relative to, e.g. 100 for a fund's composition in
@@ -77,22 +85,26 @@ interface Props {
   formatValue?: (value: number) => string;
   // shown below the list, e.g. what could not be included
   note?: string;
+  // shown before the label of an item, but not of a remainder
+  marker?: (item: BarItem) => ReactNode;
 }
 
 // A horizontal bar per item, longest first; negative items get the loss
 // color.
 const BarList = ({
   title,
+  icon: Icon,
   items,
   maxRows,
   total,
   formatValue,
   note,
+  marker,
 }: Props) => {
   const rows = barRows(items, maxRows, total);
   if (rows.length === 0) return null;
 
-  // Bars are scaled to the largest item, so that a large "Unbekannt" does not
+  // Bars are scaled to the largest item, so that a large "Unknown" does not
   // squash the items; a remainder beyond that fills the row.
   const itemRows = rows.filter(r => !r.remainder);
   const largest = Math.max(
@@ -108,7 +120,10 @@ const BarList = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="font-medium">{title}</h3>
+      <h3 className="flex items-center gap-2 font-medium">
+        {Icon && <Icon aria-hidden className="size-4 text-muted-foreground" />}
+        {title}
+      </h3>
       <div
         className={cn(
           'grid items-baseline gap-x-3 text-sm tabular-nums',
@@ -121,9 +136,13 @@ const BarList = ({
           <div key={r.label} className="contents">
             <span
               title={r.title}
-              className={cn('truncate', r.remainder && 'text-muted-foreground')}
+              className={cn(
+                'flex min-w-0 items-center gap-1.5',
+                r.remainder && 'text-muted-foreground'
+              )}
             >
-              {r.label}
+              {marker && !r.remainder && marker(r)}
+              <span className="truncate">{r.label}</span>
             </span>
             {formatValue && (
               <span className="text-right">{formatValue(r.value)}</span>

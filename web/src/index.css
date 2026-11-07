@@ -3,12 +3,12 @@
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
 
-/* There is no theme switch: the app follows the system, like MUI's color
-   schemes do. */
+/* There is no theme switch: the app follows the system. */
 @custom-variant dark (@media (prefers-color-scheme: dark));
 
-/* MUI's breakpoints, so that the shell and the MUI pages change layout at the
-   same widths while both exist. */
+/* Wider steps than Tailwind's defaults: sm is where a phone's portrait layout
+   ends, xl where the content stops growing. The pages' layouts are tuned to
+   these widths. */
 @theme {
   --breakpoint-*: initial;
   --breakpoint-sm: 600px;
@@ -16,7 +16,6 @@
   --breakpoint-lg: 1200px;
   --breakpoint-xl: 1536px;
 
-  /* not inlined, so that the MUI theme can use it as var(--font-sans) */
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -75,10 +74,12 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  /* the MUI theme's dark teal and pink, so that gains and losses look the
-     same in the MUI plots */
+  /* teal and pink for gains and losses, in tables and plots alike */
   --gain: #00796b;
   --loss: #c2185b;
+  /* a stock's price and units, which are neither gain nor loss */
+  --chart-price: #0288d1;
+  --chart-units: #ed6c02;
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -112,6 +113,8 @@
     --destructive: oklch(0.704 0.191 22.216);
     --gain: #26a69a;
     --loss: #ec407a;
+    --chart-price: #29b6f6;
+    --chart-units: #ffa726;
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);
@@ -138,5 +141,10 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Recharts makes a chart focusable for its keyboard tooltip, so dragging
+     across it to zoom would leave a focus ring around the whole chart. */
+  .recharts-wrapper svg:focus:not(:focus-visible) {
+    outline: none;
   }
 }

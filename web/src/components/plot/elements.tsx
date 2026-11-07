@@ -6,14 +6,10 @@ import { Area, Tooltip, XAxis } from 'recharts';
 import { formatPointDate, timeAxis } from './axes';
 import PlotTooltip from './PlotTooltip';
 import type { TooltipRow } from './PlotTooltip';
-import type { SchemePalette } from '../../muiTheme';
 
 // X axis over the `epoch` of the points.
 export const timeXAxis = (epochs: number[]) => {
-  const axis =
-    epochs.length > 0
-      ? timeAxis(epochs[0], epochs[epochs.length - 1])
-      : timeAxis(0, 0);
+  const axis = timeAxis(epochs[0] ?? 0, epochs.at(-1) ?? 0);
 
   return (
     <XAxis
@@ -35,7 +31,7 @@ export const pointTooltip = <P extends { epoch: number }>(
 ) => (
   <Tooltip
     content={({ active, payload }) => {
-      const point = payload?.[0]?.payload as P | undefined;
+      const point = payload[0]?.payload as P | undefined;
       if (!active || point === undefined) return null;
 
       return (
@@ -59,25 +55,20 @@ const zeroOffset = (values: (number | null)[]): number => {
   return max / (max - min);
 };
 
-// An area colored by sign: primary above zero, secondary below.
+// An area colored by sign: gain above zero, loss below.
 export const signedArea = (
   dataKey: string,
   name: string,
   values: (number | null)[],
-  type: 'linear' | 'stepAfter',
-  palette: SchemePalette
+  type: 'linear' | 'stepAfter'
 ) => {
   const offset = zeroOffset(values);
 
   return [
     <defs key={`${dataKey}Gradients`}>
-      <linearGradient id={`${dataKey}Stroke`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset={offset} stopColor={palette.primary.dark} />
-        <stop offset={offset} stopColor={palette.secondary.dark} />
-      </linearGradient>
-      <linearGradient id={`${dataKey}Fill`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset={offset} stopColor={palette.primary.main} />
-        <stop offset={offset} stopColor={palette.secondary.main} />
+      <linearGradient id={`${dataKey}Sign`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset={offset} stopColor="var(--gain)" />
+        <stop offset={offset} stopColor="var(--loss)" />
       </linearGradient>
     </defs>,
     <Area
@@ -85,8 +76,8 @@ export const signedArea = (
       type={type}
       dataKey={dataKey}
       name={name}
-      stroke={`url(#${dataKey}Stroke)`}
-      fill={`url(#${dataKey}Fill)`}
+      stroke={`url(#${dataKey}Sign)`}
+      fill={`url(#${dataKey}Sign)`}
       fillOpacity={0.2}
       strokeWidth={1.4}
       dot={false}

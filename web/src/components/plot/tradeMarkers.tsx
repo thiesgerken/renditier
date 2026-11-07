@@ -1,11 +1,11 @@
-import { Box, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { Line } from 'recharts';
 import type { DotItemDotProps } from 'recharts';
 
-import { formatCurrency, formatNumber } from '../../format';
+import { formatCurrency, formatUnits } from '../../format';
+import i18n from '../../i18n';
 import type { Trades } from './trades';
 import type { TooltipRow } from './PlotTooltip';
-import type { SchemePalette } from '../../muiTheme';
 
 export const TRADES_AXIS = 'trades';
 
@@ -52,9 +52,9 @@ const markerLine = (
 
 // Buy and sell markers; the chart needs a hidden YAxis with id `TRADES_AXIS`
 // and domain [0, 1].
-export const tradeMarkers = (palette: SchemePalette) => [
-  markerLine('buys', t => t.boughtUnits > 0, 'up', palette.primary.main),
-  markerLine('sells', t => t.soldUnits > 0, 'down', palette.secondary.main),
+export const tradeMarkers = () => [
+  markerLine('buys', t => t.boughtUnits > 0, 'up', 'var(--gain)'),
+  markerLine('sells', t => t.soldUnits > 0, 'down', 'var(--loss)'),
 ];
 
 export const tradeRows = (
@@ -65,14 +65,17 @@ export const tradeRows = (
 
   const describe = (units: number, amount: number) =>
     withUnits
-      ? `${formatNumber(units, { digits: 3 })} für ${formatCurrency(amount)}`
+      ? i18n.t('plot.trade', {
+          units: formatUnits(units, { maxDigits: 3 }),
+          amount: formatCurrency(amount),
+        })
       : formatCurrency(amount);
 
   return [
     ...(trades.boughtUnits > 0
       ? [
           {
-            label: 'Kauf',
+            label: i18n.t('plot.buy'),
             value: describe(trades.boughtUnits, trades.boughtAmount),
           },
         ]
@@ -80,7 +83,7 @@ export const tradeRows = (
     ...(trades.soldUnits > 0
       ? [
           {
-            label: 'Verkauf',
+            label: i18n.t('plot.sell'),
             value: describe(trades.soldUnits, trades.soldAmount),
           },
         ]
@@ -95,16 +98,13 @@ export const TradeLegend = ({
 }: {
   points: { trades: Trades | null }[];
 }) => {
+  const { t } = useTranslation();
   if (points.every(p => p.trades === null)) return null;
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
-      <Typography variant="caption" sx={{ color: 'primary.main' }}>
-        ▲ Kauf
-      </Typography>
-      <Typography variant="caption" sx={{ color: 'secondary.main' }}>
-        ▼ Verkauf
-      </Typography>
-    </Box>
+    <div className="flex justify-center gap-4 text-xs">
+      <span className="text-gain">▲ {t('plot.buy')}</span>
+      <span className="text-loss">▼ {t('plot.sell')}</span>
+    </div>
   );
 };

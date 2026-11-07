@@ -13,7 +13,7 @@ pub fn parse_info(snapshot: &Value, breakdowns: &Value) -> Result<StockInfo, Box
     let company =
         get_string(&snapshot["fundsIssuer"]["nameGroupIssuer"]).ok_or("error parsing company")?;
     let currency = get_string(&base_data["isoCurrencyFund"]).ok_or("error parsing currency")?;
-    let info = parse_base_info(snapshot, EntityType::Fund, title, company, currency)?;
+    let info = parse_base_info(snapshot, EntityType::Fund, title, Some(company), currency)?;
 
     let launch_date = get_timestamp(&base_data["dateEmission"])
         .ok_or_else(|| format!("error parsing launch date {}", base_data["dateEmission"]))?;
@@ -49,4 +49,48 @@ pub fn parse_info(snapshot: &Value, breakdowns: &Value) -> Result<StockInfo, Box
         benchmark_index: Some(benchmark),
         ..info
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::onvista::tests::fixture;
+
+    use chrono::{TimeZone, Utc};
+
+    #[test]
+    fn test_parse_info() {
+        let info = parse_info(&fixture("etf_snapshot"), &fixture("etf_breakdowns")).unwrap();
+
+        assert_eq!(info.isin, "IE00BK5BQT80");
+        assert_eq!(info.wkn, "A2PKXG");
+        assert_eq!(info.title, "Vanguard FTSE All-World UCITS ETF - USD ACC");
+        assert_eq!(info.kind, "ETF");
+        assert_eq!(info.company.as_deref(), Some("Vanguard"));
+        assert_eq!(info.currency.as_deref(), Some("USD"));
+        assert_eq!(
+            info.onvista_url,
+            "/etf/Vanguard-FTSE-All-World-UCITS-ETF-USD-Acc-ETF-IE00BK5BQT80"
+        );
+        assert_eq!(info.instrument_id.as_deref(), Some("156424987"));
+        assert_eq!(info.fonds_type.as_deref(), Some("Aktienfonds"));
+        assert_eq!(info.focus.as_deref(), Some("Aktien International"));
+        assert_eq!(info.payout_type.as_deref(), Some("Thesaurierend"));
+        assert_eq!(info.ter, Some(0.0014119000732898711));
+        assert_eq!(
+            info.launch_date,
+            Some(Utc.with_ymd_and_hms(2019, 7, 23, 0, 0, 0).unwrap())
+        );
+        assert_eq!(info.benchmark_index.as_deref(), Some("FTSE All World"));
+        assert!(info.description.unwrap().starts_with("Der Fonds verfolgt"));
+
+        let holdings: Vec<Value> = serde_json::from_str(&info.holdings.unwrap()).unwrap();
+        assert_eq!(holdings[0]["instrument"]["name"], "Nvidia");
+        let currencies: Vec<Value> =
+            serde_json::from_str(&info.currency_breakdown.unwrap()).unwrap();
+        assert_eq!(currencies[0]["nameBreakdown"], "US-Dollar");
+        assert!(info.industry_breakdown.is_some());
+        assert!(info.instrument_breakdown.is_some());
+        assert!(info.country_breakdown.is_some());
+    }
 }

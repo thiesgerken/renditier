@@ -1,5 +1,11 @@
 import type { PerformanceKind, PortfolioPerformance } from '../types/api';
-import { findSelectedPeriod, groupPeriods, periodKey } from './performance';
+import {
+  findSelectedPeriod,
+  getPeriodDescription,
+  getPeriodRange,
+  groupPeriods,
+  periodKey,
+} from './performance';
 
 const period = (kind: PerformanceKind, end: string) =>
   ({
@@ -49,5 +55,33 @@ describe('groupPeriods', () => {
       ['Total', 'YearToYear/2025-12-31'],
       ['MonthToDate', 'MonthToMonth/2026-10-31'],
     ]);
+  });
+});
+
+describe('getPeriodDescription', () => {
+  it('names finished years and months by their end', () => {
+    expect(getPeriodDescription(period('YearToYear', '2025-12-31'))).toBe(
+      '2025'
+    );
+    expect(getPeriodDescription(period('MonthToMonth', '2026-03-31'))).toBe(
+      '03/2026'
+    );
+  });
+});
+
+describe('getPeriodRange', () => {
+  const from = (start: string) =>
+    getPeriodRange({
+      ...period('Total', '2026-11-07'),
+      start: { date: start },
+    } as PortfolioPerformance);
+
+  it('starts on the trading day after the period start', () => {
+    // Wednesday
+    expect(from('2026-11-03')).toEqual(['2026-11-04', '2026-11-07']);
+    // Friday, Saturday and Sunday all lead to Monday
+    expect(from('2026-10-30')).toEqual(['2026-11-02', '2026-11-07']);
+    expect(from('2026-10-31')).toEqual(['2026-11-02', '2026-11-07']);
+    expect(from('2026-11-01')).toEqual(['2026-11-02', '2026-11-07']);
   });
 });
