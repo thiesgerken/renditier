@@ -43,7 +43,7 @@ describe('the account dialog', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(null))
+      vi.fn(() => Promise.resolve(new Response(null)))
     );
     await clickButton('Speichern');
 

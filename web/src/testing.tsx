@@ -8,12 +8,19 @@ import type { AppStore } from './store';
 // Tells React that the tests wrap updates in act().
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+// act() with an async callback also flushes what `work` sets off, e.g. a
+// thunk's fetch and the state updates after it; a sync one would not.
+// eslint-disable-next-line @typescript-eslint/require-await
+const settle = (work: () => void) => act(async () => work());
+
 // Renders into the document, so that dialogs find their portal target.
 export const render = async (ui: ReactNode, store: AppStore) => {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
-  await act(async () => root.render(<Provider store={store}>{ui}</Provider>));
+  await settle(() => {
+    root.render(<Provider store={store}>{ui}</Provider>);
+  });
 
   return () => {
     act(() => root.unmount());
@@ -26,11 +33,14 @@ export const clickButton = async (name: string) => {
     b => b.textContent?.trim() === name
   );
   if (button === undefined) throw new Error(`no button "${name}"`);
-  await act(async () => button.click());
+  await settle(() => {
+    button.click();
+  });
 };
 
 export const failingFetch = () =>
-  vi.fn(
-    async () =>
+  vi.fn(() =>
+    Promise.resolve(
       new Response(null, { status: 500, statusText: 'Internal Server Error' })
+    )
   );
