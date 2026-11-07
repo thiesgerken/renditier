@@ -11,6 +11,20 @@ and libpq the backend links against.
 
 - `openssl rand -base64 32` to obtain secret key
 
+## Configuration
+
+Settings come from `/etc/stockdb/config.*`, `./stockdb.*` (any format the `config` crate reads,
+e.g. TOML) or the file given with `--config`, and are overridden by `STOCKDB__*` environment
+variables (`STOCKDB__WEB__PORT` for `[web] port`). `stockdb --dump` prints the effective
+configuration.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `timezone` | `Europe/Berlin` | The users' time zone (IANA name). It decides where "Heute", weeks, months and years begin and on which day a transaction counts. An unknown name stops the program at startup. |
+
+Exchange and receipt times are not affected: onvista quotes German exchanges and the supported
+banks issue German receipts, so their times are always read as German local time.
+
 ## API tokens
 
 The API otherwise expects a browser: a session cookie, or the `Remote-User` header from the

@@ -1,9 +1,11 @@
+use crate::analysis::price::to_market_time;
 use crate::data::*;
 use crate::models::*;
 use crate::schema::stock_infos::dsl::*;
 use crate::{add_missing_stocks, web};
 
-use chrono::{Datelike, Duration, Local, Timelike, Utc};
+use chrono::{Datelike, Duration, Timelike, Utc};
+use chrono_tz::Tz;
 use clap::ArgMatches;
 use clap::{Arg, Command};
 use diesel::prelude::*;
@@ -66,15 +68,15 @@ impl Default for Config {
 
 async fn fetch_data(pool: Pool<ConnectionManager<PgConnection>>) -> Result<(), Box<dyn Error>> {
     let now = Utc::now();
-    let now_local = now.with_timezone(&Local);
+    let now_market = to_market_time(now);
 
     let mut connection = pool.get()?;
     let stocks = stock_infos.load::<StockInfo>(&mut connection)?;
 
     // do not update data as often in the night and on weekends
-    let rt_interval = if now.naive_local().date().weekday().number_from_monday() >= 6
-        || now_local.hour() > 19
-        || now_local.hour() < 9
+    let rt_interval = if now_market.weekday().number_from_monday() >= 6
+        || now_market.hour() > 19
+        || now_market.hour() < 9
     {
         Duration::hours(6)
     } else {
@@ -99,9 +101,9 @@ async fn fetch_data(pool: Pool<ConnectionManager<PgConnection>>) -> Result<(), B
     }
 
     // do not update data as often in the night and on weekends
-    let hist_interval = if now.naive_local().date().weekday().number_from_monday() >= 6
-        || now_local.hour() > 22
-        || now_local.hour() < 18
+    let hist_interval = if now_market.weekday().number_from_monday() >= 6
+        || now_market.hour() > 22
+        || now_market.hour() < 18
     {
         Duration::hours(6)
     } else {
@@ -133,6 +135,7 @@ pub async fn handle(
     pool: Pool<ConnectionManager<PgConnection>>,
     mut config: Config,
     database: String,
+    timezone: Tz,
     verbosity: i64,
 ) {
     if let Some(y) = sub_matches.get_one::<String>("port") {
@@ -179,6 +182,7 @@ pub async fn handle(
         log_level: level,
         database_url: database,
         trusted_header_authentication: config.trusted_header_authentication,
+        timezone,
         authentication_redirect: config.authentication_redirect,
     })
     .await;

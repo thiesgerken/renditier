@@ -3,7 +3,8 @@ use crate::analysis::{irr, price};
 use crate::models::*;
 use crate::schema::*;
 
-use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, Utc, Weekday};
+use chrono::{DateTime, Datelike, Duration, NaiveDate, Utc, Weekday};
+use chrono_tz::Tz;
 use diesel::prelude::*;
 use log::debug;
 use serde::{Deserialize, Serialize};
@@ -63,11 +64,40 @@ pub struct PositionSnapshot {
     pub data_source: Option<DataSource<EitherPrice>>,
 }
 
+/// The user's calendar: it decides on which day a transaction happened, where periods begin
+/// and end, and which day is today.
+struct Calendar {
+    timezone: Tz,
+    today: NaiveDate,
+}
+
+impl Calendar {
+    fn new(timezone: Tz, now: DateTime<Utc>) -> Self {
+        Self {
+            timezone,
+            today: now.with_timezone(&timezone).date_naive(),
+        }
+    }
+
+    fn day_of(&self, instant: DateTime<Utc>) -> NaiveDate {
+        instant.with_timezone(&self.timezone).date_naive()
+    }
+}
+
+/// Prices of the current moment and end-of-day prices of the period boundaries.
+struct Prices<'a> {
+    current: &'a PriceMap<RealtimePrice>,
+    historical: &'a HashMap<NaiveDate, PriceMap<HistoricalPrice>>,
+}
+
 pub fn compute(
     connection: &mut diesel::PgConnection,
     user_id: i32,
     date: DateTime<Utc>,
+    timezone: Tz,
 ) -> Result<Vec<PortfolioPerformance>, Box<dyn Error>> {
+    let calendar = Calendar::new(timezone, date);
+
     // read all transactions for the user from db
     let ts = transactions::table
         .inner_join(accounts::table)
@@ -95,14 +125,13 @@ pub fn compute(
         price::find(connection, &isins, date, 4 * 24, 4 * 24)?;
 
     // assemble dates for which we need to get HistoricalPrices
-    let mut current_day = current_prices
-        .values()
-        .map(|d| d.price.date)
-        .max()
-        .unwrap_or_else(Utc::now)
-        .with_timezone(&Local)
-        .naive_local()
-        .date();
+    let mut current_day = calendar.day_of(
+        current_prices
+            .values()
+            .map(|d| d.price.date)
+            .max()
+            .unwrap_or(date),
+    );
     while current_day.weekday().number_from_monday() > 5 {
         current_day = current_day.pred_opt().unwrap();
     }
@@ -116,7 +145,7 @@ pub fn compute(
         .iter()
         .map(|t| t.date)
         .min()
-        .map(|d| d.with_timezone(&Local).naive_local().date())
+        .map(|d| calendar.day_of(d))
         .unwrap_or_else(|| NaiveDate::from_ymd_opt(prev_day.year(), 1, 1).unwrap());
 
     let mut jobs = vec![(
@@ -224,12 +253,17 @@ pub fn compute(
         isins.len(),
         dates.len()
     );
-    let prices = Price::find_multiple(connection, &isins, &utc_date_times, 4 * 24, 4 * 24)?;
-    let prices = dates.into_iter().zip(prices).collect();
+    let historical_prices =
+        Price::find_multiple(connection, &isins, &utc_date_times, 4 * 24, 4 * 24)?;
+    let historical_prices = dates.into_iter().zip(historical_prices).collect();
+    let prices = Prices {
+        current: &current_prices,
+        historical: &historical_prices,
+    };
 
     Ok(jobs
         .into_iter()
-        .map(|(k, st, en)| compute_performance(&ts, &isins, &current_prices, &prices, k, st, en))
+        .map(|(k, st, en)| compute_performance(&ts, &isins, &prices, &calendar, k, st, en))
         .collect::<Vec<_>>())
 }
 
@@ -240,12 +274,13 @@ fn compute_position(
     end_price: Option<DataSource<EitherPrice>>,
     start: NaiveDate,
     end: NaiveDate,
+    calendar: &Calendar,
 ) -> PositionPerformance {
     let (prior_ts, relevant_ts): (Vec<_>, Vec<_>) = ts
         .iter()
-        .filter(|t| t.isin == isin && t.date.with_timezone(&Local).naive_local().date() <= end)
+        .filter(|t| t.isin == isin && calendar.day_of(t.date) <= end)
         .cloned()
-        .partition(|t| t.date.with_timezone(&Local).naive_local().date() <= start);
+        .partition(|t| calendar.day_of(t.date) <= start);
 
     let (prior_units, prior_invested, prior_fees) =
         prior_ts.iter().fold((0.0, 0.0, 0.0), |(au, ac, af), t| {
@@ -353,15 +388,15 @@ fn compute_position(
 fn compute_performance(
     ts: &[Transaction],
     isins: &[String],
-    current_prices: &PriceMap<RealtimePrice>,
-    prices: &HashMap<NaiveDate, PriceMap<HistoricalPrice>>,
+    prices: &Prices,
+    calendar: &Calendar,
     kind: PerformanceKind,
     start: NaiveDate,
     end: Option<NaiveDate>,
 ) -> PortfolioPerformance {
     let empty = HashMap::new();
-    let end_historical_prices = end.map(|x| prices.get(&x).unwrap_or(&empty));
-    let start_prices = prices.get(&start).unwrap_or(&empty);
+    let end_historical_prices = end.map(|x| prices.historical.get(&x).unwrap_or(&empty));
+    let start_prices = prices.historical.get(&start).unwrap_or(&empty);
 
     // possible way of optimizing performance: filter for 'transactions <= end' here, and not in compute_position ?
 
@@ -379,6 +414,7 @@ fn compute_performance(
                             .and_then(|p| p.get(isin).cloned().map(EitherPrice::wrap_historical)),
                         start,
                         end,
+                        calendar,
                     ),
                 )
             })
@@ -393,12 +429,14 @@ fn compute_performance(
                         isin.clone(),
                         ts,
                         start_prices.get(isin).cloned(),
-                        current_prices
+                        prices
+                            .current
                             .get(isin)
                             .cloned()
                             .map(EitherPrice::wrap_realtime),
                         start,
-                        Local::now().naive_local().date(),
+                        calendar.today,
+                        calendar,
                     ),
                 )
             })
@@ -420,7 +458,7 @@ fn compute_performance(
     );
 
     let end_snapshot = PortfolioSnapshot {
-        date: end.unwrap_or_else(|| Local::now().naive_local().date()),
+        date: end.unwrap_or(calendar.today),
         invested,
         fees,
         value,
@@ -505,5 +543,27 @@ fn compute_performance(
         irr_annual,
         irr_period,
         positions,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_calendar_follows_the_configured_time_zone() {
+        let calendar = Calendar::new(
+            chrono_tz::America::New_York,
+            "2026-11-07T03:00:00Z".parse().unwrap(),
+        );
+
+        assert_eq!(
+            calendar.today,
+            NaiveDate::from_ymd_opt(2026, 11, 6).unwrap()
+        );
+        assert_eq!(
+            calendar.day_of("2026-07-15T03:30:00Z".parse().unwrap()),
+            NaiveDate::from_ymd_opt(2026, 7, 14).unwrap()
+        );
     }
 }

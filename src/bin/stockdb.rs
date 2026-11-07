@@ -67,6 +67,7 @@ fn main() {
                 pool,
                 config.web,
                 config.database,
+                config.timezone,
                 config.verbosity,
             )
             .await;

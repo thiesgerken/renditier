@@ -1,9 +1,9 @@
 use super::{
-    calculate_isin_checksum, parse_float, quick_and_dirty_checksum, ParsedReceiptTransaction,
+    calculate_isin_checksum, parse_float, quick_and_dirty_checksum, receipt_time,
+    ParsedReceiptTransaction,
 };
 use crate::models::NewTransaction;
 
-use chrono::{Local, TimeZone, Utc};
 use log::debug;
 use regex::Regex;
 use std::error::Error;
@@ -119,17 +119,13 @@ pub fn parse_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error
         .next()
         .ok_or("no date and place match")?;
 
-    let date = Local
-        .with_ymd_and_hms(
-            cpt[3].parse()?,
-            cpt[2].parse()?,
-            cpt[1].parse()?,
-            cpt.get(5).map(|x| x.as_str().parse()).unwrap_or(Ok(0))?,
-            cpt.get(6).map(|x| x.as_str().parse()).unwrap_or(Ok(0))?,
-            0,
-        )
-        .unwrap()
-        .with_timezone(&Utc);
+    let date = receipt_time(
+        cpt[3].parse()?,
+        cpt[2].parse()?,
+        cpt[1].parse()?,
+        cpt.get(5).map(|x| x.as_str().parse()).unwrap_or(Ok(0))?,
+        cpt.get(6).map(|x| x.as_str().parse()).unwrap_or(Ok(0))?,
+    )?;
 
     let ex = cpt[4].to_owned();
 
@@ -170,10 +166,7 @@ pub fn parse_fees(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>> {
 
     debug!("Parsing date and receipt number");
     let cpt = FEES_DATE.captures_iter(s).next().ok_or("no date match")?;
-    let date = Local
-        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
-        .unwrap()
-        .with_timezone(&Utc);
+    let date = receipt_time(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0)?;
 
     let receipt_number =
         quick_and_dirty_checksum(&format!("{}{}{}", wkn, date.format("%Y%m%d"), amount));
@@ -216,10 +209,7 @@ pub fn parse_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>>
         .ok_or("no amount+date match")?;
     let amount = (parse_float(&cpt[4])? * 100.0).round() as i64;
 
-    let date = Local
-        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
-        .unwrap()
-        .with_timezone(&Utc);
+    let date = receipt_time(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0)?;
 
     let receipt_number =
         quick_and_dirty_checksum(&format!("{}{}{}", isin, date.format("%Y%m%d"), amount));
@@ -266,10 +256,7 @@ pub fn parse_ertragsgutschrift(s: &str) -> Result<ParsedReceiptTransaction, Box<
         .ok_or("no amount+date match")?;
     let amount = (parse_float(&cpt[4])? * 100.0).round() as i64;
 
-    let date = Local
-        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
-        .unwrap()
-        .with_timezone(&Utc);
+    let date = receipt_time(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0)?;
 
     let receipt_number =
         quick_and_dirty_checksum(&format!("{}{}{}", isin, date.format("%Y%m%d"), amount));
@@ -304,6 +291,7 @@ pub fn parse_ertragsgutschrift(s: &str) -> Result<ParsedReceiptTransaction, Box<
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::receipts::RECEIPT_TIMEZONE;
     use chrono::NaiveDate;
 
     const COMDIRECT_PURCHASE_2026_05_15_FILENAME: &str =
@@ -352,9 +340,10 @@ Verwahrungs-Art: GIROSAMMELDEPOT
         assert_eq!(parsed.content.amount, -3476);
         assert_eq!(parsed.content.fees, 0);
         assert_eq!(parsed.content.exchange.as_deref(), Some("TRADEGATE"));
+        // no trade time on the receipt: midnight German summer time
         assert_eq!(
-            parsed.content.date.with_timezone(&Local).date_naive(),
-            NaiveDate::from_ymd_opt(2026, 5, 15).unwrap()
+            parsed.content.date.to_rfc3339(),
+            "2026-05-14T22:00:00+00:00"
         );
         assert!(!parsed.over_the_counter);
         assert!(parsed.content.receipt_number.is_some());
@@ -403,7 +392,11 @@ Ihre comdirect\n";
         assert_eq!(parsed.account_number, "718392650");
         assert_eq!(parsed.content.exchange, None);
         assert_eq!(
-            parsed.content.date.with_timezone(&Local).date_naive(),
+            parsed
+                .content
+                .date
+                .with_timezone(&RECEIPT_TIMEZONE)
+                .date_naive(),
             NaiveDate::from_ymd_opt(2026, 6, 2).unwrap()
         );
         assert!(parsed.over_the_counter);

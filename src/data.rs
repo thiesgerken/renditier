@@ -1,3 +1,4 @@
+use crate::analysis::price::to_market_time;
 use crate::models::*;
 use crate::onvista;
 use crate::schema::stock_exchanges::dsl::*;
@@ -105,7 +106,7 @@ pub async fn fetch_historical(
                 match onvista::get_data_historical(
                     s,
                     ex.onvista_record_id,
-                    t.with_timezone(&chrono::Local).naive_local().date(),
+                    to_market_time(t).date(),
                 )
                 .await
                 {

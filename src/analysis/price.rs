@@ -1,10 +1,10 @@
 use crate::data::exchange_comparison;
 use crate::models::*;
+use crate::onvista::EXCHANGE_TIMEZONE;
 use crate::schema::*;
 
 use chrono::offset::TimeZone;
-use chrono::{DateTime, Duration, Local, NaiveDateTime, NaiveTime, Utc};
-use chrono_tz::Europe::Berlin;
+use chrono::{DateTime, Duration, NaiveDateTime, NaiveTime, Utc};
 use diesel::prelude::*;
 use log::debug;
 use serde::{Deserialize, Serialize};
@@ -20,13 +20,12 @@ pub struct DataSource<T> {
 pub type PriceMap<T> = HashMap<String, DataSource<T>>;
 
 // Historical prices are stored per day; these are the times of day their opening and
-// closing prices are attributed to. They belong to the (German) exchanges, not to the
-// host, whose clock may well run on UTC.
+// closing prices are attributed to, in the exchanges' time zone.
 pub const MARKET_OPEN: NaiveTime = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
 pub const MARKET_CLOSE: NaiveTime = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
 
 pub fn market_time(time: NaiveDateTime) -> DateTime<Utc> {
-    Berlin
+    EXCHANGE_TIMEZONE
         .from_local_datetime(&time)
         .earliest()
         .expect("market hours never fall into a DST gap")
@@ -34,7 +33,7 @@ pub fn market_time(time: NaiveDateTime) -> DateTime<Utc> {
 }
 
 pub fn to_market_time(time: DateTime<Utc>) -> NaiveDateTime {
-    time.with_timezone(&Berlin).naive_local()
+    time.with_timezone(&EXCHANGE_TIMEZONE).naive_local()
 }
 
 pub trait Price {
@@ -192,25 +191,25 @@ impl Price for HistoricalPrice {
         let hard_lbs = dates
             .iter()
             .map(|d| {
-                d.checked_sub_signed(Duration::hours(hard_threshold))
-                    .unwrap()
-                    .with_timezone(&Local)
-                    .naive_local()
-                    .date()
+                to_market_time(
+                    d.checked_sub_signed(Duration::hours(hard_threshold))
+                        .unwrap(),
+                )
+                .date()
             })
             .collect::<Vec<_>>();
 
         let soft_lbs = dates.iter().map(|d| {
-            d.checked_sub_signed(Duration::hours(soft_threshold))
-                .unwrap()
-                .with_timezone(&Local)
-                .naive_local()
-                .date()
+            to_market_time(
+                d.checked_sub_signed(Duration::hours(soft_threshold))
+                    .unwrap(),
+            )
+            .date()
         });
 
         let days = dates
             .iter()
-            .map(|d| d.with_timezone(&Local).naive_local().date())
+            .map(|d| to_market_time(*d).date())
             .collect::<Vec<_>>();
 
         let always_false = Box::new(historical_prices::date.ne(historical_prices::date));
@@ -329,7 +328,7 @@ mod tests {
     use chrono::NaiveDate;
 
     #[test]
-    fn market_times_are_berlin_times_regardless_of_the_host() {
+    fn market_times_are_exchange_times_regardless_of_the_host() {
         let close = |y, m, d| {
             market_time(
                 NaiveDate::from_ymd_opt(y, m, d)
@@ -341,5 +340,25 @@ mod tests {
         assert_eq!(close(2026, 11, 6).to_rfc3339(), "2026-11-06T17:00:00+00:00");
         assert_eq!(close(2026, 7, 6).to_rfc3339(), "2026-07-06T16:00:00+00:00");
         assert_eq!(to_market_time(close(2026, 7, 6)).time(), MARKET_CLOSE);
+    }
+
+    #[test]
+    fn instants_late_in_the_utc_evening_belong_to_the_next_exchange_day() {
+        let market_date = |s: &str| to_market_time(s.parse().unwrap()).date();
+
+        // winter: CET is UTC+1
+        assert_eq!(
+            market_date("2026-01-15T23:30:00Z"),
+            NaiveDate::from_ymd_opt(2026, 1, 16).unwrap()
+        );
+        // summer: CEST is UTC+2
+        assert_eq!(
+            market_date("2026-07-15T22:30:00Z"),
+            NaiveDate::from_ymd_opt(2026, 7, 16).unwrap()
+        );
+        assert_eq!(
+            market_date("2026-07-15T21:30:00Z"),
+            NaiveDate::from_ymd_opt(2026, 7, 15).unwrap()
+        );
     }
 }
