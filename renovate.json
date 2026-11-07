@@ -21,8 +21,8 @@
       "automerge": true
     },
     {
-      "description": "stockdb:main is a moving tag that CI rewrites on every merge, so a digest pin in docker-compose.yaml would go stale with the next merge and run an old build",
-      "matchPackageNames": ["gitea.gerken.haus/thies/stockdb"],
+      "description": "renditier:main is a moving tag that CI rewrites on every merge, so a digest pin in docker-compose.yaml would go stale with the next merge and run an old build",
+      "matchPackageNames": ["gitea.gerken.haus/thies/renditier"],
       "enabled": false
     }
   ]
