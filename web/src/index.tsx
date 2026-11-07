@@ -7,6 +7,7 @@ import './index.css';
 import './i18n';
 import App from './containers/App';
 import { TooltipProvider } from './components/ui/tooltip';
+import ScrollRestoration from './ScrollRestoration';
 import ServiceWorker from './containers/ServiceWorker';
 import { createAppStore } from './store';
 import { setNavigate } from './navigation';
@@ -29,6 +30,7 @@ createRoot(container).render(
   <Provider store={store}>
     <BrowserRouter>
       <NavigationBridge />
+      <ScrollRestoration />
       <TooltipProvider>
         <ServiceWorker />
         <App />

@@ -10,7 +10,7 @@ import {
 import type { DashboardTab } from './dashboardTabs';
 
 // Below the sticky period bar: where a section heading lands after scrolling
-// to it (`scroll-mt-20`), and so where the scroll spy takes it as current.
+// to it, and so where the scroll spy takes it as current.
 const SPY_OFFSET_PX = 80;
 
 const smoothly = (): ScrollBehavior =>
@@ -36,6 +36,10 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
   // The tab last scrolled to or reported, so that a `tab` the spy reported
   // itself does not scroll again.
   const shown = useRef<DashboardTab | null>(null);
+  // While a sidebar click glides to its section, the spy waits for the end:
+  // reporting the sections passed on the way would turn the URL back to them
+  // and stop the glide.
+  const gliding = useRef(false);
   const report = useEffectEvent((current: DashboardTab) => onScrollTo(current));
 
   useEffect(() => {
@@ -45,8 +49,18 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
     const behavior = shown.current === null ? 'instant' : smoothly();
     shown.current = tab;
     // The first section is the top of the page, KPIs included.
-    if (tab === DEFAULT_TAB) window.scrollTo({ top: 0, behavior });
-    else elements.current.get(tab)?.scrollIntoView({ behavior });
+    const element = tab === DEFAULT_TAB ? undefined : elements.current.get(tab);
+    const wanted =
+      element === undefined
+        ? 0
+        : window.scrollY + element.getBoundingClientRect().top - SPY_OFFSET_PX;
+    // Near the end of the page the window may not get that far.
+    const bottom = document.documentElement.scrollHeight - window.innerHeight;
+    const top = Math.min(Math.max(wanted, 0), bottom);
+    // Without a distance to go, there is no scrollend to end the glide.
+    gliding.current =
+      behavior === 'smooth' && Math.abs(top - window.scrollY) > 1;
+    window.scrollTo({ top, behavior });
   }, [tab, ready]);
 
   useEffect(() => {
@@ -54,6 +68,7 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
 
     let frame = 0;
     const spy = () => {
+      if (gliding.current) return;
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const current =
@@ -69,9 +84,16 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
       });
     };
 
+    const glided = () => {
+      gliding.current = false;
+      spy();
+    };
+
     window.addEventListener('scroll', spy, { passive: true });
+    window.addEventListener('scrollend', glided);
     return () => {
       window.removeEventListener('scroll', spy);
+      window.removeEventListener('scrollend', glided);
       cancelAnimationFrame(frame);
     };
   }, [ready]);
@@ -91,7 +113,7 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
             aria-labelledby={`section-${section}`}
             // The last section fills the screen below the period bar, so
             // that every section can scroll up to it and become current.
-            className="flex scroll-mt-20 flex-col gap-3 last:min-h-[calc(100svh-5rem)]"
+            className="flex flex-col gap-3 last:min-h-[calc(100svh-5rem)]"
           >
             <h2
               id={`section-${section}`}
