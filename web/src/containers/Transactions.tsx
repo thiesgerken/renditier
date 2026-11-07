@@ -26,7 +26,12 @@ import {
   CardHeader,
   CardTitle,
 } from '../components/ui/card';
-import { formatCurrency, formatDate, formatDateTime } from '../format';
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatNumber,
+} from '../format';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
 import { fetchAccounts } from '../slices/accounts';
 import { uploadReceipts } from '../slices/receipts';
@@ -112,6 +117,18 @@ const Money = ({ cents }: { cents: number }) => {
   );
 };
 
+// Savings plans buy fractional units, so units keep all their decimals.
+const UNIT_DIGITS = 6;
+
+const Units = ({ units }: { units: number }) => {
+  const { signColor } = useTableFormat();
+  return (
+    <span className="tabular-nums" style={signColor(units, UNIT_DIGITS)}>
+      {formatNumber(units, { digits: 0, maxDigits: UNIT_DIGITS })}
+    </span>
+  );
+};
+
 const column = createColumnHelper<typeof dataTableFeatures, TransactionRow>();
 
 const columns = column.columns([
@@ -150,6 +167,11 @@ const columns = column.columns([
     header: 'Gebühren',
     meta: { desktopOnly: true },
     cell: ({ getValue }) => <Money cents={getValue()} />,
+  }),
+  column.accessor('units', {
+    header: 'Stück',
+    meta: { desktopOnly: true },
+    cell: ({ getValue }) => <Units units={getValue()} />,
   }),
   column.accessor(row => row.stock?.title ?? row.isin, {
     id: 'stock',
