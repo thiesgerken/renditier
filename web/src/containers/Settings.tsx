@@ -17,7 +17,7 @@ const UNITS = [
   'seconds',
 ] as const;
 
-const relativeTime = new Intl.RelativeTimeFormat('de', { numeric: 'auto' });
+const relativeTime = new Intl.RelativeTimeFormat('de');
 
 // "vor 3 Tagen": the largest unit the time span reaches.
 export const formatSince = (
