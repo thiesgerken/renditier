@@ -55,23 +55,22 @@ describe('date formatting', () => {
 describe('formatChange', () => {
   const euros = (v: number | null, o?: { signed?: boolean }) =>
     formatCurrency(v, o);
+  const percent = (v: number | null, o?: { signed?: boolean }) =>
+    formatPercent(v, o);
 
-  it('shows start, direction and end', () => {
-    expect(formatChange(10, 12, euros)).toBe(nbsp('10,00_€ ↗ 12,00_€'));
-    expect(formatChange(12, 12, euros)).toBe(nbsp('12,00_€ → 12,00_€'));
+  it('shows the difference, or the ratio to the start', () => {
+    expect(formatChange(10, 8, euros)).toBe(nbsp('-2,00_€'));
+    expect(formatChange(10, 12, euros, percent)).toBe(nbsp('+20,00_%'));
   });
 
-  it('shows only the end when there was nothing at the start', () => {
-    expect(formatChange(0, 12, euros, 'absolute')).toBe(nbsp('12,00_€'));
+  it('shows nothing for unknown values or a start from nothing', () => {
+    expect(formatChange(null, 12, euros)).toBeNull();
+    expect(formatChange(10, null, euros)).toBeNull();
+    expect(formatChange(0, 12, euros)).toBeNull();
   });
 
-  it('appends absolute or relative differences', () => {
-    expect(formatChange(10, 8, euros, 'absolute')).toBe(
-      nbsp('10,00_€ ↘ 8,00_€ (-2,00_€)')
-    );
-    expect(formatChange(10, 12, euros, 'relative')).toBe(
-      nbsp('10,00_€ ↗ 12,00_€ (+20,00_%)')
-    );
+  it('shows nothing when the values look the same', () => {
+    expect(formatChange(12, 12.001, euros, percent)).toBeNull();
   });
 });
 

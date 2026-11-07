@@ -2,7 +2,12 @@ import type { CSSProperties } from 'react';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
-import { formatCurrency, formatIrr, formatNumber } from '../format';
+import {
+  formatCurrency,
+  formatIrr,
+  formatNumber,
+  formatPercent,
+} from '../format';
 import type { Formatter } from '../format';
 
 // Number formatting for table cells. Phones only have room for whole euros and
@@ -19,6 +24,9 @@ const useTableFormat = () => {
     formatNumber(value, { digits, ...options });
 
   const percentDigits = xsDown ? 1 : 2;
+
+  const percent: Formatter = (ratio, options) =>
+    formatPercent(ratio, { digits: percentDigits, ...options });
 
   const irr = (period: Parameters<typeof formatIrr>[0]) =>
     formatIrr(period, percentDigits);
@@ -44,7 +52,7 @@ const useTableFormat = () => {
   const irrColor = (ratio: number | null) =>
     signColor(ratio, percentDigits + 2);
 
-  return { money, units, irr, signColor, irrColor, percentDigits };
+  return { money, units, percent, irr, signColor, irrColor };
 };
 
 export default useTableFormat;
