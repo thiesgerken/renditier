@@ -7,6 +7,7 @@ pub mod stock;
 pub mod transaction;
 pub mod user;
 
+use chrono_tz::Tz;
 use clap::{Arg, ArgAction, Command, crate_authors, crate_name, crate_version};
 use config::ConfigError;
 use serde::{Deserialize, Serialize};
@@ -51,6 +52,8 @@ pub struct Config {
     #[serde(skip)]
     pub verbosity: i64,
     pub database: String,
+    // the users' time zone: where their days, weeks and years begin
+    pub timezone: Tz,
     pub web: serve::Config,
     pub receipts: crate::receipts::Config,
 }
@@ -60,6 +63,7 @@ impl Default for Config {
         Self {
             database: "postgres://localhost/stocks".into(),
             verbosity: 0,
+            timezone: chrono_tz::Europe::Berlin,
             web: Default::default(),
             receipts: Default::default(),
         }
@@ -105,4 +109,32 @@ pub fn merge_settings(
     settings = settings.set_override("verbosity", opts.get_count("v") as i64)?;
 
     Ok(settings)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse(timezone: Option<&str>) -> Result<Config, config::ConfigError> {
+        let mut settings = config::Config::builder();
+        if let Some(tz) = timezone {
+            settings = settings.set_override("timezone", tz).unwrap();
+        }
+        settings.build().unwrap().try_deserialize()
+    }
+
+    #[test]
+    fn the_time_zone_is_optional() {
+        assert_eq!(parse(None).unwrap().timezone, Config::default().timezone);
+        assert_eq!(
+            parse(Some("America/New_York")).unwrap().timezone,
+            chrono_tz::America::New_York
+        );
+    }
+
+    #[test]
+    fn an_unknown_time_zone_is_an_error() {
+        let error = parse(Some("Mars/Olympus_Mons")).unwrap_err().to_string();
+        assert!(error.contains("Mars/Olympus_Mons"), "{}", error);
+    }
 }

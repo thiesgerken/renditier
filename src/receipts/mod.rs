@@ -3,6 +3,8 @@ mod onvista;
 
 use crate::models::*;
 
+use chrono::{DateTime, NaiveDate, TimeZone, Utc};
+use chrono_tz::Tz;
 use diesel::prelude::*;
 use log::{debug, info, warn};
 use regex::Regex;
@@ -344,6 +346,28 @@ fn calculate_isin_checksum(isin_without_check: &str) -> Result<char, &'static st
 
     let check_digit = (10 - (sum % 10)) % 10;
     Ok(char::from_digit(check_digit, 10).unwrap())
+}
+
+/// The banks issuing the supported receipts state their times in German local time.
+const RECEIPT_TIMEZONE: Tz = chrono_tz::Europe::Berlin;
+
+fn receipt_time(
+    year: i32,
+    month: u32,
+    day: u32,
+    hour: u32,
+    minute: u32,
+) -> Result<DateTime<Utc>, Box<dyn Error>> {
+    let invalid = || format!("invalid receipt time {year}-{month}-{day} {hour}:{minute}");
+    let time = NaiveDate::from_ymd_opt(year, month, day)
+        .and_then(|d| d.and_hms_opt(hour, minute, 0))
+        .ok_or_else(invalid)?;
+
+    Ok(RECEIPT_TIMEZONE
+        .from_local_datetime(&time)
+        .earliest()
+        .ok_or_else(invalid)?
+        .with_timezone(&Utc))
 }
 
 fn parse_float(s: &str) -> Result<f64, <f64 as FromStr>::Err> {

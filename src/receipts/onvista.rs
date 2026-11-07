@@ -1,7 +1,6 @@
-use super::{ParsedReceiptTransaction, parse_float};
+use super::{ParsedReceiptTransaction, parse_float, receipt_time};
 use crate::models::NewTransaction;
 
-use chrono::{Local, TimeZone, Utc};
 use regex::Regex;
 use std::error::Error;
 use std::sync::LazyLock;
@@ -75,10 +74,7 @@ pub fn parse_dividends(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Erro
         .round() as i64;
 
     let cpt = VALUE_DATE.captures_iter(s).next().ok_or("no date match")?;
-    let date = Local
-        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
-        .unwrap()
-        .with_timezone(&Utc);
+    let date = receipt_time(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0)?;
 
     let t = NewTransaction {
         account_id: -1,
@@ -143,10 +139,7 @@ pub fn parse_payout(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error>>
         .round() as i64;
 
     let cpt = VALUE_DATE.captures_iter(s).next().ok_or("no date match")?;
-    let date = Local
-        .with_ymd_and_hms(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0, 0)
-        .unwrap()
-        .with_timezone(&Utc);
+    let date = receipt_time(cpt[3].parse()?, cpt[2].parse()?, cpt[1].parse()?, 0, 0)?;
 
     let t = NewTransaction {
         account_id: -1,
@@ -224,17 +217,13 @@ pub fn parse_purchase(s: &str) -> Result<ParsedReceiptTransaction, Box<dyn Error
         .next()
         .ok_or("no date and place match")?;
 
-    let date = Local
-        .with_ymd_and_hms(
-            cpt[3].parse()?,
-            cpt[2].parse()?,
-            cpt[1].parse()?,
-            cpt[4].parse()?,
-            cpt[5].parse()?,
-            0,
-        )
-        .unwrap()
-        .with_timezone(&Utc);
+    let date = receipt_time(
+        cpt[3].parse()?,
+        cpt[2].parse()?,
+        cpt[1].parse()?,
+        cpt[4].parse()?,
+        cpt[5].parse()?,
+    )?;
 
     let ex_type = cpt[6].to_owned();
     let mut ex = cpt[7].to_owned();

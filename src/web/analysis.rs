@@ -5,10 +5,11 @@ use crate::analysis::plots::{DataSourceSelection, PortfolioPlot, StockPlot};
 use crate::analysis::portfolio;
 use crate::analysis::portfolio::Portfolio;
 use crate::models::*;
-use crate::web::DbConn;
 use crate::web::user::UserId;
+use crate::web::{Config, DbConn};
 
 use chrono::{NaiveDate, NaiveDateTime, Utc};
+use rocket::State;
 use rocket::serde::json::Json;
 
 #[get("/analysis/portfolio?<date>")]
@@ -65,11 +66,13 @@ pub async fn compute_account_portfolio(
 pub async fn compute_performance(
     uid: UserId,
     connection: DbConn,
+    config: &State<Config>,
 ) -> Option<Json<Vec<PortfolioPerformance>>> {
+    let timezone = config.timezone;
     connection
         .run(move |c| {
             let now = Utc::now();
-            performance::compute(c, *uid, now).ok().map(Json)
+            performance::compute(c, *uid, now, timezone).ok().map(Json)
         })
         .await
 }
