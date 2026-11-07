@@ -5,7 +5,7 @@ use crate::schema::stock_exchanges::dsl::*;
 use crate::schema::stock_infos::dsl::*;
 use crate::schema::*;
 
-use chrono::{Duration, TimeZone, Utc};
+use chrono::{Duration, NaiveDate, TimeZone, Utc};
 use diesel::{
     prelude::*,
     r2d2::{ConnectionManager, Pool},
@@ -86,17 +86,17 @@ pub async fn fetch_historical(
         let now = Utc::now();
 
         for ex in exs.iter().filter(|&e| e.isin == s.isin).take(4) {
-            let latest_datum = historical_prices::table
+            let newest_stored_day = historical_prices::table
                 .filter(historical_prices::dsl::onvista_record_id.eq(ex.onvista_record_id))
-                .order_by(historical_prices::dsl::date.asc())
-                .first::<HistoricalPrice>(&mut connection)
-                .optional()?
-                .map(|x| Utc.from_utc_datetime(&x.date.and_hms_opt(0, 0, 0).unwrap()))
+                .select(diesel::dsl::max(historical_prices::dsl::date))
+                .first::<Option<NaiveDate>>(&mut connection)?
+                .map(|d| Utc.from_utc_datetime(&d.and_hms_opt(0, 0, 0).unwrap()))
                 .unwrap_or_else(|| now.checked_sub_signed(Duration::weeks(15 * 52)).unwrap());
 
-            let grab_dates = successors(latest_datum.checked_sub_signed(Duration::weeks(2)), |t| {
-                t.checked_add_signed(Duration::weeks(4 * 52))
-            })
+            let grab_dates = successors(
+                newest_stored_day.checked_sub_signed(Duration::weeks(2)),
+                |t| t.checked_add_signed(Duration::weeks(4 * 52)),
+            )
             .take_while(|&t| t < now);
 
             for t in grab_dates {

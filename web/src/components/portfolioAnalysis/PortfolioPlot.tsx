@@ -311,7 +311,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
           </PlotArea>
           <TradeLegend points={points} />
         </Grid>
-        <Grid size={9}>
+        <Grid size={12}>
           <FormControl sx={formControlSx} variant="standard">
             <InputLabel id="mode-select-label">Art</InputLabel>
             <Select
