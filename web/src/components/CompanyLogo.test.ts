@@ -7,8 +7,8 @@ import { LOGOS, themeOf } from './CompanyLogo';
 const isValidIsin = (isin: string) => {
   if (!/^[A-Z]{2}[A-Z0-9]{9}\d$/.test(isin)) return false;
 
-  const digits = [...isin].map(c => parseInt(c, 36)).join('');
-  const sum = [...digits]
+  const digits = Array.from(isin, c => parseInt(c, 36)).join('');
+  const sum = Array.from(digits)
     .reverse()
     .map(Number)
     .reduce((acc, d, i) => {
