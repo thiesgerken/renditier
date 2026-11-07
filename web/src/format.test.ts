@@ -8,6 +8,7 @@ import {
   formatNumber,
   formatPercent,
   formatSince,
+  formatUnits,
 } from './format';
 
 // Intl separates number and unit with a no-break space, written as _ here.
@@ -36,6 +37,21 @@ describe('number formatting', () => {
       '0,123456'
     );
     expect(formatNumber(3, { digits: 0, maxDigits: 6 })).toBe('3');
+    expect(
+      formatNumber(0.0123, { digits: 0, maxDigits: 2, significantDigits: 3 })
+    ).toBe('0,0123');
+  });
+
+  it('keeps three significant digits of units', () => {
+    expect(formatUnits(0.0123, { maxDigits: 2 })).toBe('0,0123');
+    expect(formatUnits(12.345, { maxDigits: 2 })).toBe('12,35');
+    expect(formatUnits(12.345, { maxDigits: 0 })).toBe('12,3');
+    expect(formatUnits(1234, { maxDigits: 2 })).toBe('1.234');
+    expect(formatUnits(1.5, { maxDigits: 2 })).toBe('1,5');
+    expect(formatUnits(-0.0123, { maxDigits: 2, signed: true })).toBe(
+      '-0,0123'
+    );
+    expect(formatUnits(null)).toBe('—');
   });
 });
 

@@ -1,7 +1,7 @@
 import { Line } from 'recharts';
 import type { DotItemDotProps } from 'recharts';
 
-import { formatCurrency, formatNumber } from '../../format';
+import { formatCurrency, formatUnits } from '../../format';
 import type { Trades } from './trades';
 import type { TooltipRow } from './PlotTooltip';
 
@@ -63,7 +63,7 @@ export const tradeRows = (
 
   const describe = (units: number, amount: number) =>
     withUnits
-      ? `${formatNumber(units, { digits: 3 })} für ${formatCurrency(amount)}`
+      ? `${formatUnits(units, { maxDigits: 3 })} für ${formatCurrency(amount)}`
       : formatCurrency(amount);
 
   return [

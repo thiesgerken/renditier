@@ -12,7 +12,7 @@ import {
   getPeriodDescription,
   getPeriodRange,
 } from '../../selectors/performance';
-import { formatCurrency, formatNumber } from '../../format';
+import { formatCurrency, formatUnits } from '../../format';
 import ProgressCard from '../ProgressCard';
 import PlotArea from '../plot/PlotArea';
 import type { TooltipRow } from '../plot/PlotTooltip';
@@ -237,7 +237,7 @@ const StockPlot = ({
 
   const tooltipRows = (p: Point): TooltipRow[] => [
     { label: 'Kurs', value: formatCurrency(p.price) },
-    { label: 'Einheiten', value: formatNumber(p.units, { digits: 3 }) },
+    { label: 'Einheiten', value: formatUnits(p.units, { maxDigits: 3 }) },
     { label: 'Wert', value: formatCurrency(p.value) },
     { label: 'Investiert', value: formatCurrency(p.invested) },
     {

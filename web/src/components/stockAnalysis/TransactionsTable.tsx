@@ -17,12 +17,14 @@ import type { DataSource, EitherPrice, Transaction } from '../../types/api';
 
 const NONE = '—';
 
+// Units keep their significant digits instead of rounding to zero (see
+// formatUnits), so even a tiny amount is shown with its sign colour.
 const Units = ({ units }: { units: number }) => {
   const format = useTableFormat();
   return units === 0 ? (
     NONE
   ) : (
-    <span style={format.signColor(units)}>
+    <span style={format.signColor(units, Infinity)}>
       {format.units(units, { signed: true })}
     </span>
   );
