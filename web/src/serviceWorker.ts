@@ -12,7 +12,6 @@
 // opt-in, read https://bit.ly/CRA-PWA
 
 export interface ServiceWorkerConfig {
-  onInit?: (registration: ServiceWorkerRegistration) => void;
   onSuccess?: (registration: ServiceWorkerRegistration) => void;
   onUpdate?: (registration: ServiceWorkerRegistration) => void;
 }
@@ -74,9 +73,6 @@ function registerValidSW(swUrl: string, config?: ServiceWorkerConfig): void {
       };
 
       serviceWorkerRegistration = registration;
-      if (config && config.onInit) {
-        config.onInit(registration);
-      }
     })
     .catch(error => {
       console.error('Error during service worker registration:', error);
@@ -119,7 +115,7 @@ function checkValidServiceWorker(
 export function register(config?: ServiceWorkerConfig): void {
   if (!import.meta.env.PROD) return;
 
-  if ('serviceWorker' in navigator && 'PushManager' in window) {
+  if ('serviceWorker' in navigator) {
     // The URL constructor is available in all browsers that support SW.
     const publicUrl = new URL(import.meta.env.BASE_URL, window.location.href);
     if (publicUrl.origin !== window.location.origin) {
@@ -150,9 +146,7 @@ export function register(config?: ServiceWorkerConfig): void {
       }
     });
   } else {
-    console.error(
-      'service worker and/or push notifications are not supported!'
-    );
+    console.error('service workers are not supported!');
   }
 }
 

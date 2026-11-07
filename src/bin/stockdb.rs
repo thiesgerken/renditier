@@ -60,15 +60,12 @@ fn main() {
             cli::import::handle(&mut connection, sub_matches);
         } else if let Some(sub_matches) = matches.subcommand_matches("export") {
             cli::export::handle(&mut connection, sub_matches);
-        } else if let Some(sub_matches) = matches.subcommand_matches("push") {
-            cli::push::handle(&mut connection, sub_matches, config.push).await;
         } else if let Some(sub_matches) = matches.subcommand_matches("serve") {
             std::mem::drop(connection); // `serve::handle` creates its own connections
             cli::serve::handle(
                 sub_matches,
                 pool,
                 config.web,
-                config.push,
                 config.database,
                 config.verbosity,
             )

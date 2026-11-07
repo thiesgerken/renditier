@@ -6,14 +6,14 @@ services:
       - "8484:8383"
     environment:
       - STOCKDB__DATABASE=postgres://postgres@postgres/stocks
+      # Demo value for local use only: anyone can decrypt the session cookies with it.
+      # Generate a real one with `openssl rand -base64 32`.
       - STOCKDB__WEB__SECRET_KEY=WD91xfOSUW8WQwQM3vihMj5+SVNM3ICkCmN6rqHdr8o=
       - STOCKDB__WEB__ADDRESS=0.0.0.0
-      - STOCKDB__WEB__SERVER_KEY=""
-      - STOCKDB__PUSH__KEY_FILE=""
     command: stockdb -v serve
 
   postgres:
-    image: postgres:18@sha256:bd5dfa494a5a259704365813dbfa5fa6b3e69be7348d43b547f540c730478583
+    image: postgres:18@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42
     volumes:
       - postgres18:/var/lib/postgresql
     environment:

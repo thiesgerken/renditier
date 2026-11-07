@@ -13,8 +13,6 @@ script that streams the image as a tarball, e.g. `./result | docker load`.
 ## Install
 
 - `openssl rand -base64 32` to obtain secret key
-- `openssl ecparam -genkey -name prime256v1 -out vapid.pem` to obtain private key for push
-- `openssl ec -in vapid.pem -pubout -outform DER | tail -c 65 | base64 | tr '/+' '_-' | tr -d '\n'` to obtain base64 encoded public key for use in js
 
 ## Running the container
 
@@ -26,12 +24,9 @@ request bodies are JSON held in memory, and receipts are parsed in memory or pip
 `pdftotext` via stdin and stdout. A future upload route using Rocket's `TempFile` would be the
 first thing to need a writable `/tmp` (an `emptyDir` or tmpfs).
 
-- **Port 8383**, the default of `STOCKDB__WEB__PORT`. A non-root process can't bind below 1024,
-  so map ports outside the container instead of setting 80. Set `STOCKDB__WEB__ADDRESS=0.0.0.0`;
-  the default listens on localhost only.
-- **Push key**: `STOCKDB__PUSH__KEY_FILE` must be readable by UID 65534. A Kubernetes secret
-  volume's default mode 0644 is fine, `defaultMode: 0400` is not: the server then logs a warning
-  and sends no notifications.
+It listens on port 8383, the default of `STOCKDB__WEB__PORT`. A non-root process can't bind below
+1024, so map ports outside the container instead of setting 80. Set
+`STOCKDB__WEB__ADDRESS=0.0.0.0`; the default listens on localhost only.
 
 In Kubernetes:
 
