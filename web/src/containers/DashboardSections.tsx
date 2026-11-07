@@ -5,7 +5,7 @@ import { DASHBOARD_TABS, DEFAULT_TAB } from './dashboardTabs';
 import type { DashboardTab } from './dashboardTabs';
 
 // Below the sticky period bar: where a section heading lands after scrolling
-// to it (`scroll-mt-20`), and so where the scroll spy takes it as current.
+// to it, and so where the scroll spy takes it as current.
 const SPY_OFFSET_PX = 80;
 
 const smoothly = (): ScrollBehavior =>
@@ -43,15 +43,18 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
     const behavior = shown.current === null ? 'instant' : smoothly();
     shown.current = tab;
     // The first section is the top of the page, KPIs included.
-    const element = tab === DEFAULT_TAB ? null : elements.current.get(tab);
-    const distance =
-      element === null || element === undefined
-        ? window.scrollY
-        : element.getBoundingClientRect().top - SPY_OFFSET_PX;
+    const element = tab === DEFAULT_TAB ? undefined : elements.current.get(tab);
+    const wanted =
+      element === undefined
+        ? 0
+        : window.scrollY + element.getBoundingClientRect().top - SPY_OFFSET_PX;
+    // Near the end of the page the window may not get that far.
+    const bottom = document.documentElement.scrollHeight - window.innerHeight;
+    const top = Math.min(Math.max(wanted, 0), bottom);
     // Without a distance to go, there is no scrollend to end the glide.
-    gliding.current = behavior === 'smooth' && Math.abs(distance) > 1;
-    if (element === null) window.scrollTo({ top: 0, behavior });
-    else element?.scrollIntoView({ behavior });
+    gliding.current =
+      behavior === 'smooth' && Math.abs(top - window.scrollY) > 1;
+    window.scrollTo({ top, behavior });
   }, [tab, ready]);
 
   useEffect(() => {
@@ -104,7 +107,7 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
             aria-labelledby={`section-${section}`}
             // The last section fills the screen below the period bar, so
             // that every section can scroll up to it and become current.
-            className="flex scroll-mt-20 flex-col gap-3 last:min-h-[calc(100svh-5rem)]"
+            className="flex flex-col gap-3 last:min-h-[calc(100svh-5rem)]"
           >
             <h2
               id={`section-${section}`}
