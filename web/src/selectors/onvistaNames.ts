@@ -39,8 +39,8 @@ const hasFlag = (code: string) =>
 
 const countryCodes = () => {
   const names = new Intl.DisplayNames('de', { type: 'region' });
-  const codes = [...LETTERS]
-    .flatMap(a => [...LETTERS].map(b => a + b))
+  const codes = Array.from(LETTERS)
+    .flatMap(a => Array.from(LETTERS, b => a + b))
     .filter(hasFlag);
 
   return lookup([

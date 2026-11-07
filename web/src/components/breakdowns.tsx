@@ -36,7 +36,7 @@ import { countryCode, currencyCode } from '../selectors/onvistaNames';
 // A country code spelled in regional indicator symbols is its flag emoji.
 const flag = (code: string) =>
   String.fromCodePoint(
-    ...[...code].map(letter => 0x1f1e6 + letter.charCodeAt(0) - 65)
+    ...Array.from(code, letter => 0x1f1e6 + letter.charCodeAt(0) - 65)
   );
 
 const CountryFlag = ({ name }: { name: string }) => {
