@@ -1,31 +1,30 @@
+import type { ComponentProps } from 'react';
 import { NumericFormat } from 'react-number-format';
 import type { NumericFormatProps } from 'react-number-format';
 
-// `onChange` is not a DOM change handler here: the component synthesizes a
-// minimal `{ target: { name, value } }` object for MUI's TextField, which is the
-// only consumer (it passes NumberInput as `inputComponent`).
-interface Props extends Omit<NumericFormatProps, 'onChange' | 'getInputRef'> {
-  inputRef: (el: HTMLInputElement) => void;
-  onChange: (event: { target: { name: string; value: string } }) => void;
-}
+import { Input } from './ui/input';
 
-export default function NumberInput(props: Props) {
-  const { inputRef, name = '', onChange, ...other } = props;
+type Props = Omit<
+  NumericFormatProps<ComponentProps<typeof Input>>,
+  'customInput' | 'onValueChange' | 'onChange' | 'value'
+> & {
+  // the number as a plain numeric string ('-1234.5'), whatever the display
+  value: string | number;
+  onValueChange: (value: string) => void;
+};
 
-  return (
-    <NumericFormat
-      {...other}
-      getInputRef={inputRef}
-      onValueChange={values => {
-        onChange({
-          target: {
-            name,
-            value: values.value,
-          },
-        });
-      }}
-      thousandSeparator=","
-      valueIsNumericString
-    />
-  );
-}
+// A number field in German notation (1.234,56) that hands out plain numeric
+// strings, so callers can parse them with parseFloat.
+const NumberInput = ({ value, onValueChange, ...props }: Props) => (
+  <NumericFormat
+    {...props}
+    customInput={Input}
+    value={value}
+    valueIsNumericString
+    thousandSeparator="."
+    decimalSeparator=","
+    onValueChange={values => onValueChange(values.value)}
+  />
+);
+
+export default NumberInput;

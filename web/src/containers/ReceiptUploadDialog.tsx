@@ -1,22 +1,16 @@
+import { CircleAlert, CircleCheck, LoaderCircle } from 'lucide-react';
+
+import FormDialogContent from '../components/FormDialogContent';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { Button } from '../components/ui/button';
 import {
-  Button,
   Dialog,
-  DialogActions,
-  DialogContent,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  useMediaQuery,
-  useTheme,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
-} from '@mui/material';
-import type { DialogProps } from '@mui/material';
-import { map } from 'lodash';
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
-import { findStock, abbreviateTitle } from '../selectors/stocks';
+} from '../components/ui/dialog';
 import { formatCurrency, formatDate, formatNumber } from '../format';
+import { abbreviateTitle, findStock } from '../selectors/stocks';
 import { useAppSelector } from '../store';
 
 interface Props {
@@ -27,84 +21,66 @@ interface Props {
 const ReceiptUploadDialog = ({ open, onClose }: Props) => {
   const receipts = useAppSelector(state => state.receipts);
   const stocks = useAppSelector(state => state.stocks);
-  const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
-
-  const handleDialogClose: DialogProps['onClose'] = (_event, reason) => {
-    if (reason === 'backdropClick') return;
-
-    onClose();
-  };
 
   return (
     <Dialog
-      fullScreen={!mdUp}
       open={open && (receipts.isUploading || receipts.lastUpload !== null)}
-      onClose={handleDialogClose}
+      onOpenChange={isOpen => !isOpen && onClose()}
     >
-      <DialogTitle id="form-dialog-title">Abrechnungen hochladen</DialogTitle>
-      <DialogContent>
-        {receipts.isUploading && (
-          <div style={{ width: '100%', height: '5em' }}>
-            <div
-              style={{
-                position: 'absolute',
-                left: '50%',
-                top: '30%',
-                transform: 'translate(-50%, 50%)',
-                // width: '0%',
-                // height: '0%',
-                padding: '0px',
-                margin: 0,
-                zIndex: 9,
-              }}
-            >
-              <CircularProgress color="secondary" />
-            </div>
-          </div>
-        )}
-        {!receipts.isUploading && receipts.uploadError !== null && (
-          <Alert severity="error">
-            <AlertTitle>Fehler beim Upload</AlertTitle>
-            {receipts.uploadError.message}
-          </Alert>
-        )}
-        {!receipts.isUploading && receipts.data !== null && (
-          <>
-            <Alert severity={receipts.data.length > 0 ? 'success' : 'info'}>
-              <AlertTitle>Erfolgreich</AlertTitle>
-              {receipts.data.length === 1
-                ? `Es wurde eine Transaktion hinzugefügt.`
-                : `Es wurden ${receipts.data.length} Transaktionen hinzugefügt.`}
+      <FormDialogContent>
+        <div className="flex flex-1 flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>Abrechnungen hochladen</DialogTitle>
+          </DialogHeader>
+          {receipts.isUploading && (
+            <LoaderCircle
+              aria-label="Wird hochgeladen"
+              className="mx-auto my-6 size-8 animate-spin text-muted-foreground"
+            />
+          )}
+          {!receipts.isUploading && receipts.uploadError !== null && (
+            <Alert variant="destructive">
+              <CircleAlert />
+              <AlertTitle>Fehler beim Upload</AlertTitle>
+              <AlertDescription>
+                {receipts.uploadError.message}
+              </AlertDescription>
             </Alert>
-            <List dense>
-              {map(receipts.data, x => {
-                // `findStock` returns the Stock row; the rendered label is a
-                // string, so the two cannot share one binding under TS.
-                const found = findStock(stocks, x.isin);
-                const stock = found
-                  ? abbreviateTitle(found.title, true)
-                  : x.isin;
+          )}
+          {!receipts.isUploading && receipts.data !== null && (
+            <>
+              <Alert>
+                <CircleCheck />
+                <AlertTitle>Erfolgreich</AlertTitle>
+                <AlertDescription>
+                  {receipts.data.length === 1
+                    ? 'Es wurde eine Transaktion hinzugefügt.'
+                    : `Es wurden ${receipts.data.length} Transaktionen hinzugefügt.`}
+                </AlertDescription>
+              </Alert>
+              <ul className="grid gap-1 text-sm">
+                {receipts.data.map(x => {
+                  const found = findStock(stocks, x.isin);
+                  const stock = found
+                    ? abbreviateTitle(found.title, true)
+                    : x.isin;
 
-                return (
-                  <ListItem>
-                    <ListItemText
-                      primary={`${formatDate(x.date)}: ${formatNumber(
-                        x.units
-                      )} von ${stock} für ${formatCurrency(x.amount / 100)}`}
-                    />
-                  </ListItem>
-                );
-              })}
-            </List>
-          </>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button color="primary" onClick={onClose}>
-          Schließen
-        </Button>
-      </DialogActions>
+                  return (
+                    <li key={x.id}>
+                      {`${formatDate(x.date)}: ${formatNumber(x.units)} von ${stock} für ${formatCurrency(x.amount / 100)}`}
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+          <DialogFooter className="mt-auto">
+            <Button type="button" onClick={onClose}>
+              Schließen
+            </Button>
+          </DialogFooter>
+        </div>
+      </FormDialogContent>
     </Dialog>
   );
 };

@@ -1,37 +1,48 @@
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Grid,
-  TextField,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
-import Alert from '@mui/material/Alert';
-import Autocomplete from '@mui/material/Autocomplete';
-import type { InputBaseComponentProps } from '@mui/material/InputBase';
-import { DateTimePicker } from '@mui/x-date-pickers';
-import { find, reverse, sortBy, sortedUniqBy } from 'lodash';
-import moment from 'moment';
-import type { Moment } from 'moment';
-import type { ElementType } from 'react';
-import React, { useState } from 'react';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { useState } from 'react';
+import { reverse, sortBy, sortedUniqBy } from 'lodash';
+import { CircleAlert, Trash2 } from 'lucide-react';
 
+import DatePicker from '../components/DatePicker';
+import FormDialogContent from '../components/FormDialogContent';
+import NumberInput from '../components/NumberInput';
+import { Alert, AlertDescription } from '../components/ui/alert';
 import {
-  deleteTransaction,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
+import { Button } from '../components/ui/button';
+import {
+  Dialog,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import { Textarea } from '../components/ui/textarea';
+import { formatCurrency } from '../format';
+import { findAccount } from '../selectors/accounts';
+import { abbreviateTitle, findStock } from '../selectors/stocks';
+import {
   createTransaction,
+  deleteTransaction,
   updateTransaction,
 } from '../slices/transactions';
-import NumberInput from '../components/NumberInput';
-import { findAccount, findAccountByName } from '../selectors/accounts';
-import { abbreviateTitle, findStock } from '../selectors/stocks';
-import { formatCurrency } from '../format';
 import { useAppDispatch, useAppSelector } from '../store';
 import type { Exchange, Transaction } from '../types/api';
+import type { AccountsState, StocksState } from '../types/store';
 
 // What `Transactions` hands in: a real transaction when editing, or a blank one
 // with no id / account / isin yet when creating.
@@ -48,13 +59,7 @@ export type TransactionDraft = Omit<
 // null when the transaction is being created.
 type TransactionPayload = Omit<Transaction, 'id'> & { id: number | null };
 
-// MUI types `inputComponent` as ElementType<InputBaseComponentProps>, i.e. raw
-// DOM input props, but NumberInput deliberately takes a synthesized `onChange`
-// and a callback `inputRef`; the cast records that mismatch in one place.
-const NumberInputComponent =
-  NumberInput as ElementType<InputBaseComponentProps>;
-
-// The dialog's form state. The numeric fields hold whatever the text inputs
+// The dialog's form state. The numeric fields hold whatever the number inputs
 // produce, so they are strings once the user has typed into them.
 interface EditableTransaction {
   id: number | null;
@@ -64,10 +69,138 @@ interface EditableTransaction {
   units: number | string;
   amount: number | string;
   fees: number | string;
-  account: string | null;
-  date: Moment;
+  accountId: number | null;
+  // in the browser's time zone, like the table shows it
+  date: Temporal.PlainDate | null;
+  // keeps the seconds of a stored transaction unless the time is edited
+  time: Temporal.PlainTime | null;
   receiptNumber: number | null;
 }
+
+const parseISIN = (s: string | null): string | null => {
+  if (!s) return null;
+
+  const m = s.toUpperCase().match(/^[A-Z]{2}[0-9A-Z]{10}/);
+  if (m !== null && m.length === 1) return m[0];
+  return null;
+};
+
+const findExchangeByName = (
+  stock: { exchanges: Exchange[] } | null,
+  s: string
+): Exchange | null =>
+  stock?.exchanges.find(
+    e => e.name.toUpperCase().trim() === s.toUpperCase().trim()
+  ) ?? null;
+
+const isValidFloat = (s: string | number | null): boolean => {
+  if (s === null || s === '') return false;
+
+  const x = parseFloat(String(s));
+  return !Number.isNaN(x) && Number.isFinite(x);
+};
+
+const toInstant = (
+  date: Temporal.PlainDate,
+  time: Temporal.PlainTime
+): Temporal.Instant =>
+  date
+    .toZonedDateTime({ timeZone: Temporal.Now.timeZoneId(), plainTime: time })
+    .toInstant();
+
+const isInFuture = (t: EditableTransaction) =>
+  t.date !== null &&
+  t.time !== null &&
+  Temporal.Instant.compare(toInstant(t.date, t.time), Temporal.Now.instant()) >
+    0;
+
+// Neither units nor money: nothing happened.
+const isEmpty = (t: EditableTransaction) =>
+  isValidFloat(t.amount) &&
+  isValidFloat(t.fees) &&
+  isValidFloat(t.units) &&
+  parseFloat(String(t.units)) === 0 &&
+  Math.abs(parseFloat(String(t.amount))) +
+    Math.abs(parseFloat(String(t.fees))) <
+    0.01;
+
+export const toTransaction = (
+  t: EditableTransaction,
+  accounts: AccountsState,
+  stocks: StocksState
+): TransactionPayload | null => {
+  const account = findAccount(accounts, t.accountId);
+  if (
+    account === null ||
+    t.isin === null ||
+    t.date === null ||
+    t.time === null ||
+    isInFuture(t) ||
+    !isValidFloat(t.amount) ||
+    !isValidFloat(t.fees) ||
+    !isValidFloat(t.units) ||
+    isEmpty(t)
+  )
+    return null;
+
+  const ret: TransactionPayload = {
+    id: t.id,
+    isin: t.isin,
+    onvistaExchangeId: null,
+    exchange: null,
+    comments: t.comments,
+    units: parseFloat(String(t.units)),
+    amount: -1 * Math.round(parseFloat(String(t.amount)) * 100),
+    fees: -1 * Math.round(parseFloat(String(t.fees)) * 100),
+    accountId: account.id,
+    date: toInstant(t.date, t.time).toString(),
+    receiptNumber: t.receiptNumber,
+  };
+
+  if (t.exchange.trim() !== '') {
+    const ex = findExchangeByName(findStock(stocks, t.isin), t.exchange);
+
+    if (ex === null || ex.onvistaExchangeId === null) {
+      ret.exchange = t.exchange.trim();
+    } else {
+      ret.onvistaExchangeId = ex.onvistaExchangeId;
+    }
+  }
+
+  return ret;
+};
+
+export const toEditable = (
+  t: TransactionDraft,
+  stocks: StocksState
+): EditableTransaction => {
+  const stock = t.isin !== null ? findStock(stocks, t.isin) : null;
+
+  let exchange = t.exchange ?? '';
+  if (t.id !== null && t.onvistaExchangeId !== null)
+    exchange = stock
+      ? (stock.exchanges.find(e => e.onvistaExchangeId === t.onvistaExchangeId)
+          ?.name ?? '')
+      : `${t.onvistaExchangeId}`;
+
+  const local = Temporal.Instant.from(t.date).toZonedDateTimeISO(
+    Temporal.Now.timeZoneId()
+  );
+
+  return {
+    id: t.id,
+    isin: t.isin,
+    exchange,
+    comments: t.comments,
+    units: t.units,
+    amount: (-1 * t.amount) / 100,
+    fees: (-1 * t.fees) / 100,
+    accountId: t.accountId,
+    date: local.toPlainDate(),
+    time: local.toPlainTime(),
+    receiptNumber: t.receiptNumber,
+  };
+};
 
 interface Props {
   initialTransaction: TransactionDraft;
@@ -75,189 +208,55 @@ interface Props {
   onClose: () => void;
 }
 
-const TransactionDialog = ({ initialTransaction, open, onClose }: Props) => {
+// Mounted only while the dialog is open, so every opening starts from
+// `initialTransaction` again.
+const TransactionForm = ({
+  initialTransaction,
+  onClose,
+}: Omit<Props, 'open'>) => {
   const dispatch = useAppDispatch();
   const stocks = useAppSelector(state => state.stocks);
   const accounts = useAppSelector(state => state.accounts);
-  const parseISIN = (s: string | null): string | null => {
-    if (!s) return null;
-
-    const m = s.toUpperCase().match(/^[A-Z]{2}[0-9A-Z]{10}/);
-    if (m !== null && m.length === 1) return m[0];
-    return null;
-  };
-
-  // FIXME(tsx-migration): dropped the `if (s === '') return '';` sentinel — the
-  // only caller guards on `exchange.trim() !== ''`, and an empty string return
-  // would have crashed the `ex.onvistaExchangeId` read below.
-  const findExchangeByName = (
-    stock: { exchanges: Exchange[] } | null,
-    s: string | null
-  ): Exchange | null => {
-    if (!s || !stock) return null;
-
-    const m = find(
-      stock.exchanges,
-      e => e.name.toUpperCase().trim() === s.toUpperCase().trim()
-    );
-
-    return m || null;
-  };
-
-  // FIXME(tsx-migration): dropped the `ex === ''` sentinel check here for the
-  // same reason — `find` yields an Exchange or undefined, never ''.
-  const getExchangeName = (ex: Exchange | undefined): string => {
-    if (!ex) return '';
-    return ex.name || '';
-  };
-
-  const isValidFloat = (s: string | number | null): boolean => {
-    if (s === null || s === '') return false;
-
-    const x = parseFloat(String(s));
-    if (Number.isNaN(x) || !Number.isFinite(x)) return false;
-    return true;
-  };
-
-  const toTransaction = (t: EditableTransaction): TransactionPayload | null => {
-    if (
-      t.isin === null ||
-      !t.date.isValid() ||
-      !isValidFloat(t.amount) ||
-      !isValidFloat(t.fees) ||
-      !isValidFloat(t.units)
-    )
-      return null;
-
-    const tAccount = findAccountByName(accounts, t.account);
-    if (tAccount === null) return null;
-
-    if (
-      parseFloat(String(t.units)) === 0 &&
-      Math.abs(parseFloat(String(t.amount))) +
-        Math.abs(parseFloat(String(t.fees))) <
-        0.01
-    )
-      return null;
-
-    const ret: TransactionPayload = {
-      id: t.id,
-      isin: t.isin,
-      onvistaExchangeId: null,
-      exchange: null,
-      comments: t.comments,
-      units: parseFloat(String(t.units)),
-      amount: -1 * Math.round(parseFloat(String(t.amount)) * 100),
-      fees: -1 * Math.round(parseFloat(String(t.fees)) * 100),
-      accountId: tAccount.id,
-      date: t.date.format(),
-      // FIXME(tsx-migration): `receiptNumber` was omitted from the payload
-      // entirely, so serde defaulted it to None and every PUT wiped the link
-      // between an edited transaction and the receipt it was imported from.
-      receiptNumber: t.receiptNumber,
-    };
-
-    const tStock = findStock(stocks, t.isin) || { exchanges: [] };
-    if (t.exchange.trim() !== '') {
-      const ex = findExchangeByName(tStock, t.exchange);
-
-      if (ex === null || ex.onvistaExchangeId === null) {
-        ret.exchange = t.exchange.trim();
-      } else {
-        ret.onvistaExchangeId = ex.onvistaExchangeId;
-      }
-    }
-
-    return ret;
-  };
-
-  const toEditable = (t: TransactionDraft): EditableTransaction => {
-    const initialStock = t.isin !== null ? findStock(stocks, t.isin) : null;
-    const initialAccount = findAccount(accounts, t.accountId);
-
-    let ex: string;
-    if (t.id !== null && t.onvistaExchangeId !== null)
-      ex = initialStock
-        ? getExchangeName(
-            find(
-              initialStock.exchanges,
-              e => e.onvistaExchangeId === t.onvistaExchangeId
-            )
-          )
-        : // FIXME(tsx-migration): this fell back to the raw numeric id, which
-          // then blew up on `exchange.trim()` in toTransaction.
-          `${t.onvistaExchangeId}`;
-    else if (t.exchange !== null) ex = t.exchange;
-    else ex = '';
-
-    return {
-      id: t.id,
-      isin: t.isin,
-      exchange: ex,
-      comments: t.comments,
-      units: t.units,
-      amount: (-1 * t.amount) / 100,
-      fees: (-1 * t.fees) / 100,
-      account: initialAccount !== null ? initialAccount.name : null,
-      date: t.date !== null ? moment(t.date) : moment(''),
-      receiptNumber: t.receiptNumber,
-    };
-  };
-
-  const [transaction, setTransaction] = useState(
-    toEditable(initialTransaction)
+  const [transaction, setTransaction] = useState(() =>
+    toEditable(initialTransaction, stocks)
   );
-  const parsedISIN = parseISIN(transaction.isin);
-  const stock = parsedISIN !== null ? findStock(stocks, parsedISIN) : null;
-
-  let price = '\u2014';
-  if (
-    isValidFloat(transaction.units) &&
-    isValidFloat(transaction.amount) &&
-    parseFloat(String(transaction.units)) !== 0.0
-  )
-    price = formatCurrency(
-      parseFloat(String(transaction.amount)) /
-        parseFloat(String(transaction.units)),
-      { digits: 4 }
-    );
-
-  // console.log(initialTransaction);
-  // console.log(transaction);
-
-  const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
-
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
 
-  const reset = () => {
-    setTransaction(toEditable(initialTransaction));
-    setTriedToSave(false);
-  };
+  const update = (changes: Partial<EditableTransaction>) =>
+    setTransaction({ ...transaction, ...changes });
 
-  const wasOpen = React.useRef(false);
-  React.useEffect(() => {
-    if (open && !wasOpen.current) reset();
-    wasOpen.current = open;
-  });
+  const parsedISIN = parseISIN(transaction.isin);
+  const stock = parsedISIN !== null ? findStock(stocks, parsedISIN) : null;
+  const exchangeNames = stock
+    ? reverse(sortedUniqBy(sortBy(stock.exchanges, 'name'), x => x.name)).map(
+        x => x.name
+      )
+    : [];
 
-  const handleDialogClose = (_event: object, reason: string) => {
-    if (reason === 'backdropClick') return;
+  const price =
+    isValidFloat(transaction.units) &&
+    isValidFloat(transaction.amount) &&
+    parseFloat(String(transaction.units)) !== 0
+      ? formatCurrency(
+          parseFloat(String(transaction.amount)) /
+            parseFloat(String(transaction.units)),
+          { digits: 4 }
+        )
+      : '—';
 
-    reset();
-    onClose();
-  };
+  const empty = isEmpty(transaction);
+  const invalidNumber = (value: string | number) =>
+    triedToSave && (!isValidFloat(value) || empty);
 
   const onDelete = () => {
-    setConfirmOpen(false);
     // The delete button only renders when `transaction.id !== null`.
     if (transaction.id !== null) dispatch(deleteTransaction(transaction.id));
     onClose();
   };
 
   const onSave = () => {
-    const t = toTransaction(transaction);
+    const t = toTransaction(transaction, accounts, stocks);
 
     if (t === null) {
       setTriedToSave(true);
@@ -273,331 +272,224 @@ const TransactionDialog = ({ initialTransaction, open, onClose }: Props) => {
     onClose();
   };
 
-  const badCombination =
-    isValidFloat(transaction.amount) &&
-    isValidFloat(transaction.fees) &&
-    isValidFloat(transaction.units) &&
-    parseFloat(String(transaction.units)) === 0 &&
-    Math.abs(parseFloat(String(transaction.amount))) +
-      Math.abs(parseFloat(String(transaction.fees))) <
-      0.01;
-
   return (
     <>
-      <Dialog fullScreen={!mdUp} open={open} onClose={handleDialogClose}>
-        <DialogTitle id="form-dialog-title">
-          {transaction.id !== null
-            ? 'Transaktion bearbeiten'
-            : 'Transaktion erstellen'}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={1}>
-            <Grid size={12}>
-              <Autocomplete
-                freeSolo
-                options={stocks.data !== null ? stocks.data : []}
-                getOptionLabel={option => {
-                  if (typeof option === 'string') return option;
-                  return option.isin;
-                }}
-                // FIXME(tsx-migration): this was written as `option => ...`,
-                // but MUI passes (props, option, state) — the callback was
-                // reading the props object as if it were the option and
-                // returned a bare string instead of an <li>.
-                renderOption={(props, option) => {
-                  const { key, ...optionProps } = props;
-                  return (
-                    <li key={key} {...optionProps}>
-                      {`${option.isin} (${abbreviateTitle(option.title, true)})`}
-                    </li>
-                  );
-                }}
-                onInputChange={(_e, v) =>
-                  setTransaction({
-                    ...transaction,
-                    isin: v,
-                  })
+      <form
+        className="flex flex-1 flex-col gap-4"
+        onSubmit={event => {
+          event.preventDefault();
+          onSave();
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>
+            {transaction.id !== null
+              ? 'Transaktion bearbeiten'
+              : 'Transaktion erstellen'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+          <div className="col-span-2 grid gap-2">
+            <Label htmlFor="transaction-isin">ISIN</Label>
+            <Input
+              id="transaction-isin"
+              list="transaction-isins"
+              autoComplete="off"
+              value={transaction.isin ?? ''}
+              onChange={event => update({ isin: event.target.value })}
+              aria-invalid={triedToSave && parsedISIN === null}
+            />
+            <datalist id="transaction-isins">
+              {(stocks.data ?? []).map(s => (
+                <option key={s.isin} value={s.isin}>
+                  {abbreviateTitle(s.title, true)}
+                </option>
+              ))}
+            </datalist>
+          </div>
+          <div className="col-span-2 grid gap-2">
+            <Label htmlFor="transaction-exchange">Handelsplatz</Label>
+            <Input
+              id="transaction-exchange"
+              list="transaction-exchanges"
+              autoComplete="off"
+              value={transaction.exchange}
+              onChange={event => update({ exchange: event.target.value })}
+            />
+            <datalist id="transaction-exchanges">
+              {exchangeNames.map(name => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+          </div>
+          {(accounts.items.length > 1 ||
+            findAccount(accounts, transaction.accountId) === null) && (
+            <div className="col-span-2 grid gap-2">
+              <Label htmlFor="transaction-account">Depot</Label>
+              <Select
+                value={
+                  transaction.accountId === null
+                    ? undefined
+                    : String(transaction.accountId)
                 }
-                value={transaction.isin || ''}
-                autoComplete
-                openOnFocus
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    label="ISIN"
-                    variant="standard"
-                    fullWidth
-                    error={triedToSave && parseISIN(transaction.isin) === null}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid size={12}>
-              <Autocomplete
-                freeSolo
-                options={
-                  stock
-                    ? reverse(
-                        sortedUniqBy(
-                          sortBy(stock.exchanges, 'name'),
-                          x => x.name
-                        )
-                      )
-                    : []
-                }
-                getOptionLabel={option => {
-                  if (typeof option === 'string') return option;
-                  return option.name;
-                }}
-                autoComplete
-                openOnFocus
-                onInputChange={(_e, v) =>
-                  setTransaction({
-                    ...transaction,
-                    exchange: v,
-                  })
-                }
-                value={transaction.exchange || ''}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    label="Handelsplatz"
-                    variant="standard"
-                    fullWidth
-                    // error={
-                    //   findExchangeByName(stock, transaction.exchange) === null
-                    // }
-                  />
-                )}
-              />
-            </Grid>
-            {(accounts.items.length > 1 ||
-              findAccountByName(accounts, transaction.account) === null) && (
-              <Grid size={12}>
-                <Autocomplete
-                  freeSolo
-                  options={accounts.items}
-                  getOptionLabel={option => {
-                    if (typeof option === 'string') return option;
-                    return option.name;
-                  }}
-                  autoComplete
-                  openOnFocus
-                  onInputChange={(_e, v) =>
-                    setTransaction({
-                      ...transaction,
-                      account: v,
-                    })
+                onValueChange={value => update({ accountId: Number(value) })}
+              >
+                <SelectTrigger
+                  id="transaction-account"
+                  className="w-full"
+                  aria-invalid={
+                    triedToSave &&
+                    findAccount(accounts, transaction.accountId) === null
                   }
-                  value={transaction.account || ''}
-                  renderInput={params => (
-                    <TextField
-                      {...params}
-                      label="Depot"
-                      variant="standard"
-                      fullWidth
-                      error={
-                        triedToSave &&
-                        findAccountByName(accounts, transaction.account) ===
-                          null
-                      }
-                      margin="normal"
-                    />
-                  )}
-                />
-              </Grid>
-            )}
-            <Grid size={12}>
-              <DateTimePicker
-                label="Datum"
-                format="DD/MM/YYYY HH:mm"
-                value={transaction.date}
-                onChange={(d: Moment | null) => {
-                  setTransaction({
-                    ...transaction,
-                    date: d !== null ? d : moment(''),
-                  });
-                }}
-                disableFuture
-                slotProps={{
-                  textField: {
-                    variant: 'standard',
-                    fullWidth: true,
-                  },
-                }}
-              />
-            </Grid>
-            <Grid size={6}>
-              <TextField
-                margin="dense"
-                label="Kosten"
-                variant="standard"
-                fullWidth
-                value={transaction.amount}
-                onChange={(v: React.ChangeEvent<HTMLInputElement>) => {
-                  setTransaction({
-                    ...transaction,
-                    amount: v.target.value,
-                  });
-                }}
-                slotProps={{
-                  inputLabel: {
-                    shrink: true,
-                  },
-                  input: {
-                    inputComponent: NumberInputComponent,
-                    inputProps: {
-                      suffix: '€',
-                      decimalScale: 2,
-                      fixedDecimalScale: true,
-                    },
-                  },
-                }}
-                error={
-                  triedToSave &&
-                  (!isValidFloat(transaction.amount) || badCombination)
-                }
-              />
-            </Grid>
-            <Grid size={6}>
-              <TextField
-                margin="dense"
-                label="Gebühren (zzgl.)"
-                variant="standard"
-                fullWidth
-                value={transaction.fees}
-                onChange={(v: React.ChangeEvent<HTMLInputElement>) => {
-                  setTransaction({
-                    ...transaction,
-                    fees: v.target.value,
-                  });
-                }}
-                slotProps={{
-                  inputLabel: {
-                    shrink: true,
-                  },
-                  input: {
-                    inputComponent: NumberInputComponent,
-                    inputProps: {
-                      allowNegative: false,
-                      suffix: '€',
-                      decimalScale: 2,
-                      fixedDecimalScale: true,
-                    },
-                  },
-                }}
-                error={
-                  triedToSave &&
-                  (!isValidFloat(transaction.fees) || badCombination)
-                }
-              />
-            </Grid>
-            <Grid size={6}>
-              <TextField
-                margin="dense"
-                label="Einheiten"
-                variant="standard"
-                fullWidth
-                value={transaction.units}
-                onChange={(v: React.ChangeEvent<HTMLInputElement>) => {
-                  setTransaction({
-                    ...transaction,
-                    units: v.target.value,
-                  });
-                }}
-                slotProps={{
-                  inputLabel: {
-                    shrink: true,
-                  },
-                  input: {
-                    inputComponent: NumberInputComponent,
-                    inputProps: {},
-                  },
-                }}
-                error={
-                  triedToSave &&
-                  (!isValidFloat(transaction.units) || badCombination)
-                }
-              />
-            </Grid>
-            <Grid size={6}>
-              <TextField
-                margin="dense"
-                label="Kurs"
-                variant="standard"
-                disabled
-                fullWidth
-                value={price}
-              />
-            </Grid>
-            <Grid size={12}>
-              <TextField
-                margin="dense"
-                label="Kommentare"
-                variant="standard"
-                fullWidth
-                multiline
-                rows={3}
-                value={transaction.comments}
-                onChange={(v: React.ChangeEvent<HTMLInputElement>) =>
-                  setTransaction({
-                    ...transaction,
-                    comments: v.target.value,
-                  })
-                }
-              />
-            </Grid>
-          </Grid>
-          {toTransaction(transaction) === null && triedToSave && (
-            <Alert severity="error">Transaktion ist unvollständig!</Alert>
+                >
+                  <SelectValue placeholder="Depot wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.items.map(account => (
+                    <SelectItem key={account.id} value={String(account.id)}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
-        </DialogContent>
-        <DialogActions>
+          <div className="grid gap-2">
+            <Label htmlFor="transaction-date">Datum</Label>
+            <DatePicker
+              id="transaction-date"
+              value={transaction.date}
+              max={Temporal.Now.plainDateISO()}
+              onChange={date => update({ date })}
+              invalid={
+                triedToSave &&
+                (transaction.date === null || isInFuture(transaction))
+              }
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="transaction-time">Uhrzeit</Label>
+            <Input
+              id="transaction-time"
+              type="time"
+              value={
+                transaction.time?.toString({ smallestUnit: 'minute' }) ?? ''
+              }
+              onChange={event =>
+                update({
+                  time:
+                    event.target.value === ''
+                      ? null
+                      : Temporal.PlainTime.from(event.target.value),
+                })
+              }
+              aria-invalid={
+                triedToSave &&
+                (transaction.time === null || isInFuture(transaction))
+              }
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="transaction-amount">Kosten</Label>
+            <NumberInput
+              id="transaction-amount"
+              value={transaction.amount}
+              onValueChange={amount => update({ amount })}
+              suffix=" €"
+              decimalScale={2}
+              fixedDecimalScale
+              aria-invalid={invalidNumber(transaction.amount)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="transaction-fees">Gebühren (zzgl.)</Label>
+            <NumberInput
+              id="transaction-fees"
+              value={transaction.fees}
+              onValueChange={fees => update({ fees })}
+              allowNegative={false}
+              suffix=" €"
+              decimalScale={2}
+              fixedDecimalScale
+              aria-invalid={invalidNumber(transaction.fees)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="transaction-units">Einheiten</Label>
+            <NumberInput
+              id="transaction-units"
+              value={transaction.units}
+              onValueChange={units => update({ units })}
+              aria-invalid={invalidNumber(transaction.units)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="transaction-price">Kurs</Label>
+            <Input id="transaction-price" value={price} disabled />
+          </div>
+          <div className="col-span-2 grid gap-2">
+            <Label htmlFor="transaction-comments">Kommentare</Label>
+            <Textarea
+              id="transaction-comments"
+              rows={3}
+              value={transaction.comments}
+              onChange={event => update({ comments: event.target.value })}
+            />
+          </div>
+        </div>
+        {toTransaction(transaction, accounts, stocks) === null &&
+          triedToSave && (
+            <Alert variant="destructive">
+              <CircleAlert />
+              <AlertDescription>
+                Transaktion ist unvollständig!
+              </AlertDescription>
+            </Alert>
+          )}
+        <DialogFooter className="mt-auto">
           {transaction.id !== null && (
             <Button
-              variant="outlined"
-              color="secondary"
-              startIcon={<DeleteIcon />}
+              type="button"
+              variant="destructive"
+              className="sm:mr-auto"
               onClick={() => setConfirmOpen(true)}
             >
+              <Trash2 />
               Löschen
             </Button>
           )}
-          <Button color="primary" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             Abbrechen
           </Button>
-          <Button color="primary" onClick={onSave}>
-            Speichern
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Transaktion wirklich löschen?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setConfirmOpen(false)}
-            color="primary"
-            // eslint-disable-next-line jsx-a11y/no-autofocus -- the safe choice of a destructive confirmation
-            autoFocus
-          >
-            Nein
-          </Button>
-          <Button onClick={onDelete} color="primary">
-            Ja
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Button type="submit">Speichern</Button>
+        </DialogFooter>
+      </form>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Transaktion löschen?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Nein</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={onDelete}>
+              Ja, löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
+
+const TransactionDialog = ({ initialTransaction, open, onClose }: Props) => (
+  <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
+    <FormDialogContent className="md:max-w-lg">
+      <TransactionForm
+        initialTransaction={initialTransaction}
+        onClose={onClose}
+      />
+    </FormDialogContent>
+  </Dialog>
+);
 
 export default TransactionDialog;

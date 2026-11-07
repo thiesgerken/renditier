@@ -1,145 +1,203 @@
-import React, { useEffect } from 'react';
-import moment from 'moment';
-import { find } from 'lodash';
+import { useEffect, useMemo } from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
 import {
-  Box,
-  Button,
-  Container,
-  IconButton,
-  Paper,
-  Tooltip,
-  Typography,
-  useMediaQuery,
-} from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { DataGrid } from '@mui/x-data-grid';
-import type {
-  GridColDef,
-  GridPaginationModel,
-  GridRenderCellParams,
-  GridRowParams,
-} from '@mui/x-data-grid';
-import { deDE } from '@mui/x-data-grid/locales';
-import ShowChartIcon from '@mui/icons-material/ShowChart';
-import AddIcon from '@mui/icons-material/Add';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { useLocation, useNavigate } from 'react-router-dom';
+  Building2,
+  CalendarDays,
+  ChartLine,
+  CircleMinus,
+  CirclePlus,
+  Euro,
+  HandCoins,
+  MessageSquare,
+  Plus,
+  Upload,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-import { fetchTransactions } from '../slices/transactions';
-import { fetchStocks } from '../slices/stocks';
+import DataTable, { dataTableFeatures } from '../components/DataTable';
+import useTableFormat from '../components/useTableFormat';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card';
+import { formatCurrency, formatDate, formatDateTime } from '../format';
+import { abbreviateTitle, findStock } from '../selectors/stocks';
 import { fetchAccounts } from '../slices/accounts';
 import { uploadReceipts } from '../slices/receipts';
-import { findStock, abbreviateTitle } from '../selectors/stocks';
+import { fetchStocks } from '../slices/stocks';
+import { fetchTransactions } from '../slices/transactions';
 import { useAppDispatch, useAppSelector } from '../store';
-import type { Transaction } from '../types/api';
+import type { Stock, Transaction } from '../types/api';
 import type { StocksState } from '../types/store';
+import useQueryParam from '../useQueryParam';
+import ReceiptUploadDialog from './ReceiptUploadDialog';
 import TransactionDialog from './TransactionDialog';
 import type { TransactionDraft } from './TransactionDialog';
-import ReceiptUploadDialog from './ReceiptUploadDialog';
-import useTableFormat from '../components/useTableFormat';
-import {
-  formatCurrency,
-  formatDate,
-  formatDateTime,
-  formatNumber,
-} from '../format';
 
-// One DataGrid row: the transaction plus the resolved exchange name.
-type TransactionRow = Transaction & { exchangeDisplay: string | null };
+// One table row: the transaction with what the cells show resolved once.
+type TransactionRow = Transaction & {
+  stock: Stock | null;
+  exchangeDisplay: string | null;
+};
 
-// Savings plans buy fractional units, so units keep all their decimals.
-const UNIT_DIGITS = 6;
+const exchangeDisplay = (
+  stock: Stock | null,
+  transaction: Transaction
+): string | null => {
+  if (transaction.onvistaExchangeId === null) return transaction.exchange;
 
-function useQuery(
-  key: string
-): [string | null, (value: string | number | boolean | null) => void] {
-  const location = useLocation();
-  const query = new URLSearchParams(location.search);
-  const navigate = useNavigate();
+  return (
+    stock?.exchanges.find(
+      e => e.onvistaExchangeId === transaction.onvistaExchangeId
+    )?.name ?? `[${transaction.onvistaExchangeId}]`
+  );
+};
 
-  const set = (value: string | number | boolean | null) => {
-    if (value === null || value === undefined) query.delete(key);
-    else query.set(key, `${value}`);
-
-    const qs = query.toString();
-    navigate(`${location.pathname}${qs.length ? '?' : ''}${qs}`);
-  };
-
-  return [query.get(key), set];
-}
-
-const manipulateExchange = (
+const toRow = (
   stocks: StocksState,
   transaction: Transaction
 ): TransactionRow => {
-  let exchangeDisplay = null;
-  if (transaction.exchange !== null) exchangeDisplay = transaction.exchange;
-  if (transaction.onvistaExchangeId !== null) {
-    exchangeDisplay = `[${transaction.onvistaExchangeId}]`;
-
-    const stock = findStock(stocks, transaction.isin);
-    if (stock !== null) {
-      const exchange = find(
-        stock.exchanges,
-        item => item.onvistaExchangeId === transaction.onvistaExchangeId
-      );
-
-      if (exchange !== undefined && exchange !== null) {
-        exchangeDisplay = exchange.name;
-      }
-    }
-  }
-
+  const stock = findStock(stocks, transaction.isin);
   return {
     ...transaction,
-    exchangeDisplay,
+    stock,
+    exchangeDisplay: exchangeDisplay(stock, transaction),
   };
 };
+
+interface Kind {
+  label: string;
+  icon: LucideIcon;
+  className: string;
+}
+
+// Transactions without units only move money: dividends. The colours stay
+// clear of teal and pink, which mean gain and loss in the amounts next to them.
+const kindOf = ({ units }: Transaction): Kind => {
+  if (units > 0)
+    return {
+      label: 'Kauf',
+      icon: CirclePlus,
+      className: 'text-sky-600 dark:text-sky-400',
+    };
+  if (units < 0)
+    return {
+      label: 'Verkauf',
+      icon: CircleMinus,
+      className: 'text-violet-600 dark:text-violet-400',
+    };
+  return {
+    label: 'Dividende',
+    icon: HandCoins,
+    className: 'text-amber-600 dark:text-amber-400',
+  };
+};
+
+// Phones only have room for whole euros.
+const Money = ({ cents }: { cents: number }) => {
+  const { signColor } = useTableFormat();
+  return (
+    <span className="tabular-nums" style={signColor(cents / 100, 2)}>
+      <span className="md:hidden">
+        {formatCurrency(cents / 100, { digits: 0 })}
+      </span>
+      <span className="hidden md:inline">{formatCurrency(cents / 100)}</span>
+    </span>
+  );
+};
+
+const column = createColumnHelper<typeof dataTableFeatures, TransactionRow>();
+
+const columns = column.columns([
+  column.accessor(row => kindOf(row).label, {
+    id: 'kind',
+    header: 'Art',
+    cell: ({ row }) => {
+      const { label, icon: Icon, className } = kindOf(row.original);
+      return (
+        <span title={label}>
+          <Icon aria-hidden className={`size-4 ${className}`} />
+          <span className="sr-only">{label}</span>
+        </span>
+      );
+    },
+  }),
+  column.accessor(row => Temporal.Instant.from(row.date).epochMilliseconds, {
+    id: 'date',
+    header: 'Datum',
+    meta: { icon: CalendarDays },
+    cell: ({ row }) => (
+      <>
+        <span className="md:hidden">{formatDate(row.original.date)}</span>
+        <span className="hidden md:inline">
+          {formatDateTime(row.original.date)}
+        </span>
+      </>
+    ),
+  }),
+  column.accessor('amount', {
+    header: 'Betrag',
+    meta: { icon: Euro },
+    cell: ({ getValue }) => <Money cents={getValue()} />,
+  }),
+  column.accessor('fees', {
+    header: 'Gebühren',
+    meta: { desktopOnly: true },
+    cell: ({ getValue }) => <Money cents={getValue()} />,
+  }),
+  column.accessor(row => row.stock?.title ?? row.isin, {
+    id: 'stock',
+    header: 'Wertpapier',
+    enableSorting: false,
+    meta: { icon: ChartLine },
+    cell: ({ row }) => {
+      const { stock, isin } = row.original;
+      if (stock === null) return isin;
+
+      return (
+        <span className="flex min-w-40 items-center gap-2 whitespace-normal">
+          <Link
+            to={`/stocks/${isin}`}
+            className="line-clamp-2 underline-offset-4 hover:underline"
+            // the row itself opens the transaction
+            onClick={event => event.stopPropagation()}
+          >
+            <span className="md:hidden">
+              {abbreviateTitle(stock.title, true)}
+            </span>
+            <span className="hidden md:inline">
+              {abbreviateTitle(stock.title, false)}
+            </span>
+          </Link>
+          <Badge variant="secondary">{stock.kind}</Badge>
+        </span>
+      );
+    },
+  }),
+  column.accessor('exchangeDisplay', {
+    header: 'Handelsplatz',
+    meta: { icon: Building2, desktopOnly: true },
+  }),
+  column.accessor('comments', {
+    header: 'Kommentare',
+    meta: { icon: MessageSquare, desktopOnly: true },
+  }),
+]);
 
 const Transactions = () => {
   const dispatch = useAppDispatch();
   const stocks = useAppSelector(state => state.stocks);
   const transactions = useAppSelector(state => state.transactions);
   const accounts = useAppSelector(state => state.accounts);
-  const [transactionId, setTransactionId] = useQuery('id');
-  const [uploading, setUploading] = useQuery('upload');
-  const [page, setPage] = useQuery('page');
-  const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const { signColor } = useTableFormat();
-  const navigate = useNavigate();
-  const [pageSize, setPageSize] = React.useState(10);
-
-  const onlyAccount =
-    accounts.items !== null && accounts.items.length === 1
-      ? accounts.items[0].id
-      : null;
-  let initialTransaction: TransactionDraft = {
-    id: null,
-    accountId: onlyAccount,
-    isin: null,
-    date: moment().format(),
-    units: 0,
-    fees: 0,
-    amount: 0,
-    comments: '',
-    onvistaExchangeId: null,
-    exchange: null,
-    // FIXME(tsx-migration): the blank transaction never carried this key, so the
-    // create payload omitted it entirely; null is what the backend inferred.
-    receiptNumber: null,
-  };
-  if (
-    transactions.items !== null &&
-    transactionId !== null &&
-    parseInt(transactionId, 10) >= 0
-  ) {
-    const transaction = find(
-      transactions.items,
-      item => item.id === parseInt(transactionId, 10)
-    );
-    if (transaction !== undefined) initialTransaction = transaction;
-  }
+  const [transactionId, setTransactionId] = useQueryParam('id');
+  const [uploading, setUploading] = useQueryParam('upload');
+  const [page, setPage] = useQueryParam('page');
 
   useEffect(() => {
     dispatch(fetchTransactions());
@@ -147,207 +205,84 @@ const Transactions = () => {
     dispatch(fetchAccounts());
   });
 
+  const newTransaction: TransactionDraft = {
+    id: null,
+    accountId: accounts.items.length === 1 ? accounts.items[0].id : null,
+    isin: null,
+    date: Temporal.Now.instant().toString(),
+    units: 0,
+    fees: 0,
+    amount: 0,
+    comments: '',
+    onvistaExchangeId: null,
+    exchange: null,
+    receiptNumber: null,
+  };
+  const initialTransaction =
+    transactions.items.find(item => String(item.id) === transactionId) ??
+    newTransaction;
+
   const isLoading =
     transactions.isFetching || stocks.isFetching || accounts.isFetching;
 
-  const formatAmount = (cents: number) => (
-    <span style={signColor(cents / 100, mdUp ? 2 : 0)}>
-      {formatCurrency(cents / 100, { digits: mdUp ? 2 : 0 })}
-    </span>
+  // The table recomputes its row models whenever `data` is a new array.
+  const rows = useMemo(
+    () => transactions.items.map(transaction => toRow(stocks, transaction)),
+    [transactions.items, stocks]
   );
-
-  const rows = (transactions.items ?? []).map(transaction =>
-    manipulateExchange(stocks, transaction)
-  );
-  const pageNumber = page === null ? 0 : parseInt(page, 10);
-
-  const columns: GridColDef<TransactionRow>[] = [
-    {
-      field: 'id',
-      headerName: 'ID',
-    },
-    {
-      field: 'date',
-      headerName: 'Datum',
-      minWidth: mdUp ? 150 : 110,
-      renderCell: (params: GridRenderCellParams<TransactionRow, string>) =>
-        mdUp ? formatDateTime(params.value) : formatDate(params.value),
-    },
-    {
-      field: 'amount',
-      headerName: 'Betrag',
-      minWidth: 110,
-      renderCell: (params: GridRenderCellParams<TransactionRow, number>) =>
-        formatAmount(params.value ?? 0),
-    },
-    {
-      field: 'fees',
-      headerName: 'Gebühren',
-      minWidth: 110,
-      renderCell: (params: GridRenderCellParams<TransactionRow, number>) =>
-        formatAmount(params.value ?? 0),
-    },
-    {
-      field: 'stockTitle',
-      headerName: 'Wertpapier',
-      flex: 1,
-      minWidth: mdUp ? 260 : 170,
-      sortable: false,
-      renderCell: (params: GridRenderCellParams<TransactionRow>) => {
-        const stock = findStock(stocks, params.row.isin);
-        if (stock === null) return params.row.isin;
-
-        return (
-          <Button
-            variant="text"
-            color="primary"
-            startIcon={<ShowChartIcon />}
-            sx={{
-              justifyContent: 'flex-start',
-              m: -2,
-              maxWidth: '100%',
-              textAlign: 'left',
-              textTransform: 'none',
-            }}
-            onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-              event.stopPropagation();
-              navigate(`/stocks/${stock.isin}`);
-            }}
-          >
-            <span
-              style={{
-                display: '-webkit-box',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                WebkitBoxOrient: 'vertical',
-                WebkitLineClamp: 2,
-                wordWrap: 'break-word',
-              }}
-            >
-              {abbreviateTitle(stock.title, !mdUp)}
-            </span>
-          </Button>
-        );
-      },
-    },
-    {
-      field: 'isin',
-      headerName: 'ISIN',
-    },
-    {
-      field: 'units',
-      headerName: 'Einheiten',
-      renderCell: (params: GridRenderCellParams<TransactionRow, number>) => (
-        <span style={signColor(params.value, UNIT_DIGITS)}>
-          {formatNumber(params.value ?? null, {
-            digits: 0,
-            maxDigits: UNIT_DIGITS,
-          })}
-        </span>
-      ),
-    },
-    {
-      field: 'accountId',
-      headerName: 'Konto',
-    },
-    {
-      field: 'exchangeDisplay',
-      headerName: 'Handelsplatz',
-      flex: 1,
-      minWidth: 150,
-    },
-    {
-      field: 'comments',
-      headerName: 'Kommentare',
-      flex: 1,
-      minWidth: 180,
-    },
-  ];
 
   return (
-    <div style={{ margin: '-4px' }}>
-      <Container maxWidth="xl" style={{ padding: '0px' }}>
-        <Paper>
-          <Box
-            sx={{
-              alignItems: 'center',
-              display: 'flex',
-              justifyContent: 'space-between',
-              px: 2,
-              py: 1,
-            }}
-          >
-            <Typography variant="h6">Transaktionen</Typography>
-            <Box>
-              <Tooltip title="Abrechnungen hochladen">
-                <IconButton component="label">
-                  <input
-                    type="file"
-                    hidden
-                    accept="application/pdf"
-                    multiple
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      setUploading(true);
-                      dispatch(uploadReceipts(event.target.files ?? []));
-                    }}
-                  />
-                  <CloudUploadIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Neue Transaktion">
-                <IconButton onClick={() => setTransactionId(-1)}>
-                  <AddIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Box>
-          <DataGrid
-            autoHeight
-            rows={rows}
+    <>
+      <Card className="mx-auto max-w-(--breakpoint-xl)">
+        <CardHeader>
+          <CardTitle>Transaktionen</CardTitle>
+          <CardAction className="flex gap-2">
+            <Button asChild size="sm" variant="outline">
+              <label>
+                <Upload />
+                <span className="max-sm:sr-only">Abrechnungen</span>
+                <input
+                  type="file"
+                  className="sr-only"
+                  accept="application/pdf"
+                  multiple
+                  onChange={event => {
+                    setUploading(true);
+                    dispatch(uploadReceipts(event.target.files ?? []));
+                  }}
+                />
+              </label>
+            </Button>
+            <Button size="sm" onClick={() => setTransactionId(-1)}>
+              <Plus />
+              <span className="max-sm:sr-only">Neue Transaktion</span>
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            data={rows}
             columns={columns}
-            loading={isLoading}
-            disableRowSelectionOnClick
-            pagination
-            columnVisibilityModel={{
-              id: false,
-              isin: false,
-              units: false,
-              accountId: false,
-              fees: mdUp,
-              exchangeDisplay: mdUp,
-              comments: mdUp,
-            }}
-            initialState={{
-              sorting: { sortModel: [{ field: 'date', sort: 'desc' }] },
-            }}
-            localeText={deDE.components.MuiDataGrid.defaultProps.localeText}
-            pageSizeOptions={mdUp ? [10, 25, 50] : [10]}
-            paginationModel={{ page: pageNumber, pageSize }}
-            onPaginationModelChange={(model: GridPaginationModel) => {
-              setPageSize(model.pageSize);
-              setPage(model.page === 0 ? null : model.page);
-            }}
-            onRowClick={(params: GridRowParams<TransactionRow>) =>
-              setTransactionId(params.row.id)
-            }
-            sx={{ border: 0 }}
+            getRowId={transaction => String(transaction.id)}
+            initialSorting={[{ id: 'date', desc: true }]}
+            isLoading={isLoading}
+            emptyText="Noch keine Transaktionen"
+            page={page === null ? 0 : parseInt(page, 10)}
+            onPageChange={p => setPage(p === 0 ? null : p)}
+            onRowClick={transaction => setTransactionId(transaction.id)}
           />
-        </Paper>
-      </Container>
+        </CardContent>
+      </Card>
       <TransactionDialog
         initialTransaction={initialTransaction}
         open={transactionId !== null && !isLoading}
-        onClose={() => {
-          setTransactionId(null);
-        }}
+        onClose={() => setTransactionId(null)}
       />
       <ReceiptUploadDialog
         open={uploading !== null}
-        onClose={() => {
-          setUploading(null);
-        }}
+        onClose={() => setUploading(null)}
       />
-    </div>
+    </>
   );
 };
 
