@@ -1,0 +1,157 @@
+import { Box, Typography } from '@mui/material';
+import { sumBy } from 'lodash';
+
+import { formatPercent } from '../format';
+
+export interface BarItem {
+  label: string;
+  value: number;
+  // shown on hover, e.g. the full name behind an abbreviated label
+  title?: string;
+}
+
+export interface BarRow extends BarItem {
+  // fraction of the total; null when the total is not positive, so that there
+  // is nothing to be a share of
+  share: number | null;
+  // folded or unattributed remainder rather than an item of its own
+  remainder: boolean;
+}
+
+// The rows of a bar list: the `maxRows` largest positive items, the remaining
+// positive ones folded into "Sonstige" (unless that would be a single item),
+// the part of the total that no item accounts for as "Unbekannt", and every
+// negative item. Negative items are never folded, because a remainder would
+// silently net them against the rest.
+export const barRows = (
+  items: BarItem[],
+  maxRows: number,
+  unattributed = 0
+): BarRow[] => {
+  const total = sumBy(items, 'value') + unattributed;
+  const row = (item: BarItem, remainder = false): BarRow => ({
+    ...item,
+    share: total > 0 ? item.value / total : null,
+    remainder,
+  });
+
+  const sorted = [...items].sort((a, b) => b.value - a.value);
+  const positive = sorted.filter(i => i.value > 0);
+  const negative = sorted.filter(i => i.value < 0);
+  const shown = positive.length > maxRows + 1 ? maxRows : positive.length;
+  const folded = positive.slice(shown);
+
+  return [
+    ...positive.slice(0, shown).map(i => row(i)),
+    ...(folded.length > 0
+      ? [
+          row(
+            {
+              label: `Sonstige (${folded.length})`,
+              value: sumBy(folded, 'value'),
+              title: folded.map(i => i.label).join(', '),
+            },
+            true
+          ),
+        ]
+      : []),
+    ...(unattributed > 0
+      ? [row({ label: 'Unbekannt', value: unattributed }, true)]
+      : []),
+    ...negative.map(i => row(i)),
+  ];
+};
+
+interface Props {
+  title: string;
+  items: BarItem[];
+  maxRows: number;
+  // the part of the total not covered by any item, e.g. 100 % minus the
+  // listed shares of a fund
+  unattributed?: number;
+  // formats an item's value; without it, only the share is shown
+  formatValue?: (value: number) => string;
+  // shown below the list, e.g. what could not be included
+  note?: string;
+}
+
+// A horizontal bar per item, longest first. Bars are scaled to the largest
+// item; negative items get the secondary color.
+const BarList = ({
+  title,
+  items,
+  maxRows,
+  unattributed = 0,
+  formatValue,
+  note,
+}: Props) => {
+  const rows = barRows(items, maxRows, unattributed);
+  if (rows.length === 0) return null;
+
+  const largest = Math.max(...rows.map(r => Math.abs(r.value)));
+
+  const barColor = (r: BarRow): string => {
+    if (r.value < 0) return 'secondary.main';
+    return r.remainder ? 'action.disabled' : 'primary.main';
+  };
+
+  return (
+    <Box sx={{ p: 1 }}>
+      <Typography variant="subtitle1" component="h3" gutterBottom>
+        {title}
+      </Typography>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: formatValue
+            ? 'minmax(0, 1fr) auto auto'
+            : 'minmax(0, 1fr) auto',
+          columnGap: 1.5,
+          alignItems: 'baseline',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {rows.map(r => (
+          <Box key={r.label} sx={{ display: 'contents' }}>
+            <Typography
+              variant="body2"
+              noWrap
+              title={r.title}
+              sx={{ color: r.remainder ? 'text.secondary' : 'text.primary' }}
+            >
+              {r.label}
+            </Typography>
+            {formatValue && (
+              <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                {formatValue(r.value)}
+              </Typography>
+            )}
+            <Typography
+              variant="body2"
+              sx={{ textAlign: 'right', color: 'text.secondary' }}
+            >
+              {formatPercent(r.share, { digits: 1 })}
+            </Typography>
+            <Box
+              sx={{
+                gridColumn: '1 / -1',
+                height: 6,
+                mb: 1,
+                borderRadius: 1,
+                bgcolor: barColor(r),
+                width: `${(Math.abs(r.value) / largest) * 100}%`,
+              }}
+            />
+          </Box>
+        ))}
+      </Box>
+      {note && (
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          {note}
+        </Typography>
+      )}
+    </Box>
+  );
+};
+
+export default BarList;

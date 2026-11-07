@@ -21,7 +21,12 @@ import {
   updatePerformance as updatePerformanceAction,
 } from '../actions/api';
 import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
-import { findStock, capitalizeTitle } from '../selectors/stocks';
+import {
+  breakdownShares,
+  capitalizeTitle,
+  findStock,
+  holdingShares,
+} from '../selectors/stocks';
 import {
   formatCurrency,
   formatDate,
@@ -34,16 +39,10 @@ import OnvistaButton from '../components/OnvistaButton';
 import Hidden from '../components/Hidden';
 import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
 import StockPlot from '../components/stockAnalysis/StockPlot';
-import HoldingsPie from '../components/stockAnalysis/HoldingsPie';
-import BreakdownPie from '../components/stockAnalysis/BreakdownPie';
+import CompositionBars from '../components/stockAnalysis/CompositionBars';
 
 import type { StockPerformancePeriod } from '../components/stockAnalysis/StockPerformanceRow';
-import type {
-  DataSourceSelection,
-  IsoDate,
-  StockBreakdownEntry,
-  StockHolding,
-} from '../types/api';
+import type { DataSourceSelection, IsoDate } from '../types/api';
 import type { AppDispatch } from '../types/actions';
 import type { ResourceState, RootState } from '../types/store';
 
@@ -154,16 +153,29 @@ const StockAnalysis = ({
     typeInfo = `Typ: ${stock.kind} (${stock.fondsType}) mit Fokus auf ${stock.focus}`;
   else typeInfo = `Typ: ${stock.kind}`;
 
-  // These four columns hold onvista's JSON verbatim; see types/api.ts.
-  const holdings: StockHolding[] =
-    stock.holdings !== null ? JSON.parse(stock.holdings) : [];
-  const industryBreakdown: StockBreakdownEntry[] =
-    stock.industryBreakdown !== null ? JSON.parse(stock.industryBreakdown) : [];
-  const currencyBreakdown: StockBreakdownEntry[] =
-    stock.currencyBreakdown !== null ? JSON.parse(stock.currencyBreakdown) : [];
-  const countryBreakdown: StockBreakdownEntry[] =
-    stock.countryBreakdown !== null ? JSON.parse(stock.countryBreakdown) : [];
-  // const instrumentBreakdown = stock.instrumentBreakdown !== null ? JSON.parse(stock.instrumentBreakdown) : [];
+  // Same row counts as the portfolio-wide lists on the dashboard.
+  const compositions = [
+    {
+      title: 'Einzeltitel',
+      maxRows: 10,
+      shares: stock.holdings === null ? [] : holdingShares(stock),
+    },
+    {
+      title: 'Branchen',
+      maxRows: 11,
+      shares: breakdownShares(stock, 'industryBreakdown'),
+    },
+    {
+      title: 'Währungen',
+      maxRows: 5,
+      shares: breakdownShares(stock, 'currencyBreakdown'),
+    },
+    {
+      title: 'Länder',
+      maxRows: 10,
+      shares: breakdownShares(stock, 'countryBreakdown'),
+    },
+  ].filter(c => c.shares.length > 0);
 
   return (
     <Grid container spacing={3}>
@@ -279,46 +291,25 @@ const StockAnalysis = ({
           currentPrice={currentPrice}
         />
       </Grid>
-      <Hidden xsDown>
-        {(holdings.length > 0 ||
-          industryBreakdown.length > 0 ||
-          currencyBreakdown.length > 0 ||
-          countryBreakdown.length > 0) && (
-          <Grid size={12} style={{ padding: theme.spacing(1) }}>
-            <Container maxWidth="xl" style={{ padding: '0px' }}>
-              <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
-                <Grid container style={{ width: '100%' }}>
-                  {holdings.length > 0 && (
-                    <Grid size={{ xs: 12, xl: 6 }}>
-                      <HoldingsPie holdings={holdings} />
-                    </Grid>
-                  )}
-                  {industryBreakdown.length > 0 && (
-                    <Grid size={{ xs: 12, xl: 6 }}>
-                      <BreakdownPie breakdown={industryBreakdown} />
-                    </Grid>
-                  )}
-                  {currencyBreakdown.length > 0 && (
-                    <Grid size={{ xs: 12, xl: 6 }}>
-                      <BreakdownPie breakdown={currencyBreakdown} />
-                    </Grid>
-                  )}
-                  {countryBreakdown.length > 0 && (
-                    <Grid size={{ xs: 12, xl: 6 }}>
-                      <BreakdownPie breakdown={countryBreakdown} />
-                    </Grid>
-                  )}
-                  {/* {instrumentBreakdown.length > 0 && (
-                <Grid item xs={12} xl={4}>
-                  <BreakdownPie breakdown={instrumentBreakdown} />
-                </Grid>
-              )} */}
-                </Grid>
-              </Paper>
-            </Container>
-          </Grid>
-        )}
-      </Hidden>
+      {compositions.length > 0 && (
+        <Grid size={12} style={{ padding: theme.spacing(1) }}>
+          <Container maxWidth="xl" style={{ padding: '0px' }}>
+            <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
+              <Grid container style={{ width: '100%' }}>
+                {compositions.map(({ title, maxRows, shares }) => (
+                  <Grid key={title} size={{ xs: 12, md: 6 }}>
+                    <CompositionBars
+                      title={title}
+                      shares={shares}
+                      maxRows={maxRows}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </Paper>
+          </Container>
+        </Grid>
+      )}
     </Grid>
   );
 };
