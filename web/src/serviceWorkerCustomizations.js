@@ -1,5 +1,3 @@
-/* eslint-disable no-restricted-globals */
-
 // self.addEventListener('install', e => {
 //   console.log('workbox "install" event fired');
 //   console.log(e);

@@ -73,6 +73,7 @@ const Login = ({ onSubmit, message = null, messageType = null }: Props) => {
                   onChange={e => setUsername(e.target.value)}
                   type="username"
                   fullWidth
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- the login form is the whole page
                   autoFocus
                   required
                   slotProps={{

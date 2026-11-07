@@ -194,6 +194,7 @@ const AccountDialog = ({
           <Button
             onClick={() => setConfirmOpen(false)}
             color="primary"
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- the safe choice of a destructive confirmation
             autoFocus
           >
             Nein
