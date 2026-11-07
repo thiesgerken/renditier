@@ -14,7 +14,8 @@ use log::debug;
 use serde_json::Value;
 use std::error::Error;
 
-/// onvista quotes German exchanges; their prices and timestamps are in German local time.
+/// onvista quotes German exchanges; their prices and timestamps are in German local time. Crypto
+/// currencies are quoted on Bitstamp in UTC, but their daily prices are filed the same way.
 pub const EXCHANGE_TIMEZONE: Tz = chrono_tz::Europe::Berlin;
 
 const API_URL: &str = "https://api.onvista.de/api/v1";
