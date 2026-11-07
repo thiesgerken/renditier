@@ -1,0 +1,1 @@
+ALTER TABLE stock_infos ALTER COLUMN company SET NOT NULL;

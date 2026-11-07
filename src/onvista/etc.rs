@@ -12,7 +12,13 @@ pub fn parse_info(snapshot: &Value) -> Result<StockInfo, Box<dyn Error>> {
     let currency = get_string(&snapshot["derivativesDetails"]["isoCurrency"])
         .ok_or("error parsing currency")?;
 
-    parse_base_info(snapshot, EntityType::Derivative, title, company, currency)
+    parse_base_info(
+        snapshot,
+        EntityType::Derivative,
+        title,
+        Some(company),
+        currency,
+    )
 }
 
 #[cfg(test)]
@@ -28,7 +34,7 @@ mod tests {
         assert_eq!(info.wkn, "EWG2LD");
         assert_eq!(info.title, "EUWAX Gold II");
         assert_eq!(info.kind, "ETC");
-        assert_eq!(info.company, "Börse Stuttgart Commodities");
+        assert_eq!(info.company.as_deref(), Some("Börse Stuttgart Commodities"));
         assert_eq!(info.currency.as_deref(), Some("EUR"));
         assert_eq!(
             info.onvista_url,

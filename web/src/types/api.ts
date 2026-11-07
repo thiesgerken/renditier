@@ -142,7 +142,7 @@ export interface StockInfo {
   wkn: string;
   title: string;
   kind: string;
-  company: string;
+  company: string | null;
   fondsType: string | null;
   focus: string | null;
   persistent: boolean;
@@ -206,7 +206,7 @@ export interface Stock {
   wkn: string;
   title: string;
   kind: string;
-  company: string;
+  company: string | null;
   fondsType: string | null;
   focus: string | null;
   persistent: boolean;

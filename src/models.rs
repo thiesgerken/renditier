@@ -17,7 +17,7 @@ pub struct StockInfo {
     pub wkn: String,
     pub title: String,
     pub kind: String,
-    pub company: String,
+    pub company: Option<String>,
     pub fonds_type: Option<String>,
     pub focus: Option<String>,
     pub persistent: bool,

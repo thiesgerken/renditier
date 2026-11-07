@@ -178,7 +178,7 @@ fn parse_base_info(
     snapshot: &Value,
     entity_type: EntityType,
     title: String,
-    company: String,
+    company: Option<String>,
     currency: String,
 ) -> Result<StockInfo, Box<dyn Error>> {
     let instrument = &snapshot["instrument"];

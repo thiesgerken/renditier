@@ -10,7 +10,7 @@ pub fn parse_info(snapshot: &Value, company_snapshot: &Value) -> Result<StockInf
     let company = get_string(&snapshot["company"]["name"]).ok_or("error parsing company")?;
     let currency =
         get_string(&snapshot["stocksFigure"]["isoCurrency"]).ok_or("error parsing currency")?;
-    let info = parse_base_info(snapshot, EntityType::Stock, title, company, currency)?;
+    let info = parse_base_info(snapshot, EntityType::Stock, title, Some(company), currency)?;
     let description =
         get_string(&company_snapshot["profile"][0]["value"]).ok_or("error parsing description")?;
 
@@ -37,7 +37,7 @@ mod tests {
         assert_eq!(info.wkn, "716460");
         assert_eq!(info.title, "SAP SE");
         assert_eq!(info.kind, "Aktie");
-        assert_eq!(info.company, "SAP SE");
+        assert_eq!(info.company.as_deref(), Some("SAP SE"));
         assert_eq!(info.currency.as_deref(), Some("EUR"));
         assert_eq!(info.onvista_url, "/aktien/SAP-Aktie-DE0007164600");
         assert_eq!(info.instrument_id.as_deref(), Some("82849"));

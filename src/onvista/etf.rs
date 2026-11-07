@@ -13,7 +13,7 @@ pub fn parse_info(snapshot: &Value, breakdowns: &Value) -> Result<StockInfo, Box
     let company =
         get_string(&snapshot["fundsIssuer"]["nameGroupIssuer"]).ok_or("error parsing company")?;
     let currency = get_string(&base_data["isoCurrencyFund"]).ok_or("error parsing currency")?;
-    let info = parse_base_info(snapshot, EntityType::Fund, title, company, currency)?;
+    let info = parse_base_info(snapshot, EntityType::Fund, title, Some(company), currency)?;
 
     let launch_date = get_timestamp(&base_data["dateEmission"])
         .ok_or_else(|| format!("error parsing launch date {}", base_data["dateEmission"]))?;
@@ -66,7 +66,7 @@ mod tests {
         assert_eq!(info.wkn, "A2PKXG");
         assert_eq!(info.title, "Vanguard FTSE All-World UCITS ETF - USD ACC");
         assert_eq!(info.kind, "ETF");
-        assert_eq!(info.company, "Vanguard");
+        assert_eq!(info.company.as_deref(), Some("Vanguard"));
         assert_eq!(info.currency.as_deref(), Some("USD"));
         assert_eq!(
             info.onvista_url,
