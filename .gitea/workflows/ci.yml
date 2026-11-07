@@ -96,7 +96,7 @@ jobs:
             for i in $(seq 1 60); do curl -fsS -o /dev/null http://127.0.0.1:18383/ && break; sleep 1; done
             echo "GET / -> $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18383/)"
             echo "login -> $(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' \
-              -d "{\"user_name\":\"$user\",\"password\":\"smoke-password\"}" http://127.0.0.1:18383/api/user/login)"
+              -d "{\"userName\":\"$user\",\"password\":\"smoke-password\"}" http://127.0.0.1:18383/api/user/login)"
             sleep 8
             docker logs "$tag-app" 2>&1 | grep -iE "launch|listening|error|warn|private key|denied|read-only" || true
             echo "app running: $(docker inspect -f '{{.State.Running}}' "$tag-app")"
