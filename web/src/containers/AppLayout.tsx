@@ -110,9 +110,10 @@ interface DashboardTabLinksProps {
   active: DashboardTab | null;
 }
 
-// The dashboard's tabs below "Analyse". On the dashboard they replace the
-// history entry like the in-page tabs on phones, so that back leaves the page
-// instead of stepping through the tabs.
+// The dashboard's sections below "Analyse", highlighted while in view. On the
+// dashboard a click scrolls to the section and replaces the history entry, like
+// the scroll spy does, so that back leaves the page instead of stepping through
+// the sections.
 const DashboardTabLinks = ({ active }: DashboardTabLinksProps) => (
   <div className="ml-5 flex flex-col gap-0.5 border-l pl-2">
     {Object.entries(DASHBOARD_TABS).map(([tab, { label, icon: Icon }]) => {
