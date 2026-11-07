@@ -1,14 +1,18 @@
+use crate::analysis::returns::{StockReturns, compute as compute_returns};
 use crate::models::*;
 use crate::schema::*;
 use crate::web::DbConn;
 use crate::web::user::UserId;
+use crate::web::util::log_error_and_500;
 
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use regex::Regex;
+use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket_sync_db_pools::diesel;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Stock {
@@ -74,15 +78,7 @@ pub async fn list(
                 .load::<StockExchange>(c)
                 .ok()?;
 
-            let prices = realtime_prices::table
-                .filter(
-                    realtime_prices::onvista_record_id
-                        .eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
-                )
-                .order_by(realtime_prices::date.desc())
-                .limit(200) // might return nothing if the newest price is very old ...
-                .load::<RealtimePrice>(c)
-                .ok()?;
+            let prices = newest_prices(c, &exchanges).ok()?;
 
             let es = exchanges
                 .into_iter()
@@ -119,6 +115,28 @@ pub async fn list(
         .await
 }
 
+/// The newest realtime price of each exchange, however old it is.
+fn newest_prices(
+    c: &mut diesel::PgConnection,
+    exchanges: &[StockExchange],
+) -> QueryResult<Vec<RealtimePrice>> {
+    let record_ids = exchanges
+        .iter()
+        .map(|e| e.onvista_record_id)
+        .collect::<Vec<_>>();
+
+    // One index lookup per exchange (realtime_prices_by_record); diesel has no
+    // LATERAL join.
+    diesel::sql_query(
+        "SELECT p.* FROM unnest($1) AS e(onvista_record_id) CROSS JOIN LATERAL (
+            SELECT * FROM realtime_prices r WHERE r.onvista_record_id = e.onvista_record_id
+            ORDER BY r.date DESC LIMIT 1
+        ) p",
+    )
+    .bind::<diesel::sql_types::Array<diesel::sql_types::Integer>, _>(record_ids)
+    .load(c)
+}
+
 fn find_index(s: &StockInfo) -> Option<String> {
     let re = Regex::new(r"(MSCI|iSTOXX|STOXX|S&P|Dow Jones)[^ ]*(:? [^a-z(][\w]*)+").unwrap(); // cSpell: disable-line
     s.description.as_ref().and_then(|desc| {
@@ -126,6 +144,21 @@ fn find_index(s: &StockInfo) -> Option<String> {
             .map(|m| m.as_str().to_owned())
             .find(|m| !m.contains("ETF"))
     })
+}
+
+/// Keyed by ISIN; a static segment, so it takes precedence over `/stocks/<isin>`.
+#[get("/stocks/returns")]
+pub async fn returns(
+    _uid: UserId,
+    connection: DbConn,
+) -> Result<Json<HashMap<String, StockReturns>>, Status> {
+    connection
+        .run(|c| {
+            compute_returns(c, Utc::now())
+                .map(Json)
+                .map_err(log_error_and_500)
+        })
+        .await
 }
 
 #[get("/stocks/<isin>")]
@@ -140,15 +173,7 @@ pub async fn get(_uid: UserId, connection: DbConn, isin: String) -> Option<Json<
                 .load::<StockExchange>(c)
                 .ok()?;
 
-            let prices = realtime_prices::table
-                .filter(
-                    realtime_prices::onvista_record_id
-                        .eq_any(exchanges.iter().map(|e| &e.onvista_record_id)),
-                )
-                .order_by(realtime_prices::onvista_record_id.asc())
-                .then_order_by(realtime_prices::date.desc())
-                .load::<RealtimePrice>(c)
-                .ok()?;
+            let prices = newest_prices(c, &exchanges).ok()?;
 
             let es = exchanges
                 .into_iter()

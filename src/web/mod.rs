@@ -64,6 +64,7 @@ pub async fn handle(config: Config) {
                 transactions::update,
                 transactions::create,
                 stocks::list,
+                stocks::returns,
                 stocks::get,
                 prices::list,
                 analysis::compute_historic_portfolio,

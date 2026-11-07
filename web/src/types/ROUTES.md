@@ -24,6 +24,7 @@ requires it and returns `401 Unauthorized` without it.
 | PUT | `/api/transactions/<id>` | — | `Transaction` | none (200 / 401 / 404) |
 | DELETE | `/api/transactions/<id>` | — | — | none (200 / 404) |
 | GET | `/api/stocks` | `offset`, `count` (i64) | — | `Stock[]` |
+| GET | `/api/stocks/returns` | — | — | `Record<isin, StockReturns>`: `today`, `month`, `year` as fractions (0.05 = +5 %) of the current realtime price against the previous trading day's close and the closes a month and a year back; `null` where a price is missing |
 | GET | `/api/stocks/<isin>` | — | — | `Stock` (ISIN is upper-cased server-side) |
 | GET | `/api/stocks/prices/historical/<record>` | `offset`, `count` (i64), `from`, `to` (`YYYY-MM-DD`) | — | `HistoricalPrice[]` |
 | GET | `/api/analysis/portfolio` | — | — | `Portfolio<RealtimePrice>` (`RealtimePortfolio`) |

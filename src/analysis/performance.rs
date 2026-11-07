@@ -1,5 +1,5 @@
 use crate::analysis::price::{
-    DataSource, EitherPrice, MARKET_CLOSE, Price, PriceMap, market_time, to_market_time,
+    DataSource, EitherPrice, MARKET_CLOSE, Price, PriceMap, market_time, trading_day_before,
 };
 use crate::analysis::{irr, price};
 use crate::models::*;
@@ -84,20 +84,6 @@ impl Calendar {
     fn day_of(&self, instant: DateTime<Utc>) -> NaiveDate {
         instant.with_timezone(&self.timezone).date_naive()
     }
-}
-
-fn last_trading_day_until(mut day: NaiveDate) -> NaiveDate {
-    while day.weekday().number_from_monday() > 5 {
-        day = day.pred_opt().unwrap();
-    }
-    day
-}
-
-/// The trading day before the one of the newest price: its closing prices are where the
-/// "Heute" period starts. Trading days belong to the exchanges, not to the user's calendar.
-fn trading_day_before(newest_price: DateTime<Utc>) -> NaiveDate {
-    let current = last_trading_day_until(to_market_time(newest_price).date());
-    last_trading_day_until(current.pred_opt().unwrap())
 }
 
 /// Prices of the current moment and end-of-day prices of the period boundaries.
