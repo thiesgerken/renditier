@@ -29,9 +29,15 @@ import type {
   Stock,
   StockReturns,
 } from '../types/api';
+import type { ResourceState } from '../types/store';
 import useQueryParam from '../useQueryParam';
 
 type StockRow = Stock & { returns: StockReturns | null };
+
+// Also before the first request, which only starts after the first render:
+// otherwise the table would show its empty text until then.
+const loading = (resource: ResourceState<unknown>) =>
+  resource.isFetching || resource.lastRequest === null;
 
 const ReturnCell = ({ ratio }: { ratio: number | null }) => {
   const { percent, ratioTone } = useTableFormat();
@@ -112,8 +118,9 @@ const StockTable = () => {
   const stocks = useAppSelector(state => state.stocks);
   const performance = useAppSelector(state => state.performance);
   const stockReturns = useAppSelector(state => state.stockReturns);
-  const [heldParam, setHeld] = useQueryParam('held', { replace: true });
-  const onlyHeld = heldParam === '1';
+  // Only the held stocks unless `?all=1`, so that the default URL stays clean.
+  const [allParam, setAll] = useQueryParam('all', { replace: true });
+  const onlyHeld = allParam !== '1';
   const stockPlotData = useAppSelector(state => state.stockPlot.items);
   const updateStockPlotData = useCallback(
     (
@@ -169,7 +176,7 @@ const StockTable = () => {
             <Switch
               id="stocks-only-held"
               checked={onlyHeld}
-              onCheckedChange={checked => setHeld(checked ? 1 : null)}
+              onCheckedChange={checked => setAll(checked ? null : 1)}
             />
             <Label htmlFor="stocks-only-held">Nur gehaltene</Label>
           </CardAction>
@@ -180,9 +187,7 @@ const StockTable = () => {
             columns={columns}
             getRowId={stock => stock.isin}
             initialSorting={[]}
-            isLoading={
-              stocks.isFetching || (onlyHeld && performance.isFetching)
-            }
+            isLoading={loading(stocks) || (onlyHeld && loading(performance))}
             emptyText={
               onlyHeld
                 ? 'Keine gehaltenen Wertpapiere'
