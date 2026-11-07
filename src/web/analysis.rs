@@ -4,30 +4,39 @@ use crate::analysis::plots;
 use crate::analysis::plots::{DataSourceSelection, PortfolioPlot, StockPlot};
 use crate::analysis::portfolio;
 use crate::analysis::portfolio::Portfolio;
+use crate::analysis::price::{MARKET_CLOSE, market_time};
 use crate::models::*;
 use crate::web::user::UserId;
+use crate::web::util::log_error_and_500;
 use crate::web::{Config, DbConn};
 
-use chrono::{NaiveDate, NaiveDateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use rocket::State;
+use rocket::http::Status;
 use rocket::serde::json::Json;
 
+/// The portfolio as of the market close on `date`, valued at that day's closing prices.
 #[get("/analysis/portfolio?<date>")]
 pub async fn compute_historic_portfolio(
     uid: UserId,
     connection: DbConn,
-    date: String, // DateTime<Utc> not possible
-) -> Option<Json<Portfolio<HistoricalPrice>>> {
+    date: String, // NaiveDate not possible
+) -> Result<Json<Portfolio<HistoricalPrice>>, Status> {
+    let close = market_close(&date)?;
+
     connection
         .run(move |c| {
-            let date =
-                NaiveDateTime::parse_from_str(&format!("{} 17:30:00", date), "%Y-%m-%d %H:%M:%S")
-                    .ok()?
-                    .and_utc();
-
-            portfolio::compute(c, *uid, None, date).ok().map(Json)
+            portfolio::compute(c, *uid, None, close)
+                .map(Json)
+                .map_err(log_error_and_500)
         })
         .await
+}
+
+fn market_close(date: &str) -> Result<DateTime<Utc>, Status> {
+    let date = NaiveDate::parse_from_str(date, "%Y-%m-%d").map_err(|_| Status::BadRequest)?;
+
+    Ok(market_time(date.and_time(MARKET_CLOSE)))
 }
 
 #[get("/analysis/portfolio")]
@@ -146,4 +155,18 @@ pub async fn compute_stock_plot(
                 .map(Json)
         })
         .await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_historic_portfolio_is_taken_at_the_exchange_close() {
+        let close = |date| market_close(date).map(|t| t.to_rfc3339());
+
+        assert_eq!(close("2026-07-06"), Ok("2026-07-06T16:00:00+00:00".into()));
+        assert_eq!(close("2026-11-06"), Ok("2026-11-06T17:00:00+00:00".into()));
+        assert_eq!(close("06.07.2026"), Err(Status::BadRequest));
+    }
 }
