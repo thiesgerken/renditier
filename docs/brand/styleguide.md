@@ -99,9 +99,17 @@ All text pairs above reach at least 4.5:1 on their background.
 
 ## Typography
 
-| Use | Typeface |
-| --- | --- |
-| Wordmark | Outfit 700, letter spacing -0.01em, "Rendi" in navy (cream on dark), "tier" in orange |
-| UI | Geist (already the app font) |
+Outfit for everything, wordmark and UI. The wordmark stands out through weight and colour: 700
+against at most 500 in the UI, and the orange "tier".
 
-At 700, the geometric strokes of Outfit match the antler.
+| Use | Weight |
+| --- | --- |
+| Wordmark | 700, letter spacing -0.01em, "Rendi" in navy (cream on dark), "tier" in orange |
+| Titles, emphasis, active navigation, buttons | 500 |
+| Numbers (amounts, prices, percentages, KPIs) | 400, always with tabular figures (`font-variant-numeric: tabular-nums`) |
+| Navigation | 400 |
+| Running text, labels | 300 |
+
+Nothing in the UI goes above 500, so the wordmark keeps its weight to itself. At 700, the geometric
+strokes of Outfit match the antler.
+

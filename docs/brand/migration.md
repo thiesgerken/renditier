@@ -80,11 +80,22 @@ Other places:
 - Look for hard-coded Tailwind colour classes (`teal-`, `emerald-`, `pink-`, `rose-`) once the
   migration is done.
 
-## 4. Wordmark
+## 4. Font and wordmark
 
-The lockups are PNG for now because the wordmark is set in Outfit. For the app, convert "Renditier"
-to outlined paths and ship one SVG lockup (light and dark via `currentColor` for "Rendi"). That avoids
-loading Outfit just for one word.
+The app font changes from Geist to Outfit (see [Typography](styleguide.md#typography)).
+
+- `web/package.json`: replace `@fontsource-variable/geist` with `@fontsource-variable/outfit`.
+- `web/src/index.css`: import it and set `--font-sans: 'Outfit Variable', …`. Give `body`
+  `font-weight: 300`.
+- Go through the font weight classes (`font-medium`, `font-semibold`, `font-bold`, about 30 on `main`
+  today): titles and emphasis become `font-medium` (500), amounts and percentages `font-normal`
+  (400). Nothing above 500.
+- Check muted 12 px text in dark mode. If 300 looks too thin there, use 350 for small text (Outfit is a
+  variable font).
+
+The app then loads Outfit anyway, so the lockup in the header and on the login page is the SVG mark
+plus "Rendi<span>tier</span>" as text in Outfit 700. The PNG lockups in `logo/` are for everything
+outside the app. A vector lockup with the text converted to outlines is still missing for those.
 
 ## 5. Dev shell banner
 
