@@ -52,7 +52,7 @@ proxy: {
 
 The import test against a real database runs with
 `RENDITIER_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (it rolls back
-everything it writes).
+everything it writes). CI starts a throwaway Postgres for it and runs it on every push.
 
 ## Install
 

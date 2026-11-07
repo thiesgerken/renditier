@@ -35,7 +35,8 @@
               pkgs.pkg-config
               # reqwest's default TLS links against openssl, diesel's postgres backend against libpq.
               pkgs.openssl
-              pkgs.postgresql
+              # Also the server for the DB tests in CI: same major as in k3s and compose.
+              pkgs.postgresql_18
               pkgs.nodejs_26
             ];
             shellHook = ''
