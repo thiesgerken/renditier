@@ -16,6 +16,7 @@ const de: typeof en = {
     saveFailed: 'Speichern fehlgeschlagen',
     deleteFailed: 'Löschen fehlgeschlagen',
     unknownError: 'Unbekannter Fehler',
+    reload: 'Neu laden',
   },
   nav: {
     dashboard: 'Analyse',
@@ -28,7 +29,6 @@ const de: typeof en = {
     userMenu: 'Benutzermenü',
     logOut: 'Ausloggen',
     updateAvailable: 'Aktualisierung verfügbar',
-    restartToUpdate: 'Bitte die App neu starten.',
     dismiss: 'Hinweis schließen',
   },
   login: {
@@ -278,7 +278,6 @@ const de: typeof en = {
     version: 'Version',
     built: 'Gebaut',
     updateAvailable: 'Aktualisierung verfügbar',
-    reload: 'Neu laden',
   },
 };
 

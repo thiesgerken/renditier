@@ -148,6 +148,12 @@ export function register(config?: ServiceWorkerConfig): void {
   }
 }
 
+// The service worker caches nothing, so a reload is all it takes to get the
+// version it announced through `onUpdate`.
+export function installUpdate(): void {
+  window.location.reload();
+}
+
 export function unregister(): void {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready

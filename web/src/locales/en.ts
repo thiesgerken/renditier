@@ -16,6 +16,7 @@ const en = {
     saveFailed: 'Could not save',
     deleteFailed: 'Could not delete',
     unknownError: 'Unknown error',
+    reload: 'Reload',
   },
   nav: {
     dashboard: 'Analysis',
@@ -28,7 +29,6 @@ const en = {
     userMenu: 'User menu',
     logOut: 'Log out',
     updateAvailable: 'Update available',
-    restartToUpdate: 'Please restart the app.',
     dismiss: 'Dismiss',
   },
   login: {
@@ -277,7 +277,6 @@ const en = {
     version: 'Version',
     built: 'Built',
     updateAvailable: 'Update available',
-    reload: 'Reload',
   },
 };
 

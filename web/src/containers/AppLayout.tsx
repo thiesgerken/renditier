@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import { installUpdate } from '../serviceWorker';
 import { ignoreUpdate } from '../slices/notifications';
 import { useAppDispatch, useAppSelector } from '../store';
 import {
@@ -215,7 +216,11 @@ const UpdateNotice = () => {
     <Alert className="mx-auto mb-4 max-w-3xl">
       <RefreshCw />
       <AlertTitle>{t('layout.updateAvailable')}</AlertTitle>
-      <AlertDescription>{t('layout.restartToUpdate')}</AlertDescription>
+      <AlertDescription>
+        <Button size="xs" className="mt-1" onClick={installUpdate}>
+          {t('common.reload')}
+        </Button>
+      </AlertDescription>
       <AlertAction>
         <Button
           variant="ghost"

@@ -21,6 +21,7 @@ import { formatDateTime, formatSince } from '../format';
 import { buildCommit, buildDate } from '../git';
 import { LANGUAGES, chooseLanguage, chosenLanguage } from '../i18n';
 import type { Language } from '../i18n';
+import { installUpdate } from '../serviceWorker';
 import { useAppSelector } from '../store';
 
 // Each language by its own name, so that it can be found in any.
@@ -102,11 +103,9 @@ const Settings = () => {
             </Row>
             {updateAvailable && (
               <Row label={t('settings.updateAvailable')}>
-                {/* The service worker caches nothing, so a reload is all it
-                    takes to get the new version. */}
-                <Button size="sm" onClick={() => window.location.reload()}>
+                <Button size="sm" onClick={installUpdate}>
                   <RefreshCw />
-                  {t('settings.reload')}
+                  {t('common.reload')}
                 </Button>
               </Row>
             )}

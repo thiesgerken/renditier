@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import { formatLocale } from '../i18n';
 import { Button } from './ui/button';
 import {
   Select,
@@ -75,11 +76,9 @@ type Features = typeof dataTableFeatures;
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZES = [DEFAULT_PAGE_SIZE, 25, 50];
 
-const collator = new Intl.Collator('de', { numeric: true });
-
-// Strings by German collation with numbers in them compared by value ("Depot 2"
-// before "Depot 10"), numbers numerically, missing values first. The DataGrid
-// compared strings with the browser's default collation.
+// Strings by the collation of the formatting locale with numbers in them
+// compared by value ("Depot 2" before "Depot 10"), numbers numerically, missing
+// values first.
 function compareValues<T extends RowData>(
   a: Row<Features, T>,
   b: Row<Features, T>,
@@ -92,7 +91,7 @@ function compareValues<T extends RowData>(
   if (y === null || y === undefined) return 1;
   if (typeof x === 'number' && typeof y === 'number') return x - y;
   if (typeof x === 'string' && typeof y === 'string')
-    return collator.compare(x, y);
+    return x.localeCompare(y, formatLocale(), { numeric: true });
   throw new Error(`column ${columnId} cannot be sorted by its values`);
 }
 
