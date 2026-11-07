@@ -80,21 +80,27 @@ export type Formatter = (
 ) => string;
 
 // The change from `start` to `end`, formatted like the values themselves or,
-// with `relative`, as a ratio of the start value. null when there is nothing
-// to show: a value is unknown, the period started from nothing (e.g. before
-// the first purchase), or the values look the same once formatted.
+// with `relative`, as a ratio of the start value. "—" when the start is
+// unknown, so that it does not pass for "unchanged". null when there is
+// nothing to show: the end is unknown (and shown as such already), the period
+// started from nothing (e.g. before the first purchase), or the change rounds
+// to zero as displayed.
 export const formatChange = (
   start: number | null,
   end: number | null,
   format: Formatter,
   relative?: Formatter
 ): string | null => {
-  if (start === null || end === null || start === 0) return null;
-  if (format(start) === format(end)) return null;
+  if (end === null || start === 0) return null;
+  if (start === null) return MISSING;
 
-  return relative === undefined
-    ? format(end - start, { signed: true })
-    : relative((end - start) / start, { signed: true });
+  const shown =
+    relative === undefined
+      ? format(end - start, { signed: true })
+      : relative((end - start) / start, { signed: true });
+  const zero = (relative ?? format)(0, { signed: true });
+
+  return shown === zero ? null : shown;
 };
 
 interface IrrPeriod {

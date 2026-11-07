@@ -24,7 +24,7 @@ interface Props {
 }
 
 const StockPerformanceRow = ({ data }: Props) => {
-  const { irr, irrColor } = useTableFormat();
+  const { irr, ratioColor } = useTableFormat();
 
   return (
     <TableRow>
@@ -41,7 +41,7 @@ const StockPerformanceRow = ({ data }: Props) => {
       <Hidden xsDown>
         <TableCell
           align="right"
-          style={{ whiteSpace: 'nowrap', ...irrColor(data.irrAnnual) }}
+          style={{ whiteSpace: 'nowrap', ...ratioColor(data.irrAnnual) }}
         >
           {irr(data)}
         </TableCell>

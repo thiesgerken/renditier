@@ -29,7 +29,7 @@ const PositionRow = ({ data, stock = null, push }: Props) => {
   const theme = useTheme();
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const { irr, irrColor } = useTableFormat();
+  const { irr, ratioColor } = useTableFormat();
 
   return (
     <TableRow>
@@ -72,7 +72,7 @@ const PositionRow = ({ data, stock = null, push }: Props) => {
       <ProfitCell period={data} />
       <TableCell
         align="right"
-        style={{ whiteSpace: 'nowrap', ...irrColor(data.irrAnnual) }}
+        style={{ whiteSpace: 'nowrap', ...ratioColor(data.irrAnnual) }}
       >
         {irr(data)}
       </TableCell>

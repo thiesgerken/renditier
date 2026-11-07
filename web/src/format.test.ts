@@ -55,6 +55,8 @@ describe('date formatting', () => {
 describe('formatChange', () => {
   const euros = (v: number | null, o?: { signed?: boolean }) =>
     formatCurrency(v, o);
+  const wholeEuros = (v: number | null, o?: { signed?: boolean }) =>
+    formatCurrency(v, { digits: 0, ...o });
   const percent = (v: number | null, o?: { signed?: boolean }) =>
     formatPercent(v, o);
 
@@ -63,14 +65,21 @@ describe('formatChange', () => {
     expect(formatChange(10, 12, euros, percent)).toBe(nbsp('+20,00_%'));
   });
 
-  it('shows nothing for unknown values or a start from nothing', () => {
-    expect(formatChange(null, 12, euros)).toBeNull();
+  it('marks an unknown start as missing', () => {
+    expect(formatChange(null, 12, euros)).toBe('\u2014');
+  });
+
+  it('shows nothing for an unknown end or a start from nothing', () => {
     expect(formatChange(10, null, euros)).toBeNull();
     expect(formatChange(0, 12, euros)).toBeNull();
   });
 
-  it('shows nothing when the values look the same', () => {
-    expect(formatChange(12, 12.001, euros, percent)).toBeNull();
+  it('decides on the change as shown, not on the shown values', () => {
+    // both prices show as "5 €", the change does not round away
+    expect(formatChange(5.2, 5.4, wholeEuros, percent)).toBe(nbsp('+3,85_%'));
+    // the prices show apart, the difference rounds to "0 €"
+    expect(formatChange(12.4, 12.6, wholeEuros)).toBeNull();
+    expect(formatChange(100, 100.001, euros, percent)).toBeNull();
   });
 });
 

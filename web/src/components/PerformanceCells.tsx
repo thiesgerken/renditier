@@ -56,9 +56,10 @@ const difference = (start: number | null, end: number | null) =>
   start === null || end === null ? null : end - start;
 
 export const PriceCell = ({ period }: { period: PositionPeriod }) => {
-  const { money, percent, signColor } = useTableFormat();
+  const { money, percent, ratioColor } = useTableFormat();
   const start = getPrice(period.start.dataSource);
   const end = getPrice(period.end.dataSource);
+  const ratio = start === null || end === null ? null : (end - start) / start;
 
   const sources = (
     <>
@@ -77,7 +78,7 @@ export const PriceCell = ({ period }: { period: PositionPeriod }) => {
           <ValueWithChange
             value={money(end)}
             change={formatChange(start, end, money, percent)}
-            changeStyle={signColor(difference(start, end))}
+            changeStyle={ratioColor(ratio)}
           />
         </div>
       </Tooltip>

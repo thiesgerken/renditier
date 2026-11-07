@@ -48,11 +48,11 @@ const useTableFormat = () => {
               : theme.palette.primary.dark,
         };
 
-  // IRRs are ratios, shown as percentages
-  const irrColor = (ratio: number | null) =>
+  // for ratios shown as percentages, e.g. IRRs and relative changes
+  const ratioColor = (ratio: number | null) =>
     signColor(ratio, percentDigits + 2);
 
-  return { money, units, percent, irr, signColor, irrColor };
+  return { money, units, percent, irr, signColor, ratioColor };
 };
 
 export default useTableFormat;

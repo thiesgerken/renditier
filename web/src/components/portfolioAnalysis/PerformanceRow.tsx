@@ -12,7 +12,7 @@ interface Props {
 }
 
 const PerformanceRow = ({ data }: Props) => {
-  const { irr, irrColor } = useTableFormat();
+  const { irr, ratioColor } = useTableFormat();
 
   return (
     <TableRow>
@@ -24,7 +24,7 @@ const PerformanceRow = ({ data }: Props) => {
       <ProfitCell period={data} />
       <TableCell
         align="right"
-        style={{ whiteSpace: 'nowrap', ...irrColor(data.irrAnnual) }}
+        style={{ whiteSpace: 'nowrap', ...ratioColor(data.irrAnnual) }}
       >
         {irr(data)}
       </TableCell>
