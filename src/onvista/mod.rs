@@ -195,6 +195,9 @@ pub async fn get_data_historical(
             onvista_record_id,
         },
     )
+    // onvista fills days before an instrument existed (e.g. Ether before 2015-08) with zeros,
+    // which are no prices
+    .filter(|p| p.closing > 0.0)
     .collect())
 }
 
