@@ -8,6 +8,7 @@ pub mod transactions;
 pub mod user;
 mod util;
 
+use chrono_tz::Tz;
 use rocket::config::LogLevel;
 use rocket::data::{Limits, ToByteUnit};
 use rocket::figment::util::map;
@@ -21,6 +22,8 @@ pub struct Config {
     pub database_url: String,
     pub authentication_redirect: Option<String>,
     pub trusted_header_authentication: bool,
+    // the users' time zone, see cli::Config
+    pub timezone: Tz,
 }
 
 pub async fn handle(config: Config) {

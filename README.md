@@ -14,6 +14,20 @@ script that streams the image as a tarball, e.g. `./result | docker load`.
 
 - `openssl rand -base64 32` to obtain secret key
 
+## Configuration
+
+Settings come from `/etc/stockdb/config.*`, `./stockdb.*` (any format the `config` crate reads,
+e.g. TOML) or the file given with `--config`, and are overridden by `STOCKDB__*` environment
+variables (`STOCKDB__WEB__PORT` for `[web] port`). `stockdb --dump` prints the effective
+configuration.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `timezone` | `Europe/Berlin` | The users' time zone (IANA name). It decides where "Heute", weeks, months and years begin and on which day a transaction counts. An unknown name stops the program at startup. |
+
+Exchange and receipt times are not affected: onvista quotes German exchanges and the supported
+banks issue German receipts, so their times are always read as German local time.
+
 ## Running the container
 
 The image runs `stockdb serve` as UID and GID 65534 (`nobody`). The user is numeric because the

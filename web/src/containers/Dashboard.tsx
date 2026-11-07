@@ -11,7 +11,7 @@ import { updatePortfolioPlot } from '../slices/portfolioPlot';
 import PerformanceTable from '../components/portfolioAnalysis/PerformanceTable';
 import PortfolioPlot from '../components/portfolioAnalysis/PortfolioPlot';
 import PositionsTable from '../components/portfolioAnalysis/PositionsTable';
-import PositionsPie from '../components/portfolioAnalysis/PositionsPie';
+import PositionsBars from '../components/portfolioAnalysis/PositionsBars';
 import Hidden from '../components/Hidden';
 import Breakdowns from '../components/portfolioAnalysis/Breakdowns';
 import { formatDateTime } from '../format';
@@ -93,16 +93,12 @@ const Dashboard = () => {
               push={navigate}
             />
           </Grid>
-          <Hidden xsDown>
-            <Grid size={12} style={{ padding: theme.spacing(1) }}>
-              <PositionsPie stocks={stocks} performance={performance} />
-            </Grid>
-          </Hidden>
-          <Hidden xsDown>
-            <Grid size={12} style={{ padding: theme.spacing(1) }}>
-              <Breakdowns stocks={stocks} performance={performance} />
-            </Grid>
-          </Hidden>
+          <Grid size={12} style={{ padding: theme.spacing(1) }}>
+            <PositionsBars stocks={stocks} performance={performance} />
+          </Grid>
+          <Grid size={12} style={{ padding: theme.spacing(1) }}>
+            <Breakdowns stocks={stocks} performance={performance} />
+          </Grid>
         </>
       )}
       {oldestTodayData !== null && (

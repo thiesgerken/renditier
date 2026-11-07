@@ -7,10 +7,14 @@ use crate::models::*;
 use crate::onvista::json_utils::*;
 
 use chrono::{DateTime, NaiveDate};
+use chrono_tz::Tz;
 use itertools::izip;
 use log::debug;
 use serde_json::Value;
 use std::error::Error;
+
+/// onvista quotes German exchanges; their prices and timestamps are in German local time.
+pub const EXCHANGE_TIMEZONE: Tz = chrono_tz::Europe::Berlin;
 
 const API_URL: &str = "https://api.onvista.de/api/v1";
 const WEBSITE_URL: &str = "https://www.onvista.de";
@@ -276,7 +280,7 @@ fn parse_price(quote: &Value) -> Option<RealtimePrice> {
 mod tests {
     use super::*;
 
-    use chrono::{Duration, Local};
+    use chrono::{Duration, Utc};
     use test_log::test;
 
     async fn check_info(isin: &str, kind: &str) {
@@ -303,9 +307,9 @@ mod tests {
         let data = get_data_historical(
             &info,
             exs[0].onvista_record_id,
-            Local::now()
-                .naive_local()
-                .date()
+            Utc::now()
+                .with_timezone(&EXCHANGE_TIMEZONE)
+                .date_naive()
                 .checked_sub_signed(Duration::weeks(2))
                 .unwrap(),
         )

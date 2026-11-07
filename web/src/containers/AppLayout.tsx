@@ -234,7 +234,9 @@ function ResponsiveDrawer({ children }: Props) {
           </Drawer>
         </Hidden>
       </Box>
-      <Box component="main" sx={{ flexGrow: 1, pt: 1 }}>
+      {/* minWidth: a flex item would otherwise grow to its widest content,
+          e.g. a table, and push the whole page beyond a phone's width */}
+      <Box component="main" sx={{ flexGrow: 1, minWidth: 0, pt: 1 }}>
         <Toolbar />
 
         <div style={{ padding: '12px' }}>
