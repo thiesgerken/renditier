@@ -16,6 +16,8 @@ const UNIT_MILLIS: Record<TickUnit, number> = {
 };
 
 // Candidate tick spacings, finest first.
+const COARSEST_STEP: [number, TickUnit] = [5, 'year'];
+
 const TICK_STEPS: [number, TickUnit][] = [
   [1, 'hour'],
   [2, 'hour'],
@@ -32,7 +34,7 @@ const TICK_STEPS: [number, TickUnit][] = [
   [6, 'month'],
   [1, 'year'],
   [2, 'year'],
-  [5, 'year'],
+  COARSEST_STEP,
 ];
 
 // Upper bound only: recharts drops further ticks when their labels would
@@ -121,7 +123,7 @@ export const timeAxis = (start: number, end: number): TimeAxis => {
   const span = end - start;
   const [step, unit] =
     TICK_STEPS.find(([n, u]) => span / (n * UNIT_MILLIS[u]) <= MAX_TICKS) ??
-    TICK_STEPS[TICK_STEPS.length - 1];
+    COARSEST_STEP;
 
   let tick = unitStart(zoned(start), unit);
   while (
@@ -145,7 +147,10 @@ export const timeAxis = (start: number, end: number): TimeAxis => {
 // True when the data has more than one point per day, i.e. when the time of
 // day of a point carries information.
 export const hasIntradayPoints = (epochs: number[]): boolean =>
-  epochs.some((e, i) => i > 0 && sameDay(e, epochs[i - 1]));
+  epochs.some((e, i) => {
+    const previous = epochs[i - 1];
+    return previous !== undefined && sameDay(e, previous);
+  });
 
 // "Fr., 06.11.2026" or "Fr., 06.11.2026, 10:15"
 export const formatPointDate = (epoch: number, intraday: boolean): string =>

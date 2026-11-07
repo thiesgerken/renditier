@@ -16,7 +16,9 @@ const useQueryParam = (
     else query.set(key, `${value}`);
 
     const qs = query.toString();
-    navigate(`${location.pathname}${qs.length ? '?' : ''}${qs}`, { replace });
+    void navigate(`${location.pathname}${qs.length ? '?' : ''}${qs}`, {
+      replace,
+    });
   };
 
   return [query.get(key), set];

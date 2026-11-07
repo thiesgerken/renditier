@@ -23,7 +23,7 @@ describe('barRows', () => {
       ['b', 4, false],
       ['Sonstige (3)', 6, true],
     ]);
-    expect(rows[2].title).toBe('c, d, e');
+    expect(rows[2]?.title).toBe('c, d, e');
   });
 
   it('does not fold a single item', () => {

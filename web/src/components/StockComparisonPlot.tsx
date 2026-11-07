@@ -85,51 +85,44 @@ interface UnifiedPoint {
   [isin: string]: string | number | null;
 }
 
-const unifyPoints = (
+// A point per date that any of the stocks has. Stocks without a point on that
+// date get null; stocks whose series has already ended get no entry.
+export const unifyPoints = (
   points: Record<string, StoredStockPlotPoint[]>,
   isins: string[]
 ): UnifiedPoint[] => {
+  const cursors = isins.map(isin => ({
+    isin,
+    series: points[isin] ?? [],
+    next: 0,
+  }));
   const unifiedPoints: UnifiedPoint[] = [];
 
-  if (points !== null) {
-    const idx = map(isins, () => 0);
-    let allFinished = false;
-    while (!allFinished) {
-      let epoch: number | null = null;
-      let date: IsoDateTime | null = null;
-
-      for (let i = 0; i < idx.length; i += 1)
-        if (points[isins[i]] !== null && idx[i] < points[isins[i]].length) {
-          const e = points[isins[i]][idx[i]].epoch;
-          const d = points[isins[i]][idx[i]].date;
-          if (epoch === null || e < epoch) {
-            date = d;
-            epoch = e;
-          }
-        }
-
-      allFinished = date === null;
-      if (!allFinished) {
-        const rec: UnifiedPoint = { date, epoch };
-
-        for (let i = 0; i < idx.length; i += 1)
-          if (points[isins[i]] !== null && idx[i] < points[isins[i]].length) {
-            const d = points[isins[i]][idx[i]].date;
-
-            if (d === date) {
-              rec[isins[i]] = points[isins[i]][idx[i]].priceRelStart;
-              idx[i] += 1;
-            } // else if (unifiedPoints.length > 0)
-            //   rec[isins[i]] = unifiedPoints[unifiedPoints.length - 1][isins[i]];
-            else rec[isins[i]] = null;
-          }
-
-        unifiedPoints.push(rec);
-      }
+  for (;;) {
+    // the earliest point not taken yet, across all series
+    let earliest: StoredStockPlotPoint | undefined;
+    for (const { series, next } of cursors) {
+      const point = series[next];
+      if (
+        point !== undefined &&
+        (earliest === undefined || point.epoch < earliest.epoch)
+      )
+        earliest = point;
     }
-  }
+    if (earliest === undefined) return unifiedPoints;
 
-  return unifiedPoints;
+    const rec: UnifiedPoint = { date: earliest.date, epoch: earliest.epoch };
+    for (const cursor of cursors) {
+      const point = cursor.series[cursor.next];
+      if (point === undefined) continue;
+
+      if (point.date === earliest.date) {
+        rec[cursor.isin] = point.priceRelStart;
+        cursor.next += 1;
+      } else rec[cursor.isin] = null;
+    }
+    unifiedPoints.push(rec);
+  }
 };
 
 interface Props {
@@ -169,10 +162,11 @@ const StockComparisonPlot = ({
   if (isins === null) {
     isins = [];
 
-    if (performance.data !== null && performance.data.length > 0) {
+    const firstPeriod = performance.data?.[0];
+    if (firstPeriod !== undefined) {
       isins = map(
         sortBy(
-          map(performance.data[0].positions, (p, isin) => ({
+          map(firstPeriod.positions, (p, isin) => ({
             perf: p,
             isin,
           })),
@@ -200,8 +194,9 @@ const StockComparisonPlot = ({
   let ed: IsoDate | null = null;
 
   if (performance.data !== null) {
-    if (period >= 0 && period < performance.data.length) {
-      [sd, ed] = getPeriodRange(performance.data[period]);
+    const selected = performance.data[period];
+    if (selected !== undefined) {
+      [sd, ed] = getPeriodRange(selected);
     } else {
       sd = dates[0].toString();
       ed = dates[1].toString();
@@ -280,7 +275,9 @@ const StockComparisonPlot = ({
   const colorOf = (isin: string, i: number): string => {
     const idx =
       stocks.data === null ? -1 : stocks.data.findIndex(s => s.isin === isin);
-    return LINE_COLORS[(idx >= 0 ? idx : i) % LINE_COLORS.length];
+    const color = LINE_COLORS[(idx >= 0 ? idx : i) % LINE_COLORS.length];
+    if (color === undefined) throw new Error('no line colours');
+    return color;
   };
 
   const toggleIsin = (isin: string, on: boolean) =>
@@ -291,11 +288,13 @@ const StockComparisonPlot = ({
     );
 
   // the names are long, so several are only counted
-  let selectionSummary;
-  if (currentIsins.length === 0) selectionSummary = '(keine)';
-  else if (currentIsins.length === 1)
-    selectionSummary = stockName(currentIsins[0]);
-  else selectionSummary = `${currentIsins.length} Wertpapiere`;
+  const [firstIsin, ...moreIsins] = currentIsins;
+  const selectionSummary =
+    firstIsin === undefined
+      ? '(keine)'
+      : moreIsins.length === 0
+        ? stockName(firstIsin)
+        : `${currentIsins.length} Wertpapiere`;
 
   const zoom = useDragZoom({
     snapshot: { period, dates },

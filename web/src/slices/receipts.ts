@@ -19,15 +19,17 @@ const readFile = (file: File) =>
     const fr = new FileReader();
     fr.onerror = reject;
     fr.onload = () => {
-      // readAsBinaryString always resolves to a string; the check is only what
-      // narrows `string | ArrayBuffer | null` for btoa.
+      // readAsDataURL always resolves to a string; the check is only what
+      // narrows `string | ArrayBuffer | null`.
       if (typeof fr.result !== 'string') {
         reject(Error('FileReader did not produce a string'));
         return;
       }
-      resolve({ name: file.name, bytes: window.btoa(fr.result) });
+      // "data:application/pdf;base64,<bytes>"
+      const bytes = fr.result.slice(fr.result.indexOf(',') + 1);
+      resolve({ name: file.name, bytes });
     };
-    fr.readAsBinaryString(file);
+    fr.readAsDataURL(file);
   });
 
 export const uploadReceipts = createAppAsyncThunk(
