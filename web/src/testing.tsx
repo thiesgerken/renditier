@@ -30,7 +30,7 @@ export const render = async (ui: ReactNode, store: AppStore) => {
 
 export const clickButton = async (name: string) => {
   const button = [...document.querySelectorAll('button')].find(
-    b => b.textContent?.trim() === name
+    b => b.textContent.trim() === name
   );
   if (button === undefined) throw new Error(`no button "${name}"`);
   await settle(() => {

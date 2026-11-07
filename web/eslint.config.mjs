@@ -53,9 +53,6 @@ export default defineConfig(
         'error',
         { allowNumber: true },
       ],
-      // Without `noUncheckedIndexedAccess`, it takes indexed reads as always
-      // defined and calls the guards against missing entries unnecessary.
-      '@typescript-eslint/no-unnecessary-condition': 'off',
       // Its findings are generics that name the expected shape of untyped data
       // (JSON.parse, recharts payloads) at the call site.
       '@typescript-eslint/no-unnecessary-type-parameters': 'off',

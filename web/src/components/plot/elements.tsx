@@ -31,7 +31,7 @@ export const pointTooltip = <P extends { epoch: number }>(
 ) => (
   <Tooltip
     content={({ active, payload }) => {
-      const point = payload?.[0]?.payload as P | undefined;
+      const point = payload[0]?.payload as P | undefined;
       if (!active || point === undefined) return null;
 
       return (
