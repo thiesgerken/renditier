@@ -12,7 +12,6 @@ import {
   LogOut,
   RefreshCw,
   Settings,
-  TrendingUp,
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -26,6 +25,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '../components/ui/alert';
+import { Lockup } from '../components/Logo';
 import { Button } from '../components/ui/button';
 import {
   DropdownMenu,
@@ -73,15 +73,6 @@ const currentDestination = (pathname: string) => {
     ? segment
     : 'dashboard';
 };
-
-const Brand = () => (
-  <div className="flex items-center gap-2 font-semibold">
-    <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-      <TrendingUp className="size-4" />
-    </span>
-    Aktienverwaltung
-  </div>
-);
 
 interface LinkProps {
   destination: Destination;
@@ -263,7 +254,7 @@ const AppLayout = ({ children }: Props) => {
     <div className="min-h-svh">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex h-14 items-center px-4">
-          <Brand />
+          <Lockup className="text-xl" />
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-2">
           {DESTINATIONS.map(d => (
@@ -295,7 +286,7 @@ const AppLayout = ({ children }: Props) => {
       </aside>
 
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur md:hidden">
-        <Brand />
+        <Lockup className="text-xl" />
         <UserMenu
           name={name}
           compact

@@ -2,6 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
+@import '@fontsource-variable/outfit';
 
 /* There is no theme switch: the app follows the system. */
 @custom-variant dark (@media (prefers-color-scheme: dark));
@@ -17,6 +18,8 @@
   --breakpoint-xl: 1536px;
 
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  /* the wordmark's face, see docs/brand/styleguide.md */
+  --font-brand: 'Outfit Variable', ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme inline {
@@ -35,6 +38,7 @@
   --color-destructive: var(--destructive);
   --color-gain: var(--gain);
   --color-loss: var(--loss);
+  --color-brand: var(--brand);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -80,6 +84,8 @@
   /* a stock's price and units, which are neither gain nor loss */
   --chart-price: #0288d1;
   --chart-units: #ed6c02;
+  /* the orange of the logo: the new high, never a loss */
+  --brand: #d2652a;
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -115,6 +121,7 @@
     --loss: #ec407a;
     --chart-price: #29b6f6;
     --chart-units: #ffa726;
+    --brand: #e07a40;
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);

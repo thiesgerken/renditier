@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { CircleAlert, CircleCheck, TrendingUp } from 'lucide-react';
+import { CircleAlert, CircleCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type { AuthenticationState } from '../types/store';
+import { Lockup } from './Logo';
 import { Alert, AlertDescription } from './ui/alert';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -23,12 +24,11 @@ const Login = ({ onSubmit, message = null, messageType = null }: Props) => {
   return (
     <div className="flex min-h-svh items-center justify-center bg-muted/40 px-4 py-8">
       <Card className="w-full max-w-sm">
-        <CardHeader className="items-center gap-3 text-center">
-          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <TrendingUp className="size-6" />
-          </span>
+        <CardHeader className="items-center text-center">
           <CardTitle>
-            <h1 className="text-xl">Aktienverwaltung</h1>
+            <h1>
+              <Lockup className="text-3xl" />
+            </h1>
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
