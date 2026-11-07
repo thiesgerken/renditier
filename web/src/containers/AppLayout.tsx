@@ -74,6 +74,17 @@ const currentDestination = (pathname: string) => {
     : 'dashboard';
 };
 
+// Named by the Lockup's "Renditier". `flex` makes the link hug the Lockup:
+// as a block it would add a line box below it and nudge it off centre.
+const HomeLink = () => (
+  <Link
+    to="/"
+    className="flex rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+  >
+    <Lockup className="text-xl" />
+  </Link>
+);
+
 interface LinkProps {
   destination: Destination;
   active: boolean;
@@ -255,7 +266,7 @@ const AppLayout = ({ children }: Props) => {
     <div className="min-h-svh">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex h-14 items-center px-4">
-          <Lockup className="text-xl" />
+          <HomeLink />
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-2">
           {DESTINATIONS.map(d => (
@@ -287,7 +298,7 @@ const AppLayout = ({ children }: Props) => {
       </aside>
 
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur md:hidden">
-        <Lockup className="text-xl" />
+        <HomeLink />
         <UserMenu
           name={name}
           compact
