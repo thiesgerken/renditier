@@ -16,7 +16,7 @@ const PlotTooltip = ({ title, rows }: Props) => (
       {rows.map(({ label, value, color }) => (
         <div key={label} className="contents" style={{ color }}>
           <span>{label}</span>
-          <span className="text-right tabular-nums">{value}</span>
+          <span className="text-right font-normal tabular-nums">{value}</span>
         </div>
       ))}
     </div>

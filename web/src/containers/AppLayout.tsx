@@ -84,8 +84,9 @@ const SidebarLink = ({ destination, active }: LinkProps) => (
     to={`/${destination.path}`}
     aria-current={active ? 'page' : undefined}
     className={cn(
-      'flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-      active && 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-normal text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+      active &&
+        'bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-[inset_3px_0_0_var(--brand)]'
     )}
   >
     <destination.icon
@@ -120,7 +121,7 @@ const DashboardTabLinks = ({ active }: DashboardTabLinksProps) => {
             replace={active !== null}
             aria-current={tab === active ? 'true' : undefined}
             className={cn(
-              'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-normal text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
               tab === active && 'font-medium text-sidebar-primary'
             )}
           >
@@ -138,7 +139,7 @@ const TabBarLink = ({ destination, active }: LinkProps) => (
     to={`/${destination.path}`}
     aria-current={active ? 'page' : undefined}
     className={cn(
-      'flex flex-col items-center gap-1 pt-2 pb-1.5 text-[0.7rem] text-muted-foreground',
+      'flex flex-col items-center gap-1 pt-2 pb-1.5 text-[0.7rem] font-normal text-muted-foreground',
       active && 'font-medium text-primary'
     )}
   >

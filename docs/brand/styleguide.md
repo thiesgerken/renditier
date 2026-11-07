@@ -98,6 +98,20 @@ high* in the logo. Amounts always carry their sign, so the colour is never the o
 
 All text pairs above reach at least 4.5:1 on their background.
 
+### Charts and transaction kinds
+
+| Role | Light | Dark |
+| --- | --- | --- |
+| Stock price line | brand orange `#D2652A` | `#E07A40` |
+| Units held | `#5C7CA8` | `#8FA9CC` |
+| Comparison lines 1 to 6 | `#2F6DB5` `#7B5CC4` `#A8860F` `#1F8FA3` `#8C6A4F` `#4F5D75` | `#6EA3E6` `#A68CF0` `#E3C04F` `#4FC1D3` `#C49A78` `#9AA8BF` |
+| Buy, sell | `#2F6DB5`, `#7B5CC4` | `#6EA3E6`, `#A68CF0` |
+| Fee, dividend | `#64748B`, `#8F7410` | `#94A3B8`, `#E3C04F` |
+
+The price line is the logo's price line, so it takes the brand orange. Comparison lines keep six hues
+that stay clear of gain, loss and orange; a line whose hue is taken by an earlier one is dashed. Lines
+reach at least 3:1 against cards, transaction kind labels at least 4.5:1.
+
 ## Typography
 
 Outfit for everything, wordmark and UI. The wordmark stands out through weight and colour: 700

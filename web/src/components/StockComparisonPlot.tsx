@@ -63,18 +63,17 @@ function getData(
   return item;
 }
 
-// Material's 500 shades, distinct enough for up to nine lines.
-const LINE_COLORS = [
-  '#009688',
-  '#ff5722',
-  '#2196f3',
-  '#ff9800',
-  '#e91e63',
-  '#4caf50',
-  '#cddc39',
-  '#673ab7',
-  '#f44336',
-];
+// Six hues (--chart-series-* in index.css) that stay clear of gain, loss and
+// the brand orange. A stock keeps its hue across selections (it follows the
+// stock's place in the list); a line whose hue is already taken by an earlier
+// one in the plot is dashed instead of getting a hue too close to tell apart.
+const SERIES_HUES = 6;
+const DASH = '5 4';
+
+interface LineStyle {
+  color: string;
+  dash: string | undefined;
+}
 
 const CUSTOM = -1;
 
@@ -274,12 +273,22 @@ const StockComparisonPlot = ({
     return s === null ? isin : abbreviateTitle(s.title, true);
   };
 
-  const colorOf = (isin: string, i: number): string => {
+  const lineStyles = new Map<string, LineStyle>();
+  const takenHues = new Set<number>();
+  currentIsins.forEach((isin, i) => {
     const idx =
       stocks.data === null ? -1 : stocks.data.findIndex(s => s.isin === isin);
-    const color = LINE_COLORS[(idx >= 0 ? idx : i) % LINE_COLORS.length];
-    if (color === undefined) throw new Error('no line colours');
-    return color;
+    const hue = (idx >= 0 ? idx : i) % SERIES_HUES;
+    lineStyles.set(isin, {
+      color: `var(--chart-series-${hue + 1})`,
+      dash: takenHues.has(hue) ? DASH : undefined,
+    });
+    takenHues.add(hue);
+  });
+  const styleOf = (isin: string): LineStyle => {
+    const style = lineStyles.get(isin);
+    if (style === undefined) throw new Error(`no line style for ${isin}`);
+    return style;
   };
 
   const toggleIsin = (isin: string, on: boolean) =>
@@ -330,13 +339,14 @@ const StockComparisonPlot = ({
           />
           <CartesianGrid vertical={false} stroke="var(--border)" />
 
-          {currentIsins.map((isin, i) => (
+          {currentIsins.map(isin => (
             <Line
               key={isin}
               type="linear"
               dataKey={isin}
               name={stockName(isin)}
-              stroke={colorOf(isin, i)}
+              stroke={styleOf(isin).color}
+              strokeDasharray={styleOf(isin).dash}
               strokeWidth={1.6}
               dot={false}
               connectNulls
@@ -345,10 +355,10 @@ const StockComparisonPlot = ({
           ))}
           <Legend />
           {pointTooltip(intraday, (point: ChartPoint) =>
-            currentIsins.map((isin, i) => ({
+            currentIsins.map(isin => ({
               label: stockName(isin),
               value: formatPlotPercent(relativeOf(point.relative, isin)),
-              color: colorOf(isin, i),
+              color: styleOf(isin).color,
             }))
           )}
           {zoom.elements}
@@ -367,7 +377,7 @@ const StockComparisonPlot = ({
               <Button
                 id="comparison-isins"
                 variant="outline"
-                className="w-60 justify-between font-normal"
+                className="w-60 justify-between font-light"
               >
                 <span className="truncate">{selectionSummary}</span>
                 <ChevronDownIcon className="text-muted-foreground" />

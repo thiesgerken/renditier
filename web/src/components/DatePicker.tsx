@@ -48,7 +48,7 @@ const DatePicker = ({ id, value, onChange, max, invalid }: Props) => {
           type="button"
           variant="outline"
           aria-invalid={invalid}
-          className="w-full justify-start font-normal"
+          className="w-full justify-start font-light"
         >
           <CalendarIcon />
           {value === null ? (

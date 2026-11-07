@@ -117,7 +117,7 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
           >
             <h2
               id={`section-${section}`}
-              className="flex items-center gap-2 text-base font-semibold"
+              className="flex items-center gap-2 text-base font-medium"
             >
               <Icon className="size-4 text-muted-foreground" />
               {t(`dashboard.tabs.${section}`)}
