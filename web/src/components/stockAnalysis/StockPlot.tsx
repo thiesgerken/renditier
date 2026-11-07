@@ -22,7 +22,7 @@ import {
   formatPlotPercent,
   formatPointDate,
   hasIntradayPoints,
-  numberTick,
+  unitsTick,
   percentTick,
 } from '../plot/axes';
 import { assignTrades } from '../plot/trades';
@@ -131,7 +131,7 @@ const MODES = {
     tick: percentTick,
     signed: { key: 'priceRelStart', curve: 'linear' },
   },
-  units: { label: 'Einheiten', tick: numberTick },
+  units: { label: 'Einheiten', tick: unitsTick },
   priceAndUnits: { label: 'Kurs und Einheiten', tick: currencyTick },
   investedAndValue: { label: 'Kaufpreis und Wert', tick: currencyTick },
   value: { label: 'Wert', tick: currencyTick },
@@ -287,7 +287,7 @@ const StockPlot = ({
             <YAxis
               yAxisId={UNITS_AXIS}
               orientation="right"
-              tickFormatter={numberTick}
+              tickFormatter={unitsTick}
               domain={[0, 'auto']}
               hide={phone}
               label={{

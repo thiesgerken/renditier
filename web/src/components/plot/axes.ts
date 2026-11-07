@@ -1,8 +1,8 @@
 import {
   formatCurrency,
-  formatNumber,
   formatPercent,
   formatTemporal,
+  formatUnits,
 } from '../../format';
 
 type TickUnit = 'hour' | 'day' | 'week' | 'month' | 'year';
@@ -178,8 +178,8 @@ export const formatAmountWithChange = (
     ? formatCurrency(amount)
     : `${formatCurrency(amount)} (${formatPlotPercent(percent)})`;
 
-export const numberTick = (value: number): string =>
-  formatNumber(value, { digits: tickDigits(value) });
+export const unitsTick = (value: number): string =>
+  formatUnits(value, { maxDigits: tickDigits(value) });
 
 // Round growth factors for a log axis: +100 % and -50 % are equally far from 0 %.
 const GROWTH_FACTOR_TICKS = [
