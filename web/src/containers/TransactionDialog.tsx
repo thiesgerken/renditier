@@ -70,10 +70,11 @@ interface EditableTransaction {
   amount: number | string;
   fees: number | string;
   accountId: number | null;
-  // in the browser's time zone, like the table shows it
-  date: Temporal.PlainDate | null;
-  // keeps the seconds of a stored transaction unless the time is edited
-  time: Temporal.PlainTime | null;
+  // In the browser's time zone, like the table shows it. Kept as a whole and
+  // only changed by the date and time fields, so that an untouched transaction
+  // keeps its exact instant: seconds, and the offset of a wall-clock time that
+  // occurs twice when the clocks go back.
+  when: Temporal.ZonedDateTime;
   receiptNumber: number | null;
 }
 
@@ -100,19 +101,14 @@ const isValidFloat = (s: string | number | null): boolean => {
   return !Number.isNaN(x) && Number.isFinite(x);
 };
 
-const toInstant = (
-  date: Temporal.PlainDate,
-  time: Temporal.PlainTime
-): Temporal.Instant =>
-  date
-    .toZonedDateTime({ timeZone: Temporal.Now.timeZoneId(), plainTime: time })
-    .toInstant();
+// ZonedDateTime has withPlainTime, but no counterpart for the date.
+export const withDate = (
+  when: Temporal.ZonedDateTime,
+  { year, month, day }: Temporal.PlainDate
+) => when.with({ year, month, day });
 
 const isInFuture = (t: EditableTransaction) =>
-  t.date !== null &&
-  t.time !== null &&
-  Temporal.Instant.compare(toInstant(t.date, t.time), Temporal.Now.instant()) >
-    0;
+  Temporal.Instant.compare(t.when.toInstant(), Temporal.Now.instant()) > 0;
 
 // Neither units nor money: nothing happened.
 const isEmpty = (t: EditableTransaction) =>
@@ -133,8 +129,6 @@ export const toTransaction = (
   if (
     account === null ||
     t.isin === null ||
-    t.date === null ||
-    t.time === null ||
     isInFuture(t) ||
     !isValidFloat(t.amount) ||
     !isValidFloat(t.fees) ||
@@ -153,7 +147,7 @@ export const toTransaction = (
     amount: -1 * Math.round(parseFloat(String(t.amount)) * 100),
     fees: -1 * Math.round(parseFloat(String(t.fees)) * 100),
     accountId: account.id,
-    date: toInstant(t.date, t.time).toString(),
+    date: t.when.toInstant().toString(),
     receiptNumber: t.receiptNumber,
   };
 
@@ -183,10 +177,6 @@ export const toEditable = (
           ?.name ?? '')
       : `${t.onvistaExchangeId}`;
 
-  const local = Temporal.Instant.from(t.date).toZonedDateTimeISO(
-    Temporal.Now.timeZoneId()
-  );
-
   return {
     id: t.id,
     isin: t.isin,
@@ -196,8 +186,9 @@ export const toEditable = (
     amount: (-1 * t.amount) / 100,
     fees: (-1 * t.fees) / 100,
     accountId: t.accountId,
-    date: local.toPlainDate(),
-    time: local.toPlainTime(),
+    when: Temporal.Instant.from(t.date).toZonedDateTimeISO(
+      Temporal.Now.timeZoneId()
+    ),
     receiptNumber: t.receiptNumber,
   };
 };
@@ -358,13 +349,12 @@ const TransactionForm = ({
             <Label htmlFor="transaction-date">Datum</Label>
             <DatePicker
               id="transaction-date"
-              value={transaction.date}
+              value={transaction.when.toPlainDate()}
               max={Temporal.Now.plainDateISO()}
-              onChange={date => update({ date })}
-              invalid={
-                triedToSave &&
-                (transaction.date === null || isInFuture(transaction))
+              onChange={date =>
+                update({ when: withDate(transaction.when, date) })
               }
+              invalid={triedToSave && isInFuture(transaction)}
             />
           </div>
           <div className="grid gap-2">
@@ -372,21 +362,20 @@ const TransactionForm = ({
             <Input
               id="transaction-time"
               type="time"
-              value={
-                transaction.time?.toString({ smallestUnit: 'minute' }) ?? ''
-              }
-              onChange={event =>
+              required
+              value={transaction.when
+                .toPlainTime()
+                .toString({ smallestUnit: 'minute' })}
+              onChange={event => {
+                // A cleared field keeps the last time; a transaction has one.
+                if (event.target.value === '') return;
                 update({
-                  time:
-                    event.target.value === ''
-                      ? null
-                      : Temporal.PlainTime.from(event.target.value),
-                })
-              }
-              aria-invalid={
-                triedToSave &&
-                (transaction.time === null || isInFuture(transaction))
-              }
+                  when: transaction.when.withPlainTime(
+                    Temporal.PlainTime.from(event.target.value)
+                  ),
+                });
+              }}
+              aria-invalid={triedToSave && isInFuture(transaction)}
             />
           </div>
           <div className="grid gap-2">
