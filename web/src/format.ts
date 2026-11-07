@@ -9,6 +9,9 @@ export interface NumberOptions {
   digits?: number;
   // allows up to this many fraction digits instead of exactly `digits`
   maxDigits?: number;
+  // allows more fraction digits than `maxDigits` where a value needs them for
+  // this many significant digits
+  significantDigits?: number;
   // show a plus sign for positive values
   signed?: boolean;
 }
@@ -19,10 +22,15 @@ const numberFormats = new Map<string, Intl.NumberFormat>();
 
 const numberFormat = (
   style: 'decimal' | 'currency' | 'percent',
-  { digits = 2, maxDigits = digits, signed = false }: NumberOptions
+  {
+    digits = 2,
+    maxDigits = digits,
+    significantDigits,
+    signed = false,
+  }: NumberOptions
 ): Intl.NumberFormat => {
   const locale = formatLocale();
-  const key = `${locale}/${style}/${digits}/${maxDigits}/${signed}`;
+  const key = `${locale}/${style}/${digits}/${maxDigits}/${significantDigits}/${signed}`;
   let format = numberFormats.get(key);
 
   if (format === undefined) {
@@ -31,6 +39,10 @@ const numberFormat = (
       currency: style === 'currency' ? 'EUR' : undefined,
       minimumFractionDigits: digits,
       maximumFractionDigits: maxDigits,
+      ...(significantDigits !== undefined && {
+        maximumSignificantDigits: significantDigits,
+        roundingPriority: 'morePrecision',
+      }),
       signDisplay: signed ? 'exceptZero' : 'auto',
     });
     numberFormats.set(key, format);
@@ -69,6 +81,15 @@ export const numberSeparators = (): { decimal: string; group: string } => {
 
   return { decimal: separator('decimal'), group: separator('group') };
 };
+
+// Units are whole for most stocks, but often a small fraction of a single coin
+// for crypto currencies, which would round to nothing at `maxDigits`. So they
+// keep three significant digits by default: 0,0123 instead of 0,01.
+export const formatUnits = (
+  value: number | null,
+  options: NumberOptions = {}
+): string =>
+  formatNumber(value, { digits: 0, significantDigits: 3, ...options });
 
 // The API sends days ("2026-11-06") and instants ("2026-11-06T18:30:00Z") as
 // ISO strings. Instants are shown in the browser's time zone.

@@ -40,6 +40,8 @@ const decorate = (plot: PortfolioPlot): StoredPortfolioPlot => {
   }));
 
   const first = decorated[0];
+  if (first === undefined) return { ...plot, points: [] };
+
   const points = map(decorated, p => ({
     ...p,
     // A missing value counts as 0.
@@ -54,7 +56,7 @@ const decorate = (plot: PortfolioPlot): StoredPortfolioPlot => {
   }));
 
   let i = 0;
-  while (points.length > 0 && points.slice(-1)[0].value === null && i < 5) {
+  while (points.at(-1)?.value === null && i < 5) {
     points.pop();
     i += 1;
   }
@@ -87,7 +89,7 @@ export const updatePortfolioPlot =
   ): AppThunk =>
   dispatch => {
     if (startDate !== null && endDate !== null && source !== null)
-      dispatch(fetchPortfolioPlot({ startDate, endDate, source }));
+      void dispatch(fetchPortfolioPlot({ startDate, endDate, source }));
   };
 
 const itemFor = (state: PortfolioPlotState, key: PlotKey) => {

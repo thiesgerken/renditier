@@ -1,0 +1,75 @@
+{
+  "instrument": {
+    "entityType": "STOCK",
+    "entityValue": "82849",
+    "name": "SAP",
+    "urls": {
+      "NEWS": "https://www.onvista.de/news/aktien/SAP-News-DE0007164600",
+      "WEBSITE": "https://www.onvista.de/aktien/SAP-Aktie-DE0007164600"
+    },
+    "isin": "DE0007164600",
+    "wkn": "716460",
+    "displayType": "Aktie"
+  },
+  "quoteList": {
+    "list": [
+      {
+        "market": {
+          "name": "Quotrix",
+          "codeMarket": "_QUO",
+          "nameExchange": "Quotrix",
+          "codeExchange": "QUO",
+          "idNotation": 134129119,
+          "isoCountry": "DE"
+        },
+        "isoCurrency": "EUR",
+        "codeQualityPrice": "RLT",
+        "last": 208.9,
+        "datetimeLast": "2026-11-06T21:15:58.150+00:00",
+        "bid": 207.25,
+        "datetimeBid": "2026-11-06T22:01:31.698+00:00",
+        "ask": 212.05,
+        "datetimeAsk": "2026-11-06T22:01:31.698+00:00"
+      },
+      {
+        "market": {
+          "name": "Frankfurt",
+          "codeMarket": "_FRA",
+          "nameExchange": "Frankfurt",
+          "codeExchange": "FRA",
+          "idNotation": 163497,
+          "isoCountry": "DE"
+        },
+        "isoCurrency": "EUR",
+        "codeQualityPrice": "DLY",
+        "last": 209.15,
+        "datetimeLast": "2026-11-06T20:55:02.230+00:00"
+      }
+    ]
+  },
+  "company": {
+    "type": "Company",
+    "entityType": "COMPANY",
+    "entityValue": "46469",
+    "name": "SAP SE",
+    "isoCountry": "DE",
+    "nameCountry": "Deutschland"
+  },
+  "stocksDetails": {
+    "shortName": "SAP SE",
+    "officialName": "SAP SE Inhaber-Aktien o.N.",
+    "theScreenerChance": 4,
+    "theScreenerRisk": 0
+  },
+  "stocksFigure": {
+    "idCompany": 46469,
+    "idInstrument": 82849,
+    "idNotation": 46984537,
+    "isoCurrency": "EUR",
+    "marketCapInstrument": 235903299852.0,
+    "marketCapCompany": 239967678314.0,
+    "numSharesInstrument": 1128994017.0,
+    "numSharesCompany": 1128994017.0,
+    "datetimeCalculation": "2026-11-07T18:49:57.000+00:00"
+  }
+}

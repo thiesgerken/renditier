@@ -86,10 +86,10 @@ const PERIOD_GROUPS: PerformanceKind[][] = [
 
 export const groupPeriods = <T extends { kind: PerformanceKind }>(
   periods: T[]
-): T[][] =>
+): [T, ...T[]][] =>
   PERIOD_GROUPS.map(kinds =>
     periods.filter(p => kinds.includes(p.kind))
-  ).filter(group => group.length > 0);
+  ).filter((group): group is [T, ...T[]] => group.length > 0);
 
 export const getPrice = (
   dataSource: DataSource<EitherPrice> | null

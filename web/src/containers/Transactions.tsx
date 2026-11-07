@@ -190,9 +190,9 @@ const Transactions = () => {
   const [page, setPage] = useQueryParam('page');
 
   useEffect(() => {
-    dispatch(fetchTransactions());
-    dispatch(fetchStocks());
-    dispatch(fetchAccounts());
+    void dispatch(fetchTransactions());
+    void dispatch(fetchStocks());
+    void dispatch(fetchAccounts());
   });
 
   const accountList = accounts.data ?? [];
@@ -200,7 +200,7 @@ const Transactions = () => {
 
   const newTransaction: TransactionDraft = {
     id: null,
-    accountId: accountList.length === 1 ? accountList[0].id : null,
+    accountId: accountList.length === 1 ? (accountList[0]?.id ?? null) : null,
     isin: null,
     date: Temporal.Now.instant().toString(),
     units: 0,
@@ -242,7 +242,7 @@ const Transactions = () => {
                   multiple
                   onChange={event => {
                     setUploading(true);
-                    dispatch(uploadReceipts(event.target.files ?? []));
+                    void dispatch(uploadReceipts(event.target.files ?? []));
                   }}
                 />
               </label>

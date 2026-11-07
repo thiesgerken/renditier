@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Line } from 'recharts';
 import type { DotItemDotProps } from 'recharts';
 
-import { formatCurrency, formatNumber } from '../../format';
+import { formatCurrency, formatUnits } from '../../format';
 import i18n from '../../i18n';
 import type { Trades } from './trades';
 import type { TooltipRow } from './PlotTooltip';
@@ -66,7 +66,7 @@ export const tradeRows = (
   const describe = (units: number, amount: number) =>
     withUnits
       ? i18n.t('plot.trade', {
-          units: formatNumber(units, { digits: 3 }),
+          units: formatUnits(units, { maxDigits: 3 }),
           amount: formatCurrency(amount),
         })
       : formatCurrency(amount);

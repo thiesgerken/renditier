@@ -44,7 +44,7 @@ table! {
         wkn -> Bpchar,
         title -> Text,
         kind -> Text,
-        company -> Text,
+        company -> Nullable<Text>,
         fonds_type -> Nullable<Text>,
         focus -> Nullable<Text>,
         persistent -> Bool,

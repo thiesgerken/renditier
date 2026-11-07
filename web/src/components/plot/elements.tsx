@@ -9,10 +9,7 @@ import type { TooltipRow } from './PlotTooltip';
 
 // X axis over the `epoch` of the points.
 export const timeXAxis = (epochs: number[]) => {
-  const axis =
-    epochs.length > 0
-      ? timeAxis(epochs[0], epochs[epochs.length - 1])
-      : timeAxis(0, 0);
+  const axis = timeAxis(epochs[0] ?? 0, epochs.at(-1) ?? 0);
 
   return (
     <XAxis
@@ -34,7 +31,7 @@ export const pointTooltip = <P extends { epoch: number }>(
 ) => (
   <Tooltip
     content={({ active, payload }) => {
-      const point = payload?.[0]?.payload as P | undefined;
+      const point = payload[0]?.payload as P | undefined;
       if (!active || point === undefined) return null;
 
       return (

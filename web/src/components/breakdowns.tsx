@@ -17,11 +17,8 @@ import {
   Layers,
   Pickaxe,
   PoundSterling,
-  RadioTower,
   Shapes,
   ShoppingBag,
-  ShoppingBasket,
-  SwissFranc,
   Zap,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -55,7 +52,7 @@ const named = (
 // A country code spelled in regional indicator symbols is its flag emoji.
 const flag = (code: string) =>
   String.fromCodePoint(
-    ...[...code].map(letter => 0x1f1e6 + letter.charCodeAt(0) - 65)
+    ...Array.from(code, letter => 0x1f1e6 + letter.charCodeAt(0) - 65)
   );
 
 const MARKER = 'size-4 shrink-0 text-muted-foreground';
@@ -76,7 +73,6 @@ const CURRENCY_ICONS: Partial<Record<string, LucideIcon>> = {
   GBP: PoundSterling,
   JPY: JapaneseYen,
   CNY: JapaneseYen,
-  CHF: SwissFranc,
   INR: IndianRupee,
 };
 
@@ -85,15 +81,11 @@ const CurrencyIcon = ({ code }: { code: string }) => {
   return <Icon aria-hidden className={MARKER} />;
 };
 
-// onvista's broad sectors, which most funds use, and the GICS names some use
-// instead. Thematic funds list free-text industries, which get no icon.
-const SECTOR_ICONS: Partial<Record<string, LucideIcon>> = {
+// onvista's broad sectors, onto which normalizeIndustry maps the other names
+// for them. Thematic funds list free-text industries, which get no icon.
+export const SECTOR_ICONS: Partial<Record<string, LucideIcon>> = {
   'IT/Telekommunikation': Cpu,
-  Informationstechnologie: Cpu,
-  Telekomdienste: RadioTower,
   Konsumgüter: ShoppingBag,
-  'Konsumgüter zyklisch': ShoppingBag,
-  Basiskonsumgüter: ShoppingBasket,
   Finanzen: Landmark,
   Gesundheitswesen: HeartPulse,
   Industrie: Factory,

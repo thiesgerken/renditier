@@ -13,7 +13,7 @@ import {
   getPeriodDescription,
   getPeriodRange,
 } from '../../selectors/performance';
-import { formatCurrency, formatNumber } from '../../format';
+import { formatCurrency, formatUnits } from '../../format';
 import ProgressCard from '../ProgressCard';
 import PlotArea from '../plot/PlotArea';
 import type { TooltipRow } from '../plot/PlotTooltip';
@@ -23,7 +23,7 @@ import {
   formatPlotPercent,
   formatPointDate,
   hasIntradayPoints,
-  numberTick,
+  unitsTick,
   percentTick,
 } from '../plot/axes';
 import { assignTrades } from '../plot/trades';
@@ -131,7 +131,7 @@ const MODES = {
     tick: percentTick,
     signed: { key: 'priceRelStart', curve: 'linear' },
   },
-  units: { tick: numberTick },
+  units: { tick: unitsTick },
   priceAndUnits: { tick: currencyTick },
   investedAndValue: { tick: currencyTick },
   value: { tick: currencyTick },
@@ -184,7 +184,10 @@ const StockPlot = ({
       sd = dates[0].toString();
       ed = dates[1].toString();
     } else {
-      [sd, ed] = getPeriodRange(performance.data[period]);
+      const selected = performance.data[period];
+      // `period` is in range, see above
+      if (selected === undefined) throw new Error(`no period ${period}`);
+      [sd, ed] = getPeriodRange(selected);
     }
 
     plotData = getData(data, isin, sd, ed, source);
@@ -235,7 +238,7 @@ const StockPlot = ({
 
   const tooltipRows = (p: Point): TooltipRow[] => [
     { label: t('plot.price'), value: formatCurrency(p.price) },
-    { label: t('plot.units'), value: formatNumber(p.units, { digits: 3 }) },
+    { label: t('plot.units'), value: formatUnits(p.units, { maxDigits: 3 }) },
     { label: t('plot.value'), value: formatCurrency(p.value) },
     { label: t('plot.invested'), value: formatCurrency(p.invested) },
     {
@@ -285,7 +288,7 @@ const StockPlot = ({
             <YAxis
               yAxisId={UNITS_AXIS}
               orientation="right"
-              tickFormatter={numberTick}
+              tickFormatter={unitsTick}
               domain={[0, 'auto']}
               hide={phone}
               label={{

@@ -59,22 +59,53 @@ export const normalizeCountry = (name: string): string =>
     ? 'USA'
     : name;
 
+// onvista names industries differently depending on the fund: most funds use
+// its broad sectors, one uses the GICS sectors, thematic funds split a sector
+// into sub-names (sometimes misspelled). Each name maps onto the broad sector
+// or the plain name, so that the dashboard adds up the same industry across
+// funds. Only names that mean the same thing are listed; distinct industries
+// of thematic funds ("Halbleiterelektronik") stay as they are.
+const INDUSTRY_NAMES: Record<string, string> = {
+  Informationstechnologie: 'IT/Telekommunikation',
+  Telekomdienste: 'IT/Telekommunikation',
+  Basiskonsumgüter: 'Konsumgüter',
+  'Konsumgüter zyklisch': 'Konsumgüter',
+  'Versorger umfassend': 'Versorger',
+  'Versorger/ erneuerbare Energie': 'Versorger',
+  'Vesorger/Strom konventionell/ Enegiefirmen': 'Versorger',
+  'Stromversorgung konv.': 'Versorger',
+  'Chemikalien spezial': 'Chemikalien',
+  'Computer Hardware': 'Computer und Zubehör',
+};
+
+export const normalizeIndustry = (name: string): string =>
+  INDUSTRY_NAMES[name] ?? name;
+
+const normalizeName = (kind: BreakdownKind, name: string): string => {
+  if (kind === 'countryBreakdown') return normalizeCountry(name);
+  if (kind === 'industryBreakdown') return normalizeIndustry(name);
+  return name;
+};
+
 // The breakdown columns hold onvista's JSON verbatim (see types/api.ts), which
 // is sometimes the JSON `null` rather than a missing value.
 const parseOnvistaList = <T>(raw: string | null): T[] | null =>
   raw === null ? null : (JSON.parse(raw) as T[] | null);
 
+// A fund's shares by normalized name; names that normalize to the same one
+// add up, so that each shows once.
 export const breakdownShares = (
   stock: Stock,
   kind: BreakdownKind
-): FundShare[] =>
-  (parseOnvistaList<StockBreakdownEntry>(stock[kind]) ?? []).map(e => ({
-    label:
-      kind === 'countryBreakdown'
-        ? normalizeCountry(e.nameBreakdown)
-        : e.nameBreakdown,
-    value: e.investmentPct,
-  }));
+): FundShare[] => {
+  const shares = new Map<string, number>();
+  (parseOnvistaList<StockBreakdownEntry>(stock[kind]) ?? []).forEach(e => {
+    const label = normalizeName(kind, e.nameBreakdown);
+    shares.set(label, (shares.get(label) ?? 0) + e.investmentPct);
+  });
+
+  return Array.from(shares, ([label, value]) => ({ label, value }));
+};
 
 // null when onvista has no holdings for the stock
 export const holdingShares = (stock: Stock): FundShare[] | null =>

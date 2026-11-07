@@ -1,0 +1,37 @@
+{
+  "instrument": {
+    "entityType": "CRYPTO",
+    "entityValue": "BTCUSD",
+    "name": "Bitcoin",
+    "urls": {
+      "WEBSITE": "https://www.onvista.de/kryptowaehrungen/Bitcoin-BTC"
+    },
+    "isin": "XC000A2YY636",
+    "wkn": "A2YY63",
+    "displayType": "Kryptowährung"
+  },
+  "cryptoDetails": {
+    "isoCurrencyFrom": "BTC",
+    "nameCurrencyFrom": "Bitcoin",
+    "isoCurrencyTo": "USD",
+    "nameCurrencyTo": "US Dollar",
+    "marketCap": 1523656014600.0,
+    "isoCurrency": "USD",
+    "circulatingSupply": 20107900.0,
+    "dti": "V15WLZJMF",
+    "websiteUrl": "https://bitcoin.org",
+    "whitePaperUrl": "https://resources.cryptocompare.com/asset-management/1/1659709016925.pdf",
+    "ratingProvider": "CERTIK",
+    "ratingScore": 97.53,
+    "ratingRank": 1,
+    "numberCoinsTotal": 20107900.0,
+    "numberCoinsMaximum": 20999999.9769,
+    "numberCoinsIssued": 20107781.0,
+    "numberCoinsFuture": 892218.9769,
+    "numberCoinsLocked": 0.0,
+    "numberCoinsBurnt": 0.0,
+    "numberCoinsStaked": 0.0,
+    "typeCoin": "blockchain",
+    "isSmartContractCapable": true
+  }
+}

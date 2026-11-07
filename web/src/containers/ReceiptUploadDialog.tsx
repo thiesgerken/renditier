@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
-import { formatCurrency, formatDate, formatNumber } from '../format';
+import { formatCurrency, formatDate, formatUnits } from '../format';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
 import { useAppSelector } from '../store';
 
@@ -69,7 +69,7 @@ const ReceiptUploadDialog = ({ open, onClose }: Props) => {
                     <li key={x.id}>
                       {t('receipts.transaction', {
                         date: formatDate(x.date),
-                        units: formatNumber(x.units),
+                        units: formatUnits(x.units, { maxDigits: 2 }),
                         stock,
                         amount: formatCurrency(x.amount / 100),
                       })}

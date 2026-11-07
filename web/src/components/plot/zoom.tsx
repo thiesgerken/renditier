@@ -1,8 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { MouseEvent, RefObject, TouchEvent } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { ReferenceArea, useXAxisInverseDataSnapScale } from 'recharts';
+import {
+  usePlotArea,
+  useXAxisInverseDataSnapScale,
+  useXAxisScale,
+} from 'recharts';
 import type { InverseScaleFunction } from 'recharts';
 
 import { Button } from '../ui/button';
@@ -20,6 +24,54 @@ const ScaleProbe = ({ scaleRef }: { scaleRef: RefObject<Inverse> }) => {
   return null;
 };
 
+type Drag = [number, number] | null;
+
+// The epochs of the points where the drag started and where it is now. A
+// store outside React state, so that a move re-renders only the selection
+// below, not the plot with its thousands of points.
+const createDragStore = () => {
+  let drag: Drag = null;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => drag,
+    set: (next: Drag) => {
+      drag = next;
+      listeners.forEach(listener => {
+        listener();
+      });
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+};
+
+type DragStore = ReturnType<typeof createDragStore>;
+
+// The selected span over the whole height of the plot.
+const Selection = ({ store }: { store: DragStore }) => {
+  const drag = useSyncExternalStore(store.subscribe, store.get);
+  const scale = useXAxisScale();
+  const area = usePlotArea();
+  if (drag === null || scale === undefined || area === undefined) return null;
+
+  const [from, to] = drag.map(epoch => scale(epoch));
+  if (from === undefined || to === undefined) return null;
+
+  return (
+    <rect
+      x={Math.min(from, to)}
+      y={area.y}
+      width={Math.abs(to - from)}
+      height={area.height}
+      fill="var(--primary)"
+      fillOpacity={0.15}
+      pointerEvents="none"
+    />
+  );
+};
+
 const dayOf = (epoch: number) =>
   Temporal.Instant.fromEpochMilliseconds(epoch)
     .toZonedDateTimeISO(Temporal.Now.timeZoneId())
@@ -28,10 +80,14 @@ const dayOf = (epoch: number) =>
 type ChartEvent =
   MouseEvent<SVGGraphicsElement> | TouchEvent<SVGGraphicsElement>;
 
-const clientX = (event: ChartEvent) =>
-  'touches' in event
-    ? (event.touches[0] ?? event.changedTouches[0]).clientX
-    : event.clientX;
+const clientX = (event: ChartEvent) => {
+  if (!('touches' in event)) return event.clientX;
+
+  // A lifted finger is no longer in `touches`, only in `changedTouches`.
+  const touch = event.touches[0] ?? event.changedTouches[0];
+  if (touch === undefined) throw new Error('touch event without a touch');
+  return touch.clientX;
+};
 
 // Dragging across a chart, with the mouse or a finger, selects the days to
 // zoom into. The plots fetch whole days, so a zoom is a custom date range:
@@ -52,15 +108,7 @@ export const useDragZoom = <S,>({
 }) => {
   const [before, setBefore] = useState<{ state: S } | null>(null);
   const scaleRef = useRef<Inverse>(undefined);
-  // The epochs of the points where the drag started and where it is now. The
-  // ref is what the handlers read, since events can arrive faster than React
-  // renders; the state draws the selection.
-  const dragRef = useRef<[number, number] | null>(null);
-  const [drag, setDrag] = useState<[number, number] | null>(null);
-  const update = (next: [number, number] | null) => {
-    dragRef.current = next;
-    setDrag(next);
-  };
+  const [store] = useState(createDragStore);
 
   // Recharts' own active point only follows the mouse, not a finger, so the
   // position comes from the event.
@@ -72,23 +120,22 @@ export const useDragZoom = <S,>({
 
   const start = (_: unknown, event: ChartEvent) => {
     const epoch = epochAt(event);
-    if (epoch !== undefined) update([epoch, epoch]);
+    if (epoch !== undefined) store.set([epoch, epoch]);
   };
 
   const move = (_: unknown, event: ChartEvent) => {
-    const from = dragRef.current?.[0];
+    const from = store.get()?.[0];
     const epoch = epochAt(event);
-    if (from !== undefined && epoch !== undefined) update([from, epoch]);
+    if (from !== undefined && epoch !== undefined) store.set([from, epoch]);
   };
 
   // a click without a drag is no zoom
   const end = () => {
-    const selected = dragRef.current;
-    update(null);
+    const selected = store.get();
+    store.set(null);
     if (selected !== null && selected[0] !== selected[1]) {
-      const [from, to] = [...selected].sort((a, b) => a - b);
       if (before === null) setBefore({ state: snapshot });
-      zoomTo([dayOf(from), dayOf(to)]);
+      zoomTo([dayOf(Math.min(...selected)), dayOf(Math.max(...selected))]);
     }
   };
 
@@ -105,7 +152,9 @@ export const useDragZoom = <S,>({
       onMouseDown: start,
       onMouseMove: move,
       onMouseUp: end,
-      onMouseLeave: () => update(null),
+      onMouseLeave: () => {
+        store.set(null);
+      },
       onTouchStart: start,
       onTouchMove: move,
       onTouchEnd: end,
@@ -115,16 +164,7 @@ export const useDragZoom = <S,>({
     // direct children of the chart, which recharts only renders as such
     elements: [
       <ScaleProbe key="zoomScale" scaleRef={scaleRef} />,
-      drag === null ? null : (
-        <ReferenceArea
-          key="zoomSelection"
-          x1={drag[0]}
-          x2={drag[1]}
-          fill="var(--primary)"
-          fillOpacity={0.15}
-          ifOverflow="hidden"
-        />
-      ),
+      <Selection key="zoomSelection" store={store} />,
     ],
   };
 };

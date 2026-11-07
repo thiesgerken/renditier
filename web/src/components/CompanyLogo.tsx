@@ -26,6 +26,7 @@ import {
   siApple,
   siArm,
   siBaidu,
+  siBitcoin,
   siBmw,
   siBoeing,
   siBrenntag,
@@ -41,6 +42,7 @@ import {
   siDeutschetelekom,
   siDhl,
   siEa,
+  siEthereum,
   siFerrarinv,
   siGoogle,
   siHellofresh,
@@ -81,10 +83,10 @@ import {
 } from 'simple-icons';
 import type { SimpleIcon } from 'simple-icons';
 
-// Large caps that funds hold or that are popular as single shares, by ISIN,
-// one entry per share class. Simple Icons has no logo for many others
-// (Microsoft, Amazon, ASML, Allianz, Mercedes-Benz, ...), which removed theirs
-// on request; those get a monogram. Only the icons imported here end up in
+// Large caps that funds hold or that are popular as single shares (one entry
+// per share class) and crypto currencies, by ISIN. Simple Icons has no logo
+// for many others (Microsoft, Amazon, ASML, Allianz, Mercedes-Benz, ...), which
+// removed theirs on request; those get a monogram. Only the icons imported here end up in
 // the bundle. Porsche's and Unilever's logos are left out: at icon size they
 // are a blur, at about 50 KB each.
 export const LOGOS: Partial<Record<string, SimpleIcon>> = {
@@ -155,6 +157,9 @@ export const LOGOS: Partial<Record<string, SimpleIcon>> = {
   KR7005930003: siSamsung, // Samsung Electronics
   JP3435000009: siSony,
   JP3633400001: siToyota,
+  // Crypto currencies, in EUR
+  EU000A2YZK67: siBitcoin,
+  EU000A2YZK75: siEthereum,
 };
 
 // What a name says a fund holds, for anything without a logo: mostly funds,

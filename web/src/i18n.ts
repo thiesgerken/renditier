@@ -27,7 +27,9 @@ export const chosenLanguage = (): Language | null => {
 
 // The first of the browser's languages that the app speaks.
 const browserLanguage = (): Language =>
-  navigator.languages.map(tag => tag.split('-')[0]).find(isLanguage) ?? 'en';
+  navigator.languages
+    .map(tag => new Intl.Locale(tag).language)
+    .find(isLanguage) ?? 'en';
 
 // null follows the browser again.
 export const chooseLanguage = (language: Language | null): void => {
