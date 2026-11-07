@@ -95,7 +95,8 @@ export const DateRangeFields = ({
   value: [start, end],
   onChange,
 }: DateRangeFieldsProps) => (
-  <>
+  // start and end wrap together
+  <div className="flex gap-4">
     <Field id="plot-start" label="Start">
       <DatePicker
         id="plot-start"
@@ -114,5 +115,5 @@ export const DateRangeFields = ({
         }
       />
     </Field>
-  </>
+  </div>
 );

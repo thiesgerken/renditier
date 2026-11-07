@@ -291,11 +291,12 @@ const StockComparisonPlot = ({
         : currentIsins.filter(selected => selected !== isin)
     );
 
-  const names = currentIsins.map(stockName);
+  // the names are long, so several are only counted
   let selectionSummary;
-  if (names.length === 0) selectionSummary = '(keine)';
-  else if (names.length <= 2) selectionSummary = names.join(', ');
-  else selectionSummary = `${names[0]} und ${names.length - 1} weitere`;
+  if (currentIsins.length === 0) selectionSummary = '(keine)';
+  else if (currentIsins.length === 1)
+    selectionSummary = stockName(currentIsins[0]);
+  else selectionSummary = `${currentIsins.length} Wertpapiere`;
 
   const loading =
     !every(plotData, p => p !== null && !p.isFetching) ||
