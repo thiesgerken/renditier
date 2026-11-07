@@ -9,7 +9,7 @@ import { fetchJson } from '../api';
 import type { AppDispatch, RootState } from '../store';
 import type { ResourceState } from '../types/store';
 import { createAppAsyncThunk } from './createAppAsyncThunk';
-import { isOutdated } from './freshness';
+import { needsFetch } from './freshness';
 
 interface Resource<T> {
   reducer: Reducer<ResourceState<T>>;
@@ -17,8 +17,8 @@ interface Resource<T> {
   invalidate: ActionCreatorWithoutPayload;
 }
 
-// A read-only API list that starts out invalidated and is fetched again once it
-// is outdated, invalidated by a change elsewhere, or after a failed load.
+// A read-only API list, fetched again once it is outdated or invalidated by a
+// change elsewhere.
 //
 // RootState is inferred from the reducers this returns, so the signature must
 // not depend on it: the return type is spelled out, and the slice is found by
@@ -29,7 +29,7 @@ export const createResourceSlice = <T>(
 ): Resource<T> => {
   const initialState: ResourceState<T> = {
     isFetching: false,
-    didInvalidate: true,
+    didInvalidate: false,
     data: null,
     error: null,
     lastRequest: null,
@@ -41,12 +41,7 @@ export const createResourceSlice = <T>(
     {
       condition: (_, { getState }) => {
         const resource = getState()[name];
-        return (
-          !resource.isFetching &&
-          ((resource.lastRequest === null && resource.error === null) ||
-            resource.didInvalidate ||
-            isOutdated(resource.lastRequest))
-        );
+        return needsFetch({ ...resource, lastUpdated: resource.lastRequest });
       },
     }
   );
@@ -73,7 +68,7 @@ export const createResourceSlice = <T>(
         }))
         .addCase(fetchResource.rejected, (state, action) => {
           state.isFetching = false;
-          state.didInvalidate = true;
+          state.didInvalidate = false;
           state.error = action.error;
           state.lastRequest = Date.now();
         });

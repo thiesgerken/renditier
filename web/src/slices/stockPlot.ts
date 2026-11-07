@@ -11,7 +11,7 @@ import type {
   StoredStockPlot,
 } from '../types/store';
 import { createAppAsyncThunk } from './createAppAsyncThunk';
-import { isOutdated } from './freshness';
+import { needsFetch } from './freshness';
 
 interface PlotKey {
   isin: string;
@@ -80,11 +80,7 @@ export const fetchStockPlot = createAppAsyncThunk(
   {
     condition: (key, { getState }) => {
       const item = findItem(getState().stockPlot.items, key);
-      return (
-        item === undefined ||
-        (!item.isFetching &&
-          (item.lastUpdated === null || isOutdated(item.lastUpdated)))
-      );
+      return item === undefined || needsFetch(item);
     },
   }
 );

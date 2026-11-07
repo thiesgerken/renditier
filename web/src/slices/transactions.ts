@@ -4,7 +4,7 @@ import { fetchJson, fetchOk } from '../api';
 import type { NewTransaction, Transaction } from '../types/api';
 import type { TransactionsState } from '../types/store';
 import { createAppAsyncThunk } from './createAppAsyncThunk';
-import { isOutdated } from './freshness';
+import { needsFetch } from './freshness';
 import { invalidatePerformance } from './performance';
 
 const initialState: TransactionsState = {
@@ -19,16 +19,7 @@ export const fetchTransactions = createAppAsyncThunk(
   'transactions/fetch',
   () => fetchJson<Transaction[]>('/api/transactions'),
   {
-    condition: (_, { getState }) => {
-      const { transactions } = getState();
-      return (
-        !transactions.isFetching &&
-        ((transactions.lastUpdated === null &&
-          transactions.fetchError === null) ||
-          transactions.didInvalidate ||
-          isOutdated(transactions.lastUpdated))
-      );
-    },
+    condition: (_, { getState }) => needsFetch(getState().transactions),
   }
 );
 
@@ -90,6 +81,7 @@ const transactions = createSlice({
       })
       .addCase(fetchTransactions.rejected, (state, action) => {
         state.isFetching = false;
+        state.didInvalidate = false;
         state.items = [];
         state.fetchError = action.error;
         state.lastUpdated = Date.now();

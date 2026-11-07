@@ -4,7 +4,7 @@ import { fetchJson, fetchOk } from '../api';
 import type { Account, NewAccount } from '../types/api';
 import type { AccountsState } from '../types/store';
 import { createAppAsyncThunk } from './createAppAsyncThunk';
-import { isOutdated } from './freshness';
+import { needsFetch } from './freshness';
 import { invalidatePerformance } from './performance';
 import { invalidateTransactions } from './transactions';
 
@@ -20,15 +20,7 @@ export const fetchAccounts = createAppAsyncThunk(
   'accounts/fetch',
   () => fetchJson<Account[]>('/api/accounts'),
   {
-    condition: (_, { getState }) => {
-      const { accounts } = getState();
-      return (
-        !accounts.isFetching &&
-        ((accounts.lastUpdated === null && accounts.fetchError === null) ||
-          accounts.didInvalidate ||
-          isOutdated(accounts.lastUpdated))
-      );
-    },
+    condition: (_, { getState }) => needsFetch(getState().accounts),
   }
 );
 
@@ -81,6 +73,7 @@ const accounts = createSlice({
       })
       .addCase(fetchAccounts.rejected, (state, action) => {
         state.isFetching = false;
+        state.didInvalidate = false;
         state.items = [];
         state.fetchError = action.error;
         state.lastUpdated = Date.now();

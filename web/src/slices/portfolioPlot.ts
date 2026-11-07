@@ -11,7 +11,7 @@ import type {
   StoredPortfolioPlot,
 } from '../types/store';
 import { createAppAsyncThunk } from './createAppAsyncThunk';
-import { isOutdated } from './freshness';
+import { needsFetch } from './freshness';
 
 interface PlotKey {
   startDate: IsoDate;
@@ -74,11 +74,7 @@ export const fetchPortfolioPlot = createAppAsyncThunk(
   {
     condition: (key, { getState }) => {
       const item = findItem(getState().portfolioPlot.items, key);
-      return (
-        item === undefined ||
-        (!item.isFetching &&
-          (item.lastUpdated === null || isOutdated(item.lastUpdated)))
-      );
+      return item === undefined || needsFetch(item);
     },
   }
 );
