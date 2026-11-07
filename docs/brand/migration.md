@@ -1,17 +1,19 @@
 # Migration to Renditier
 
-What it takes to move the app from StockDB/"Aktienverwaltung" with MUI teal to the Renditier brand in
-the [style guide](styleguide.md). Tracked in #253.
-
-Do this after the MUI to shadcn/ui migration has landed. `web/src/muiTheme.ts` and the MUI colour
-imports go away with it, so they need no brand work.
+What it takes to move the app from StockDB/"Aktienverwaltung" with teal to the Renditier brand in the
+[style guide](styleguide.md), as of `main` in November 2026. Tracked in #253. The last PR of the
+migration deletes this file; its cutover checklist moves to #253 first.
 
 ## Scope
 
 Everything gets renamed: UI, crate and binary, container image, Kubernetes namespace and deployment,
-config paths, the `STOCKDB__` environment prefix and the Gitea repository (`thies/StockDB` →
+database, config paths, the `STOCKDB__` environment prefix, the domain (`stocks.gerken.haus` →
+`renditier.gerken.haus`, the old one redirects) and the Gitea repository (`thies/StockDB` →
 `thies/Renditier`). No fallback to the old names. The only deployment is our own, and
-[the cutover](#8-cutover-for-our-deployment) below moves it over.
+[the cutover](#8-cutover-for-our-deployment) moves it over.
+
+Not renamed: moneta's own config keys `MONETA__STOCKDB__URL` and `MONETA__STOCKDB__PUBLIC_URL`. They
+belong to moneta; only their values change.
 
 ## 1. Name in the UI
 
@@ -21,6 +23,10 @@ config paths, the `STOCKDB__` environment prefix and the Gitea repository (`thie
 | `web/src/components/Login.tsx` | `<h1>Aktienverwaltung</h1>` | Lockup (mark plus wordmark) |
 | `web/src/containers/AppLayout.tsx` | Header text "Aktienverwaltung" | Lockup, mark only where space is tight |
 | `web/public/manifest.json` | `name`/`short_name` "StockDB" | "Renditier" |
+
+The three "Aktienverwaltung" strings are still literals next to the i18n keys in
+`web/src/locales/de.ts` and `en.ts`. "Renditier" is a name and stays the same in both languages; it
+needs a key only where it sits in a sentence or a label (e.g. the lockup's `aria-label`).
 
 ## 2. Icons
 
@@ -37,12 +43,13 @@ Then:
 - `web/index.html`: `<meta name="theme-color">` with `#F8F9FB` (light) and `#0E1522` (dark) via
   `media="(prefers-color-scheme: …)"`.
 
-No Apple touch icon: iOS isn't a target.
+No Apple touch icon: iOS isn't a target. Whether the manifest also gets a `maskable` icon is decided
+in the logo PR: the antler tip of the full-bleed icon leaves Android's maskable safe zone.
 
 ## 3. Colours
 
-All in `web/src/index.css`. The shadcn token names don't line up one to one with the style guide
-roles. In particular shadcn's `--accent` is a hover surface, not the brand accent.
+All tokens live in `web/src/index.css`. The shadcn token names don't line up one to one with the
+style guide roles. In particular shadcn's `--accent` is a hover surface, not the brand accent.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -65,20 +72,24 @@ roles. In particular shadcn's `--accent` is a hover surface, not the brand accen
 | new `--brand` | `#D2652A` | `#E07A40` |
 
 `--brand` is for the orange accent outside the focus ring: the active navigation marker, the
-portfolio chart line and its end dot. `--destructive` stays red, it marks dangerous actions, not losses.
+portfolio chart line and its end dot. `--destructive` stays red: it marks dangerous actions, not
+losses. Check it next to the berry loss colour.
 
-Other places:
+Colours on `main` that clash with the brand and still need a design decision (one board for Thies in
+the look PR):
 
-- `web/src/index.css`: the comment above `--gain`/`--loss` explains them as "the MUI theme's dark teal
-  and pink". Rewrite it, or drop it once no MUI plot is left.
-- `web/src/components/StockComparisonPlot.tsx`: the series colours start with MUI `teal` and include
-  `deepOrange`/`orange`. Pick a series palette without the gain/loss colours and without the brand
-  orange, or the comparison lines read as gains, losses or highlights. Likely solved when the plot
-  moves off MUI.
-- `web/src/containers/Transactions.tsx`: the comment about the transaction kind colours staying
-  "clear of teal and pink" becomes green and berry. Check the kind colours against orange too.
-- Look for hard-coded Tailwind colour classes (`teal-`, `emerald-`, `pink-`, `rose-`) once the
-  migration is done.
+- `--chart-units` (`#ed6c02`, dark `#ffa726`) is practically the brand orange. A units line would read
+  as a highlight or as the "new high" dot. `--chart-price` (`#0288d1`) needs a check against navy and
+  the orange accent. Both are used in `web/src/components/stockAnalysis/StockPlot.tsx`.
+- `web/src/components/StockComparisonPlot.tsx`: `LINE_COLORS` are nine hard-coded hexes (teal, deep
+  orange, blue, orange, pink, green, lime, deep purple, red) with no dark variant. They collide with
+  gain, loss and the brand. Replace them with series tokens in `index.css`, light and dark, none of
+  them near green, berry or orange.
+- `web/src/components/TransactionKind.tsx`: dividends are `amber-600`/`amber-400`, right next to the
+  brand orange. Buy (sky), sell (violet) and fee (slate) need a look against the new palette. The
+  comment there and the one above `--gain`/`--loss` in `index.css` still say "teal and pink".
+
+No other hard-coded teal, pink, rose, emerald, orange or amber classes are left in `web/src`.
 
 ## 4. Font and wordmark
 
@@ -87,22 +98,22 @@ The app font changes from Geist to Outfit (see [Typography](styleguide.md#typogr
 - `web/package.json`: replace `@fontsource-variable/geist` with `@fontsource-variable/outfit`.
 - `web/src/index.css`: import it and set `--font-sans: 'Outfit Variable', …`. Give `body`
   `font-weight: 300`.
-- Go through the font weight classes (`font-medium`, `font-semibold`, `font-bold`, about 30 on `main`
+- Go through the font weight classes (`font-medium`, `font-semibold`, `font-bold`, 29 in `web/src`
   today): titles and emphasis become `font-medium` (500), amounts and percentages `font-normal`
   (400). Nothing above 500.
 - Check muted 12 px text in dark mode. If 300 looks too thin there, use 350 for small text (Outfit is a
   variable font).
 
-The app then loads Outfit anyway, so the lockup in the header and on the login page is the SVG mark
-plus "Rendi<span>tier</span>" as text in Outfit 700. The PNG lockups in `logo/` are for everything
-outside the app. A vector lockup with the text converted to outlines is still missing for those.
+The app loads Outfit anyway, so the lockup in the header and on the login page is the SVG mark plus
+"Rendi<span>tier</span>" as text in Outfit 700. The PNG lockups in `logo/` are for everything outside
+the app.
 
 ## 5. Dev shell banner
 
 `flake.nix`, `shellHook`: the banner prints "StockDB" with a yellow-to-orange gradient and 📈. Change it
-to "Rendi" in bold default colour plus "tier" in the brand orange
-(`\033[38;2;210;101;42m`). Don't use navy or cream for terminal text: one of them disappears on
-either a light or a dark terminal. A 🦌 instead of 📈 would fit too.
+to "Rendi" in bold default colour plus "tier" in the brand orange (`\033[38;2;210;101;42m`). Don't use
+navy or cream for terminal text: one of them disappears on either a light or a dark terminal. A 🦌
+instead of 📈 would fit too. Part of the technical rename, which touches `flake.nix` anyway.
 
 ## 6. Technical names
 
@@ -112,9 +123,11 @@ either a light or a dark terminal. A 🦌 instead of 📈 would fit too.
 | `web/package.json` | `"name": "stockdb"` |
 | `flake.nix` | `description`, `pname = "stockdb-web"`, package and image name `stockdb` |
 | `.gitea/workflows/ci.yml` | image `gitea.gerken.haus/thies/stockdb`, namespace `apps-stockdb`, deployment `stockdb` |
+| `renovate.json` | package rule for `gitea.gerken.haus/thies/stockdb` |
 | `src/cli/mod.rs` | `/etc/stockdb/config`, `./stockdb.*`, prefix `STOCKDB` |
 | `src/web/mod.rs` | Rocket database name `stockdb` (internal) |
-| `src/cli/import.rs`, `src/bin/generate.rs` | help texts mentioning `stockdb` |
+| `src/cli/import.rs`, `src/bin/generate.rs`, `src/onvista/crypto.rs` | messages and help texts mentioning `stockdb` |
+| `src/lib.rs`, `src/onvista/mod.rs`, `web/src/types/api.ts` | comments |
 | `README.md`, `docker-compose.yaml` | all of the above |
 | `.gitignore`, `.vscode/cSpell.json` | `stockdb.toml`, binary name, dictionary word |
 
@@ -124,36 +137,84 @@ New names: crate and binary `renditier`, image `gitea.gerken.haus/thies/renditie
 
 ## 7. Docs
 
-- `README.md`: title and the lockup on top.
-- Screenshots in PRs after the switch: use mock data, never real figures.
+- `README.md`: title, the lockup on top, light and dark screenshots. `<picture>` with
+  `<source media="(prefers-color-scheme: dark)">` survives Gitea's sanitizer (checked) and works on
+  GitHub, so it also suits the planned GitHub mirror. It follows the browser's colour scheme, not
+  Gitea's theme setting. GitHub's `#gh-dark-mode-only` fragment does nothing on Gitea.
+- Screenshots in the README and in PRs come from the demo user "Rudolph" (a committed, made-up backup
+  imported next to the real data) and never show real figures.
 
 ## 8. Cutover for our deployment
 
-The Kubernetes manifests live outside this repo. CI only pushes the image and restarts the
-deployment, so the cluster has to be ready before the rename PR merges, or the first deploy job on
-`main` fails.
+### Facts
 
-1. **Prepare the cluster** (before the merge):
-   - Create namespace `apps-renditier` with deployment `renditier` (image
-     `gitea.gerken.haus/thies/renditier:main`, container name `renditier`), scaled to 0. The image
-     tag only exists after the first CI push.
-   - Copy the secrets and config, renaming every `STOCKDB__*` variable to `RENDITIER__*` and a
-     mounted `/etc/stockdb/config.*` to `/etc/renditier/config.*`.
-   - Give the CI token rights in the new namespace (role binding for its service account, or a new
-     token in the `K8S_TOKEN` repo secret).
-   - Postgres: if it runs in `apps-stockdb`, either point `RENDITIER__DATABASE` at it across
-     namespaces (`…apps-stockdb.svc…`) and move it later, or dump and restore it into the new
-     namespace now. Take a dump either way.
-2. **Rename the Gitea repository** to `thies/Renditier`. Gitea redirects the old web and git URLs, and
-   repo secrets stay. Point the local checkout at the new URL (`git remote set-url origin
+- The deployment is GitOps: `apps/stockdb` in `infrastructure/k3s`, Argo CD Application
+  `apps-stockdb` (`app-of-apps/apps/stockdb.yaml`) with automated `prune` and `selfHeal`. A
+  `kubectl scale` gets reverted. Every change, scaling included, is a commit there.
+- A namespace can't be renamed and a PVC can't move to another namespace. The new namespace gets its
+  own Postgres, and the data moves by dump and restore.
+- The Postgres PVC `postgres` carries the finalizer `gerken.haus/prevent-deletion`. Removing the app
+  from Git doesn't delete the data: PVC and namespace stay `Terminating` until someone removes the
+  finalizer by hand.
+- Database today: `POSTGRES_DB=stocks`, user `stockdb`, connection string in secret `stockdb`
+  (`database_conn`). New: database and user `renditier`.
+- CI deploys with the service account `gitea-ci` (`apps/stockdb/ci.yaml`). The repo secrets
+  `K8S_TOKEN` and `K8S_CA_CERT` come from its token secret `gitea-ci-token`.
+- Dead settings in `apps/stockdb/app.yaml`: `STOCKDB__WEB__SERVER_KEY`, `STOCKDB__PUSH__KEY_FILE` and
+  the `vapid-key` mount. Push notifications are gone and the app no longer reads them. Drop them,
+  don't rename them.
+- References outside the app:
+  - `apps/authelia/configuration.acl.yaml`: `stocks.gerken.haus`.
+  - `apps/gatus/config/services.yaml`: check "StockDB" on `https://stocks.gerken.haus/`.
+  - `apps/homepage/config/services.yaml`: tile "StockDB" with `href` and favicon URL.
+  - `apps/moneta/app.yaml`: values of `MONETA__STOCKDB__URL`
+    (`http://stockdb.apps-stockdb.svc.cluster.local`) and `MONETA__STOCKDB__PUBLIC_URL`.
+  - `apps/moneta/network.yaml`: egress to namespace `apps-stockdb`, pods `app: stockdb`.
+  - `apps/stockdb/network.yaml`: ingress from `apps-moneta`, carried over to the new app.
+- Redirect: `apps/moneydb/ingress.yaml` already redirects a retired host with an `HTTPRoute`
+  `RequestRedirect` (301). For `stocks.gerken.haus`, leave out its `ReplaceFullPath`, so deep links
+  keep their path.
+
+### Steps
+
+1. **Add the new app next to the old one** (k3s PR): `apps/renditier` and its Application in
+   `app-of-apps`, namespace `apps-renditier`:
+   - Postgres with a new PVC (with the finalizer), database and user `renditier`.
+   - Secrets under `RENDITIER__` names, without the dead keys.
+   - Deployment `renditier`, image `gitea.gerken.haus/thies/renditier:main`, `replicas: 0`. The tag
+     only exists after the first CI run.
+   - Network policy including the moneta ingress, `ci.yaml`, `HTTPRoute` for
+     `renditier.gerken.haus`.
+   - Authelia ACL: add `renditier.gerken.haus`.
+
+   Nothing points at it yet.
+2. **Rename the Gitea repository** to `thies/Renditier`. Gitea redirects the old web and git URLs,
+   and repo secrets stay. Replace `K8S_TOKEN` and `K8S_CA_CERT` with the token from
+   `apps-renditier`. Point the local checkout at the new URL (`git remote set-url origin
    https://gitea.gerken.haus/thies/renditier.git`, one config for all worktrees).
-3. **Merge the rename PR.** CI pushes `thies/renditier:main` and restarts `renditier` in
-   `apps-renditier` (still 0 replicas, so nothing runs yet).
-4. **Switch over:** scale `stockdb` in `apps-stockdb` to 0 first, then `renditier` to 1. Never both
-   at once: both would run the scheduled fetch jobs against the same database. Move the ingress (and
-   the hostname, if it contains `stockdb`) to the new service and check login, dashboard and a price
-   fetch.
-5. **Clean up** once it runs: delete `apps-stockdb` (after the database has moved), the old CI role
-   binding and the `thies/stockdb` image in the package registry.
+3. **Merge the technical rename.** CI pushes `thies/renditier:main` and restarts `renditier`, still at 0
+   replicas.
+4. **Switch over** (a few minutes of downtime):
+   1. k3s commit: `apps/stockdb` to `replicas: 0`. Old and new must never run at the same time: both
+      would run the minutely fetch loop against their database, and the old one would keep writing
+      after the dump.
+   2. `pg_dump -Fc` from the old Postgres, `pg_restore --no-owner --role=renditier` into the new one.
+      Keep the dump.
+   3. k3s PR:
+      - `renditier` to `replicas: 1`.
+      - Move the `stocks.gerken.haus` route from `apps/stockdb` into `apps/renditier` as the
+        redirect. Same commit: two routes matching the same host and path conflict, and the
+        older one wins.
+      - moneta's URL values and egress policy.
+      - gatus and homepage (name "Renditier", new URL and favicon).
+      - Keep `stocks.gerken.haus` in the Authelia ACL as long as the redirect lives, unless forward
+        auth doesn't apply to the redirect route.
+   4. Check: login, dashboard, a price fetch within a minute, moneta's depot values, and that
+      `stocks.gerken.haus/<path>` lands on the same path on the new host.
+5. **Clean up** after a few days without trouble:
+   - k3s PR: remove `apps/stockdb` and its Application. Argo prunes everything except the PVC, which
+     hangs on its finalizer.
+   - Remove the finalizer by hand, keeping the dump.
+   - Delete the `thies/stockdb` image in the package registry.
 6. **Local setups:** rename `./stockdb.toml` to `./renditier.toml` and any `STOCKDB__` variables in
    your shell or `.env` files.
