@@ -16,3 +16,6 @@ export default useMediaQuery;
 
 // below Tailwind's sm, i.e. a phone
 export const PHONE = '(width < 600px)';
+
+// from Tailwind's md, where the sidebar replaces the tab bar
+export const DESKTOP = '(width >= 900px)';

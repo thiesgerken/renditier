@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import type { ReactNode } from 'react';
 
 import { fetchPerformance } from '../slices/performance';
 import { fetchStocks } from '../slices/stocks';
@@ -25,12 +26,15 @@ import {
 } from '../selectors/performance';
 
 import { useAppDispatch, useAppSelector } from '../store';
+import useMediaQuery, { DESKTOP } from '../useMediaQuery';
 import useQueryParam from '../useQueryParam';
+import DashboardSections from './DashboardSections';
 import {
   DASHBOARD_TABS,
   dashboardTabParam,
   toDashboardTab,
 } from './dashboardTabs';
+import type { DashboardTab } from './dashboardTabs';
 import type {
   DataSourceSelection,
   EitherPrice,
@@ -68,6 +72,7 @@ const Dashboard = () => {
   const portfolioPlotData = useAppSelector(state => state.portfolioPlot.items);
   const [tabParam, setTab] = useQueryParam('tab', { replace: true });
   const tab = toDashboardTab(tabParam);
+  const desktop = useMediaQuery(DESKTOP);
   const updatePortfolioPlotData = useCallback(
     (
       startDate: IsoDate | null,
@@ -89,6 +94,45 @@ const Dashboard = () => {
   const total = periods.find(p => p.kind === 'Total');
   const realtimeDates = total === undefined ? null : priceDates(total);
   const range = period === undefined ? null : getPeriodRange(period);
+
+  const sections: Record<DashboardTab, ReactNode> = {
+    chart: (
+      <PortfolioPlot
+        data={portfolioPlotData}
+        updateData={updatePortfolioPlotData}
+        performance={performance}
+        period={period}
+      />
+    ),
+    positions: (
+      <div className="flex flex-col gap-4">
+        <PositionsTable
+          period={period}
+          loading={performance.isFetching}
+          stocks={stocks}
+        />
+        <PositionsBars
+          period={period}
+          loading={performance.isFetching}
+          stocks={stocks}
+        />
+      </div>
+    ),
+    periods: (
+      <PerformanceTable
+        periods={periods}
+        loading={performance.isFetching}
+        selected={period === undefined ? null : periodKey(period)}
+      />
+    ),
+    composition: (
+      <Breakdowns
+        period={period}
+        loading={stocks.isFetching || performance.isFetching}
+        stocks={stocks}
+      />
+    ),
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -112,66 +156,43 @@ const Dashboard = () => {
 
       {period !== undefined && <KpiHeader period={period} />}
 
-      <Tabs
-        value={tab}
-        onValueChange={value => setTab(dashboardTabParam(value))}
-      >
-        {/* From md up, the sidebar lists the tabs. */}
-        <TabsList className="w-full sm:w-fit md:hidden max-sm:group-data-horizontal/tabs:h-auto">
-          {Object.entries(DASHBOARD_TABS).map(
-            ([value, { label, icon: Icon }]) => (
-              // Icon next to the label does not fit four times into 360px, so
-              // phones stack them.
-              <TabsTrigger
-                key={value}
-                value={value}
-                className="max-sm:flex-col max-sm:gap-0.5 max-sm:py-1 sm:px-3"
-              >
-                <Icon />
-                {label}
-              </TabsTrigger>
-            )
-          )}
-        </TabsList>
-
-        <TabsContent value="chart">
-          <PortfolioPlot
-            data={portfolioPlotData}
-            updateData={updatePortfolioPlotData}
-            performance={performance}
-            period={period}
-          />
-        </TabsContent>
-
-        <TabsContent value="positions" className="flex flex-col gap-4">
-          <PositionsTable
-            period={period}
-            loading={performance.isFetching}
-            stocks={stocks}
-          />
-          <PositionsBars
-            period={period}
-            loading={performance.isFetching}
-            stocks={stocks}
-          />
-        </TabsContent>
-
-        <TabsContent value="composition">
-          <Breakdowns
-            period={period}
-            loading={stocks.isFetching || performance.isFetching}
-            stocks={stocks}
-          />
-        </TabsContent>
-
-        <TabsContent value="periods">
-          <PerformanceTable
-            periods={periods}
-            loading={performance.isFetching}
-            selected={period === undefined ? null : periodKey(period)}
-          />
-        </TabsContent>
-      </Tabs>
+      {desktop ? (
+        <DashboardSections
+          sections={sections}
+          tab={tab}
+          onScrollTo={current => setTab(dashboardTabParam(current))}
+          ready={
+            performance.lastRequest !== null && stocks.lastRequest !== null
+          }
+        />
+      ) : (
+        <Tabs
+          value={tab}
+          onValueChange={value => setTab(dashboardTabParam(value))}
+        >
+          <TabsList className="w-full sm:w-fit max-sm:group-data-horizontal/tabs:h-auto">
+            {Object.entries(DASHBOARD_TABS).map(
+              ([value, { label, icon: Icon }]) => (
+                // Icon next to the label does not fit four times into 360px,
+                // so phones stack them.
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  className="max-sm:flex-col max-sm:gap-0.5 max-sm:py-1 sm:px-3"
+                >
+                  <Icon />
+                  {label}
+                </TabsTrigger>
+              )
+            )}
+          </TabsList>
+          {Object.entries(sections).map(([value, content]) => (
+            <TabsContent key={value} value={value}>
+              {content}
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
 
       {realtimeDates !== null && performance.lastRequest !== null && (
         <p className="px-1 text-xs text-muted-foreground">

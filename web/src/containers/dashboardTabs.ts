@@ -1,7 +1,7 @@
 import { CalendarRange, ChartArea, ChartPie, Rows3 } from 'lucide-react';
 
-// The dashboard's tabs, in the `?tab=` parameter. The sidebar lists them too,
-// so that desktop needs no tab list on the page.
+// The dashboard's tabs on phones and its sections on desktop, in the `?tab=`
+// parameter. The sidebar lists them too, as an anchor nav for the sections.
 // Labels short enough for all four to fit next to each other on a phone.
 export const DASHBOARD_TABS = {
   chart: { label: 'Entwicklung', icon: ChartArea },

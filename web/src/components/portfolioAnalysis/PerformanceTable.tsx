@@ -40,7 +40,8 @@ const PerformanceTable = ({ periods, loading, selected }: Props) => {
 
   return (
     <ProgressCard loading={loading}>
-      <CardHeader>
+      {/* From md up, the dashboard's section heading names the card. */}
+      <CardHeader className="md:hidden">
         <CardTitle>Zeiträume</CardTitle>
       </CardHeader>
       <div className="px-2">
