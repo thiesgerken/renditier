@@ -1,29 +1,29 @@
-import {
-  Container,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
 import { useState } from 'react';
-import { find, map } from 'lodash';
+import { map } from 'lodash';
 
-import type { PositionPerformance } from '../../types/api';
-import type { PerformanceState, StocksState } from '../../types/store';
+import type {
+  PortfolioPerformance,
+  PositionPerformance,
+} from '../../types/api';
+import type { StocksState } from '../../types/store';
 import { findStock, capitalizeTitle } from '../../selectors/stocks';
-import { isHeld } from '../../selectors/performance';
+import { isHeld, periodGain } from '../../selectors/performance';
 import { formatCurrency } from '../../format';
-import ProgressPaper from '../ProgressPaper';
+import ProgressCard from '../ProgressCard';
 import BarList from '../BarList';
 import type { BarItem } from '../BarList';
-
-const profit = (p: PositionPerformance) =>
-  p.end.value === null ? null : p.end.invested + p.end.value;
+import { CardContent } from '../ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 
 // The amount of a position per mode; null when it is unknown because the
 // position has no price. Sold positions are no part of what is invested or
-// held, but their realized profit or loss counts.
+// held, but what they gained or lost within the period counts.
 const MODES = {
   invested: {
     label: 'Kaufpreis',
@@ -34,16 +34,16 @@ const MODES = {
     amount: (p: PositionPerformance) => p.end.value,
   },
   profit: {
-    label: 'Gewinn',
+    label: 'Gewinn im Zeitraum',
     amount: (p: PositionPerformance) => {
-      const x = profit(p);
+      const x = periodGain(p);
       return x === null ? null : Math.max(0, x);
     },
   },
   loss: {
-    label: 'Verlust',
+    label: 'Verlust im Zeitraum',
     amount: (p: PositionPerformance) => {
-      const x = profit(p);
+      const x = periodGain(p);
       return x === null ? null : Math.max(0, -x);
     },
   },
@@ -56,22 +56,21 @@ type Mode = keyof typeof MODES;
 const MAX_ROWS = 10;
 
 interface Props {
-  performance: PerformanceState;
+  // the positions at the end of this period
+  period: PortfolioPerformance | undefined;
+  loading: boolean;
   stocks: StocksState;
 }
 
-const PositionsBars = ({ performance, stocks }: Props) => {
+const isMode = (value: string): value is Mode => value in MODES;
+
+const PositionsBars = ({ period, loading, stocks }: Props) => {
   const [mode, setMode] = useState<Mode>('invested');
 
-  const handleModeChange = (event: SelectChangeEvent<Mode>) => {
-    setMode(event.target.value);
-  };
-
-  const total = find(performance.data, p => p.kind === 'Total');
   const positions =
-    total === undefined
+    period === undefined
       ? []
-      : map(total.positions, (p, isin) => {
+      : map(period.positions, (p, isin) => {
           const stock = findStock(stocks, isin);
           // the full title, because share classes of one fund differ only at
           // its end, and the labels must tell them apart
@@ -87,8 +86,8 @@ const PositionsBars = ({ performance, stocks }: Props) => {
   const unpriced = positions.filter(p => p.amount === null);
 
   return (
-    <Container maxWidth="xl" style={{ padding: '0px' }}>
-      <ProgressPaper loading={performance.isFetching}>
+    <ProgressCard loading={loading}>
+      <CardContent className="flex flex-col gap-3">
         <BarList
           title={`Positionen nach ${MODES[mode].label}`}
           items={items}
@@ -102,25 +101,23 @@ const PositionsBars = ({ performance, stocks }: Props) => {
               : undefined
           }
         />
-        <FormControl sx={{ m: 1, minWidth: 120 }} variant="standard">
-          <InputLabel id="positions-mode-label">Art</InputLabel>
-          <Select
-            labelId="positions-mode-label"
-            id="positions-mode"
-            label="Art"
-            value={mode}
-            autoWidth
-            onChange={handleModeChange}
-          >
+        <Select
+          value={mode}
+          onValueChange={value => isMode(value) && setMode(value)}
+        >
+          <SelectTrigger aria-label="Art" className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
             {Object.entries(MODES).map(([value, { label }]) => (
-              <MenuItem key={value} value={value}>
+              <SelectItem key={value} value={value}>
                 {label}
-              </MenuItem>
+              </SelectItem>
             ))}
-          </Select>
-        </FormControl>
-      </ProgressPaper>
-    </Container>
+          </SelectContent>
+        </Select>
+      </CardContent>
+    </ProgressCard>
   );
 };
 

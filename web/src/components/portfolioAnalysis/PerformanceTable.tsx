@@ -1,105 +1,79 @@
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import { Container, useMediaQuery } from '@mui/material';
-import { styled, useTheme } from '@mui/material/styles';
+import { Fragment } from 'react';
 
-import type { PerformanceState } from '../../types/store';
-import PerformanceRow from './PerformanceRow';
-import ProgressPaper from '../ProgressPaper';
-import Hidden from '../Hidden';
-
-const StyledTableCell = styled(TableCell)({
-  '&.MuiTableCell-head': {
-    fontWeight: 600,
-  },
-});
+import type { PortfolioPerformance } from '../../types/api';
+import {
+  getPeriodDescription,
+  groupPeriods,
+  periodKey,
+} from '../../selectors/performance';
+import {
+  ColumnHead,
+  InvestedCell,
+  IrrCell,
+  ProfitCell,
+  ValueCell,
+} from '../PerformanceCells';
+import ProgressCard from '../ProgressCard';
+import { CardHeader, CardTitle } from '../ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
 
 interface Props {
-  performance: PerformanceState;
+  periods: PortfolioPerformance[];
+  loading: boolean;
+  // the periodKey of the dashboard's period, whose row is highlighted
+  selected: string | null;
 }
 
-const PerformanceTable = ({ performance }: Props) => {
-  const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
-
-  return (
-    <Container maxWidth="xl" style={{ padding: '0px' }}>
-      <ProgressPaper loading={performance.isFetching}>
-        <TableContainer>
-          <Table size="small" aria-label="performance">
-            <TableHead>
-              <TableRow>
-                <StyledTableCell>Zeitraum</StyledTableCell>
-                <Hidden xsDown>
-                  <StyledTableCell align="right">Investiert</StyledTableCell>
-                </Hidden>
-                <StyledTableCell align="right">Wert</StyledTableCell>
-                <StyledTableCell align="right">Gewinn</StyledTableCell>
-                <StyledTableCell align="right">Zinsfuß</StyledTableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {performance.data !== null && (
-                <>
-                  {performance.data.map(
-                    item =>
-                      ['Today', 'WeekToDate'].includes(item.kind) && (
-                        <PerformanceRow
-                          data={item}
-                          key={`${item.kind}-${item.end.date}`}
-                        />
-                      )
-                  )}
-                  <TableRow>
-                    {Array(xsDown ? 4 : 5)
-                      .fill(1)
-                      .map((_, i) => (
-                        <TableCell key={`filler0-${i.toString()}`}>
-                          &nbsp;
-                        </TableCell>
-                      ))}
-                  </TableRow>
-                  {performance.data.map(
-                    item =>
-                      ['Total', 'YearToYear', 'YearToDate'].includes(
-                        item.kind
-                      ) && (
-                        <PerformanceRow
-                          data={item}
-                          key={`${item.kind}-${item.end.date}`}
-                        />
-                      )
-                  )}
-                  <TableRow>
-                    {Array(xsDown ? 4 : 5)
-                      .fill(1)
-                      .map((_, i) => (
-                        <TableCell key={`filler1-${i.toString()}`}>
-                          &nbsp;
-                        </TableCell>
-                      ))}
-                  </TableRow>
-                  {performance.data.map(
-                    item =>
-                      ['MonthToMonth', 'MonthToDate'].includes(item.kind) && (
-                        <PerformanceRow
-                          data={item}
-                          key={`${item.kind}-${item.end.date}`}
-                        />
-                      )
-                  )}
-                </>
+// Every period side by side, to compare them; the selected one is highlighted.
+const PerformanceTable = ({ periods, loading, selected }: Props) => (
+  <ProgressCard loading={loading}>
+    <CardHeader>
+      <CardTitle>Verlauf</CardTitle>
+    </CardHeader>
+    <div className="px-2">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <ColumnHead column="period" />
+            <ColumnHead column="invested" className="hidden sm:table-cell" />
+            <ColumnHead column="value" />
+            <ColumnHead column="profit" />
+            <ColumnHead column="irr" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {groupPeriods(periods).map((group, i) => (
+            <Fragment key={group[0].kind}>
+              {i > 0 && (
+                <TableRow aria-hidden className="h-6 hover:bg-transparent" />
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </ProgressPaper>
-    </Container>
-  );
-};
+              {group.map(p => (
+                <TableRow
+                  key={periodKey(p)}
+                  className="data-[state=selected]:bg-primary/10"
+                  data-state={
+                    periodKey(p) === selected ? 'selected' : undefined
+                  }
+                >
+                  <TableCell>{getPeriodDescription(p)}</TableCell>
+                  <InvestedCell period={p} className="hidden sm:table-cell" />
+                  <ValueCell period={p} />
+                  <ProfitCell period={p} />
+                  <IrrCell period={p} />
+                </TableRow>
+              ))}
+            </Fragment>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  </ProgressCard>
+);
 
 export default PerformanceTable;

@@ -11,6 +11,7 @@ import App from './containers/App';
 import ServiceWorker from './containers/ServiceWorker';
 import { createAppStore } from './store';
 import muiTheme from './muiTheme';
+import { TooltipProvider } from './components/ui/tooltip';
 
 it('renders without crashing', () => {
   moment.locale('de');
@@ -29,8 +30,10 @@ it('renders without crashing', () => {
             dateLibInstance={moment}
             adapterLocale="de"
           >
-            <ServiceWorker />
-            <App />
+            <TooltipProvider>
+              <ServiceWorker />
+              <App />
+            </TooltipProvider>
           </LocalizationProvider>
         </ThemeProvider>
       </MemoryRouter>

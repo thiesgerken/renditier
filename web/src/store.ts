@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import accounts from './slices/accounts';
 import authentication from './slices/authentication';
 import notifications from './slices/notifications';
+import period from './slices/period';
 import performance from './slices/performance';
 import portfolioPlot from './slices/portfolioPlot';
 import receipts from './slices/receipts';
@@ -18,6 +19,7 @@ import transactions from './slices/transactions';
 const rootReducer = combineReducers({
   authentication,
   notifications,
+  period,
   portfolioPlot,
   stockPlot,
   accounts,
