@@ -13,9 +13,9 @@ import {
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
 import { Button } from '../components/ui/button';
+import FormDialogContent from '../components/FormDialogContent';
 import {
   Dialog,
-  DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -95,7 +95,7 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
   return (
     <>
       <form
-        className="grid gap-4"
+        className="flex flex-1 flex-col gap-4"
         onSubmit={event => {
           event.preventDefault();
           onSave();
@@ -141,7 +141,7 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
             <AlertDescription>Depot ist unvollständig!</AlertDescription>
           </Alert>
         )}
-        <DialogFooter>
+        <DialogFooter className="mt-auto">
           {account.id !== null && (
             <Button
               type="button"
@@ -181,13 +181,9 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
 
 const AccountDialog = ({ initialAccount, open, onClose }: Props) => (
   <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
-    <DialogContent
-      showCloseButton={false}
-      // A stray click next to the form must not throw away the input.
-      onInteractOutside={event => event.preventDefault()}
-    >
+    <FormDialogContent>
       <AccountForm initialAccount={initialAccount} onClose={onClose} />
-    </DialogContent>
+    </FormDialogContent>
   </Dialog>
 );
 
