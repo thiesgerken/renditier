@@ -3,8 +3,6 @@ import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
-import '@fontsource/oxygen/400.css';
-import '@fontsource/oxygen/700.css';
 import { pink, teal } from '@mui/material/colors';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
