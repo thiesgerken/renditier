@@ -1,6 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { map } from 'lodash';
-import moment from 'moment';
 
 import { fetchJson } from '../api';
 import type { AppThunk } from '../store';
@@ -39,7 +38,7 @@ const decorate = (plot: StockPlot): StoredStockPlot => {
       p.value !== null && p.invested !== 0
         ? ((p.value - p.invested) / p.invested) * 100
         : null,
-    epoch: moment(p.date).valueOf(),
+    epoch: Temporal.Instant.from(p.date).epochMilliseconds,
   }));
 
   const first = decorated[0];
