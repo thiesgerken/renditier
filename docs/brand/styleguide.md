@@ -121,7 +121,8 @@ against at most 500 in the UI, and the orange "tier".
 | --- | --- |
 | Wordmark | 700, letter spacing -0.01em, "Rendi" in navy (cream on dark), "tier" in orange |
 | Titles, emphasis, active navigation, buttons | 500 |
-| Numbers (amounts, prices, percentages, KPIs) | 400, always with tabular figures (`font-variant-numeric: tabular-nums`) |
+| KPI values (the big figures in the dashboard's tiles) | 500, with tabular figures |
+| Other numbers (amounts, prices, percentages in tables and lists) | 400, always with tabular figures (`font-variant-numeric: tabular-nums`) |
 | Navigation | 400 |
 | Running text, labels | 300 |
 

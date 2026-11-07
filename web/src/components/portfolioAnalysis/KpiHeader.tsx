@@ -60,7 +60,7 @@ const KpiTile = ({ icon: Icon, label, value, detail, tone }: TileProps) => {
       </div>
       <div
         className={cn(
-          'text-xl font-normal tabular-nums sm:text-2xl',
+          'text-xl font-medium tabular-nums sm:text-2xl',
           styles.value
         )}
       >
