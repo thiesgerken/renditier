@@ -21,7 +21,6 @@ import {
   Shapes,
   ShoppingBag,
   ShoppingBasket,
-  SwissFranc,
   Zap,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -62,7 +61,6 @@ const CURRENCY_ICONS: Partial<Record<string, LucideIcon>> = {
   GBP: PoundSterling,
   JPY: JapaneseYen,
   CNY: JapaneseYen,
-  CHF: SwissFranc,
   INR: IndianRupee,
 };
 
