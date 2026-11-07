@@ -1,5 +1,11 @@
 import type { AccountsState, StocksState } from '../types/store';
-import { toEditable, toTransaction, withDate } from './TransactionDialog';
+import { createAppStore } from '../store';
+import { clickButton, failingFetch, render } from '../testing';
+import TransactionDialog, {
+  toEditable,
+  toTransaction,
+  withDate,
+} from './TransactionDialog';
 
 const accounts: AccountsState = {
   isFetching: false,
@@ -80,5 +86,29 @@ describe('the transaction form', () => {
     const edited = { ...draft, when: withDate(draft.when, tomorrow) };
 
     expect(toTransaction(edited, accounts, stocks)).toBeNull();
+  });
+});
+
+describe('the transaction dialog', () => {
+  let cleanup: () => void;
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('stays open with the error when deleting fails', async () => {
+    vi.stubGlobal('fetch', failingFetch());
+    const onClose = vi.fn();
+    cleanup = await render(
+      <TransactionDialog initialTransaction={stored} open onClose={onClose} />,
+      createAppStore()
+    );
+
+    await clickButton('Löschen');
+    await clickButton('Ja, löschen');
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain('Löschen fehlgeschlagen');
+    expect(document.body.textContent).toContain('Transaktion bearbeiten');
   });
 });

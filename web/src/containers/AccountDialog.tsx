@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CircleAlert, Trash2 } from 'lucide-react';
 
-import { Alert, AlertDescription } from '../components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +29,7 @@ import {
 } from '../slices/accounts';
 import { useAppDispatch } from '../store';
 import type { Account } from '../types/api';
+import useChange from '../useChange';
 
 // The dialog doubles as the "create" form, where there is no id yet.
 export type AccountDraft = Omit<Account, 'id'> & { id: number | null };
@@ -68,11 +69,12 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
   const [account, setAccount] = useState(initialAccount);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
+  const { failure, pending, run } = useChange(onClose);
 
   const onDelete = () => {
     // The delete button only renders when `account.id !== null`.
-    if (account.id !== null) dispatch(deleteAccount(account.id));
-    onClose();
+    if (account.id !== null)
+      void run(dispatch(deleteAccount(account.id)), 'Löschen fehlgeschlagen');
   };
 
   const onSave = () => {
@@ -83,13 +85,12 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
       return;
     }
 
-    if (t.id === null) {
-      dispatch(createAccount(t));
-    } else {
-      dispatch(updateAccount({ ...t, id: t.id }));
-    }
-
-    onClose();
+    void run(
+      t.id === null
+        ? dispatch(createAccount(t))
+        : dispatch(updateAccount({ ...t, id: t.id })),
+      'Speichern fehlgeschlagen'
+    );
   };
 
   return (
@@ -141,12 +142,20 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
             <AlertDescription>Depot ist unvollständig!</AlertDescription>
           </Alert>
         )}
+        {failure !== null && (
+          <Alert variant="destructive">
+            <CircleAlert />
+            <AlertTitle>{failure.title}</AlertTitle>
+            <AlertDescription>{failure.message}</AlertDescription>
+          </Alert>
+        )}
         <DialogFooter className="mt-auto">
           {account.id !== null && (
             <Button
               type="button"
               variant="destructive"
               className="sm:mr-auto"
+              disabled={pending}
               onClick={() => setConfirmOpen(true)}
             >
               <Trash2 />
@@ -156,7 +165,9 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
           <Button type="button" variant="outline" onClick={onClose}>
             Abbrechen
           </Button>
-          <Button type="submit">Speichern</Button>
+          <Button type="submit" disabled={pending}>
+            Speichern
+          </Button>
         </DialogFooter>
       </form>
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
