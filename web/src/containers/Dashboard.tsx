@@ -29,6 +29,11 @@ import {
 
 import { useAppDispatch, useAppSelector } from '../store';
 import useQueryParam from '../useQueryParam';
+import {
+  DASHBOARD_TABS,
+  dashboardTabParam,
+  toDashboardTab,
+} from './dashboardTabs';
 import type {
   DataSourceSelection,
   IsoDate,
@@ -52,17 +57,6 @@ const priceDates = (period: PortfolioPerformance): [string, string] | null => {
     : [formatDateTime(oldest), formatDateTime(newest)];
 };
 
-// short enough for all four to fit next to each other on a phone
-const TABS = {
-  chart: 'Entwicklung',
-  positions: 'Positionen',
-  composition: 'Anteile',
-  periods: 'Zeiträume',
-};
-
-const isTab = (value: string | null): value is keyof typeof TABS =>
-  value !== null && value in TABS;
-
 const Dashboard = () => {
   const dispatch = useAppDispatch();
   const performance = useAppSelector(state => state.performance);
@@ -70,8 +64,7 @@ const Dashboard = () => {
   const selectedKey = useAppSelector(state => state.period.selected);
   const portfolioPlotData = useAppSelector(state => state.portfolioPlot.items);
   const [tabParam, setTab] = useQueryParam('tab', { replace: true });
-  // a stale or mistyped link still shows the dashboard
-  const tab = isTab(tabParam) ? tabParam : 'chart';
+  const tab = toDashboardTab(tabParam);
   const updatePortfolioPlotData = useCallback(
     (
       startDate: IsoDate | null,
@@ -101,7 +94,7 @@ const Dashboard = () => {
       <div className="-mx-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 md:sticky md:top-0 md:z-20 md:bg-background/90 md:backdrop-blur">
         <div>
           <h1 className="text-lg font-semibold">
-            {period === undefined ? 'Übersicht' : getPeriodDescription(period)}
+            {period === undefined ? 'Analyse' : getPeriodDescription(period)}
           </h1>
           {range !== null && (
             <p className="text-xs text-muted-foreground">
@@ -118,10 +111,11 @@ const Dashboard = () => {
 
       <Tabs
         value={tab}
-        onValueChange={value => setTab(value === 'chart' ? null : value)}
+        onValueChange={value => setTab(dashboardTabParam(value))}
       >
-        <TabsList className="w-full sm:w-fit">
-          {Object.entries(TABS).map(([value, label]) => (
+        {/* From md up, the sidebar lists the tabs. */}
+        <TabsList className="w-full sm:w-fit md:hidden">
+          {Object.entries(DASHBOARD_TABS).map(([value, label]) => (
             <TabsTrigger key={value} value={value} className="sm:px-3">
               {label}
             </TabsTrigger>

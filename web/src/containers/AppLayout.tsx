@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from 'cn';
@@ -32,6 +33,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
+import {
+  DASHBOARD_TABS,
+  dashboardTabParam,
+  toDashboardTab,
+} from './dashboardTabs';
+import type { DashboardTab } from './dashboardTabs';
 
 // `path` is the first segment of the route.
 interface Destination {
@@ -40,9 +47,15 @@ interface Destination {
   icon: LucideIcon;
 }
 
+const ANALYSIS: Destination = {
+  path: 'dashboard',
+  label: 'Analyse',
+  icon: LayoutDashboard,
+};
+
 // Four, so that the phone's tab bar has room for every label at 360px.
 const DESTINATIONS: Destination[] = [
-  { path: 'dashboard', label: 'Übersicht', icon: LayoutDashboard },
+  ANALYSIS,
   { path: 'stocks', label: 'Wertpapiere', icon: ChartLine },
   { path: 'transactions', label: 'Transaktionen', icon: ArrowLeftRight },
   { path: 'accounts', label: 'Depots', icon: Landmark },
@@ -90,6 +103,37 @@ const SidebarLink = ({ destination, active }: LinkProps) => (
     />
     {destination.label}
   </Link>
+);
+
+interface DashboardTabLinksProps {
+  // null when the dashboard isn't the current page
+  active: DashboardTab | null;
+}
+
+// The dashboard's tabs below "Analyse". On the dashboard they replace the
+// history entry like the in-page tabs on phones, so that back leaves the page
+// instead of stepping through the tabs.
+const DashboardTabLinks = ({ active }: DashboardTabLinksProps) => (
+  <div className="ml-5 flex flex-col gap-0.5 border-l pl-2">
+    {Object.entries(DASHBOARD_TABS).map(([tab, label]) => {
+      const param = dashboardTabParam(tab);
+
+      return (
+        <Link
+          key={tab}
+          to={param === null ? '/dashboard' : `/dashboard?tab=${param}`}
+          replace={active !== null}
+          aria-current={tab === active ? 'true' : undefined}
+          className={cn(
+            'rounded-md px-3 py-1.5 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+            tab === active && 'font-medium text-sidebar-primary'
+          )}
+        >
+          {label}
+        </Link>
+      );
+    })}
+  </div>
 );
 
 const TabBarLink = ({ destination, active }: LinkProps) => (
@@ -179,8 +223,12 @@ interface Props {
 // menu, which also holds the settings, and a tab bar at the bottom within
 // reach of the thumb.
 const AppLayout = ({ children }: Props) => {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const current = currentDestination(pathname);
+  const dashboardTab =
+    current === ANALYSIS.path
+      ? toDashboardTab(new URLSearchParams(search).get('tab'))
+      : null;
   // App only mounts the layout once logged in, but the state type admits null.
   const name = useAppSelector(
     ({ authentication }) => authentication.userInfo?.fullName ?? null
@@ -198,11 +246,10 @@ const AppLayout = ({ children }: Props) => {
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-2">
           {DESTINATIONS.map(d => (
-            <SidebarLink
-              key={d.path}
-              destination={d}
-              active={d.path === current}
-            />
+            <Fragment key={d.path}>
+              <SidebarLink destination={d} active={d.path === current} />
+              {d === ANALYSIS && <DashboardTabLinks active={dashboardTab} />}
+            </Fragment>
           ))}
         </nav>
         <div className="flex flex-col gap-1 border-t p-2">
