@@ -44,7 +44,7 @@ impl EntityType {
 
     fn from_kind(kind: &str) -> Result<Self, String> {
         match kind {
-            // stocks of an older stockdb version still carry this kind
+            // stocks stored by older versions still carry this kind
             "ETN" => Ok(Self::Derivative),
             _ => Self::ALL
                 .iter()
@@ -269,7 +269,7 @@ async fn get_crypto_snapshot(entity_value: &str) -> Result<Value, Box<dyn Error>
 }
 
 /// The quote of a crypto currency on onvista's default exchange for it (e.g. Bitstamp for Bitcoin,
-/// CoinDesk Data for Ether), the one exchange stockdb tracks it on. The snapshot's quote list is
+/// CoinDesk Data for Ether), the one exchange renditier tracks it on. The snapshot's quote list is
 /// no alternative: it holds Bitfinex quotes in EUR and USD alike.
 async fn get_crypto_quote(isin: &str) -> Result<Value, Box<dyn Error>> {
     get_json(&format!(

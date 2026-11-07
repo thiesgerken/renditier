@@ -1,4 +1,4 @@
-use stockdb::cli;
+use renditier::cli;
 
 use clap::{Arg, ArgAction, ArgGroup, Command, crate_authors, crate_name, crate_version};
 use clap_complete::{Generator, Shell, generate};
@@ -17,7 +17,7 @@ fn main() {
     let matches = Command::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
-        .about("Generator of useful files for the distribution of stockdb")
+        .about("Generator of useful files for the distribution of renditier")
         .arg(
             Arg::new("generator")
                 .long("shell")

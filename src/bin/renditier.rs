@@ -1,6 +1,6 @@
-use stockdb::cli::Config;
-use stockdb::initialize_logging;
-use stockdb::*;
+use renditier::cli::Config;
+use renditier::initialize_logging;
+use renditier::*;
 
 use diesel::{
     PgConnection,
@@ -12,7 +12,7 @@ use tokio::runtime::Builder;
 
 fn main() {
     let runtime = Builder::new_multi_thread()
-        .thread_name("stockdb-main")
+        .thread_name("renditier-main")
         .enable_all()
         .build()
         .unwrap();

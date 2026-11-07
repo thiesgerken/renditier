@@ -22,7 +22,7 @@ pub fn build() -> Command {
                 .short('c')
                 .long("config")
                 .value_name("file")
-                .help("read configuration from this file (instead of config.* in '/etc/stockdb' and stockdb.* in '.')"))
+                .help("read configuration from this file (instead of config.* in '/etc/renditier' and renditier.* in '.')"))
         .arg(Arg::new("dump")
                 .long("dump")
                 .action(ArgAction::SetTrue)
@@ -71,7 +71,7 @@ impl Default for Config {
 }
 
 // set default settings and load overrides from config files
-// files that are considered: basenames /etc/stockdb/config and ./stockdb
+// files that are considered: basenames /etc/renditier/config and ./renditier
 // fails, if additional_file does not exist or cannot be read
 pub fn initialize_settings(
     additional_file: Option<&str>,
@@ -82,12 +82,12 @@ pub fn initialize_settings(
         settings.add_source(config::File::from(Path::new(p)).required(true))
     } else {
         settings
-            .add_source(config::File::with_name("/etc/stockdb/config").required(false))
-            .add_source(config::File::with_name("./stockdb").required(false))
+            .add_source(config::File::with_name("/etc/renditier/config").required(false))
+            .add_source(config::File::with_name("./renditier").required(false))
     };
 
     settings.add_source(
-        config::Environment::with_prefix("STOCKDB")
+        config::Environment::with_prefix("RENDITIER")
             .prefix_separator("__")
             .separator("__"),
     )

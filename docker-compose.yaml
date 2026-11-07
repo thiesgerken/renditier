@@ -1,19 +1,19 @@
 services:
-  stockdb:
-    image: gitea.gerken.haus/thies/stockdb:main
+  renditier:
+    image: gitea.gerken.haus/thies/renditier:main
     restart: unless-stopped
     ports:
       - "8484:8383"
     environment:
-      - STOCKDB__DATABASE=postgres://postgres@postgres/stocks
+      - RENDITIER__DATABASE=postgres://postgres@postgres/stocks
       # Demo value for local use only: anyone can decrypt the session cookies with it.
       # Generate a real one with `openssl rand -base64 32`.
-      - STOCKDB__WEB__SECRET_KEY=WD91xfOSUW8WQwQM3vihMj5+SVNM3ICkCmN6rqHdr8o=
-      - STOCKDB__WEB__ADDRESS=0.0.0.0
+      - RENDITIER__WEB__SECRET_KEY=WD91xfOSUW8WQwQM3vihMj5+SVNM3ICkCmN6rqHdr8o=
+      - RENDITIER__WEB__ADDRESS=0.0.0.0
       # Optional: the users' time zone, which decides where days, weeks and years begin.
       # Defaults to Europe/Berlin; an unknown zone stops the server at startup.
-      - STOCKDB__TIMEZONE=Europe/Berlin
-    command: stockdb -v serve
+      - RENDITIER__TIMEZONE=Europe/Berlin
+    command: renditier -v serve
 
   postgres:
     image: postgres:18@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42

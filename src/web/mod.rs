@@ -34,7 +34,7 @@ pub async fn handle(config: Config) {
         .limit("json", 10.mebibytes());
 
     let mut rocket_config = rocket::config::Config::figment()
-        .merge(("databases", map!["stockdb" => database_config]))
+        .merge(("databases", map!["renditier" => database_config]))
         .merge(("port", config.port))
         .merge(("address", config.address.clone()))
         .merge(("limits", limits))
@@ -82,5 +82,5 @@ pub async fn handle(config: Config) {
         .expect("server died");
 }
 
-#[database("stockdb")]
+#[database("renditier")]
 pub struct DbConn(diesel::PgConnection);
