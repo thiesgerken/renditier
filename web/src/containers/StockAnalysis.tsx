@@ -5,12 +5,7 @@ import { CircleAlert, LoaderCircle } from 'lucide-react';
 import { fetchPerformance } from '../slices/performance';
 import { fetchStocks } from '../slices/stocks';
 import { updateStockPlot } from '../slices/stockPlot';
-import {
-  breakdownShares,
-  capitalizeTitle,
-  findStock,
-  holdingShares,
-} from '../selectors/stocks';
+import { capitalizeTitle, findStock } from '../selectors/stocks';
 import {
   formatCurrency,
   formatDate,
@@ -23,6 +18,7 @@ import OnvistaButton from '../components/OnvistaButton';
 import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
 import StockPlot from '../components/stockAnalysis/StockPlot';
 import BarList from '../components/BarList';
+import { BREAKDOWNS } from '../components/breakdowns';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import {
@@ -145,29 +141,10 @@ const StockAnalysis = ({ isin }: Props) => {
     ],
   ];
 
-  // Same row counts as the portfolio-wide lists on the dashboard.
-  const compositions = [
-    {
-      title: 'Einzeltitel',
-      maxRows: 10,
-      shares: holdingShares(stock) ?? [],
-    },
-    {
-      title: 'Branchen',
-      maxRows: 11,
-      shares: breakdownShares(stock, 'industryBreakdown'),
-    },
-    {
-      title: 'Währungen',
-      maxRows: 5,
-      shares: breakdownShares(stock, 'currencyBreakdown'),
-    },
-    {
-      title: 'Länder',
-      maxRows: 10,
-      shares: breakdownShares(stock, 'countryBreakdown'),
-    },
-  ].filter(c => c.shares.length > 0);
+  const compositions = BREAKDOWNS.map(b => ({
+    ...b,
+    items: b.shares(stock) ?? [],
+  })).filter(b => b.items.length > 0);
 
   return (
     <div className="mx-auto flex max-w-(--breakpoint-xl) flex-col gap-4">
@@ -225,11 +202,13 @@ const StockAnalysis = ({ isin }: Props) => {
       {compositions.length > 0 && (
         <Card>
           <CardContent className="grid gap-6 md:grid-cols-2">
-            {compositions.map(({ title, maxRows, shares }) => (
+            {compositions.map(({ title, icon, maxRows, items, marker }) => (
               <BarList
                 key={title}
                 title={title}
-                items={shares}
+                icon={icon}
+                marker={marker}
+                items={items}
                 maxRows={maxRows}
                 total={100}
               />
