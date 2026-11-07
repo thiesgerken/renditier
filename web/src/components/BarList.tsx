@@ -75,8 +75,8 @@ interface Props {
   note?: string;
 }
 
-// A horizontal bar per item, longest first. Bars are scaled to the largest
-// item; negative items get the secondary color.
+// A horizontal bar per item, longest first; negative items get the secondary
+// color.
 const BarList = ({
   title,
   items,
@@ -88,7 +88,14 @@ const BarList = ({
   const rows = barRows(items, maxRows, unattributed);
   if (rows.length === 0) return null;
 
-  const largest = Math.max(...rows.map(r => Math.abs(r.value)));
+  // Bars are scaled to the largest item, so that a large "Unbekannt" does not
+  // squash the items; a remainder beyond that fills the row.
+  const itemRows = rows.filter(r => !r.remainder);
+  const largest = Math.max(
+    ...(itemRows.length > 0 ? itemRows : rows).map(r => Math.abs(r.value))
+  );
+  const barWidth = (r: BarRow) =>
+    `${Math.min(1, Math.abs(r.value) / largest) * 100}%`;
 
   const barColor = (r: BarRow): string => {
     if (r.value < 0) return 'secondary.main';
@@ -139,7 +146,7 @@ const BarList = ({
                 mb: 1,
                 borderRadius: 1,
                 bgcolor: barColor(r),
-                width: `${(Math.abs(r.value) / largest) * 100}%`,
+                width: barWidth(r),
               }}
             />
           </Box>

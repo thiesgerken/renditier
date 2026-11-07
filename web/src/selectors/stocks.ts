@@ -55,27 +55,23 @@ const normalizeBreakdownName = (name: string): string =>
     ? 'USA'
     : name;
 
+// The breakdown columns hold onvista's JSON verbatim (see types/api.ts), which
+// is sometimes the JSON `null` rather than a missing value.
+const parseOnvistaList = <T>(raw: string | null): T[] | null =>
+  raw === null ? null : (JSON.parse(raw) as T[] | null);
+
 export const breakdownShares = (
   stock: Stock,
   kind: BreakdownKind
-): FundShare[] => {
-  const raw = stock[kind];
-  // The column holds onvista's JSON verbatim; see types/api.ts.
-  const entries: StockBreakdownEntry[] = raw === null ? [] : JSON.parse(raw);
-
-  return entries.map(e => ({
+): FundShare[] =>
+  (parseOnvistaList<StockBreakdownEntry>(stock[kind]) ?? []).map(e => ({
     label: normalizeBreakdownName(e.nameBreakdown),
     value: e.investmentPct,
   }));
-};
 
-// Without holdings data, a stock is its own single holding.
-export const holdingShares = (stock: Stock): FundShare[] => {
-  if (stock.holdings === null) return [{ label: stock.title, value: 100 }];
-
-  const holdings: StockHolding[] = JSON.parse(stock.holdings);
-  return holdings.map(h => ({
+// null when onvista has no holdings for the stock
+export const holdingShares = (stock: Stock): FundShare[] | null =>
+  parseOnvistaList<StockHolding>(stock.holdings)?.map(h => ({
     label: unescape(h.instrument.name).replace('/The', ''),
     value: h.investmentPct,
-  }));
-};
+  })) ?? null;

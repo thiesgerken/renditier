@@ -60,7 +60,12 @@ const breakdown = (
 // eleven so that all GICS sectors fit; currencies beyond the top five are
 // noise.
 const LISTS = [
-  { title: 'Einzeltitel', maxRows: 10, shares: holdingShares },
+  {
+    title: 'Einzeltitel',
+    maxRows: 10,
+    // a stock without holdings data, e.g. a share, is its own single holding
+    shares: (s: Stock) => holdingShares(s) ?? [{ label: s.title, value: 100 }],
+  },
   {
     title: 'Branchen',
     maxRows: 11,

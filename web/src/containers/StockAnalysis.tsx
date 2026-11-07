@@ -158,7 +158,7 @@ const StockAnalysis = ({
     {
       title: 'Einzeltitel',
       maxRows: 10,
-      shares: stock.holdings === null ? [] : holdingShares(stock),
+      shares: holdingShares(stock) ?? [],
     },
     {
       title: 'Branchen',
