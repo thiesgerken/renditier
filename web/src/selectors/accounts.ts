@@ -12,17 +12,3 @@ export const findAccount = (
   if (id === null) return null;
   return find(accounts.items, x => x.id === id) || null;
 };
-
-// FIXME(tsx-migration): same dead `accounts.items === null` guard dropped here.
-export const findAccountByName = (
-  accounts: AccountsState,
-  name: string | null
-): Account | null => {
-  if (name === null) return null;
-  return (
-    find(
-      accounts.items,
-      x => x.name.toUpperCase().trim() === name.toUpperCase().trim()
-    ) || null
-  );
-};
