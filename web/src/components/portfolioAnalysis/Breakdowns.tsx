@@ -34,13 +34,18 @@ const breakdown = (
   positions: HeldPosition[],
   shares: (stock: Stock) => FundShare[]
 ): BarItem[] => {
-  const amounts = new Map<string, number>();
+  const items = new Map<string, BarItem>();
   positions.forEach(({ stock, invested }) => {
-    shares(stock).forEach(({ label, value }) => {
-      amounts.set(label, (amounts.get(label) ?? 0) + (invested * value) / 100);
+    shares(stock).forEach(({ label, value, isin }) => {
+      const amount = (invested * value) / 100;
+      items.set(label, {
+        label,
+        value: (items.get(label)?.value ?? 0) + amount,
+        isin,
+      });
     });
   });
-  return [...amounts].map(([label, value]) => ({ label, value }));
+  return [...items.values()];
 };
 
 interface Props {
@@ -85,7 +90,7 @@ const Breakdowns = ({ period, loading, stocks }: Props) => {
               // single holding
               items={breakdown(
                 invested,
-                s => shares(s) ?? [{ label: s.title, value: 100 }]
+                s => shares(s) ?? [{ label: s.title, value: 100, isin: s.isin }]
               )}
               maxRows={maxRows}
               total={sumBy(invested, 'invested')}

@@ -18,6 +18,7 @@ import OnvistaButton from '../components/OnvistaButton';
 import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
 import StockPlot from '../components/stockAnalysis/StockPlot';
 import BarList from '../components/BarList';
+import CompanyLogo from '../components/CompanyLogo';
 import { BREAKDOWNS } from '../components/breakdowns';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
@@ -150,7 +151,12 @@ const StockAnalysis = ({ isin }: Props) => {
     <div className="mx-auto flex max-w-(--breakpoint-xl) flex-col gap-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <CompanyLogo
+              isin={stock.isin}
+              name={stock.title}
+              className="size-5"
+            />
             {capitalizeTitle(stock.title)}
           </CardTitle>
           <CardDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">

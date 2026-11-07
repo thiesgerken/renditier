@@ -243,6 +243,7 @@ export interface StockBreakdownEntry {
 // TODO: verify — onvista may include further keys; only these are consumed today.
 export interface StockHolding {
   instrument: {
+    isin: string;
     name: string;
   };
   investmentPct: number;

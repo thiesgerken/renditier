@@ -3,6 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Briefcase, ChartLine, Hash, Shapes, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import CompanyLogo from '../components/CompanyLogo';
 import DataTable, { dataTableFeatures } from '../components/DataTable';
 import StockComparisonPlot from '../components/StockComparisonPlot';
 import { Badge } from '../components/ui/badge';
@@ -32,11 +33,14 @@ const columns = column.columns([
   column.accessor('title', {
     header: 'Name',
     meta: { icon: ChartLine },
-    cell: ({ getValue }) => (
-      <span className="line-clamp-2 whitespace-normal sm:min-w-40">
-        <span className="sm:hidden">{abbreviateTitle(getValue(), true)}</span>
-        <span className="max-sm:hidden">
-          {abbreviateTitle(getValue(), false)}
+    cell: ({ row, getValue }) => (
+      <span className="flex items-center gap-2 sm:min-w-40">
+        <CompanyLogo isin={row.original.isin} name={getValue()} />
+        <span className="line-clamp-2 whitespace-normal">
+          <span className="sm:hidden">{abbreviateTitle(getValue(), true)}</span>
+          <span className="max-sm:hidden">
+            {abbreviateTitle(getValue(), false)}
+          </span>
         </span>
       </span>
     ),

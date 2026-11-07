@@ -10,6 +10,8 @@ export interface BarItem {
   value: number;
   // shown on hover, e.g. the full name behind an abbreviated label
   title?: string;
+  // for an item that is a company
+  isin?: string;
 }
 
 export interface BarRow extends BarItem {
@@ -81,7 +83,7 @@ interface Props {
   // shown below the list, e.g. what could not be included
   note?: string;
   // shown before the label of an item, but not of a remainder
-  marker?: (label: string) => ReactNode;
+  marker?: (item: BarItem) => ReactNode;
 }
 
 // A horizontal bar per item, longest first; negative items get the loss
@@ -136,7 +138,7 @@ const BarList = ({
                 r.remainder && 'text-muted-foreground'
               )}
             >
-              {marker && !r.remainder && marker(r.label)}
+              {marker && !r.remainder && marker(r)}
               <span className="truncate">{r.label}</span>
             </span>
             {formatValue && (
