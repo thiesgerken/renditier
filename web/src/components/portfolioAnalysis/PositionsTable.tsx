@@ -14,7 +14,6 @@ import {
   UnitsCell,
   ValueCell,
 } from '../PerformanceCells';
-import OnvistaButton from '../OnvistaButton';
 import ProgressCard from '../ProgressCard';
 import { Badge } from '../ui/badge';
 import { CardHeader, CardTitle } from '../ui/card';
@@ -59,7 +58,6 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
               <ColumnHead column="value" />
               <ColumnHead column="profit" />
               <ColumnHead column="irr" />
-              <TableHead className="hidden xl:table-cell" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -101,11 +99,6 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
                   <ValueCell period={p} />
                   <ProfitCell period={p} />
                   <IrrCell period={p} />
-                  <TableCell className="hidden text-center xl:table-cell">
-                    {stock !== null && (
-                      <OnvistaButton relativeUrl={stock.onvistaUrl} />
-                    )}
-                  </TableCell>
                 </TableRow>
               );
             })}
