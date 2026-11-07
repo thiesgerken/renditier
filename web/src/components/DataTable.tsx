@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { memoize } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import {
   createPaginatedRowModel,
@@ -76,6 +77,12 @@ type Features = typeof dataTableFeatures;
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZES = [DEFAULT_PAGE_SIZE, 25, 50];
 
+// A collator per locale: creating one is far more expensive than comparing,
+// and a sort compares thousands of times.
+const collator = memoize(
+  (locale: string) => new Intl.Collator(locale, { numeric: true })
+);
+
 // Strings by the collation of the formatting locale with numbers in them
 // compared by value ("Depot 2" before "Depot 10"), numbers numerically, missing
 // values first.
@@ -91,7 +98,7 @@ function compareValues<T extends RowData>(
   if (y === null || y === undefined) return 1;
   if (typeof x === 'number' && typeof y === 'number') return x - y;
   if (typeof x === 'string' && typeof y === 'string')
-    return x.localeCompare(y, formatLocale(), { numeric: true });
+    return collator(formatLocale()).compare(x, y);
   throw new Error(`column ${columnId} cannot be sorted by its values`);
 }
 
