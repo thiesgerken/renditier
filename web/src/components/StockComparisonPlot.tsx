@@ -28,6 +28,7 @@ import {
   SelectField,
 } from './plot/PlotControls';
 import type { DateRange } from './plot/PlotControls';
+import { ZoomReset, useDragZoom } from './plot/zoom';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -161,6 +162,11 @@ const StockComparisonPlot = ({
   const [prevRange, setPrevRange] = useState<
     [IsoDate | null, IsoDate | null, DataSourceSelection] | null
   >(null);
+  // what the plot showed before the first zoom, for going back to it
+  const [beforeZoom, setBeforeZoom] = useState<{
+    period: number;
+    dates: DateRange;
+  } | null>(null);
   let [isins, setIsins] = useState<string[] | null>(null); // eslint-disable-line prefer-const
 
   const plotData: Record<string, StockPlotItem | null> = {};
@@ -296,6 +302,19 @@ const StockComparisonPlot = ({
     selectionSummary = stockName(currentIsins[0]);
   else selectionSummary = `${currentIsins.length} Wertpapiere`;
 
+  const zoom = useDragZoom(range => {
+    if (beforeZoom === null) setBeforeZoom({ period, dates });
+    setDates(range);
+    setPeriod(CUSTOM);
+  });
+
+  const resetZoom = () => {
+    if (beforeZoom === null) return;
+    setPeriod(beforeZoom.period);
+    setDates(beforeZoom.dates);
+    setBeforeZoom(null);
+  };
+
   const loading =
     !every(plotData, p => p !== null && !p.isFetching) ||
     performance.isFetching;
@@ -303,7 +322,7 @@ const StockComparisonPlot = ({
   return (
     <ProgressCard loading={loading} className="px-2">
       <PlotArea isEmpty={chartPoints.length === 0} isLoading={loading}>
-        <ComposedChart data={chartPoints}>
+        <ComposedChart data={chartPoints} {...zoom.chartProps}>
           {timeXAxis(epochs)}
           <YAxis
             scale={logScale ? 'log' : 'auto'}
@@ -337,6 +356,7 @@ const StockComparisonPlot = ({
               color: colorOf(isin, i),
             }))
           )}
+          {zoom.elements}
         </ComposedChart>
       </PlotArea>
       <PlotControls>
@@ -401,11 +421,15 @@ const StockComparisonPlot = ({
             })),
             { value: String(CUSTOM), label: 'Benutzerdefiniert' },
           ]}
-          onChange={v => setPeriod(Number(v))}
+          onChange={v => {
+            setPeriod(Number(v));
+            setBeforeZoom(null);
+          }}
         />
         {period === CUSTOM && (
           <DateRangeFields value={dates} onChange={setDates} />
         )}
+        {beforeZoom !== null && <ZoomReset onClick={resetZoom} />}
       </PlotControls>
     </ProgressCard>
   );

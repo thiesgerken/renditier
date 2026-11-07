@@ -51,6 +51,7 @@ import {
   SelectField,
 } from '../plot/PlotControls';
 import type { DateRange } from '../plot/PlotControls';
+import { ZoomReset, useDragZoom } from '../plot/zoom';
 
 interface Props {
   isin: string;
@@ -176,6 +177,11 @@ const StockPlot = ({
     return [today.with({ month: 1, day: 1 }), today];
   });
   const [prevRange, setPrevRange] = useState<Range | null>(null);
+  // what the plot showed before the first zoom, for going back to it
+  const [beforeZoom, setBeforeZoom] = useState<{
+    period: number;
+    dates: DateRange;
+  } | null>(null);
 
   let plotData: StockPlotItem | null = null;
   let sd: IsoDate | null = null;
@@ -255,13 +261,26 @@ const StockPlot = ({
     ...tradeRows(p.trades, true),
   ];
 
+  const zoom = useDragZoom(range => {
+    if (beforeZoom === null) setBeforeZoom({ period, dates });
+    setDates(range);
+    setPeriod(CUSTOM);
+  });
+
+  const resetZoom = () => {
+    if (beforeZoom === null) return;
+    setPeriod(beforeZoom.period);
+    setDates(beforeZoom.dates);
+    setBeforeZoom(null);
+  };
+
   const loading =
     plotData === null || plotData.isFetching || performance.isFetching;
 
   return (
     <ProgressCard loading={loading} className="px-2">
       <PlotArea isEmpty={points.length === 0} isLoading={loading}>
-        <ComposedChart data={points}>
+        <ComposedChart data={points} {...zoom.chartProps}>
           {timeXAxis(epochs)}
           <YAxis
             tickFormatter={tick}
@@ -394,6 +413,7 @@ const StockPlot = ({
           )}
 
           {pointTooltip(intraday, tooltipRows)}
+          {zoom.elements}
         </ComposedChart>
       </PlotArea>
       <TradeLegend points={points} />
@@ -426,11 +446,15 @@ const StockPlot = ({
             })),
             { value: String(CUSTOM), label: 'Benutzerdefiniert' },
           ]}
-          onChange={v => setPeriod(Number(v))}
+          onChange={v => {
+            setPeriod(Number(v));
+            setBeforeZoom(null);
+          }}
         />
         {period === CUSTOM && (
           <DateRangeFields value={dates} onChange={setDates} />
         )}
+        {beforeZoom !== null && <ZoomReset onClick={resetZoom} />}
       </PlotControls>
     </ProgressCard>
   );

@@ -40,6 +40,7 @@ import {
   SelectField,
 } from '../plot/PlotControls';
 import type { DateRange } from '../plot/PlotControls';
+import { ZoomReset, useDragZoom } from '../plot/zoom';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 
@@ -127,10 +128,16 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
   // only read while customRange is on, which seeds it first
   const [dates, setDates] = useState<DateRange | null>(null);
   const [prevRange, setPrevRange] = useState<PlotRange | null>(null);
+  // what the plot showed before the first zoom, for going back to it
+  const [beforeZoom, setBeforeZoom] = useState<{
+    customFor: string | null;
+    dates: DateRange | null;
+  } | null>(null);
 
   // starts from the period's range, so that switching it on changes nothing
   // until the dates are edited
   const handleCustomRange = (on: boolean) => {
+    setBeforeZoom(null);
     if (!on || period === undefined) {
       setCustomFor(null);
       return;
@@ -203,6 +210,23 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
     ...tradeRows(p.trades, false),
   ];
 
+  const zoom = useDragZoom(range => {
+    if (period === undefined) return;
+    if (beforeZoom === null) setBeforeZoom({ customFor, dates });
+    setDates(range);
+    setCustomFor(periodKey(period));
+  });
+
+  // another dashboard period ends the custom range, and with it the zoom
+  const resetZoom =
+    beforeZoom !== null && customRange
+      ? () => {
+          setCustomFor(beforeZoom.customFor);
+          setDates(beforeZoom.dates);
+          setBeforeZoom(null);
+        }
+      : null;
+
   const loading =
     plotData === null || plotData.isFetching || performance.isFetching;
 
@@ -210,7 +234,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
     <ProgressCard loading={loading} className="px-2">
       <div>
         <PlotArea isEmpty={points.length === 0} isLoading={loading}>
-          <ComposedChart data={points}>
+          <ComposedChart data={points} {...zoom.chartProps}>
             {timeXAxis(epochs)}
             <YAxis
               tickFormatter={tick}
@@ -272,6 +296,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
             {tradeMarkers()}
 
             {pointTooltip(intraday, tooltipRows)}
+            {zoom.elements}
           </ComposedChart>
         </PlotArea>
         <TradeLegend points={points} />
@@ -305,6 +330,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
         {customRange && dates !== null && (
           <DateRangeFields value={dates} onChange={setDates} />
         )}
+        {resetZoom !== null && <ZoomReset onClick={resetZoom} />}
       </PlotControls>
     </ProgressCard>
   );
