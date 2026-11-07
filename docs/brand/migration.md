@@ -6,14 +6,12 @@ the [style guide](styleguide.md). Tracked in #253.
 Do this after the MUI to shadcn/ui migration has landed. `web/src/muiTheme.ts` and the MUI colour
 imports go away with it, so they need no brand work.
 
-## Open decisions
+## Scope
 
-- **How deep the rename goes.** The user-visible name surely changes. The crate, binary, container
-  image, Kubernetes namespace, config paths and the `STOCKDB__` environment prefix are technical
-  names. Renaming them is a clean break for every deployment (no fallback to the old names), so it
-  needs a cutover plan, or they stay as they are.
-- **Gitea repository name.** `thies/StockDB` → `thies/Renditier`? Gitea redirects the old URL, but CI
-  pushes to `gitea.gerken.haus/thies/stockdb` and would need the new image path.
+Everything gets renamed: UI, crate and binary, container image, Kubernetes namespace and deployment,
+config paths, the `STOCKDB__` environment prefix and the Gitea repository (`thies/StockDB` →
+`thies/Renditier`). No fallback to the old names. The only deployment is our own, and
+[the cutover](#8-cutover-for-our-deployment) below moves it over.
 
 ## 1. Name in the UI
 
@@ -95,7 +93,7 @@ to "Rendi" in bold default colour plus "tier" in the brand orange
 (`\033[38;2;210;101;42m`). Don't use navy or cream for terminal text: one of them disappears on
 either a light or a dark terminal. A 🦌 instead of 📈 would fit too.
 
-## 6. Technical names (only if decided, see above)
+## 6. Technical names
 
 | Where | Name |
 | --- | --- |
@@ -109,7 +107,42 @@ either a light or a dark terminal. A 🦌 instead of 📈 would fit too.
 | `README.md`, `docker-compose.yaml` | all of the above |
 | `.gitignore`, `.vscode/cSpell.json` | `stockdb.toml`, binary name, dictionary word |
 
+New names: crate and binary `renditier`, image `gitea.gerken.haus/thies/renditier`, namespace
+`apps-renditier`, deployment `renditier`, config `/etc/renditier/config.*` and `./renditier.*`, prefix
+`RENDITIER__`.
+
 ## 7. Docs
 
 - `README.md`: title and the lockup on top.
 - Screenshots in PRs after the switch: use mock data, never real figures.
+
+## 8. Cutover for our deployment
+
+The Kubernetes manifests live outside this repo. CI only pushes the image and restarts the
+deployment, so the cluster has to be ready before the rename PR merges, or the first deploy job on
+`main` fails.
+
+1. **Prepare the cluster** (before the merge):
+   - Create namespace `apps-renditier` with deployment `renditier` (image
+     `gitea.gerken.haus/thies/renditier:main`, container name `renditier`), scaled to 0. The image
+     tag only exists after the first CI push.
+   - Copy the secrets and config, renaming every `STOCKDB__*` variable to `RENDITIER__*` and a
+     mounted `/etc/stockdb/config.*` to `/etc/renditier/config.*`.
+   - Give the CI token rights in the new namespace (role binding for its service account, or a new
+     token in the `K8S_TOKEN` repo secret).
+   - Postgres: if it runs in `apps-stockdb`, either point `RENDITIER__DATABASE` at it across
+     namespaces (`…apps-stockdb.svc…`) and move it later, or dump and restore it into the new
+     namespace now. Take a dump either way.
+2. **Rename the Gitea repository** to `thies/Renditier`. Gitea redirects the old web and git URLs, and
+   repo secrets stay. Point the local checkout at the new URL (`git remote set-url origin
+   https://gitea.gerken.haus/thies/renditier.git`, one config for all worktrees).
+3. **Merge the rename PR.** CI pushes `thies/renditier:main` and restarts `renditier` in
+   `apps-renditier` (still 0 replicas, so nothing runs yet).
+4. **Switch over:** scale `stockdb` in `apps-stockdb` to 0 first, then `renditier` to 1. Never both
+   at once: both would run the scheduled fetch jobs against the same database. Move the ingress (and
+   the hostname, if it contains `stockdb`) to the new service and check login, dashboard and a price
+   fetch.
+5. **Clean up** once it runs: delete `apps-stockdb` (after the database has moved), the old CI role
+   binding and the `thies/stockdb` image in the package registry.
+6. **Local setups:** rename `./stockdb.toml` to `./renditier.toml` and any `STOCKDB__` variables in
+   your shell or `.env` files.
