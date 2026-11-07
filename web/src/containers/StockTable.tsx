@@ -14,14 +14,11 @@ import { map } from 'lodash';
 import { styled, useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  updateStocks as updateStocksAction,
-  updatePerformance as updatePerformanceAction,
-} from '../actions/api';
-import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
-import type { AppDispatch } from '../types/actions';
+import { fetchPerformance } from '../slices/performance';
+import { fetchStocks } from '../slices/stocks';
+import { updateStockPlot as updateStockPlotAction } from '../slices/stockPlot';
+import type { AppDispatch, RootState } from '../store';
 import type { DataSourceSelection, IsoDate } from '../types/api';
-import type { RootState } from '../types/store';
 import StockRow from '../components/StockRow';
 import ProgressPaper from '../components/ProgressPaper';
 import Hidden from '../components/Hidden';
@@ -103,8 +100,8 @@ const StockTable = ({
 };
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updateStocks: () => dispatch(updateStocksAction()),
-  updatePerformance: () => dispatch(updatePerformanceAction()),
+  updateStocks: () => dispatch(fetchStocks()),
+  updatePerformance: () => dispatch(fetchPerformance()),
   updateStockPlotData: (
     isin: string | null,
     startDate: IsoDate | null,

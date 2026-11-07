@@ -22,10 +22,9 @@ import { deDE } from '@mui/x-data-grid/locales';
 import AddIcon from '@mui/icons-material/Add';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { updateAccounts as updateAccountsAction } from '../actions/accounts';
-import type { AppDispatch } from '../types/actions';
+import { fetchAccounts } from '../slices/accounts';
+import type { AppDispatch, RootState } from '../store';
 import type { Account } from '../types/api';
-import type { RootState } from '../types/store';
 import AccountDialog from './AccountDialog';
 import type { AccountDraft } from './AccountDialog';
 
@@ -156,7 +155,7 @@ const Accounts = ({ accounts, updateAccounts }: Props) => {
 };
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updateAccounts: () => dispatch(updateAccountsAction()),
+  updateAccounts: () => dispatch(fetchAccounts()),
 });
 
 const mapStateToProps = (state: RootState) => {

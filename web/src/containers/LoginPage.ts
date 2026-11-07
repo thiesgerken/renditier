@@ -1,8 +1,7 @@
 import { connect } from 'react-redux';
 import Login from '../components/Login';
-import { login } from '../actions/authentication';
-import type { AppDispatch } from '../types/actions';
-import type { RootState } from '../types/store';
+import { login } from '../slices/authentication';
+import type { AppDispatch, RootState } from '../store';
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
   onSubmit: (user: string, password: string) => {
@@ -10,7 +9,7 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
     // the thunk by hand with only the first of its three arguments, leaving
     // getState and the extra argument undefined. Dispatching it is what the
     // thunk middleware does anyway, so behaviour is unchanged.
-    dispatch(login(user, password));
+    dispatch(login({ userName: user, password }));
   },
 });
 

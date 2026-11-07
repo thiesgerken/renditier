@@ -30,10 +30,9 @@ import { connect } from 'react-redux';
 import type { ConnectedProps } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { ignoreUpdate as ignoreUpdateAction } from '../actions/notifications';
+import { ignoreUpdate as ignoreUpdateAction } from '../slices/notifications';
 import Hidden from '../components/Hidden';
-import type { AppDispatch } from '../types/actions';
-import type { RootState } from '../types/store';
+import type { AppDispatch, RootState } from '../store';
 
 const drawerWidth = 240;
 

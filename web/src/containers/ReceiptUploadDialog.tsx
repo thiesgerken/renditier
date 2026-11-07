@@ -19,8 +19,7 @@ import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
 import { formatCurrency, formatDate, formatNumber } from '../format';
-
-import type { RootState } from '../types/store';
+import type { RootState } from '../store';
 
 type Props = ConnectedProps<typeof connector> & {
   open: boolean;
@@ -67,7 +66,7 @@ const ReceiptUploadDialog = ({ receipts, stocks, open, onClose }: Props) => {
         {!receipts.isUploading && receipts.uploadError !== null && (
           <Alert severity="error">
             <AlertTitle>Fehler beim Upload</AlertTitle>
-            {receipts.uploadError.toString()}
+            {receipts.uploadError.message}
           </Alert>
         )}
         {!receipts.isUploading && receipts.data !== null && (

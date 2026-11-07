@@ -9,15 +9,15 @@ import {
   isAuthenticated,
   isAuthenticationInitialized,
 } from '../selectors/authentication';
-import { logout, checkLogin } from '../actions/authentication';
+import { logout, checkLogin } from '../slices/authentication';
+import { navigateTo } from '../navigation';
 import Dashboard from './Dashboard';
 import Settings from './Settings';
 import Transactions from './Transactions';
 import Accounts from './Accounts';
 import StockTable from './StockTable';
 import StockAnalysis from './StockAnalysis';
-import type { AppDispatch } from '../types/actions';
-import type { RootState } from '../types/store';
+import type { AppDispatch, RootState } from '../store';
 
 const StockAnalysisRoute = () => {
   const { isin } = useParams();
@@ -73,7 +73,11 @@ const mapStateToProps = (state: RootState) => ({
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
   onLogout: () => {
-    dispatch(logout());
+    // Navigating away first would render the app's pages for a moment after
+    // the session ended.
+    dispatch(logout()).then(action => {
+      if (logout.fulfilled.match(action)) navigateTo('/');
+    });
   },
   onInitAuthentication: () => dispatch(checkLogin()),
 });

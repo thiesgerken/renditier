@@ -27,14 +27,14 @@ import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { updateTransactions as updateTransactionsAction } from '../actions/transactions';
-import { updateStocks as updateStocksAction } from '../actions/api';
-import { updateAccounts as updateAccountsAction } from '../actions/accounts';
-import { uploadReceipts as uploadReceiptsAction } from '../actions/receipts';
+import { fetchTransactions } from '../slices/transactions';
+import { fetchStocks } from '../slices/stocks';
+import { fetchAccounts } from '../slices/accounts';
+import { uploadReceipts as uploadReceiptsAction } from '../slices/receipts';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
-import type { AppDispatch } from '../types/actions';
+import type { AppDispatch, RootState } from '../store';
 import type { Transaction } from '../types/api';
-import type { RootState, StocksState } from '../types/store';
+import type { StocksState } from '../types/store';
 import TransactionDialog from './TransactionDialog';
 import type { TransactionDraft } from './TransactionDialog';
 import ReceiptUploadDialog from './ReceiptUploadDialog';
@@ -358,9 +358,9 @@ const Transactions = ({
 };
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updateTransactions: () => dispatch(updateTransactionsAction()),
-  updateStocks: () => dispatch(updateStocksAction()),
-  updateAccounts: () => dispatch(updateAccountsAction()),
+  updateTransactions: () => dispatch(fetchTransactions()),
+  updateStocks: () => dispatch(fetchStocks()),
+  updateAccounts: () => dispatch(fetchAccounts()),
   uploadReceipts: (inputFiles: FileList | File[]) =>
     dispatch(uploadReceiptsAction(inputFiles)),
 });

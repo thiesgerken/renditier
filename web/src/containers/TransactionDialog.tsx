@@ -27,14 +27,13 @@ import {
   deleteTransaction as deleteTransactionAction,
   createTransaction as createTransactionAction,
   updateTransaction as updateTransactionAction,
-} from '../actions/transactions';
+} from '../slices/transactions';
 import NumberInput from '../components/NumberInput';
 import { findAccount, findAccountByName } from '../selectors/accounts';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
 import { formatCurrency } from '../format';
-import type { AppDispatch } from '../types/actions';
+import type { AppDispatch, RootState } from '../store';
 import type { Exchange, Transaction } from '../types/api';
-import type { RootState } from '../types/store';
 
 // What `Transactions` hands in: a real transaction when editing, or a blank one
 // with no id / account / isin yet when creating.

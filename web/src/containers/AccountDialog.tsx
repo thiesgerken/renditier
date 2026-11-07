@@ -20,8 +20,8 @@ import {
   deleteAccount as deleteAccountAction,
   createAccount as createAccountAction,
   updateAccount as updateAccountAction,
-} from '../actions/accounts';
-import type { AppDispatch } from '../types/actions';
+} from '../slices/accounts';
+import type { AppDispatch } from '../store';
 import type { Account } from '../types/api';
 
 // The dialog doubles as the "create" form, where there is no id yet.

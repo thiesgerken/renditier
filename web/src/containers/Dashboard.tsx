@@ -6,11 +6,9 @@ import moment from 'moment';
 import type { Moment } from 'moment';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  updateStocks as updateStocksAction,
-  updatePerformance as updatePerformanceAction,
-} from '../actions/api';
-import { updatePortfolioPlot as updatePortfolioPlotAction } from '../actions/portfolioPlot';
+import { fetchPerformance } from '../slices/performance';
+import { fetchStocks } from '../slices/stocks';
+import { updatePortfolioPlot as updatePortfolioPlotAction } from '../slices/portfolioPlot';
 import PerformanceTable from '../components/portfolioAnalysis/PerformanceTable';
 import PortfolioPlot from '../components/portfolioAnalysis/PortfolioPlot';
 import PositionsTable from '../components/portfolioAnalysis/PositionsTable';
@@ -19,9 +17,8 @@ import Hidden from '../components/Hidden';
 import Breakdowns from '../components/portfolioAnalysis/Breakdowns';
 import { formatDateTime } from '../format';
 
+import type { AppDispatch, RootState } from '../store';
 import type { DataSourceSelection, IsoDate } from '../types/api';
-import type { AppDispatch } from '../types/actions';
-import type { RootState } from '../types/store';
 
 type Props = ConnectedProps<typeof connector>;
 
@@ -127,8 +124,8 @@ const Dashboard = ({
 };
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updatePerformance: () => dispatch(updatePerformanceAction()),
-  updateStocks: () => dispatch(updateStocksAction()),
+  updatePerformance: () => dispatch(fetchPerformance()),
+  updateStocks: () => dispatch(fetchStocks()),
   updatePortfolioPlotData: (
     startDate: IsoDate | null,
     endDate: IsoDate | null,

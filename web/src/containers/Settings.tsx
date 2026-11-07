@@ -4,7 +4,7 @@ import moment from 'moment';
 
 import { buildCommit, buildDate } from '../git';
 import { formatDateTime } from '../format';
-import type { RootState } from '../types/store';
+import type { RootState } from '../store';
 
 const Settings = ({ updateAvailable }: Props) => {
   return (

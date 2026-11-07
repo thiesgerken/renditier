@@ -2,8 +2,8 @@ import { connect } from 'react-redux';
 import type { ConnectedProps } from 'react-redux';
 
 import * as serviceWorker from '../serviceWorker';
-import { updateAvailable as updateAvailableAction } from '../actions/notifications';
-import type { AppDispatch } from '../types/actions';
+import { updateAvailable as updateAvailableAction } from '../slices/notifications';
+import type { AppDispatch } from '../store';
 
 const ServiceWorker = ({ updateAvailable }: Props) => {
   serviceWorker.register({

@@ -16,11 +16,9 @@ import { styled } from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
 import moment from 'moment';
 
-import {
-  updateStocks as updateStocksAction,
-  updatePerformance as updatePerformanceAction,
-} from '../actions/api';
-import { updateStockPlot as updateStockPlotAction } from '../actions/stockPlot';
+import { fetchPerformance } from '../slices/performance';
+import { fetchStocks } from '../slices/stocks';
+import { updateStockPlot as updateStockPlotAction } from '../slices/stockPlot';
 import { findStock, capitalizeTitle } from '../selectors/stocks';
 import {
   formatCurrency,
@@ -44,8 +42,8 @@ import type {
   StockBreakdownEntry,
   StockHolding,
 } from '../types/api';
-import type { AppDispatch } from '../types/actions';
-import type { ResourceState, RootState } from '../types/store';
+import type { AppDispatch, RootState } from '../store';
+import type { ResourceState } from '../types/store';
 
 const StyledListItem = styled(ListItem)({
   height: '2em',
@@ -324,8 +322,8 @@ const StockAnalysis = ({
 };
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updatePerformance: () => dispatch(updatePerformanceAction()),
-  updateStocks: () => dispatch(updateStocksAction()),
+  updatePerformance: () => dispatch(fetchPerformance()),
+  updateStocks: () => dispatch(fetchStocks()),
   updateStockPlotData: (
     isin: string | null,
     startDate: IsoDate | null,
