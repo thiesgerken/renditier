@@ -1,10 +1,10 @@
-import { Box, Typography } from '@mui/material';
 import { Line } from 'recharts';
 import type { DotItemDotProps } from 'recharts';
 
 import { formatCurrency, formatNumber } from '../../format';
 import type { Trades } from './trades';
 import type { TooltipRow } from './PlotTooltip';
+import { useSchemePalette } from '../../muiTheme';
 import type { SchemePalette } from '../../muiTheme';
 
 export const TRADES_AXIS = 'trades';
@@ -95,16 +95,13 @@ export const TradeLegend = ({
 }: {
   points: { trades: Trades | null }[];
 }) => {
+  const palette = useSchemePalette();
   if (points.every(p => p.trades === null)) return null;
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
-      <Typography variant="caption" sx={{ color: 'primary.main' }}>
-        ▲ Kauf
-      </Typography>
-      <Typography variant="caption" sx={{ color: 'secondary.main' }}>
-        ▼ Verkauf
-      </Typography>
-    </Box>
+    <div className="flex justify-center gap-4 text-xs">
+      <span style={{ color: palette.primary.main }}>▲ Kauf</span>
+      <span style={{ color: palette.secondary.main }}>▼ Verkauf</span>
+    </div>
   );
 };
