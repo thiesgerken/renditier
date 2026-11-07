@@ -6,7 +6,8 @@ use diesel::prelude::*;
 use itertools::Itertools;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::error::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NativeFormat {
@@ -105,39 +106,119 @@ impl NativeFormat {
         }
     }
 
-    pub fn write_to(&self, connection: &mut PgConnection) {
-        let user_count = diesel::insert_into(users::table)
-            .values(&self.users)
-            .on_conflict_do_nothing()
-            .execute(connection)
-            .expect("Error writing users into the database");
-        info!(
-            "imported {} of {} users into the database",
-            user_count,
-            self.users.len()
-        );
+    /// Restores the users in this backup with their accounts and transactions. Users are matched
+    /// by name: an existing user with the same name is deleted first (cascading to their accounts
+    /// and transactions), every other user stays untouched.
+    ///
+    /// All rows get fresh ids from the database sequences. The backup's ids only link its rows
+    /// among each other, so they can never collide with the rows of users that stay, and no
+    /// sequence needs fixing afterwards. All or nothing: any error rolls the whole import back.
+    pub fn write_to(
+        &self,
+        connection: &mut PgConnection,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        self.check_references()?;
 
-        let account_count = diesel::insert_into(accounts::table)
-            .values(&self.accounts)
-            .on_conflict_do_nothing()
-            .execute(connection)
-            .expect("Error writing accounts into the database");
-        info!(
-            "imported {} of {} accounts into the database",
-            account_count,
-            self.accounts.len()
-        );
+        connection.transaction(|connection| {
+            let mut account_ids = HashMap::new();
+            for user in &self.users {
+                let replaced = diesel::delete(users::table.filter(users::name.eq(&user.name)))
+                    .execute(connection)?
+                    > 0;
+                let user_id = diesel::insert_into(users::table)
+                    .values((
+                        users::name.eq(&user.name),
+                        users::full_name.eq(&user.full_name),
+                        users::hash.eq(&user.hash),
+                        users::api_token_hash.eq(&user.api_token_hash),
+                    ))
+                    .returning(users::id)
+                    .get_result::<i32>(connection)?;
 
-        let transaction_count = diesel::insert_into(transactions::table)
-            .values(&self.transactions)
-            .on_conflict_do_nothing()
-            .execute(connection)
-            .expect("Error writing transactions into the database");
-        info!(
-            "imported {} of {} transactions into the database",
-            transaction_count,
-            self.transactions.len()
-        );
+                for account in self.accounts.iter().filter(|a| a.user_id == user.id) {
+                    let account_id = diesel::insert_into(accounts::table)
+                        .values(NewAccount {
+                            user_id,
+                            name: account.name.clone(),
+                            iban: account.iban.clone(),
+                        })
+                        .returning(accounts::id)
+                        .get_result::<i32>(connection)?;
+                    account_ids.insert(account.id, account_id);
+                }
+
+                info!(
+                    "{} user {}",
+                    if replaced { "replaced" } else { "created" },
+                    user.name
+                );
+            }
+
+            let transactions = self
+                .transactions
+                .iter()
+                .map(|t| NewTransaction {
+                    account_id: account_ids[&t.account_id],
+                    isin: t.isin.clone(),
+                    date: t.date,
+                    units: t.units,
+                    amount: t.amount,
+                    fees: t.fees,
+                    onvista_exchange_id: t.onvista_exchange_id,
+                    comments: t.comments.clone(),
+                    exchange: t.exchange.clone(),
+                    receipt_number: t.receipt_number,
+                })
+                .collect::<Vec<_>>();
+            let transaction_count = diesel::insert_into(transactions::table)
+                .values(&transactions)
+                .execute(connection)?;
+            info!(
+                "imported {} accounts and {} transactions",
+                account_ids.len(),
+                transaction_count
+            );
+
+            Ok(())
+        })
+    }
+
+    /// Rejects a backup whose ids do not link its rows unambiguously, before anything is written.
+    fn check_references(&self) -> Result<(), String> {
+        let mut user_names = HashSet::new();
+        let mut user_ids = HashSet::new();
+        for user in &self.users {
+            if !user_names.insert(&user.name) {
+                return Err(format!("user name '{}' appears twice", user.name));
+            }
+            if !user_ids.insert(user.id) {
+                return Err(format!("user id {} appears twice", user.id));
+            }
+        }
+
+        let mut account_ids = HashSet::new();
+        for account in &self.accounts {
+            if !user_ids.contains(&account.user_id) {
+                return Err(format!(
+                    "account {} belongs to user id {}, which is not in the backup",
+                    account.id, account.user_id
+                ));
+            }
+            if !account_ids.insert(account.id) {
+                return Err(format!("account id {} appears twice", account.id));
+            }
+        }
+
+        for transaction in &self.transactions {
+            if !account_ids.contains(&transaction.account_id) {
+                return Err(format!(
+                    "transaction {} belongs to account id {}, which is not in the backup",
+                    transaction.id, transaction.account_id
+                ));
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -300,5 +381,121 @@ impl MoneyDBTransaction {
         }
 
         t
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::{Value, json};
+
+    fn backup(users: Value, accounts: Value, transactions: Value) -> NativeFormat {
+        serde_json::from_value(json!({
+            "users": users,
+            "accounts": accounts,
+            "transactions": transactions,
+        }))
+        .unwrap()
+    }
+
+    fn user(id: i32, name: &str) -> Value {
+        json!({ "id": id, "name": name, "fullName": name, "hash": "" })
+    }
+
+    fn account(id: i32, user_id: i32) -> Value {
+        json!({ "id": id, "userId": user_id, "name": format!("Account {id}"), "iban": null })
+    }
+
+    fn transaction(id: i32, account_id: i32) -> Value {
+        json!({
+            "id": id, "accountId": account_id, "isin": "DE0007164600",
+            "date": "2021-03-01T09:00:00Z", "units": 10.0, "amount": -100000, "fees": -990,
+            "onvistaExchangeId": null, "comments": "", "exchange": null, "receiptNumber": null,
+        })
+    }
+
+    #[test]
+    fn accepts_a_consistent_backup() {
+        let b = backup(
+            json!([user(1, "a"), user(2, "b")]),
+            json!([account(10, 1), account(11, 2)]),
+            json!([transaction(100, 10), transaction(101, 11)]),
+        );
+        assert_eq!(b.check_references(), Ok(()));
+    }
+
+    #[test]
+    fn rejects_ambiguous_or_dangling_ids() {
+        let cases = [
+            backup(json!([user(1, "a"), user(2, "a")]), json!([]), json!([])),
+            backup(json!([user(1, "a"), user(1, "b")]), json!([]), json!([])),
+            backup(json!([user(1, "a")]), json!([account(10, 2)]), json!([])),
+            backup(
+                json!([user(1, "a")]),
+                json!([account(10, 1), account(10, 1)]),
+                json!([]),
+            ),
+            backup(
+                json!([user(1, "a")]),
+                json!([account(10, 1)]),
+                json!([transaction(100, 11)]),
+            ),
+        ];
+        for b in cases {
+            assert!(b.check_references().is_err(), "{b:?}");
+        }
+    }
+
+    /// Needs a scratch Postgres database (its contents are rolled back):
+    /// `STOCKDB_TEST_DATABASE=postgres://... cargo test -- --ignored`
+    #[test]
+    #[ignore = "needs a database in STOCKDB_TEST_DATABASE"]
+    fn import_replaces_only_the_users_in_the_backup() {
+        let url = std::env::var("STOCKDB_TEST_DATABASE").expect("STOCKDB_TEST_DATABASE not set");
+        let mut connection = crate::connect(&url).unwrap();
+        connection.test_transaction::<_, diesel::result::Error, _>(|c| {
+            let count = |c: &mut PgConnection, name: &str| {
+                transactions::table
+                    .inner_join(accounts::table.inner_join(users::table))
+                    .filter(users::name.eq(name))
+                    .count()
+                    .get_result::<i64>(c)
+                    .unwrap()
+            };
+
+            backup(
+                json!([user(1, "other"), user(2, "rudolph")]),
+                json!([account(1, 1), account(2, 2)]),
+                json!([transaction(1, 1), transaction(2, 1), transaction(3, 2)]),
+            )
+            .write_to(c)
+            .unwrap();
+            let other_before = users::table
+                .filter(users::name.eq("other"))
+                .first::<User>(c)?;
+            assert_eq!((count(c, "other"), count(c, "rudolph")), (2, 1));
+
+            // The backup's ids deliberately reuse ids the database already holds.
+            backup(
+                json!([user(1, "rudolph")]),
+                json!([account(1, 1), account(2, 1)]),
+                json!([transaction(1, 1), transaction(2, 2), transaction(3, 2)]),
+            )
+            .write_to(c)
+            .unwrap();
+
+            let other_after = users::table
+                .filter(users::name.eq("other"))
+                .first::<User>(c)?;
+            assert_eq!(other_after.id, other_before.id);
+            assert_eq!((count(c, "other"), count(c, "rudolph")), (2, 3));
+            let rudolph_accounts = accounts::table
+                .inner_join(users::table)
+                .filter(users::name.eq("rudolph"))
+                .count()
+                .get_result::<i64>(c)?;
+            assert_eq!(rudolph_accounts, 2);
+            Ok(())
+        });
     }
 }
