@@ -56,8 +56,8 @@ const StockAnalysis = ({ isin }: Props) => {
   );
 
   useEffect(() => {
-    dispatch(fetchPerformance());
-    dispatch(fetchStocks());
+    void dispatch(fetchPerformance());
+    void dispatch(fetchStocks());
   });
 
   const stock = findStock(stocks, isin);

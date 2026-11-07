@@ -138,7 +138,9 @@ const TransactionsTable = ({ transactions, currentPrice }: Props) => {
       // the stock page only renders once everything has loaded
       isLoading={false}
       emptyText="Keine Transaktionen"
-      onRowClick={t => navigate(`/transactions?id=${t.id}`)}
+      onRowClick={t => {
+        void navigate(`/transactions?id=${t.id}`);
+      }}
     />
   );
 };

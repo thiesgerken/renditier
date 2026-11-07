@@ -12,7 +12,7 @@ export const setNavigate = (nextNavigate: NavigateFunction): (() => void) => {
 
 export const navigateTo = (path: string): void => {
   if (navigate) {
-    navigate(path);
+    void navigate(path);
     return;
   }
 

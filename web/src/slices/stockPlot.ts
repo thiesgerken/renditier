@@ -99,7 +99,7 @@ export const updateStockPlot =
       endDate !== null &&
       source !== null
     )
-      dispatch(fetchStockPlot({ isin, startDate, endDate, source }));
+      void dispatch(fetchStockPlot({ isin, startDate, endDate, source }));
   };
 
 const itemFor = (state: StockPlotState, key: PlotKey) => {

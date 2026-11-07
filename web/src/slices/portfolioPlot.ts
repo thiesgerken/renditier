@@ -87,7 +87,7 @@ export const updatePortfolioPlot =
   ): AppThunk =>
   dispatch => {
     if (startDate !== null && endDate !== null && source !== null)
-      dispatch(fetchPortfolioPlot({ startDate, endDate, source }));
+      void dispatch(fetchPortfolioPlot({ startDate, endDate, source }));
   };
 
 const itemFor = (state: PortfolioPlotState, key: PlotKey) => {

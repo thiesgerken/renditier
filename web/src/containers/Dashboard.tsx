@@ -83,8 +83,8 @@ const Dashboard = () => {
   );
 
   useEffect(() => {
-    dispatch(fetchPerformance());
-    dispatch(fetchStocks());
+    void dispatch(fetchPerformance());
+    void dispatch(fetchStocks());
   });
 
   const periods = performance.data ?? [];

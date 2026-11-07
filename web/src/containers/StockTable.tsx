@@ -137,10 +137,10 @@ const StockTable = () => {
   );
 
   useEffect(() => {
-    dispatch(fetchStocks());
-    dispatch(fetchPerformance());
+    void dispatch(fetchStocks());
+    void dispatch(fetchPerformance());
     // Apart from the stocks: it takes a while, and the list shows without it.
-    dispatch(fetchStockReturns());
+    void dispatch(fetchStockReturns());
   });
 
   // A new array only when the inputs change, so that the table keeps its row
@@ -197,7 +197,9 @@ const StockTable = () => {
                 ? 'Keine gehaltenen Wertpapiere'
                 : 'Noch keine Wertpapiere'
             }
-            onRowClick={stock => navigate(`/stocks/${stock.isin}`)}
+            onRowClick={stock => {
+              void navigate(`/stocks/${stock.isin}`);
+            }}
           />
         </CardContent>
       </Card>
