@@ -4,6 +4,7 @@ import { sumBy } from 'lodash';
 import type { LucideIcon } from 'lucide-react';
 
 import { formatPercent } from '../format';
+import i18n from '../i18n';
 
 export interface BarItem {
   label: string;
@@ -12,6 +13,8 @@ export interface BarItem {
   title?: string;
   // for an item that is a company
   isin?: string;
+  // the ISO code of an item that is a country or a currency
+  code?: string;
 }
 
 export interface BarRow extends BarItem {
@@ -27,8 +30,8 @@ export interface BarRow extends BarItem {
 const ROUNDING_SLACK = 0.01;
 
 // The rows of a bar list: the `maxRows` largest positive items, the remaining
-// positive ones folded into "Sonstige" (unless that would be a single item),
-// the part of `total` that no item accounts for as "Unbekannt", and every
+// positive ones folded into "Other" (unless that would be a single item),
+// the part of `total` that no item accounts for as "Unknown", and every
 // negative item. Negative items are never folded, because a remainder would
 // silently net them against the rest.
 export const barRows = (
@@ -55,7 +58,7 @@ export const barRows = (
       ? [
           row(
             {
-              label: `Sonstige (${folded.length})`,
+              label: i18n.t('barList.other', { count: folded.length }),
               value: sumBy(folded, 'value'),
               title: folded.map(i => i.label).join(', '),
             },
@@ -64,7 +67,7 @@ export const barRows = (
         ]
       : []),
     ...(total > 0 && unattributed > ROUNDING_SLACK * total
-      ? [row({ label: 'Unbekannt', value: unattributed }, true)]
+      ? [row({ label: i18n.t('barList.unknown'), value: unattributed }, true)]
       : []),
     ...negative.map(i => row(i)),
   ];
@@ -101,7 +104,7 @@ const BarList = ({
   const rows = barRows(items, maxRows, total);
   if (rows.length === 0) return null;
 
-  // Bars are scaled to the largest item, so that a large "Unbekannt" does not
+  // Bars are scaled to the largest item, so that a large "Unknown" does not
   // squash the items; a remainder beyond that fills the row.
   const itemRows = rows.filter(r => !r.remainder);
   const largest = Math.max(

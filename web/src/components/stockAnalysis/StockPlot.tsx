@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Area,
   CartesianGrid,
@@ -47,8 +48,8 @@ import useMediaQuery, { PHONE } from '../../useMediaQuery';
 import {
   DateRangeFields,
   PlotControls,
-  SOURCES,
   SelectField,
+  SourceField,
 } from '../plot/PlotControls';
 import type { DateRange } from '../plot/PlotControls';
 import { ZoomReset, useDragZoom } from '../plot/zoom';
@@ -114,8 +115,8 @@ const sameTime = (
         .equals(b.round({ smallestUnit: 'minute', roundingMode: 'floor' }));
 };
 
+// labelled by `plot.modes.*`
 interface ModeSpec {
-  label: string;
   tick: (value: number) => string;
   // a single series, colored by its sign
   signed?: {
@@ -125,34 +126,29 @@ interface ModeSpec {
 }
 
 const MODES = {
-  price: { label: 'Kurs', tick: currencyTick },
+  price: { tick: currencyTick },
   priceRelStart: {
-    label: 'Kursveränderung',
     tick: percentTick,
     signed: { key: 'priceRelStart', curve: 'linear' },
   },
-  units: { label: 'Einheiten', tick: unitsTick },
-  priceAndUnits: { label: 'Kurs und Einheiten', tick: currencyTick },
-  investedAndValue: { label: 'Kaufpreis und Wert', tick: currencyTick },
-  value: { label: 'Wert', tick: currencyTick },
+  units: { tick: unitsTick },
+  priceAndUnits: { tick: currencyTick },
+  investedAndValue: { tick: currencyTick },
+  value: { tick: currencyTick },
   valueRelStart: {
-    label: 'Wertveränderung',
     tick: percentTick,
     signed: { key: 'valueRelStart', curve: 'linear' },
   },
-  invested: { label: 'Kaufpreis', tick: currencyTick },
+  invested: { tick: currencyTick },
   investedRelStart: {
-    label: 'Kaufpreisveränderung',
     tick: percentTick,
     signed: { key: 'investedRelStart', curve: 'stepAfter' },
   },
   earnings: {
-    label: 'Gewinn',
     tick: currencyTick,
     signed: { key: 'earnings', curve: 'linear' },
   },
   earningsRelInvestment: {
-    label: 'Gewinn rel. zu Kaufpreis',
     tick: percentTick,
     signed: { key: 'earningsRelInvestment', curve: 'linear' },
   },
@@ -167,6 +163,7 @@ const StockPlot = ({
   data,
   updateData,
 }: Props) => {
+  const { t } = useTranslation();
   const phone = useMediaQuery(PHONE);
   // an index into performance.data, or CUSTOM
   const [period, setPeriod] = useState(0);
@@ -221,6 +218,7 @@ const StockPlot = ({
   const epochs = points.map(p => p.epoch);
   const intraday = hasIntradayPoints(epochs);
   const { tick, signed }: ModeSpec = MODES[mode];
+  const modeLabel = t(`plot.modes.${mode}`);
 
   // Prices can be older than the point, e.g. on holidays. Historical prices
   // carry no time of day, only realtime quotes do.
@@ -230,7 +228,7 @@ const StockPlot = ({
       ? []
       : [
           {
-            label: 'Kurs vom',
+            label: t('plot.priceFrom'),
             value: formatPointDate(
               Temporal.Instant.from(priceDate).epochMilliseconds,
               intraday
@@ -239,18 +237,18 @@ const StockPlot = ({
         ];
 
   const tooltipRows = (p: Point): TooltipRow[] => [
-    { label: 'Kurs', value: formatCurrency(p.price) },
-    { label: 'Einheiten', value: formatUnits(p.units, { maxDigits: 3 }) },
-    { label: 'Wert', value: formatCurrency(p.value) },
-    { label: 'Investiert', value: formatCurrency(p.invested) },
+    { label: t('plot.price'), value: formatCurrency(p.price) },
+    { label: t('plot.units'), value: formatUnits(p.units, { maxDigits: 3 }) },
+    { label: t('plot.value'), value: formatCurrency(p.value) },
+    { label: t('plot.invested'), value: formatCurrency(p.invested) },
     {
-      label: 'Gewinn',
+      label: t('plot.gain'),
       value: formatAmountWithChange(p.earnings, p.earningsRelInvestment),
     },
     ...(signed !== undefined && signed.key.endsWith('RelStart')
       ? [
           {
-            label: MODES[mode].label,
+            label: modeLabel,
             value: formatPlotPercent(p[signed.key] as number | null),
           },
         ]
@@ -294,7 +292,7 @@ const StockPlot = ({
               domain={[0, 'auto']}
               hide={phone}
               label={{
-                value: 'Einheiten',
+                value: t('plot.units'),
                 angle: 90,
                 position: 'insideRight',
                 fill: 'var(--muted-foreground)',
@@ -306,7 +304,7 @@ const StockPlot = ({
           {signed !== undefined &&
             signedArea(
               signed.key,
-              MODES[mode].label,
+              modeLabel,
               points.map(p => p[signed.key] as number | null),
               signed.curve
             )}
@@ -315,7 +313,7 @@ const StockPlot = ({
             <Area
               type="linear"
               dataKey="price"
-              name="Kurs"
+              name={t('plot.price')}
               stroke="var(--chart-price)"
               fill="var(--chart-price)"
               fillOpacity={0.15}
@@ -330,7 +328,7 @@ const StockPlot = ({
               key="price"
               type="linear"
               dataKey="price"
-              name="Kurs"
+              name={t('plot.price')}
               stroke="var(--chart-price)"
               strokeWidth={1.4}
               dot={false}
@@ -341,7 +339,7 @@ const StockPlot = ({
               yAxisId={UNITS_AXIS}
               type="stepAfter"
               dataKey="units"
-              name="Einheiten"
+              name={t('plot.units')}
               stroke="var(--chart-units)"
               strokeWidth={1.4}
               dot={false}
@@ -353,7 +351,7 @@ const StockPlot = ({
             <Area
               type="stepAfter"
               dataKey="units"
-              name="Einheiten"
+              name={t('plot.units')}
               stroke="var(--chart-units)"
               fill="var(--chart-units)"
               fillOpacity={0.15}
@@ -367,7 +365,7 @@ const StockPlot = ({
             <Area
               type="linear"
               dataKey="value"
-              name="Wert"
+              name={t('plot.value')}
               stroke="var(--gain)"
               fill="var(--gain)"
               fillOpacity={0.15}
@@ -381,7 +379,7 @@ const StockPlot = ({
             <Area
               type="stepAfter"
               dataKey="invested"
-              name="Investiert"
+              name={t('plot.invested')}
               stroke="var(--loss)"
               fill="var(--loss)"
               fillOpacity={0.15}
@@ -395,7 +393,7 @@ const StockPlot = ({
             <Line
               type="stepAfter"
               dataKey="invested"
-              name="Investiert"
+              name={t('plot.invested')}
               stroke="var(--loss)"
               strokeWidth={1.4}
               dot={false}
@@ -417,31 +415,29 @@ const StockPlot = ({
       <PlotControls>
         <SelectField
           id="stock-plot-mode"
-          label="Art"
+          label={t('plot.mode')}
           value={mode}
-          options={Object.entries(MODES).map(([value, { label }]) => ({
-            value: value as Mode,
-            label,
+          options={(Object.keys(MODES) as Mode[]).map(value => ({
+            value,
+            label: t(`plot.modes.${value}`),
           }))}
           onChange={setMode}
         />
-        <SelectField
+        <SourceField
           id="stock-plot-source"
-          label="Datenquelle"
           value={source}
-          options={SOURCES}
           onChange={setSource}
         />
         <SelectField
           id="stock-plot-period"
-          label="Zeitraum"
+          label={t('plot.period')}
           value={String(performance.data?.length ? period : CUSTOM)}
           options={[
             ...(performance.data ?? []).map((item, i) => ({
               value: String(i),
               label: getPeriodDescription(item),
             })),
-            { value: String(CUSTOM), label: 'Benutzerdefiniert' },
+            { value: String(CUSTOM), label: t('plot.custom') },
           ]}
           onChange={v => {
             setPeriod(Number(v));

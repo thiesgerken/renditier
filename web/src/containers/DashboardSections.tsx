@@ -1,7 +1,12 @@
 import { useEffect, useEffectEvent, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import { DASHBOARD_TABS, DEFAULT_TAB } from './dashboardTabs';
+import {
+  DASHBOARD_TAB_ICONS,
+  DASHBOARD_TABS,
+  DEFAULT_TAB,
+} from './dashboardTabs';
 import type { DashboardTab } from './dashboardTabs';
 
 // Below the sticky period bar: where a section heading lands after scrolling
@@ -26,6 +31,7 @@ interface Props {
 // from a link, a reload or the sidebar scrolls to its section; scrolling
 // reports the section in view through `onScrollTo`, which puts it into the URL.
 const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
+  const { t } = useTranslation();
   const elements = useRef(new Map<DashboardTab, HTMLElement>());
   // The tab last scrolled to or reported, so that a `tab` the spy reported
   // itself does not scroll again.
@@ -72,8 +78,8 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
 
   return (
     <div className="flex flex-col gap-8">
-      {Object.entries(DASHBOARD_TABS).map(([key, { label, icon: Icon }]) => {
-        const section = key as DashboardTab;
+      {DASHBOARD_TABS.map(section => {
+        const Icon = DASHBOARD_TAB_ICONS[section];
 
         return (
           <section
@@ -92,7 +98,7 @@ const DashboardSections = ({ sections, tab, onScrollTo, ready }: Props) => {
               className="flex items-center gap-2 text-base font-semibold"
             >
               <Icon className="size-4 text-muted-foreground" />
-              {label}
+              {t(`dashboard.tabs.${section}`)}
             </h2>
             {sections[section]}
           </section>

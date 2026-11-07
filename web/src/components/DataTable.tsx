@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { memoize } from 'lodash';
+import { useTranslation } from 'react-i18next';
 import {
   createPaginatedRowModel,
   createSortedRowModel,
@@ -26,6 +28,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import { formatLocale } from '../i18n';
 import { Button } from './ui/button';
 import {
   Select,
@@ -74,11 +77,15 @@ type Features = typeof dataTableFeatures;
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZES = [DEFAULT_PAGE_SIZE, 25, 50];
 
-const collator = new Intl.Collator('de', { numeric: true });
+// A collator per locale: creating one is far more expensive than comparing,
+// and a sort compares thousands of times.
+const collator = memoize(
+  (locale: string) => new Intl.Collator(locale, { numeric: true })
+);
 
-// Strings by German collation with numbers in them compared by value ("Depot 2"
-// before "Depot 10"), numbers numerically, missing values first. The DataGrid
-// compared strings with the browser's default collation.
+// Strings by the collation of the formatting locale with numbers in them
+// compared by value ("Depot 2" before "Depot 10"), numbers numerically, missing
+// values first.
 function compareValues<T extends RowData>(
   a: Row<Features, T>,
   b: Row<Features, T>,
@@ -91,7 +98,7 @@ function compareValues<T extends RowData>(
   if (y === null || y === undefined) return 1;
   if (typeof x === 'number' && typeof y === 'number') return x - y;
   if (typeof x === 'string' && typeof y === 'string')
-    return collator.compare(x, y);
+    return collator(formatLocale()).compare(x, y);
   throw new Error(`column ${columnId} cannot be sorted by its values`);
 }
 
@@ -120,6 +127,7 @@ function DataTable<T extends RowData>({
   pagination: paging,
   onRowClick,
 }: Props<T>) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState(initialSorting);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   // A page beyond the data (a stale `?page=` or the last row of the last page
@@ -247,7 +255,7 @@ function DataTable<T extends RowData>({
               >
                 {isLoading ? (
                   <LoaderCircle
-                    aria-label="Wird geladen"
+                    aria-label={t('common.loading')}
                     className="mx-auto size-5 animate-spin"
                   />
                 ) : (
@@ -261,12 +269,12 @@ function DataTable<T extends RowData>({
       {paging !== undefined && (
         <div className="flex items-center justify-end gap-4 border-t px-2 pt-2 text-sm text-muted-foreground">
           <div className="hidden items-center gap-2 md:flex">
-            <span>Zeilen pro Seite</span>
+            <span>{t('table.rowsPerPage')}</span>
             <Select
               value={String(pageSize)}
               onValueChange={value => table.setPageSize(Number(value))}
             >
-              <SelectTrigger size="sm" aria-label="Zeilen pro Seite">
+              <SelectTrigger size="sm" aria-label={t('table.rowsPerPage')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -279,13 +287,17 @@ function DataTable<T extends RowData>({
             </Select>
           </div>
           <span className="tabular-nums">
-            {firstRow}–{lastRow} von {rowCount}
+            {t('table.range', {
+              first: firstRow,
+              last: lastRow,
+              count: rowCount,
+            })}
           </span>
           <div className="flex gap-1">
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Vorherige Seite"
+              aria-label={t('table.previousPage')}
               disabled={!table.getCanPreviousPage()}
               onClick={() => table.previousPage()}
             >
@@ -294,7 +306,7 @@ function DataTable<T extends RowData>({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Nächste Seite"
+              aria-label={t('table.nextPage')}
               disabled={!table.getCanNextPage()}
               onClick={() => table.nextPage()}
             >

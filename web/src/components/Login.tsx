@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CircleAlert, CircleCheck, TrendingUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import type { AuthenticationState } from '../types/store';
 import { Alert, AlertDescription } from './ui/alert';
@@ -15,6 +16,7 @@ interface Props {
 }
 
 const Login = ({ onSubmit, message = null, messageType = null }: Props) => {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -38,7 +40,7 @@ const Login = ({ onSubmit, message = null, messageType = null }: Props) => {
             }}
           >
             <div className="flex flex-col gap-2">
-              <Label htmlFor="username">Benutzername</Label>
+              <Label htmlFor="username">{t('login.username')}</Label>
               <Input
                 id="username"
                 autoComplete="username"
@@ -50,7 +52,7 @@ const Login = ({ onSubmit, message = null, messageType = null }: Props) => {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="password">Passwort</Label>
+              <Label htmlFor="password">{t('login.password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -61,7 +63,7 @@ const Login = ({ onSubmit, message = null, messageType = null }: Props) => {
               />
             </div>
             <Button type="submit" size="lg" className="mt-2 w-full">
-              Anmelden
+              {t('login.submit')}
             </Button>
           </form>
           {message !== null && messageType !== null && (

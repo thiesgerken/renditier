@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CircleAlert, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import {
@@ -65,6 +66,7 @@ export const toAccount = (t: AccountDraft): AccountDraft | null => {
 // Mounted only while the dialog is open, so every opening starts from
 // `initialAccount` again.
 const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [account, setAccount] = useState(initialAccount);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -74,22 +76,22 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
   const onDelete = () => {
     // The delete button only renders when `account.id !== null`.
     if (account.id !== null)
-      void run(dispatch(deleteAccount(account.id)), 'Löschen fehlgeschlagen');
+      void run(dispatch(deleteAccount(account.id)), t('common.deleteFailed'));
   };
 
   const onSave = () => {
-    const t = toAccount(account);
+    const draft = toAccount(account);
 
-    if (t === null) {
+    if (draft === null) {
       setTriedToSave(true);
       return;
     }
 
     void run(
-      t.id === null
-        ? dispatch(createAccount(t))
-        : dispatch(updateAccount({ ...t, id: t.id })),
-      'Speichern fehlgeschlagen'
+      draft.id === null
+        ? dispatch(createAccount(draft))
+        : dispatch(updateAccount({ ...draft, id: draft.id })),
+      t('common.saveFailed')
     );
   };
 
@@ -104,11 +106,11 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
       >
         <DialogHeader>
           <DialogTitle>
-            {account.id !== null ? 'Depot bearbeiten' : 'Depot erstellen'}
+            {account.id !== null ? t('accounts.edit') : t('accounts.create')}
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-2">
-          <Label htmlFor="account-name">Name</Label>
+          <Label htmlFor="account-name">{t('common.name')}</Label>
           <Input
             id="account-name"
             value={account.name}
@@ -139,7 +141,7 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
         {toAccount(account) === null && triedToSave && (
           <Alert variant="destructive">
             <CircleAlert />
-            <AlertDescription>Depot ist unvollständig!</AlertDescription>
+            <AlertDescription>{t('accounts.incomplete')}</AlertDescription>
           </Alert>
         )}
         {failure !== null && (
@@ -159,29 +161,29 @@ const AccountForm = ({ initialAccount, onClose }: Omit<Props, 'open'>) => {
               onClick={() => setConfirmOpen(true)}
             >
               <Trash2 />
-              Löschen
+              {t('common.delete')}
             </Button>
           )}
           <Button type="button" variant="outline" onClick={onClose}>
-            Abbrechen
+            {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={pending}>
-            Speichern
+            {t('common.save')}
           </Button>
         </DialogFooter>
       </form>
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Depot löschen?</AlertDialogTitle>
+            <AlertDialogTitle>{t('accounts.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Dies würde auch alle Transaktionen dieses Depots löschen!
+              {t('accounts.deleteWarning')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Nein</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.no')}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={onDelete}>
-              Ja, löschen
+              {t('common.confirmDelete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Briefcase, ChartLine, Hash, Shapes, Target } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { cn } from 'cn';
 
@@ -18,6 +19,7 @@ import {
 import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import useTableFormat from '../components/useTableFormat';
+import i18n from '../i18n';
 import { abbreviateTitle } from '../selectors/stocks';
 import { fetchPerformance } from '../slices/performance';
 import { updateStockPlot } from '../slices/stockPlot';
@@ -59,6 +61,7 @@ const ReturnCell = ({ ratio }: { ratio: number | null }) => {
 
 const column = createColumnHelper<typeof dataTableFeatures, StockRow>();
 
+// Headers are functions, so that they are translated when rendered.
 const columns = column.columns([
   // Phones need the room for the name and today's change.
   column.accessor('isin', {
@@ -66,7 +69,7 @@ const columns = column.columns([
     meta: { icon: Hash, showFrom: 'sm' },
   }),
   column.accessor('title', {
-    header: 'Name',
+    header: () => i18n.t('common.name'),
     meta: { icon: ChartLine },
     cell: ({ row, getValue }) => (
       <span className="flex items-center gap-2 sm:min-w-40">
@@ -81,42 +84,43 @@ const columns = column.columns([
     ),
   }),
   column.accessor('kind', {
-    header: 'Typ',
+    header: () => i18n.t('stocks.columns.kind'),
     meta: { icon: Shapes },
     cell: ({ getValue }) => <Badge variant="secondary">{getValue()}</Badge>,
   }),
   column.accessor('focus', {
-    header: 'Fokus',
+    header: () => i18n.t('stocks.columns.focus'),
     meta: { icon: Target, showFrom: 'sm' },
   }),
   column.accessor('fondsType', {
-    header: 'Fondstyp',
+    header: () => i18n.t('stocks.columns.fondsType'),
     meta: { showFrom: 'xl' },
   }),
   column.accessor('company', {
-    header: 'Anbieter',
+    header: () => i18n.t('stocks.columns.company'),
     meta: { icon: Briefcase, showFrom: 'xl' },
   }),
   column.accessor(row => row.returns?.today ?? null, {
     id: 'today',
-    header: 'Heute',
+    header: () => i18n.t('stocks.columns.today'),
     cell: ({ getValue }) => <ReturnCell ratio={getValue()} />,
   }),
   column.accessor(row => row.returns?.month ?? null, {
     id: 'month',
-    header: '1 Monat',
+    header: () => i18n.t('stocks.columns.month'),
     meta: { showFrom: 'md' },
     cell: ({ getValue }) => <ReturnCell ratio={getValue()} />,
   }),
   column.accessor(row => row.returns?.year ?? null, {
     id: 'year',
-    header: '1 Jahr',
+    header: () => i18n.t('stocks.columns.year'),
     meta: { showFrom: 'md' },
     cell: ({ getValue }) => <ReturnCell ratio={getValue()} />,
   }),
 ]);
 
 const StockTable = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const stocks = useAppSelector(state => state.stocks);
@@ -175,14 +179,14 @@ const StockTable = () => {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Wertpapiere</CardTitle>
+          <CardTitle>{t('nav.stocks')}</CardTitle>
           <CardAction className="flex items-center gap-2">
             <Switch
               id="stocks-only-held"
               checked={onlyHeld}
               onCheckedChange={checked => setAll(checked ? null : 1)}
             />
-            <Label htmlFor="stocks-only-held">Nur gehaltene</Label>
+            <Label htmlFor="stocks-only-held">{t('stocks.heldOnly')}</Label>
           </CardAction>
         </CardHeader>
         <CardContent>
@@ -192,11 +196,7 @@ const StockTable = () => {
             getRowId={stock => stock.isin}
             initialSorting={[]}
             isLoading={loading(stocks) || (onlyHeld && loading(performance))}
-            emptyText={
-              onlyHeld
-                ? 'Keine gehaltenen Wertpapiere'
-                : 'Noch keine Wertpapiere'
-            }
+            emptyText={onlyHeld ? t('stocks.noneHeld') : t('stocks.none')}
             onRowClick={stock => {
               void navigate(`/stocks/${stock.isin}`);
             }}

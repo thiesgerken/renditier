@@ -9,6 +9,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import type { PortfolioPerformance } from '../../types/api';
 import { periodGain } from '../../selectors/performance';
@@ -79,6 +80,7 @@ interface Props {
 // in at its end, and what it gained, earned per year and how often it traded
 // during it.
 const KpiHeader = ({ period }: Props) => {
+  const { t } = useTranslation();
   const { signTone } = useTableFormat();
   const { start, end } = period;
 
@@ -95,37 +97,37 @@ const KpiHeader = ({ period }: Props) => {
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
       <KpiTile
         icon={Wallet}
-        label="Depotwert"
+        label={t('kpi.portfolioValue')}
         value={euros(end.value)}
         detail={formatChange(start.value, end.value, euros)}
       />
       <KpiTile
         icon={PiggyBank}
-        label="Investiert"
+        label={t('kpi.invested')}
         value={euros(-end.invested)}
         detail={formatChange(-start.invested, -end.invested, euros)}
       />
       <KpiTile
         icon={gainTone === 'loss' ? TrendingDown : TrendingUp}
-        label="Gewinn im Zeitraum"
+        label={t('kpi.gain')}
         value={euros(gain, { signed: true })}
         detail={null}
         tone={gainTone}
       />
       <KpiTile
         icon={Percent}
-        label="Zinsfuß"
+        label={t('kpi.irr')}
         value={
           annualRate === null
             ? '—'
             : `${formatPercent(annualRate, { signed: true })} p.a.`
         }
-        detail={isShortPeriod(period) ? 'erst ab einem Monat sinnvoll' : null}
+        detail={isShortPeriod(period) ? t('kpi.irrTooShort') : null}
         tone={signTone(annualRate, 4)}
       />
       <KpiTile
         icon={ArrowLeftRight}
-        label="Transaktionen"
+        label={t('kpi.transactions')}
         value={String(transactions.length)}
         detail={null}
       />

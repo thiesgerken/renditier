@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { DataSourceSelection } from '../../types/api';
 import DatePicker from '../DatePicker';
@@ -77,11 +78,34 @@ export const SelectField = <T extends string>({
   </Field>
 );
 
-export const SOURCES: Option<DataSourceSelection>[] = [
-  { value: 'auto', label: 'Automatisch' },
-  { value: 'historical', label: 'Historisch' },
-  { value: 'realtime', label: 'Echtzeit' },
-];
+const SOURCES = [
+  'auto',
+  'historical',
+  'realtime',
+] as const satisfies DataSourceSelection[];
+
+interface SourceFieldProps {
+  id: string;
+  value: DataSourceSelection;
+  onChange: (value: DataSourceSelection) => void;
+}
+
+export const SourceField = ({ id, value, onChange }: SourceFieldProps) => {
+  const { t } = useTranslation();
+
+  return (
+    <SelectField
+      id={id}
+      label={t('plot.source')}
+      value={value}
+      options={SOURCES.map(source => ({
+        value: source,
+        label: t(`plot.sources.${source}`),
+      }))}
+      onChange={onChange}
+    />
+  );
+};
 
 export type DateRange = [Temporal.PlainDate, Temporal.PlainDate];
 
@@ -94,28 +118,32 @@ interface DateRangeFieldsProps {
 export const DateRangeFields = ({
   value: [start, end],
   onChange,
-}: DateRangeFieldsProps) => (
-  // start and end wrap together
-  <div className="flex gap-4">
-    <Field id="plot-start" label="Start">
-      <DatePicker
-        id="plot-start"
-        value={start}
-        max={end}
-        onChange={d => onChange([d, end])}
-      />
-    </Field>
-    <Field id="plot-end" label="Ende">
-      <DatePicker
-        id="plot-end"
-        value={end}
-        // prices only exist up to today
-        max={Temporal.Now.plainDateISO()}
-        // an end before the start moves the start along
-        onChange={d =>
-          onChange([Temporal.PlainDate.compare(d, start) < 0 ? d : start, d])
-        }
-      />
-    </Field>
-  </div>
-);
+}: DateRangeFieldsProps) => {
+  const { t } = useTranslation();
+
+  return (
+    // start and end wrap together
+    <div className="flex gap-4">
+      <Field id="plot-start" label={t('plot.start')}>
+        <DatePicker
+          id="plot-start"
+          value={start}
+          max={end}
+          onChange={d => onChange([d, end])}
+        />
+      </Field>
+      <Field id="plot-end" label={t('plot.end')}>
+        <DatePicker
+          id="plot-end"
+          value={end}
+          // prices only exist up to today
+          max={Temporal.Now.plainDateISO()}
+          // an end before the start moves the start along
+          onChange={d =>
+            onChange([Temporal.PlainDate.compare(d, start) < 0 ? d : start, d])
+          }
+        />
+      </Field>
+    </div>
+  );
+};

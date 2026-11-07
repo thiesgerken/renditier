@@ -1,4 +1,5 @@
 import { map, partition, sumBy } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import type { PortfolioPerformance, Stock } from '../../types/api';
 import type { StocksState } from '../../types/store';
@@ -36,12 +37,11 @@ const breakdown = (
 ): BarItem[] => {
   const items = new Map<string, BarItem>();
   positions.forEach(({ stock, invested }) => {
-    shares(stock).forEach(({ label, value, isin }) => {
-      const amount = (invested * value) / 100;
-      items.set(label, {
-        label,
-        value: (items.get(label)?.value ?? 0) + amount,
-        isin,
+    shares(stock).forEach(share => {
+      const amount = (invested * share.value) / 100;
+      items.set(share.label, {
+        ...share,
+        value: (items.get(share.label)?.value ?? 0) + amount,
       });
     });
   });
@@ -58,6 +58,7 @@ interface Props {
 // The portfolio's holdings, industries, currencies and countries, by invested
 // amount.
 const Breakdowns = ({ period, loading, stocks }: Props) => {
+  const { t } = useTranslation();
   // A held position with no positive net cost (more taken out than paid in)
   // has no share of the invested amount to split; spreading its negative
   // amount over its fund's names would silently net it against other funds.
@@ -74,16 +75,14 @@ const Breakdowns = ({ period, loading, stocks }: Props) => {
         {period !== undefined &&
           (period.kind === 'YearToYear' || period.kind === 'MonthToMonth') && (
             <p className="text-xs text-muted-foreground">
-              Die Zusammensetzung der Fonds (Einzeltitel, Branchen, Währungen,
-              Länder) ist immer die heutige von onvista, auch für vergangene
-              Zeiträume.
+              {t('breakdowns.todaysComposition')}
             </p>
           )}
         <div className="grid gap-6 md:grid-cols-2">
-          {BREAKDOWNS.map(({ title, icon, maxRows, shares, marker }) => (
+          {BREAKDOWNS.map(({ id, icon, maxRows, shares, marker }) => (
             <BarList
-              key={title}
-              title={title}
+              key={id}
+              title={t(`breakdowns.${id}`)}
               icon={icon}
               marker={marker}
               // a stock without holdings data, e.g. a share, is its own
@@ -100,8 +99,11 @@ const Breakdowns = ({ period, loading, stocks }: Props) => {
         </div>
         {drawnDown.length > 0 && (
           <p className="text-xs text-muted-foreground">
-            Mehr entnommen als eingezahlt, daher nicht enthalten:{' '}
-            {drawnDown.map(p => capitalizeTitle(p.stock.title)).join(', ')}
+            {t('breakdowns.drawnDown', {
+              names: drawnDown
+                .map(p => capitalizeTitle(p.stock.title))
+                .join(', '),
+            })}
           </p>
         )}
       </CardContent>

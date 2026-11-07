@@ -1,7 +1,7 @@
+import i18n, { formatLocale } from './i18n';
 import { getPrice } from './selectors/performance';
 import type { DataSource, EitherPrice } from './types/api';
 
-const LOCALE = 'de-DE';
 const MISSING = '\u2014';
 
 export interface NumberOptions {
@@ -17,7 +17,7 @@ export interface NumberOptions {
 }
 
 // Intl.NumberFormat instances are expensive to create and tables format
-// hundreds of cells, so they are shared per configuration.
+// hundreds of cells, so they are shared per locale and configuration.
 const numberFormats = new Map<string, Intl.NumberFormat>();
 
 const numberFormat = (
@@ -29,11 +29,12 @@ const numberFormat = (
     signed = false,
   }: NumberOptions
 ): Intl.NumberFormat => {
-  const key = `${style}/${digits}/${maxDigits}/${significantDigits}/${signed}`;
+  const locale = formatLocale();
+  const key = `${locale}/${style}/${digits}/${maxDigits}/${significantDigits}/${signed}`;
   let format = numberFormats.get(key);
 
   if (format === undefined) {
-    format = new Intl.NumberFormat(LOCALE, {
+    format = new Intl.NumberFormat(locale, {
       style,
       currency: style === 'currency' ? 'EUR' : undefined,
       minimumFractionDigits: digits,
@@ -71,6 +72,16 @@ export const formatNumber = (
 ): string =>
   value === null ? MISSING : numberFormat('decimal', options).format(value);
 
+// The separators of formatNumber, for number inputs: "," and "." in German.
+// A locale that does not group digits has no group separator.
+export const numberSeparators = (): { decimal: string; group: string } => {
+  const parts = numberFormat('decimal', {}).formatToParts(1234567.8);
+  const separator = (type: 'decimal' | 'group') =>
+    parts.find(p => p.type === type)?.value ?? '';
+
+  return { decimal: separator('decimal'), group: separator('group') };
+};
+
 // Units are whole for most stocks, but often a small fraction of a single coin
 // for crypto currencies, which would round to nothing at `maxDigits`. So they
 // keep three significant digits by default: 0,0123 instead of 0,01.
@@ -94,7 +105,7 @@ const toTemporal = (date: DateInput) => {
 export const formatTemporal = (
   date: DateInput,
   options: Intl.DateTimeFormatOptions
-): string => toTemporal(date).toLocaleString(LOCALE, options);
+): string => toTemporal(date).toLocaleString(formatLocale(), options);
 
 const DATE = { day: '2-digit', month: '2-digit', year: 'numeric' } as const;
 const TIME = { hour: '2-digit', minute: '2-digit' } as const;
@@ -120,8 +131,6 @@ const UNITS = [
   'seconds',
 ] as const;
 
-const relativeTime = new Intl.RelativeTimeFormat(LOCALE);
-
 // "vor 3 Tagen": the largest unit the time span reaches.
 export const formatSince = (
   instant: Temporal.Instant,
@@ -132,7 +141,7 @@ export const formatSince = (
   });
   const unit = UNITS.find(u => since[u] !== 0) ?? 'seconds';
 
-  return relativeTime.format(-since[unit], unit);
+  return new Intl.RelativeTimeFormat(formatLocale()).format(-since[unit], unit);
 };
 
 export type Formatter = (
@@ -204,5 +213,9 @@ export const formatPriceSource = (
       ? formatDateTime(price.date)
       : formatDate(price.date);
 
-  return `${formatCurrency(getPrice(dataSource))} am ${when} (${exchange.name})`;
+  return i18n.t('performance.priceSource', {
+    price: formatCurrency(getPrice(dataSource)),
+    date: when,
+    exchange: exchange.name,
+  });
 };

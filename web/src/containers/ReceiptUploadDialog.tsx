@@ -1,4 +1,5 @@
 import { CircleAlert, CircleCheck, LoaderCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import FormDialogContent from '../components/FormDialogContent';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
@@ -19,6 +20,7 @@ interface Props {
 }
 
 const ReceiptUploadDialog = ({ open, onClose }: Props) => {
+  const { t } = useTranslation();
   const receipts = useAppSelector(state => state.receipts);
   const stocks = useAppSelector(state => state.stocks);
 
@@ -30,18 +32,18 @@ const ReceiptUploadDialog = ({ open, onClose }: Props) => {
       <FormDialogContent>
         <div className="flex flex-1 flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Abrechnungen hochladen</DialogTitle>
+            <DialogTitle>{t('receipts.title')}</DialogTitle>
           </DialogHeader>
           {receipts.isUploading && (
             <LoaderCircle
-              aria-label="Wird hochgeladen"
+              aria-label={t('receipts.uploading')}
               className="mx-auto my-6 size-8 animate-spin text-muted-foreground"
             />
           )}
           {!receipts.isUploading && receipts.uploadError !== null && (
             <Alert variant="destructive">
               <CircleAlert />
-              <AlertTitle>Fehler beim Upload</AlertTitle>
+              <AlertTitle>{t('receipts.failed')}</AlertTitle>
               <AlertDescription>
                 {receipts.uploadError.message}
               </AlertDescription>
@@ -51,11 +53,9 @@ const ReceiptUploadDialog = ({ open, onClose }: Props) => {
             <>
               <Alert>
                 <CircleCheck />
-                <AlertTitle>Erfolgreich</AlertTitle>
+                <AlertTitle>{t('receipts.succeeded')}</AlertTitle>
                 <AlertDescription>
-                  {receipts.data.length === 1
-                    ? 'Es wurde eine Transaktion hinzugefügt.'
-                    : `Es wurden ${receipts.data.length} Transaktionen hinzugefügt.`}
+                  {t('receipts.added', { count: receipts.data.length })}
                 </AlertDescription>
               </Alert>
               <ul className="grid gap-1 text-sm">
@@ -67,7 +67,12 @@ const ReceiptUploadDialog = ({ open, onClose }: Props) => {
 
                   return (
                     <li key={x.id}>
-                      {`${formatDate(x.date)}: ${formatUnits(x.units, { maxDigits: 2 })} von ${stock} für ${formatCurrency(x.amount / 100)}`}
+                      {t('receipts.transaction', {
+                        date: formatDate(x.date),
+                        units: formatUnits(x.units, { maxDigits: 2 }),
+                        stock,
+                        amount: formatCurrency(x.amount / 100),
+                      })}
                     </li>
                   );
                 })}
@@ -76,7 +81,7 @@ const ReceiptUploadDialog = ({ open, onClose }: Props) => {
           )}
           <DialogFooter className="mt-auto">
             <Button type="button" onClick={onClose}>
-              Schließen
+              {t('common.close')}
             </Button>
           </DialogFooter>
         </div>

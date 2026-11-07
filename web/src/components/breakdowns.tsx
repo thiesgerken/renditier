@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import i18n from '../i18n';
 import type { Stock } from '../types/api';
 import type { BarItem } from './BarList';
 import CompanyLogo from './CompanyLogo';
@@ -30,16 +31,29 @@ import { breakdownShares, holdingShares } from '../selectors/stocks';
 import type { FundShare } from '../selectors/stocks';
 import { countryCode, currencyCode } from '../selectors/onvistaNames';
 
+// onvista names countries and currencies in German. Those with an ISO code
+// are shown by the browser's name for it in the UI language, the others
+// ("Global", "Barmittel") as onvista names them.
+const named = (
+  shares: FundShare[],
+  type: 'region' | 'currency',
+  codeOf: (name: string) => string | null
+): FundShare[] => {
+  const names = new Intl.DisplayNames(i18n.language, { type });
+
+  return shares.map(share => {
+    const code = codeOf(share.label);
+    return code === null
+      ? share
+      : { ...share, label: names.of(code) ?? share.label, code };
+  });
+};
+
 // A country code spelled in regional indicator symbols is its flag emoji.
 const flag = (code: string) =>
   String.fromCodePoint(
     ...Array.from(code, letter => 0x1f1e6 + letter.charCodeAt(0) - 65)
   );
-
-const CountryFlag = ({ name }: { name: string }) => {
-  const code = countryCode(name);
-  return code === null ? null : <span aria-hidden>{flag(code)}</span>;
-};
 
 const MARKER = 'size-4 shrink-0 text-muted-foreground';
 
@@ -62,9 +76,7 @@ const CURRENCY_ICONS: Partial<Record<string, LucideIcon>> = {
   INR: IndianRupee,
 };
 
-const CurrencyIcon = ({ name }: { name: string }) => {
-  const code = currencyCode(name);
-  if (code === null) return null;
+const CurrencyIcon = ({ code }: { code: string }) => {
   const Icon = CURRENCY_ICONS[code] ?? Coins;
   return <Icon aria-hidden className={MARKER} />;
 };
@@ -90,7 +102,7 @@ const SectorIcon = ({ name }: { name: string }) => {
 };
 
 export interface Breakdown {
-  title: string;
+  id: 'holdings' | 'industries' | 'currencies' | 'countries';
   icon: LucideIcon;
   maxRows: number;
   // null for a stock that onvista has no holdings for
@@ -100,12 +112,12 @@ export interface Breakdown {
 }
 
 // The parts of a fund, on the dashboard for the whole portfolio and on the
-// stock page for one stock. Ten rows show a fund's top holdings and nearly all
-// countries; industries get eleven so that all GICS sectors fit; currencies
-// beyond the top five are noise.
+// stock page for one stock, titled by `breakdowns.*`. Ten rows show a fund's
+// top holdings and nearly all countries; industries get eleven so that all
+// GICS sectors fit; currencies beyond the top five are noise.
 export const BREAKDOWNS: Breakdown[] = [
   {
-    title: 'Einzeltitel',
+    id: 'holdings',
     icon: Layers,
     maxRows: 10,
     shares: holdingShares,
@@ -114,24 +126,28 @@ export const BREAKDOWNS: Breakdown[] = [
       isin === undefined ? null : <CompanyLogo isin={isin} name={label} />,
   },
   {
-    title: 'Branchen',
+    id: 'industries',
     icon: Shapes,
     maxRows: 11,
     shares: s => breakdownShares(s, 'industryBreakdown'),
     marker: ({ label }) => <SectorIcon name={label} />,
   },
   {
-    title: 'Währungen',
+    id: 'currencies',
     icon: Currency,
     maxRows: 5,
-    shares: s => breakdownShares(s, 'currencyBreakdown'),
-    marker: ({ label }) => <CurrencyIcon name={label} />,
+    shares: s =>
+      named(breakdownShares(s, 'currencyBreakdown'), 'currency', currencyCode),
+    marker: ({ code }) =>
+      code === undefined ? null : <CurrencyIcon code={code} />,
   },
   {
-    title: 'Länder',
+    id: 'countries',
     icon: Globe,
     maxRows: 10,
-    shares: s => breakdownShares(s, 'countryBreakdown'),
-    marker: ({ label }) => <CountryFlag name={label} />,
+    shares: s =>
+      named(breakdownShares(s, 'countryBreakdown'), 'region', countryCode),
+    marker: ({ code }) =>
+      code === undefined ? null : <span aria-hidden>{flag(code)}</span>,
   },
 ];

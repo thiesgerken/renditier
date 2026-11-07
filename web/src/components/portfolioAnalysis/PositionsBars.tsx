@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { map } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import type {
   PortfolioPerformance,
@@ -21,31 +22,20 @@ import {
   SelectValue,
 } from '../ui/select';
 
-// The amount of a position per mode; null when it is unknown because the
-// position has no price. Sold positions are no part of what is invested or
-// held, but what they gained or lost within the period counts.
+// The amount of a position per mode (labelled by `positionsBars.modes.*`);
+// null when it is unknown because the position has no price. Sold positions
+// are no part of what is invested or held, but what they gained or lost
+// within the period counts.
 const MODES = {
-  invested: {
-    label: 'Kaufpreis',
-    amount: (p: PositionPerformance) => (isHeld(p) ? -p.end.invested : 0),
+  invested: (p: PositionPerformance) => (isHeld(p) ? -p.end.invested : 0),
+  value: (p: PositionPerformance) => p.end.value,
+  profit: (p: PositionPerformance) => {
+    const x = periodGain(p);
+    return x === null ? null : Math.max(0, x);
   },
-  value: {
-    label: 'Wert',
-    amount: (p: PositionPerformance) => p.end.value,
-  },
-  profit: {
-    label: 'Gewinn im Zeitraum',
-    amount: (p: PositionPerformance) => {
-      const x = periodGain(p);
-      return x === null ? null : Math.max(0, x);
-    },
-  },
-  loss: {
-    label: 'Verlust im Zeitraum',
-    amount: (p: PositionPerformance) => {
-      const x = periodGain(p);
-      return x === null ? null : Math.max(0, -x);
-    },
+  loss: (p: PositionPerformance) => {
+    const x = periodGain(p);
+    return x === null ? null : Math.max(0, -x);
   },
 };
 
@@ -65,6 +55,7 @@ interface Props {
 const isMode = (value: string): value is Mode => value in MODES;
 
 const PositionsBars = ({ period, loading, stocks }: Props) => {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>('invested');
 
   const positions =
@@ -76,7 +67,7 @@ const PositionsBars = ({ period, loading, stocks }: Props) => {
           // its end, and the labels must tell them apart
           return {
             label: stock === null ? isin : capitalizeTitle(stock.title),
-            amount: MODES[mode].amount(p),
+            amount: MODES[mode](p),
           };
         });
 
@@ -89,15 +80,15 @@ const PositionsBars = ({ period, loading, stocks }: Props) => {
     <ProgressCard loading={loading}>
       <CardContent className="flex flex-col gap-3">
         <BarList
-          title={`Positionen nach ${MODES[mode].label}`}
+          title={t(`positionsBars.titles.${mode}`)}
           items={items}
           maxRows={MAX_ROWS}
           formatValue={v => formatCurrency(v, { digits: 0 })}
           note={
             unpriced.length > 0
-              ? `Ohne Kurs, daher nicht enthalten: ${unpriced
-                  .map(p => p.label)
-                  .join(', ')}`
+              ? t('positionsBars.unpriced', {
+                  names: unpriced.map(p => p.label).join(', '),
+                })
               : undefined
           }
         />
@@ -105,15 +96,17 @@ const PositionsBars = ({ period, loading, stocks }: Props) => {
           value={mode}
           onValueChange={value => isMode(value) && setMode(value)}
         >
-          <SelectTrigger aria-label="Art" className="w-40">
+          <SelectTrigger aria-label={t('positionsBars.label')} className="w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(MODES).map(([value, { label }]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
+            {Object.keys(MODES)
+              .filter(isMode)
+              .map(value => (
+                <SelectItem key={value} value={value}>
+                  {t(`positionsBars.modes.${value}`)}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       </CardContent>

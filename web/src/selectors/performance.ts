@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import type {
   DataSource,
   EitherPrice,
@@ -13,18 +14,9 @@ import type {
 export type PerformancePeriod =
   PortfolioPerformance | (PositionPerformance & { kind: PerformanceKind });
 
+// Finished years and months by their end, the running periods by name.
 export const getPeriodDescription = (item: PerformancePeriod): string => {
   switch (item.kind) {
-    case 'Total':
-      return 'Insgesamt';
-    case 'Today':
-      return 'Heute';
-    case 'WeekToDate':
-      return 'Diese Woche';
-    case 'MonthToDate':
-      return 'Dieser Monat';
-    case 'YearToDate':
-      return 'Dieses Jahr';
     case 'YearToYear':
       return `${Temporal.PlainDate.from(item.end.date).year}`;
     case 'MonthToMonth': {
@@ -32,7 +24,7 @@ export const getPeriodDescription = (item: PerformancePeriod): string => {
       return `${String(month).padStart(2, '0')}/${year}`;
     }
     default:
-      return '';
+      return i18n.t(`period.${item.kind}`);
   }
 };
 
@@ -65,14 +57,15 @@ export const periodKey = (period: PerformancePeriod): string =>
     ? `${period.kind}/${period.end.date}`
     : period.kind;
 
-// The running periods, shortest first, with the labels of the period switch.
-export const RUNNING_PERIODS: { kind: PerformanceKind; label: string }[] = [
-  { kind: 'Today', label: 'Heute' },
-  { kind: 'WeekToDate', label: 'Woche' },
-  { kind: 'MonthToDate', label: 'Monat' },
-  { kind: 'YearToDate', label: 'Jahr' },
-  { kind: 'Total', label: 'Insgesamt' },
-];
+// The running periods, shortest first. The period switch labels them with
+// `period.short.*`.
+export const RUNNING_PERIODS = [
+  'Today',
+  'WeekToDate',
+  'MonthToDate',
+  'YearToDate',
+  'Total',
+] as const satisfies PerformanceKind[];
 
 // The selected period, or the whole time if it is gone from the data, e.g. a
 // month that dropped out of the last twelve while the app was open.

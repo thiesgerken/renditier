@@ -1,6 +1,7 @@
 import { CircleMinus, CirclePlus, HandCoins, Receipt } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import i18n from '../i18n';
 import type { Transaction } from '../types/api';
 
 interface Kind {
@@ -19,25 +20,25 @@ export const kindOf = ({
 }: Pick<Transaction, 'units' | 'amount'>): Kind => {
   if (units > 0)
     return {
-      label: 'Kauf',
+      label: i18n.t('transactions.kinds.buy'),
       icon: CirclePlus,
       className: 'text-sky-600 dark:text-sky-400',
     };
   if (units < 0)
     return {
-      label: 'Verkauf',
+      label: i18n.t('transactions.kinds.sell'),
       icon: CircleMinus,
       className: 'text-violet-600 dark:text-violet-400',
     };
   if (amount === 0)
     return {
-      label: 'Gebühr',
+      label: i18n.t('transactions.kinds.fee'),
       // the icon of the fees KPI
       icon: Receipt,
       className: 'text-slate-500 dark:text-slate-400',
     };
   return {
-    label: 'Dividende',
+    label: i18n.t('transactions.kinds.dividend'),
     icon: HandCoins,
     className: 'text-amber-600 dark:text-amber-400',
   };

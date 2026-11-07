@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { PortfolioPerformance } from '../../types/api';
 import {
@@ -35,6 +36,7 @@ interface Props {
 // Every period side by side, to compare them; picking a row makes it the
 // dashboard's period, which is highlighted.
 const PerformanceTable = ({ periods, loading, selected }: Props) => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const select = (key: string) => dispatch(selectPeriod(key));
 
@@ -42,7 +44,7 @@ const PerformanceTable = ({ periods, loading, selected }: Props) => {
     <ProgressCard loading={loading}>
       {/* From md up, the dashboard's section heading names the card. */}
       <CardHeader className="md:hidden">
-        <CardTitle>Zeiträume</CardTitle>
+        <CardTitle>{t('dashboard.tabs.periods')}</CardTitle>
       </CardHeader>
       <div className="px-2">
         <Table>
