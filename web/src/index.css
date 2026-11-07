@@ -7,8 +7,8 @@
 @custom-variant dark (@media (prefers-color-scheme: dark));
 
 /* Wider steps than Tailwind's defaults: sm is where a phone's portrait layout
-   ends, xl where the content stops growing. Inherited from MUI and kept, since
-   the pages' layouts are tuned to these widths. */
+   ends, xl where the content stops growing. The pages' layouts are tuned to
+   these widths. */
 @theme {
   --breakpoint-*: initial;
   --breakpoint-sm: 600px;
