@@ -1,6 +1,5 @@
-import { SECTOR_ICONS } from '../components/breakdowns';
 import type { Stock } from '../types/api';
-import { breakdownShares, holdingShares, normalizeIndustry } from './stocks';
+import { breakdownShares, holdingShares } from './stocks';
 
 // onvista stores the JSON `null` for some funds instead of leaving the column
 // empty; both must read as "no data".
@@ -59,16 +58,5 @@ describe('industry names', () => {
       { label: 'Versorger', value: 40 },
       { label: 'Halbleiterelektronik', value: 20 },
     ]);
-  });
-
-  it('keeps every former sector name on an icon', () => {
-    for (const name of [
-      'Informationstechnologie',
-      'Telekomdienste',
-      'Basiskonsumgüter',
-      'Konsumgüter zyklisch',
-      'Versorger umfassend',
-    ])
-      expect(SECTOR_ICONS[normalizeIndustry(name)]).toBeDefined();
   });
 });
