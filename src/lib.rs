@@ -20,10 +20,10 @@ extern crate rocket;
 #[macro_use]
 extern crate rust_embed;
 
-use argon2::password_hash::{phc::PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::Argon2;
-use base64::prelude::BASE64_URL_SAFE_NO_PAD;
+use argon2::password_hash::{PasswordHasher, PasswordVerifier, phc::PasswordHash};
 use base64::Engine;
+use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use diesel::prelude::*;
 use diesel::{
     pg::PgConnection,
@@ -33,7 +33,7 @@ use diesel_migrations::{EmbeddedMigrations, HarnessWithOutput, MigrationHarness}
 use log::{error, info};
 use sha2::{Digest, Sha256};
 use simplelog::{
-    format_description, ColorChoice, LevelFilter, SimpleLogger, TermLogger, TerminalMode,
+    ColorChoice, LevelFilter, SimpleLogger, TermLogger, TerminalMode, format_description,
 };
 use std::error::Error;
 use std::fs::File;

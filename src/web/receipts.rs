@@ -1,10 +1,10 @@
 use crate::models::*;
 use crate::receipts;
-use crate::web::user::UserId;
 use crate::web::DbConn;
+use crate::web::user::UserId;
 
-use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 

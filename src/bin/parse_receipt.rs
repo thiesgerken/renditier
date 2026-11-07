@@ -1,4 +1,4 @@
-use clap::{crate_authors, crate_version, Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, crate_authors, crate_version};
 use stockdb::initialize_logging;
 use stockdb::receipts;
 

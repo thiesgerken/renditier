@@ -5,8 +5,8 @@ use crate::analysis::plots::{DataSourceSelection, PortfolioPlot, StockPlot};
 use crate::analysis::portfolio;
 use crate::analysis::portfolio::Portfolio;
 use crate::models::*;
-use crate::web::user::UserId;
 use crate::web::DbConn;
+use crate::web::user::UserId;
 
 use chrono::{NaiveDate, NaiveDateTime, Utc};
 use rocket::serde::json::Json;

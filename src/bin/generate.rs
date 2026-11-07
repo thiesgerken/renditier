@@ -1,11 +1,16 @@
 use stockdb::cli;
 
-use clap::{crate_authors, crate_name, crate_version, Arg, ArgAction, ArgGroup, Command};
-use clap_complete::{generate, Generator, Shell};
+use clap::{Arg, ArgAction, ArgGroup, Command, crate_authors, crate_name, crate_version};
+use clap_complete::{Generator, Shell, generate};
 use std::io;
 
 fn print_completions<G: Generator>(generator: G, app: &mut Command) {
-    generate(generator, app, app.get_name().to_string(), &mut io::stdout());
+    generate(
+        generator,
+        app,
+        app.get_name().to_string(),
+        &mut io::stdout(),
+    );
 }
 
 fn main() {
