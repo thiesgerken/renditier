@@ -1,0 +1,18 @@
+{
+  "market": {
+    "name": "Bitstamp Currencies",
+    "codeMarket": "_BTC",
+    "nameExchange": "Bitstamp Currencies",
+    "codeExchange": "BTC",
+    "idNotation": 213086260,
+    "isoCountry": "GB"
+  },
+  "isoCurrency": "EUR",
+  "codeQualityPrice": "RLT",
+  "last": 67957.57,
+  "datetimeLast": "2026-11-07T20:05:47.310+00:00",
+  "bid": 67950.17,
+  "datetimeBid": "2026-11-07T20:06:37.376+00:00",
+  "ask": 67951.42,
+  "datetimeAsk": "2026-11-07T20:06:37.376+00:00"
+}

@@ -12,7 +12,7 @@ import {
   getPeriodDescription,
   getPeriodRange,
 } from '../../selectors/performance';
-import { formatCurrency, formatNumber } from '../../format';
+import { formatCurrency, formatUnits } from '../../format';
 import ProgressCard from '../ProgressCard';
 import PlotArea from '../plot/PlotArea';
 import type { TooltipRow } from '../plot/PlotTooltip';
@@ -22,7 +22,7 @@ import {
   formatPlotPercent,
   formatPointDate,
   hasIntradayPoints,
-  numberTick,
+  unitsTick,
   percentTick,
 } from '../plot/axes';
 import { assignTrades } from '../plot/trades';
@@ -131,7 +131,7 @@ const MODES = {
     tick: percentTick,
     signed: { key: 'priceRelStart', curve: 'linear' },
   },
-  units: { label: 'Einheiten', tick: numberTick },
+  units: { label: 'Einheiten', tick: unitsTick },
   priceAndUnits: { label: 'Kurs und Einheiten', tick: currencyTick },
   investedAndValue: { label: 'Kaufpreis und Wert', tick: currencyTick },
   value: { label: 'Wert', tick: currencyTick },
@@ -240,7 +240,7 @@ const StockPlot = ({
 
   const tooltipRows = (p: Point): TooltipRow[] => [
     { label: 'Kurs', value: formatCurrency(p.price) },
-    { label: 'Einheiten', value: formatNumber(p.units, { digits: 3 }) },
+    { label: 'Einheiten', value: formatUnits(p.units, { maxDigits: 3 }) },
     { label: 'Wert', value: formatCurrency(p.value) },
     { label: 'Investiert', value: formatCurrency(p.invested) },
     {
@@ -290,7 +290,7 @@ const StockPlot = ({
             <YAxis
               yAxisId={UNITS_AXIS}
               orientation="right"
-              tickFormatter={numberTick}
+              tickFormatter={unitsTick}
               domain={[0, 'auto']}
               hide={phone}
               label={{

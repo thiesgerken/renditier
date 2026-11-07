@@ -3,8 +3,8 @@ import type { CSSProperties } from 'react';
 import {
   formatCurrency,
   formatIrr,
-  formatNumber,
   formatPercent,
+  formatUnits,
 } from '../format';
 import type { Formatter } from '../format';
 import useMediaQuery, { PHONE } from '../useMediaQuery';
@@ -12,7 +12,8 @@ import useMediaQuery, { PHONE } from '../useMediaQuery';
 export type Tone = 'gain' | 'loss' | null;
 
 // Number formatting for table cells. Phones only have room for whole euros and
-// units and one decimal of percentages.
+// units and one decimal of percentages; a fraction of a single unit (a crypto
+// position) still shows its first significant digit instead of 0.
 const useTableFormat = () => {
   const xsDown = useMediaQuery(PHONE);
   const digits = xsDown ? 0 : 2;
@@ -21,7 +22,11 @@ const useTableFormat = () => {
     formatCurrency(value, { digits, ...options });
 
   const units: Formatter = (value, options) =>
-    formatNumber(value, { digits, ...options });
+    formatUnits(value, {
+      maxDigits: digits,
+      significantDigits: xsDown ? 1 : 3,
+      ...options,
+    });
 
   const percentDigits = xsDown ? 1 : 2;
 

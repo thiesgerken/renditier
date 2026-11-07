@@ -1,6 +1,7 @@
 # StockDB
 
-Tool to query and analyze stock and ETF investments using realtime and historical price data.
+Tool to query and analyze stock, ETF and crypto currency investments using realtime and historical
+price data.
 
 ## Development
 
@@ -26,7 +27,10 @@ configuration.
 | `timezone` | `Europe/Berlin` | The users' time zone (IANA name). It decides where "Heute", weeks, months and years begin and on which day a transaction counts. An unknown name stops the program at startup. |
 
 Exchange and receipt times are not affected: onvista quotes German exchanges and the supported
-banks issue German receipts, so their times are always read as German local time.
+banks issue German receipts, so their times are always read as German local time. Crypto currencies
+are the exception: onvista quotes them around the clock and in UTC, from sources such as Bitstamp
+(Bitcoin) or CoinDesk (Ether). stockdb still files their daily prices under German market hours
+and weekdays like all others.
 
 ## Running the container
 

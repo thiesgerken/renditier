@@ -1,0 +1,141 @@
+{
+  "fundsHoldingList": {
+    "dateMaintenance": "2026-09-30T12:00:00.000+00:00",
+    "list": [
+      {
+        "instrument": {
+          "type": "Instrument",
+          "entityType": "STOCK",
+          "entityAttributes": [
+            "INSTRUMENT",
+            "GODMODE_TRADER_TRENDRADAR",
+            "TURBO_BOX",
+            "BROKER_LIST",
+            "TRADER_BOX"
+          ],
+          "entityValue": "92472",
+          "name": "Nvidia",
+          "urls": {
+            "WEBSITE": "https://www.onvista.de/aktien/Nvidia-Aktie-US67066G1040"
+          },
+          "instrumentType": "Instrument",
+          "isin": "US67066G1040",
+          "wkn": "918422",
+          "symbol": "NVD",
+          "displayType": "Aktie",
+          "urlName": "Nvidia",
+          "underlyingEntity": {
+            "type": "STOCK",
+            "value": "92472",
+            "name": "Nvidia",
+            "urlName": "Nvidia"
+          },
+          "tinyName": "Nvidia"
+        },
+        "investmentPct": 5.01,
+        "isoCurrencyMarketValue": ""
+      },
+      {
+        "instrument": {
+          "type": "Instrument",
+          "entityType": "STOCK",
+          "entityAttributes": [
+            "INSTRUMENT",
+            "GODMODE_TRADER_TRENDRADAR",
+            "TURBO_BOX",
+            "BROKER_LIST",
+            "TRADER_BOX"
+          ],
+          "entityValue": "86627",
+          "name": "Apple",
+          "urls": {
+            "WEBSITE": "https://www.onvista.de/aktien/Apple-Aktie-US0378331005"
+          },
+          "instrumentType": "Instrument",
+          "isin": "US0378331005",
+          "wkn": "865985",
+          "symbol": "APC",
+          "displayType": "Aktie",
+          "urlName": "Apple",
+          "underlyingEntity": {
+            "type": "STOCK",
+            "value": "86627",
+            "name": "Apple",
+            "urlName": "Apple"
+          },
+          "tinyName": "Apple"
+        },
+        "investmentPct": 4.52,
+        "isoCurrencyMarketValue": ""
+      }
+    ]
+  },
+  "branchBreakdown": {
+    "typeFundsBreakdown": "BRANCH",
+    "nameFundsBreakdown": "Branchen",
+    "dateMaintenance": "2026-09-30T12:00:00.000+00:00",
+    "list": [
+      {
+        "idBreakdown": 207515954,
+        "nameBreakdown": "IT/Telekommunikation",
+        "investmentPct": 40.52
+      },
+      {
+        "idBreakdown": 207515926,
+        "nameBreakdown": "Finanzen",
+        "investmentPct": 16.11
+      }
+    ]
+  },
+  "instrumentBreakdown": {
+    "typeFundsBreakdown": "INSTRUMENT",
+    "nameFundsBreakdown": "Instrument",
+    "dateMaintenance": "2026-09-30T12:00:00.000+00:00",
+    "list": [
+      {
+        "idBreakdown": 207515840,
+        "nameBreakdown": "Aktien",
+        "investmentPct": 99.55
+      },
+      {
+        "idBreakdown": 207515846,
+        "nameBreakdown": "Barmittel und sonst. VM",
+        "investmentPct": 0.45
+      }
+    ]
+  },
+  "countryBreakdown": {
+    "typeFundsBreakdown": "COUNTRY",
+    "nameFundsBreakdown": "Land",
+    "dateMaintenance": "2026-09-30T12:00:00.000+00:00",
+    "list": [
+      {
+        "idBreakdown": 207515812,
+        "nameBreakdown": "USA",
+        "investmentPct": 60.11
+      },
+      {
+        "idBreakdown": 207515668,
+        "nameBreakdown": "Japan",
+        "investmentPct": 6.04
+      }
+    ]
+  },
+  "currencyBreakdown": {
+    "typeFundsBreakdown": "CURRENCY",
+    "nameFundsBreakdown": "Währung",
+    "dateMaintenance": "2026-09-30T12:00:00.000+00:00",
+    "list": [
+      {
+        "idBreakdown": 207516327,
+        "nameBreakdown": "US-Dollar",
+        "investmentPct": 63.5
+      },
+      {
+        "idBreakdown": 207515408,
+        "nameBreakdown": "Euro",
+        "investmentPct": 7.91
+      }
+    ]
+  }
+}
