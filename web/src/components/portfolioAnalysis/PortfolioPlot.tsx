@@ -1,20 +1,5 @@
-import {
-  FormControl,
-  FormControlLabel,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  Switch,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers';
 import { flatMap, find } from 'lodash';
-import moment from 'moment';
-import type { Moment } from 'moment';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Area, CartesianGrid, ComposedChart, Line, YAxis } from 'recharts';
 
 import type {
@@ -48,6 +33,16 @@ import {
 } from '../plot/tradeMarkers';
 import { pointTooltip, signedArea, timeXAxis } from '../plot/elements';
 import { useSchemePalette } from '../../muiTheme';
+import useMediaQuery, { PHONE } from '../../useMediaQuery';
+import {
+  DateRangeFields,
+  PlotControls,
+  SOURCES,
+  SelectField,
+} from '../plot/PlotControls';
+import type { DateRange } from '../plot/PlotControls';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
 
 function getData(
   items: PortfolioPlotItem[],
@@ -68,8 +63,6 @@ function getData(
 
   return item;
 }
-
-const formControlSx = { m: 1, minWidth: 120 };
 
 // [startDate, endDate, source] of the last range that was actually requested.
 type PlotRange = [IsoDate, IsoDate, DataSourceSelection];
@@ -125,35 +118,17 @@ interface Props {
 }
 
 const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
-  const theme = useTheme();
   const palette = useSchemePalette();
-  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
+  const phone = useMediaQuery(PHONE);
   // The period that the custom range was set up for: picking another period
   // ends it, so that the plot follows the dashboard again.
   const [customFor, setCustomFor] = useState<string | null>(null);
   const customRange = period !== undefined && customFor === periodKey(period);
   const [mode, setMode] = useState<Mode>('earnings');
   const [source, setSource] = useState<DataSourceSelection>('auto');
-  const [dates, setDates] = useState<[Moment | null, Moment | null]>([
-    moment().startOf('year'),
-    moment(),
-  ]);
+  // only read while customRange is on, which seeds it first
+  const [dates, setDates] = useState<DateRange | null>(null);
   const [prevRange, setPrevRange] = useState<PlotRange | null>(null);
-
-  const handleModeChange = useCallback((event: SelectChangeEvent<Mode>) => {
-    setMode(event.target.value);
-  }, []);
-
-  const handleSourceChange = useCallback(
-    (event: SelectChangeEvent<DataSourceSelection>) => {
-      setSource(event.target.value);
-    },
-    []
-  );
-
-  const handleDateChange = useCallback((v: [Moment | null, Moment | null]) => {
-    setDates(v);
-  }, []);
 
   // starts from the period's range, so that switching it on changes nothing
   // until the dates are edited
@@ -163,7 +138,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
       return;
     }
     const [start, end] = getPeriodRange(period);
-    setDates([moment(start), moment(end)]);
+    setDates([Temporal.PlainDate.from(start), Temporal.PlainDate.from(end)]);
     setCustomFor(periodKey(period));
   };
 
@@ -172,17 +147,11 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
   let ed: IsoDate | null = null;
 
   if (period !== undefined) {
-    if (!customRange) {
-      [sd, ed] = getPeriodRange(period);
+    if (customRange && dates !== null) {
+      sd = dates[0].toString();
+      ed = dates[1].toString();
     } else {
-      // FIXME(tsx-migration): the DatePickers hand back `null` when the user
-      // clears a field, and the original called `.isValid()` on it unguarded,
-      // which threw. The null now falls through to the same default the invalid
-      // case already used.
-      sd = (dates[0]?.isValid() ? dates[0] : moment().startOf('year')).format(
-        'YYYY-MM-DD'
-      );
-      ed = (dates[1]?.isValid() ? dates[1] : moment()).format('YYYY-MM-DD');
+      [sd, ed] = getPeriodRange(period);
     }
 
     plotData = getData(data, sd, ed, source);
@@ -241,155 +210,105 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
 
   return (
     <ProgressCard loading={loading} className="px-2">
-      <Grid container style={{ width: '100%' }}>
-        <Grid size={12}>
-          <PlotArea isEmpty={points.length === 0} isLoading={loading}>
-            <ComposedChart data={points}>
-              {timeXAxis(epochs)}
-              <YAxis
-                tickFormatter={tick}
-                domain={['auto', 'auto']}
-                width={90}
-                hide={xsDown}
+      <div>
+        <PlotArea isEmpty={points.length === 0} isLoading={loading}>
+          <ComposedChart data={points}>
+            {timeXAxis(epochs)}
+            <YAxis
+              tickFormatter={tick}
+              domain={['auto', 'auto']}
+              width={90}
+              hide={phone}
+            />
+            <YAxis yAxisId={TRADES_AXIS} domain={[0, 1]} hide />
+            <CartesianGrid vertical={false} stroke={palette.divider} />
+
+            {signed !== undefined &&
+              signedArea(
+                signed.key,
+                MODES[mode].label,
+                points.map(p => p[signed.key] as number | null),
+                signed.curve,
+                palette
+              )}
+
+            {(mode === 'investedAndValue' || mode === 'value') && (
+              <Area
+                type="linear"
+                dataKey="value"
+                name="Wert"
+                stroke={palette.primary.dark}
+                fill={palette.primary.main}
+                fillOpacity={0.15}
+                strokeWidth={1.4}
+                dot={false}
+                isAnimationActive={false}
               />
-              <YAxis yAxisId={TRADES_AXIS} domain={[0, 1]} hide />
-              <CartesianGrid vertical={false} stroke={palette.divider} />
+            )}
 
-              {signed !== undefined &&
-                signedArea(
-                  signed.key,
-                  MODES[mode].label,
-                  points.map(p => p[signed.key] as number | null),
-                  signed.curve,
-                  palette
-                )}
-
-              {(mode === 'investedAndValue' || mode === 'value') && (
-                <Area
-                  type="linear"
-                  dataKey="value"
-                  name="Wert"
-                  stroke={palette.primary.dark}
-                  fill={palette.primary.main}
-                  fillOpacity={0.15}
-                  strokeWidth={1.4}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              )}
-
-              {mode === 'invested' && (
-                <Area
-                  type="stepAfter"
-                  dataKey="invested"
-                  name="Investiert"
-                  stroke={palette.secondary.dark}
-                  fill={palette.secondary.main}
-                  fillOpacity={0.15}
-                  strokeWidth={1.4}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              )}
-
-              {mode === 'investedAndValue' && (
-                <Line
-                  type="stepAfter"
-                  dataKey="invested"
-                  name="Investiert"
-                  stroke={palette.secondary.dark}
-                  strokeWidth={1.4}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              )}
-
-              {tradeMarkers(palette)}
-
-              {pointTooltip(intraday, tooltipRows)}
-            </ComposedChart>
-          </PlotArea>
-          <TradeLegend points={points} />
-        </Grid>
-        <Grid size={12}>
-          <FormControl sx={formControlSx} variant="standard">
-            <InputLabel id="mode-select-label">Art</InputLabel>
-            <Select
-              labelId="mode-select-label"
-              id="mode-select"
-              label="Art"
-              value={mode}
-              autoWidth
-              onChange={handleModeChange}
-            >
-              {Object.entries(MODES).map(([value, { label }]) => (
-                <MenuItem key={value} value={value}>
-                  {label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl sx={formControlSx} variant="standard">
-            <InputLabel id="source-select-label">Datenquelle</InputLabel>
-            <Select
-              labelId="source-select-label"
-              id="source-select"
-              label="Datenquelle"
-              value={source}
-              autoWidth
-              onChange={handleSourceChange}
-            >
-              <MenuItem value="auto">Automatisch</MenuItem>
-              <MenuItem value="historical">Historisch</MenuItem>
-              <MenuItem value="realtime">Echtzeit</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControlLabel
-            sx={formControlSx}
-            control={
-              <Switch
-                checked={customRange}
-                onChange={e => handleCustomRange(e.target.checked)}
+            {mode === 'invested' && (
+              <Area
+                type="stepAfter"
+                dataKey="invested"
+                name="Investiert"
+                stroke={palette.secondary.dark}
+                fill={palette.secondary.main}
+                fillOpacity={0.15}
+                strokeWidth={1.4}
+                dot={false}
+                isAnimationActive={false}
               />
-            }
-            label="Eigener Zeitraum"
+            )}
+
+            {mode === 'investedAndValue' && (
+              <Line
+                type="stepAfter"
+                dataKey="invested"
+                name="Investiert"
+                stroke={palette.secondary.dark}
+                strokeWidth={1.4}
+                dot={false}
+                isAnimationActive={false}
+              />
+            )}
+
+            {tradeMarkers(palette)}
+
+            {pointTooltip(intraday, tooltipRows)}
+          </ComposedChart>
+        </PlotArea>
+        <TradeLegend points={points} />
+      </div>
+      <PlotControls>
+        <SelectField
+          id="portfolio-plot-mode"
+          label="Art"
+          value={mode}
+          options={Object.entries(MODES).map(([value, { label }]) => ({
+            value: value as Mode,
+            label,
+          }))}
+          onChange={setMode}
+        />
+        <SelectField
+          id="portfolio-plot-source"
+          label="Datenquelle"
+          value={source}
+          options={SOURCES}
+          onChange={setSource}
+        />
+        <div className="flex h-8 items-center gap-2">
+          <Switch
+            id="portfolio-plot-custom"
+            checked={customRange}
+            onCheckedChange={handleCustomRange}
           />
-          {customRange && (
-            <>
-              <DatePicker
-                label="Start"
-                value={dates[0]}
-                format="L"
-                // MUI wants `undefined`, not `null`, for "no bound"
-                maxDate={dates[1] ?? undefined}
-                onChange={d => handleDateChange([d, dates[1]])}
-                disableFuture
-                slotProps={{
-                  textField: {
-                    sx: formControlSx,
-                    helperText: null,
-                  },
-                }}
-              />
-              <DatePicker
-                label="Ende"
-                value={dates[1]}
-                format="L"
-                // MUI wants `undefined`, not `null`, for "no bound"
-                minDate={dates[0] ?? undefined}
-                onChange={d => handleDateChange([dates[0], d])}
-                disableFuture
-                slotProps={{
-                  textField: {
-                    sx: formControlSx,
-                    helperText: null,
-                  },
-                }}
-              />
-            </>
-          )}
-        </Grid>
-      </Grid>
+          <Label htmlFor="portfolio-plot-custom">Eigener Zeitraum</Label>
+        </div>
+        {customRange && dates !== null && (
+          <DateRangeFields value={dates} onChange={setDates} />
+        )}
+      </PlotControls>
     </ProgressCard>
   );
 };

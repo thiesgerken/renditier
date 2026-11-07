@@ -4,10 +4,6 @@ import { Provider } from 'react-redux';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import GlobalStyles from '@mui/material/GlobalStyles';
 import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
-import moment from 'moment';
-import 'moment/dist/locale/de';
 
 import './index.css';
 import App from './containers/App';
@@ -24,8 +20,6 @@ function NavigationBridge() {
 
   return null;
 }
-
-moment.locale('de');
 
 const store = createAppStore();
 
@@ -45,16 +39,10 @@ createRoot(container).render(
       <StyledEngineProvider enableCssLayer>
         <GlobalStyles styles="@layer theme, base, mui, components, utilities;" />
         <ThemeProvider theme={muiTheme}>
-          <LocalizationProvider
-            dateAdapter={AdapterMoment}
-            dateLibInstance={moment}
-            adapterLocale="de"
-          >
-            <TooltipProvider>
-              <ServiceWorker />
-              <App />
-            </TooltipProvider>
-          </LocalizationProvider>
+          <TooltipProvider>
+            <ServiceWorker />
+            <App />
+          </TooltipProvider>
         </ThemeProvider>
       </StyledEngineProvider>
     </BrowserRouter>

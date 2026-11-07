@@ -1,17 +1,4 @@
-import {
-  Container,
-  FormControl,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers';
-import moment from 'moment';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Area,
   CartesianGrid,
@@ -26,7 +13,7 @@ import {
   getPeriodRange,
 } from '../../selectors/performance';
 import { formatCurrency, formatNumber } from '../../format';
-import ProgressPaper from '../ProgressPaper';
+import ProgressCard from '../ProgressCard';
 import PlotArea from '../plot/PlotArea';
 import type { TooltipRow } from '../plot/PlotTooltip';
 import {
@@ -57,6 +44,14 @@ import type {
   StoredStockPlotPoint,
 } from '../../types/store';
 import { useSchemePalette } from '../../muiTheme';
+import useMediaQuery, { PHONE } from '../../useMediaQuery';
+import {
+  DateRangeFields,
+  PlotControls,
+  SOURCES,
+  SelectField,
+} from '../plot/PlotControls';
+import type { DateRange } from '../plot/PlotControls';
 
 interface Props {
   isin: string;
@@ -97,9 +92,27 @@ function getData(
   return item;
 }
 
-const formControlSx = { m: 1, minWidth: 120 };
-
 const UNITS_AXIS = 'units';
+
+const CUSTOM = -1;
+
+// Whether a price's time and a point's epoch fall into the same minute or day
+// of the browser's time zone.
+const sameTime = (
+  priceDate: string,
+  epoch: number,
+  unit: 'minute' | 'day'
+): boolean => {
+  const zone = Temporal.Now.timeZoneId();
+  const a = Temporal.Instant.from(priceDate).toZonedDateTimeISO(zone);
+  const b =
+    Temporal.Instant.fromEpochMilliseconds(epoch).toZonedDateTimeISO(zone);
+  return unit === 'day'
+    ? a.toPlainDate().equals(b.toPlainDate())
+    : a
+        .round({ smallestUnit: 'minute', roundingMode: 'floor' })
+        .equals(b.round({ smallestUnit: 'minute', roundingMode: 'floor' }));
+};
 
 interface ModeSpec {
   label: string;
@@ -154,49 +167,28 @@ const StockPlot = ({
   data,
   updateData,
 }: Props) => {
-  const theme = useTheme();
   const palette = useSchemePalette();
-  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
+  const phone = useMediaQuery(PHONE);
+  // an index into performance.data, or CUSTOM
   const [period, setPeriod] = useState(0);
   const [mode, setMode] = useState<Mode>('priceAndUnits');
   const [source, setSource] = useState<DataSourceSelection>('auto');
-  const [dates, setDates] = useState<moment.Moment[]>([
-    moment().startOf('year'),
-    moment(),
-  ]);
+  const [dates, setDates] = useState<DateRange>(() => {
+    const today = Temporal.Now.plainDateISO();
+    return [today.with({ month: 1, day: 1 }), today];
+  });
   const [prevRange, setPrevRange] = useState<Range | null>(null);
-
-  const handlePeriodChange = useCallback((event: SelectChangeEvent<number>) => {
-    setPeriod(event.target.value);
-  }, []);
-
-  const handleModeChange = useCallback((event: SelectChangeEvent<Mode>) => {
-    setMode(event.target.value);
-  }, []);
-
-  const handleSourceChange = useCallback(
-    (event: SelectChangeEvent<DataSourceSelection>) => {
-      setSource(event.target.value);
-    },
-    []
-  );
-
-  const handleDateChange = useCallback((v: moment.Moment[]) => {
-    setDates(v);
-  }, []);
 
   let plotData: StockPlotItem | null = null;
   let sd: IsoDate | null = null;
   let ed: IsoDate | null = null;
 
   if (performance.data !== null && period < performance.data.length) {
-    if (period >= 0) {
-      [sd, ed] = getPeriodRange(performance.data[period]);
+    if (period === CUSTOM) {
+      sd = dates[0].toString();
+      ed = dates[1].toString();
     } else {
-      sd = (dates[0].isValid() ? dates[0] : moment().startOf('year')).format(
-        'YYYY-MM-DD'
-      );
-      ed = (dates[1].isValid() ? dates[1] : moment()).format('YYYY-MM-DD');
+      [sd, ed] = getPeriodRange(performance.data[period]);
     }
 
     plotData = getData(data, isin, sd, ed, source);
@@ -230,9 +222,19 @@ const StockPlot = ({
 
   // Prices can be older than the point, e.g. on holidays. Historical prices
   // carry no time of day, only realtime quotes do.
-  const priceIsOlder = (p: Point): boolean =>
-    p.priceDate !== null &&
-    !moment(p.priceDate).isSame(p.epoch, intraday ? 'minute' : 'day');
+  const olderPriceRows = ({ priceDate, epoch }: Point): TooltipRow[] =>
+    priceDate === null ||
+    sameTime(priceDate, epoch, intraday ? 'minute' : 'day')
+      ? []
+      : [
+          {
+            label: 'Kurs vom',
+            value: formatPointDate(
+              Temporal.Instant.from(priceDate).epochMilliseconds,
+              intraday
+            ),
+          },
+        ];
 
   const tooltipRows = (p: Point): TooltipRow[] => [
     { label: 'Kurs', value: formatCurrency(p.price) },
@@ -251,14 +253,7 @@ const StockPlot = ({
           },
         ]
       : []),
-    ...(priceIsOlder(p)
-      ? [
-          {
-            label: 'Kurs vom',
-            value: formatPointDate(moment(p.priceDate).valueOf(), intraday),
-          },
-        ]
-      : []),
+    ...olderPriceRows(p),
     ...tradeRows(p.trades, true),
   ];
 
@@ -266,258 +261,181 @@ const StockPlot = ({
     plotData === null || plotData.isFetching || performance.isFetching;
 
   return (
-    <Container maxWidth="xl" style={{ padding: '0px' }}>
-      <ProgressPaper
-        loading={loading}
-        style={{ width: '100%', padding: theme.spacing(1) }}
-      >
-        <Grid container style={{ width: '100%' }}>
-          <Grid size={12}>
-            <PlotArea isEmpty={points.length === 0} isLoading={loading}>
-              <ComposedChart data={points}>
-                {timeXAxis(epochs)}
-                <YAxis
-                  tickFormatter={tick}
-                  domain={['auto', 'auto']}
-                  width={90}
-                  hide={xsDown}
-                />
-                <YAxis yAxisId={TRADES_AXIS} domain={[0, 1]} hide />
-                {mode === 'priceAndUnits' && (
-                  <YAxis
-                    yAxisId={UNITS_AXIS}
-                    orientation="right"
-                    tickFormatter={numberTick}
-                    domain={[0, 'auto']}
-                    hide={xsDown}
-                    label={{
-                      value: 'Einheiten',
-                      angle: 90,
-                      position: 'insideRight',
-                      fill: palette.text.secondary,
-                    }}
-                  />
-                )}
-                <CartesianGrid vertical={false} stroke={palette.divider} />
+    <ProgressCard loading={loading} className="px-2">
+      <PlotArea isEmpty={points.length === 0} isLoading={loading}>
+        <ComposedChart data={points}>
+          {timeXAxis(epochs)}
+          <YAxis
+            tickFormatter={tick}
+            domain={['auto', 'auto']}
+            width={90}
+            hide={phone}
+          />
+          <YAxis yAxisId={TRADES_AXIS} domain={[0, 1]} hide />
+          {mode === 'priceAndUnits' && (
+            <YAxis
+              yAxisId={UNITS_AXIS}
+              orientation="right"
+              tickFormatter={numberTick}
+              domain={[0, 'auto']}
+              hide={phone}
+              label={{
+                value: 'Einheiten',
+                angle: 90,
+                position: 'insideRight',
+                fill: palette.text.secondary,
+              }}
+            />
+          )}
+          <CartesianGrid vertical={false} stroke={palette.divider} />
 
-                {signed !== undefined &&
-                  signedArea(
-                    signed.key,
-                    MODES[mode].label,
-                    points.map(p => p[signed.key] as number | null),
-                    signed.curve,
-                    palette
-                  )}
-
-                {mode === 'price' && (
-                  <Area
-                    type="linear"
-                    dataKey="price"
-                    name="Kurs"
-                    stroke={palette.info.dark}
-                    fill={palette.info.main}
-                    fillOpacity={0.15}
-                    strokeWidth={1.4}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                )}
-
-                {mode === 'priceAndUnits' && [
-                  <Line
-                    key="price"
-                    type="linear"
-                    dataKey="price"
-                    name="Kurs"
-                    stroke={palette.info.dark}
-                    strokeWidth={1.4}
-                    dot={false}
-                    isAnimationActive={false}
-                  />,
-                  <Line
-                    key="units"
-                    yAxisId={UNITS_AXIS}
-                    type="stepAfter"
-                    dataKey="units"
-                    name="Einheiten"
-                    stroke={palette.warning.dark}
-                    strokeWidth={1.4}
-                    dot={false}
-                    isAnimationActive={false}
-                  />,
-                ]}
-
-                {mode === 'units' && (
-                  <Area
-                    type="stepAfter"
-                    dataKey="units"
-                    name="Einheiten"
-                    stroke={palette.warning.dark}
-                    fill={palette.warning.main}
-                    fillOpacity={0.15}
-                    strokeWidth={1.4}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                )}
-
-                {(mode === 'investedAndValue' || mode === 'value') && (
-                  <Area
-                    type="linear"
-                    dataKey="value"
-                    name="Wert"
-                    stroke={palette.primary.dark}
-                    fill={palette.primary.main}
-                    fillOpacity={0.15}
-                    strokeWidth={1.4}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                )}
-
-                {mode === 'invested' && (
-                  <Area
-                    type="stepAfter"
-                    dataKey="invested"
-                    name="Investiert"
-                    stroke={palette.secondary.dark}
-                    fill={palette.secondary.main}
-                    fillOpacity={0.15}
-                    strokeWidth={1.4}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                )}
-
-                {mode === 'investedAndValue' && (
-                  <Line
-                    type="stepAfter"
-                    dataKey="invested"
-                    name="Investiert"
-                    stroke={palette.secondary.dark}
-                    strokeWidth={1.4}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                )}
-
-                {tradeMarkers(palette)}
-
-                {(mode === 'priceAndUnits' || mode === 'investedAndValue') && (
-                  <Legend />
-                )}
-
-                {pointTooltip(intraday, tooltipRows)}
-              </ComposedChart>
-            </PlotArea>
-            <TradeLegend points={points} />
-          </Grid>
-          <Grid size={9}>
-            <FormControl sx={formControlSx} variant="standard">
-              <InputLabel id="mode-select-label">Art</InputLabel>
-              <Select
-                labelId="mode-select-label"
-                id="mode-select"
-                label="Art"
-                value={mode}
-                autoWidth
-                onChange={handleModeChange}
-              >
-                {Object.entries(MODES).map(([value, { label }]) => (
-                  <MenuItem key={value} value={value}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl sx={formControlSx} variant="standard">
-              <InputLabel id="source-select-label">Datenquelle</InputLabel>
-              <Select
-                labelId="source-select-label"
-                id="source-select"
-                label="Datenquelle"
-                value={source}
-                autoWidth
-                onChange={handleSourceChange}
-              >
-                <MenuItem value="auto">Automatisch</MenuItem>
-                <MenuItem value="historical">Historisch</MenuItem>
-                <MenuItem value="realtime">Echtzeit</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl sx={formControlSx} variant="standard">
-              <InputLabel id="period-select-label">Zeit</InputLabel>
-              <Select
-                labelId="period-select-label"
-                id="period-select"
-                label="Zeit"
-                autoWidth
-                value={
-                  performance.data === null || performance.data.length === 0
-                    ? -1
-                    : period
-                }
-                onChange={handlePeriodChange}
-              >
-                {performance.data !== null &&
-                  performance.data.map((item, i) => (
-                    <MenuItem value={i} key={i}>
-                      {getPeriodDescription(item)}
-                    </MenuItem>
-                  ))}
-                <MenuItem value={-1} key={-1}>
-                  Benutzerdefiniert
-                </MenuItem>
-              </Select>
-            </FormControl>
-            {period < 0 && (
-              <>
-                {/* <DateRangePicker
-                  startText="Start"
-                  endText="Ende"
-                  value={dates}
-                  onChange={handleDateChange}
-                  disableFuture
-                  sx={formControlSx}
-                /> */}
-                <DatePicker
-                  label="Start"
-                  value={dates[0]}
-                  format="L"
-                  maxDate={dates[1]}
-                  // FIXME(tsx-migration): clearing the picker used to push `null`
-                  // into `dates`, which then threw in `dates[0].isValid()` above.
-                  // Keeping the previous value is the smallest safe behaviour.
-                  onChange={d => handleDateChange([d ?? dates[0], dates[1]])}
-                  disableFuture
-                  disabled={period >= 0}
-                  slotProps={{
-                    textField: {
-                      sx: formControlSx,
-                    },
-                  }}
-                />
-                <DatePicker
-                  label="Ende"
-                  value={dates[1]}
-                  format="L"
-                  minDate={dates[0]}
-                  // FIXME(tsx-migration): see the "Start" picker above.
-                  onChange={d => handleDateChange([dates[0], d ?? dates[1]])}
-                  disableFuture
-                  disabled={period >= 0}
-                  slotProps={{
-                    textField: {
-                      sx: formControlSx,
-                    },
-                  }}
-                />
-              </>
+          {signed !== undefined &&
+            signedArea(
+              signed.key,
+              MODES[mode].label,
+              points.map(p => p[signed.key] as number | null),
+              signed.curve,
+              palette
             )}
-          </Grid>
-        </Grid>
-      </ProgressPaper>
-    </Container>
+
+          {mode === 'price' && (
+            <Area
+              type="linear"
+              dataKey="price"
+              name="Kurs"
+              stroke={palette.info.dark}
+              fill={palette.info.main}
+              fillOpacity={0.15}
+              strokeWidth={1.4}
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
+
+          {mode === 'priceAndUnits' && [
+            <Line
+              key="price"
+              type="linear"
+              dataKey="price"
+              name="Kurs"
+              stroke={palette.info.dark}
+              strokeWidth={1.4}
+              dot={false}
+              isAnimationActive={false}
+            />,
+            <Line
+              key="units"
+              yAxisId={UNITS_AXIS}
+              type="stepAfter"
+              dataKey="units"
+              name="Einheiten"
+              stroke={palette.warning.dark}
+              strokeWidth={1.4}
+              dot={false}
+              isAnimationActive={false}
+            />,
+          ]}
+
+          {mode === 'units' && (
+            <Area
+              type="stepAfter"
+              dataKey="units"
+              name="Einheiten"
+              stroke={palette.warning.dark}
+              fill={palette.warning.main}
+              fillOpacity={0.15}
+              strokeWidth={1.4}
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
+
+          {(mode === 'investedAndValue' || mode === 'value') && (
+            <Area
+              type="linear"
+              dataKey="value"
+              name="Wert"
+              stroke={palette.primary.dark}
+              fill={palette.primary.main}
+              fillOpacity={0.15}
+              strokeWidth={1.4}
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
+
+          {mode === 'invested' && (
+            <Area
+              type="stepAfter"
+              dataKey="invested"
+              name="Investiert"
+              stroke={palette.secondary.dark}
+              fill={palette.secondary.main}
+              fillOpacity={0.15}
+              strokeWidth={1.4}
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
+
+          {mode === 'investedAndValue' && (
+            <Line
+              type="stepAfter"
+              dataKey="invested"
+              name="Investiert"
+              stroke={palette.secondary.dark}
+              strokeWidth={1.4}
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
+
+          {tradeMarkers(palette)}
+
+          {(mode === 'priceAndUnits' || mode === 'investedAndValue') && (
+            <Legend />
+          )}
+
+          {pointTooltip(intraday, tooltipRows)}
+        </ComposedChart>
+      </PlotArea>
+      <TradeLegend points={points} />
+      <PlotControls>
+        <SelectField
+          id="stock-plot-mode"
+          label="Art"
+          value={mode}
+          options={Object.entries(MODES).map(([value, { label }]) => ({
+            value: value as Mode,
+            label,
+          }))}
+          onChange={setMode}
+        />
+        <SelectField
+          id="stock-plot-source"
+          label="Datenquelle"
+          value={source}
+          options={SOURCES}
+          onChange={setSource}
+        />
+        <SelectField
+          id="stock-plot-period"
+          label="Zeitraum"
+          value={String(performance.data?.length ? period : CUSTOM)}
+          options={[
+            ...(performance.data ?? []).map((item, i) => ({
+              value: String(i),
+              label: getPeriodDescription(item),
+            })),
+            { value: String(CUSTOM), label: 'Benutzerdefiniert' },
+          ]}
+          onChange={v => setPeriod(Number(v))}
+        />
+        {period === CUSTOM && (
+          <DateRangeFields value={dates} onChange={setDates} />
+        )}
+      </PlotControls>
+    </ProgressCard>
   );
 };
 

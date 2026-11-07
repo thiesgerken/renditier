@@ -1,30 +1,23 @@
-import { Tooltip, Button } from '@mui/material';
-import type { ButtonProps } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import { ExternalLink } from 'lucide-react';
 
-// `styled()` erases Button's polymorphism, so the anchor props it accepts when
-// `href` is set (target, rel) have to be declared explicitly.
-const StyledButton = styled(Button)<ButtonProps<'a'>>({
-  textTransform: 'none',
-  fontWeight: 600,
-});
+import { Button } from './ui/button';
 
 interface Props {
   relativeUrl: string;
 }
 
 const OnvistaButton = ({ relativeUrl }: Props) => (
-  <Tooltip title="auf onvista.de ansehen" arrow>
-    <StyledButton
-      color="secondary"
-      rel="noreferrer"
-      size="small"
+  <Button variant="outline" size="sm" asChild>
+    <a
       href={`https://www.onvista.de${relativeUrl}`}
       target="_blank"
+      rel="noreferrer"
+      title="auf onvista.de ansehen"
     >
       onvista
-    </StyledButton>
-  </Tooltip>
+      <ExternalLink />
+    </a>
+  </Button>
 );
 
 export default OnvistaButton;

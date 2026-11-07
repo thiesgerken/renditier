@@ -1,18 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { map, filter, find, sumBy } from 'lodash';
-import {
-  useTheme,
-  Grid,
-  CircularProgress,
-  Container,
-  Paper,
-  List,
-  ListItem,
-  Typography,
-  useMediaQuery,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import Alert from '@mui/material/Alert';
+import { CircleAlert, LoaderCircle } from 'lucide-react';
 
 import { fetchPerformance } from '../slices/performance';
 import { fetchStocks } from '../slices/stocks';
@@ -32,27 +20,30 @@ import {
 } from '../format';
 import StockPerformanceTable from '../components/stockAnalysis/StockPerformanceTable';
 import OnvistaButton from '../components/OnvistaButton';
-import Hidden from '../components/Hidden';
 import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
 import StockPlot from '../components/stockAnalysis/StockPlot';
 import BarList from '../components/BarList';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Badge } from '../components/ui/badge';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card';
 
 import type { StockPerformancePeriod } from '../components/stockAnalysis/StockPerformanceTable';
 import type { DataSourceSelection, IsoDate } from '../types/api';
 import { useAppDispatch, useAppSelector } from '../store';
 import type { ResourceState } from '../types/store';
 
-const StyledListItem = styled(ListItem)({
-  height: '2em',
-});
-
 interface Props {
   isin: string;
 }
 
 const StockAnalysis = ({ isin }: Props) => {
-  const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const dispatch = useAppDispatch();
   const stocks = useAppSelector(state => state.stocks);
   const performance = useAppSelector(state => state.performance);
@@ -73,36 +64,27 @@ const StockAnalysis = ({ isin }: Props) => {
   });
 
   const stock = findStock(stocks, isin);
-  if (stocks.isFetching || performance.isFetching) {
+  if (stocks.isFetching || performance.isFetching)
     return (
-      <Container maxWidth="lg">
-        <div
-          style={{
-            position: 'relative',
-            left: '50%',
-            transform: 'translate(0%, 50%)',
-            width: '100%',
-            height: '13em',
-            padding: '20px',
-          }}
-        >
-          <CircularProgress color="secondary" />
-        </div>
-      </Container>
+      <div className="flex h-52 items-center justify-center">
+        <LoaderCircle
+          aria-label="Lädt"
+          className="size-6 animate-spin text-muted-foreground"
+        />
+      </div>
     );
-  }
 
-  if (stock === null || performance.data === null) {
+  if (stock === null || performance.data === null)
     return (
-      <Container maxWidth="lg">
-        <Alert elevation={5} variant="filled" severity="error">
-          {stock === null &&
-            `Die Datenbank enthält kein Wertpapier mit ISIN '${isin}'!`}
-          {performance.data === null && `Keine Performance-Daten verfügbar!`}
-        </Alert>
-      </Container>
+      <Alert variant="destructive" className="mx-auto max-w-(--breakpoint-lg)">
+        <CircleAlert />
+        <AlertDescription>
+          {stock === null
+            ? `Die Datenbank enthält kein Wertpapier mit ISIN '${isin}'.`
+            : 'Keine Performance-Daten verfügbar.'}
+        </AlertDescription>
+      </Alert>
     );
-  }
 
   // Same slice, but every portfolio-wide period is narrowed to this ISIN's
   // position, so the element type differs from `PerformanceState`.
@@ -125,37 +107,43 @@ const StockAnalysis = ({ isin }: Props) => {
   const currentPrice = todayPerformance
     ? todayPerformance.end.dataSource
     : null;
-  let currentPriceInfo;
-  if (currentPrice !== null)
-    currentPriceInfo = `Aktueller Kurs: ${formatPriceSource(currentPrice)}`;
 
   const transactions = totalPerformance ? totalPerformance.transactions : [];
-  const transactionVolume = sumBy(transactions, t => Math.abs(t.amount));
-  const transactionFees = sumBy(transactions, t => Math.abs(t.fees));
   const dates = transactions
     .map(t => Temporal.Instant.from(t.date))
     .sort(Temporal.Instant.compare);
-  const firstTransaction = dates.at(0);
-  const lastTransaction = dates.at(-1);
+  const first = dates.at(0);
+  const last = dates.at(-1);
 
   let transactionInfo;
-  if (firstTransaction === undefined || lastTransaction === undefined)
-    transactionInfo = 'Transaktionen: bisher nicht gehandelt';
-  else if (transactions.length === 1)
-    transactionInfo = `Transaktionen: eine, getätigt am ${formatDateTime(
-      firstTransaction
-    )}`;
+  if (first === undefined || last === undefined)
+    transactionInfo = 'bisher keine';
+  else if (dates.length === 1)
+    transactionInfo = `eine, am ${formatDateTime(first)}`;
   else
-    transactionInfo = `Transaktionen: ${
-      transactions.length
-    }, getätigt im Zeitraum von ${formatDate(
-      firstTransaction
-    )} bis ${formatDate(lastTransaction)}`;
+    transactionInfo = `${dates.length}, vom ${formatDate(first)} bis ${formatDate(last)}`;
 
-  let typeInfo;
-  if (stock.kind === 'ETF')
-    typeInfo = `Typ: ${stock.kind} (${stock.fondsType}) mit Fokus auf ${stock.focus}`;
-  else typeInfo = `Typ: ${stock.kind}`;
+  const volume = sumBy(transactions, t => Math.abs(t.amount)) / 100;
+  const fees = sumBy(transactions, t => Math.abs(t.fees)) / 100;
+
+  // what onvista knows about the stock, then what the portfolio did with it;
+  // facts onvista does not have are left out
+  const facts: [string, string | null][] = [
+    ['Fondstyp', stock.fondsType],
+    ['Fokus', stock.focus],
+    ['Herausgeber', stock.company],
+    ['Index', stock.index],
+    ['Währung', stock.currency],
+    ['Auflagedatum', stock.launchDate && formatDate(stock.launchDate)],
+    ['Ausschüttung', stock.payoutType],
+    ['Kosten', stock.ter === null ? null : `${formatPercent(stock.ter)} p.a.`],
+    ['Kurs', currentPrice && formatPriceSource(currentPrice)],
+    ['Transaktionen', transactionInfo],
+    [
+      'Volumen',
+      `${formatCurrency(volume)}, dazu ${formatCurrency(fees)} Gebühren`,
+    ],
+  ];
 
   // Same row counts as the portfolio-wide lists on the dashboard.
   const compositions = [
@@ -182,140 +170,74 @@ const StockAnalysis = ({ isin }: Props) => {
   ].filter(c => c.shares.length > 0);
 
   return (
-    <Grid container spacing={3}>
-      <Grid size={12} style={{ padding: theme.spacing(1) }}>
-        <Container maxWidth="lg" style={{ padding: '0px' }}>
-          <Paper>
-            <Grid container style={{ margin: '0px' }}>
-              <Grid
-                size={12}
-                style={{
-                  width: '100%',
-                  textAlign: 'center',
-                  padding: theme.spacing(2),
-                }}
-              >
-                <Typography variant="h5">
-                  {capitalizeTitle(stock.title)}
-                </Typography>
-              </Grid>
-              {xsDown && (
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <List>
-                    <ListItem>
-                      {`ISIN: ${stock.isin}, WKN: ${stock.wkn}`}
-                      <OnvistaButton relativeUrl={stock.onvistaUrl} />
-                    </ListItem>
-                    <ListItem>{typeInfo}</ListItem>
-                    <ListItem>{`Herausgeber: ${stock.company}`}</ListItem>
-                    <ListItem>{transactionInfo}</ListItem>
-                    <ListItem>
-                      {`Transaktionsvolumen: ${formatCurrency(
-                        transactionVolume / 100
-                      )}; dazu ${formatCurrency(
-                        transactionFees / 100
-                      )} an Gebühren`}
-                    </ListItem>
-                  </List>
-                </Grid>
-              )}
-              {xsDown || (
-                <>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <List>
-                      <StyledListItem>
-                        {`ISIN: ${stock.isin}, WKN: ${stock.wkn}`}
-                        <OnvistaButton relativeUrl={stock.onvistaUrl} />
-                      </StyledListItem>
-                      <StyledListItem>{typeInfo}</StyledListItem>
-                      <StyledListItem>{`Herausgeber: ${stock.company}`}</StyledListItem>
-                      {stock.currency !== null && (
-                        <StyledListItem>
-                          Währung: {stock.currency}
-                        </StyledListItem>
-                      )}
-                      {stock.launchDate !== null && (
-                        <StyledListItem>
-                          Auflagedatum: {formatDate(stock.launchDate)}
-                        </StyledListItem>
-                      )}{' '}
-                      {stock.index !== null && (
-                        <StyledListItem>Index: {stock.index}</StyledListItem>
-                      )}
-                    </List>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <List>
-                      <StyledListItem>{transactionInfo}</StyledListItem>
-                      <StyledListItem>
-                        {`Transaktionsvolumen: ${formatCurrency(
-                          transactionVolume / 100
-                        )}; dazu ${formatCurrency(
-                          transactionFees / 100
-                        )} an Gebühren`}
-                      </StyledListItem>
-                      {currentPrice !== null && (
-                        <StyledListItem>{currentPriceInfo}</StyledListItem>
-                      )}
-                      {stock.payoutType !== null && (
-                        <StyledListItem>
-                          Auschüttungsart: {stock.payoutType}
-                        </StyledListItem>
-                      )}
-                      {stock.ter !== null && (
-                        <StyledListItem>
-                          {`Kosten: ${formatPercent(stock.ter)} p.a.`}
-                        </StyledListItem>
-                      )}
-                    </List>
-                  </Grid>
-                </>
-              )}
-            </Grid>
-          </Paper>
-        </Container>
-      </Grid>
-      <Hidden xsDown>
-        <Grid size={12} style={{ padding: theme.spacing(1) }}>
-          <StockPlot
-            isin={isin}
+    <div className="mx-auto flex max-w-(--breakpoint-xl) flex-col gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">
+            {capitalizeTitle(stock.title)}
+          </CardTitle>
+          <CardDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Badge variant="secondary">{stock.kind}</Badge>
+            <span>ISIN {stock.isin}</span>
+            <span>WKN {stock.wkn}</span>
+          </CardDescription>
+          <CardAction>
+            <OnvistaButton relativeUrl={stock.onvistaUrl} />
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid gap-x-8 gap-y-1.5 text-sm sm:grid-cols-2">
+            {facts.map(
+              ([term, value]) =>
+                value !== null && (
+                  <div key={term} className="grid grid-cols-[8rem_1fr] gap-2">
+                    <dt className="text-muted-foreground">{term}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                )
+            )}
+          </dl>
+        </CardContent>
+      </Card>
+
+      <StockPlot
+        isin={isin}
+        transactions={transactions}
+        data={stockPlotData}
+        updateData={updateStockPlotData}
+        performance={performance}
+      />
+
+      <StockPerformanceTable performance={stockPerformance} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Transaktionen</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TransactionsTable
             transactions={transactions}
-            data={stockPlotData}
-            updateData={updateStockPlotData}
-            performance={performance}
+            currentPrice={currentPrice}
           />
-        </Grid>
-      </Hidden>
-      <Grid size={12} style={{ padding: theme.spacing(1) }}>
-        <StockPerformanceTable performance={stockPerformance} />
-      </Grid>
-      <Grid size={12} style={{ padding: theme.spacing(1) }}>
-        <TransactionsTable
-          transactions={transactions}
-          currentPrice={currentPrice}
-        />
-      </Grid>
+        </CardContent>
+      </Card>
+
       {compositions.length > 0 && (
-        <Grid size={12} style={{ padding: theme.spacing(1) }}>
-          <Container maxWidth="xl" style={{ padding: '0px' }}>
-            <Paper style={{ width: '100%', padding: theme.spacing(1) }}>
-              <Grid container style={{ width: '100%' }}>
-                {compositions.map(({ title, maxRows, shares }) => (
-                  <Grid key={title} size={{ xs: 12, md: 6 }}>
-                    <BarList
-                      title={title}
-                      items={shares}
-                      maxRows={maxRows}
-                      total={100}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            </Paper>
-          </Container>
-        </Grid>
+        <Card>
+          <CardContent className="grid gap-6 md:grid-cols-2">
+            {compositions.map(({ title, maxRows, shares }) => (
+              <BarList
+                key={title}
+                title={title}
+                items={shares}
+                maxRows={maxRows}
+                total={100}
+              />
+            ))}
+          </CardContent>
+        </Card>
       )}
-    </Grid>
+    </div>
   );
 };
 
