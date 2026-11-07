@@ -4,7 +4,6 @@ import {
   ArrowLeftRight,
   Percent,
   PiggyBank,
-  Receipt,
   TrendingDown,
   TrendingUp,
   Wallet,
@@ -72,16 +71,13 @@ const KpiTile = ({ icon: Icon, label, value, detail, tone }: TileProps) => {
   );
 };
 
-const count = (n: number, one: string, many: string) =>
-  `${n} ${n === 1 ? one : many}`;
-
 interface Props {
   period: PortfolioPerformance;
 }
 
 // The headline numbers of a period: what the depot is worth and what was paid
-// in at its end, and what it gained, earned per year, cost in fees and how
-// often it traded during it.
+// in at its end, and what it gained, earned per year and how often it traded
+// during it.
 const KpiHeader = ({ period }: Props) => {
   const { signTone } = useTableFormat();
   const { start, end } = period;
@@ -89,26 +85,14 @@ const KpiHeader = ({ period }: Props) => {
   const gain = periodGain(period);
   const gainTone = signTone(gain, 0);
 
-  // `fees` are negative and add up over time
-  const fees = start.fees - end.fees;
-
   const transactions = flatMap(
     Object.values(period.positions),
     p => p.transactions
   );
-  const buys = transactions.filter(t => t.units > 0).length;
-  const sells = transactions.filter(t => t.units < 0).length;
-  // money paid out without units changing hands
-  const distributions = transactions.filter(
-    t => t.units === 0 && t.amount > 0
-  ).length;
-  // e.g. fees booked on their own
-  const others = transactions.length - buys - sells - distributions;
-
   const annualRate = isShortPeriod(period) ? null : period.irrAnnual;
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
       <KpiTile
         icon={Wallet}
         label="Depotwert"
@@ -134,35 +118,16 @@ const KpiHeader = ({ period }: Props) => {
         value={
           annualRate === null
             ? '—'
-            : formatPercent(annualRate, { signed: true })
+            : `${formatPercent(annualRate, { signed: true })} p.a.`
         }
-        detail={
-          isShortPeriod(period) ? 'erst ab einem Monat sinnvoll' : 'pro Jahr'
-        }
+        detail={isShortPeriod(period) ? 'erst ab einem Monat sinnvoll' : null}
         tone={signTone(annualRate, 4)}
-      />
-      <KpiTile
-        icon={Receipt}
-        label="Gebühren"
-        value={formatCurrency(fees)}
-        detail={
-          period.kind === 'Total'
-            ? null
-            : `insgesamt ${formatCurrency(-end.fees)}`
-        }
       />
       <KpiTile
         icon={ArrowLeftRight}
         label="Transaktionen"
         value={String(transactions.length)}
-        detail={[
-          count(buys, 'Kauf', 'Käufe'),
-          count(sells, 'Verkauf', 'Verkäufe'),
-          ...(distributions > 0
-            ? [count(distributions, 'Ausschüttung', 'Ausschüttungen')]
-            : []),
-          ...(others > 0 ? [count(others, 'sonstige', 'sonstige')] : []),
-        ].join(' · ')}
+        detail={null}
       />
     </div>
   );
