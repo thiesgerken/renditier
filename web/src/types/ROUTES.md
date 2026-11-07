@@ -27,7 +27,7 @@ requires it and returns `401 Unauthorized` without it.
 | GET | `/api/stocks/<isin>` | — | — | `Stock` (ISIN is upper-cased server-side) |
 | GET | `/api/stocks/prices/historical/<record>` | `offset`, `count` (i64), `from`, `to` (`YYYY-MM-DD`) | — | `HistoricalPrice[]` |
 | GET | `/api/analysis/portfolio` | — | — | `Portfolio<RealtimePrice>` (`RealtimePortfolio`) |
-| GET | `/api/analysis/portfolio` | `date` (`YYYY-MM-DD`, required for this variant) | — | `Portfolio<HistoricalPrice>` (`HistoricalPortfolio`); valued at 17:30 UTC on `date` |
+| GET | `/api/analysis/portfolio` | `date` (`YYYY-MM-DD`, required for this variant) | — | `Portfolio<HistoricalPrice>` (`HistoricalPortfolio`); as of the market close (18:00 exchange time) on `date` |
 | GET | `/api/analysis/performance` | — | — | `PortfolioPerformance[]` |
 | GET | `/api/analysis/plots/portfolio` | `start`, `end` (`YYYY-MM-DD`, required), `source` (`DataSourceSelection`, default `automatic`) | — | `PortfolioPlot` |
 | GET | `/api/analysis/plots/<isin>` | `start`, `end` (`YYYY-MM-DD`, required), `source` (`DataSourceSelection`, default `automatic`) | — | `StockPlot` |
@@ -40,7 +40,8 @@ requires it and returns `401 Unauthorized` without it.
   status code. `POST /api/receipts` is the only route with a JSON error body (`ErrString`).
 - `offset` / `count` are optional; they default to `0` and unlimited.
 - Date query params are parsed as strings because Rocket cannot bind `NaiveDate` /
-  `DateTime<Utc>` directly. An unparseable date yields `404`, not `400`.
+  `DateTime<Utc>` directly. An unparseable date yields `404`, not `400`, except for the
+  historic `/api/analysis/portfolio`, which answers `400`.
 - Both `/api/analysis/portfolio` variants share a path and are distinguished purely by the
   presence of the `date` query parameter.
 - The `source` parameter is matched case-insensitively; an unrecognized value yields `404`.
