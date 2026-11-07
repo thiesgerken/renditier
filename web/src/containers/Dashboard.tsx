@@ -69,7 +69,7 @@ const Dashboard = () => {
   const stocks = useAppSelector(state => state.stocks);
   const selectedKey = useAppSelector(state => state.period.selected);
   const portfolioPlotData = useAppSelector(state => state.portfolioPlot.items);
-  const [tabParam, setTab] = useQueryParam('tab');
+  const [tabParam, setTab] = useQueryParam('tab', { replace: true });
   // a stale or mistyped link still shows the dashboard
   const tab = isTab(tabParam) ? tabParam : 'chart';
   const updatePortfolioPlotData = useCallback(
@@ -116,7 +116,10 @@ const Dashboard = () => {
 
       {period !== undefined && <KpiHeader period={period} />}
 
-      <Tabs value={tab} onValueChange={value => setTab(value)}>
+      <Tabs
+        value={tab}
+        onValueChange={value => setTab(value === 'chart' ? null : value)}
+      >
         <TabsList className="w-full sm:w-fit">
           {Object.entries(TABS).map(([value, label]) => (
             <TabsTrigger key={value} value={value} className="sm:px-3">
