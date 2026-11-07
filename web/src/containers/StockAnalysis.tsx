@@ -39,7 +39,7 @@ import OnvistaButton from '../components/OnvistaButton';
 import Hidden from '../components/Hidden';
 import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
 import StockPlot from '../components/stockAnalysis/StockPlot';
-import CompositionBars from '../components/stockAnalysis/CompositionBars';
+import BarList from '../components/BarList';
 
 import type { StockPerformancePeriod } from '../components/stockAnalysis/StockPerformanceRow';
 import type { DataSourceSelection, IsoDate } from '../types/api';
@@ -298,10 +298,11 @@ const StockAnalysis = ({
               <Grid container style={{ width: '100%' }}>
                 {compositions.map(({ title, maxRows, shares }) => (
                   <Grid key={title} size={{ xs: 12, md: 6 }}>
-                    <CompositionBars
+                    <BarList
                       title={title}
-                      shares={shares}
+                      items={shares}
                       maxRows={maxRows}
+                      total={100}
                     />
                   </Grid>
                 ))}

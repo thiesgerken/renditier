@@ -32,12 +32,21 @@ describe('barRows', () => {
     expect(rows.map(r => r.label)).toEqual(['a', 'b', 'c']);
   });
 
-  it('adds the unattributed part as "Unbekannt"', () => {
-    const rows = barRows([item('a', 60)], 10, 40);
+  it('adds the part of the total no item accounts for as "Unbekannt"', () => {
+    const rows = barRows([item('a', 60)], 10, 100);
 
     expect(rows.map(r => [r.label, r.share, r.remainder])).toEqual([
       ['a', 0.6, false],
       ['Unbekannt', 0.4, true],
+    ]);
+  });
+
+  it('keeps shares relative to the total when the rest is rounding', () => {
+    const rows = barRows([item('a', 80), item('b', 19.5)], 10, 100);
+
+    expect(rows.map(r => [r.label, r.share])).toEqual([
+      ['a', 0.8],
+      ['b', 0.195],
     ]);
   });
 

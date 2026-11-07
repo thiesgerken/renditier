@@ -18,17 +18,20 @@ export interface BarRow extends BarItem {
   remainder: boolean;
 }
 
+// Below this fraction of the total, a part that no item accounts for is
+// rounding in the source data rather than missing data.
+const ROUNDING_SLACK = 0.01;
+
 // The rows of a bar list: the `maxRows` largest positive items, the remaining
 // positive ones folded into "Sonstige" (unless that would be a single item),
-// the part of the total that no item accounts for as "Unbekannt", and every
+// the part of `total` that no item accounts for as "Unbekannt", and every
 // negative item. Negative items are never folded, because a remainder would
 // silently net them against the rest.
 export const barRows = (
   items: BarItem[],
   maxRows: number,
-  unattributed = 0
+  total = sumBy(items, 'value')
 ): BarRow[] => {
-  const total = sumBy(items, 'value') + unattributed;
   const row = (item: BarItem, remainder = false): BarRow => ({
     ...item,
     share: total > 0 ? item.value / total : null,
@@ -40,6 +43,7 @@ export const barRows = (
   const negative = sorted.filter(i => i.value < 0);
   const shown = positive.length > maxRows + 1 ? maxRows : positive.length;
   const folded = positive.slice(shown);
+  const unattributed = total - sumBy(items, 'value');
 
   return [
     ...positive.slice(0, shown).map(i => row(i)),
@@ -55,7 +59,7 @@ export const barRows = (
           ),
         ]
       : []),
-    ...(unattributed > 0
+    ...(total > 0 && unattributed > ROUNDING_SLACK * total
       ? [row({ label: 'Unbekannt', value: unattributed }, true)]
       : []),
     ...negative.map(i => row(i)),
@@ -66,9 +70,9 @@ interface Props {
   title: string;
   items: BarItem[];
   maxRows: number;
-  // the part of the total not covered by any item, e.g. 100 % minus the
-  // listed shares of a fund
-  unattributed?: number;
+  // what the shares are relative to, e.g. 100 for a fund's composition in
+  // percent; the items' sum by default
+  total?: number;
   // formats an item's value; without it, only the share is shown
   formatValue?: (value: number) => string;
   // shown below the list, e.g. what could not be included
@@ -81,11 +85,11 @@ const BarList = ({
   title,
   items,
   maxRows,
-  unattributed = 0,
+  total,
   formatValue,
   note,
 }: Props) => {
-  const rows = barRows(items, maxRows, unattributed);
+  const rows = barRows(items, maxRows, total);
   if (rows.length === 0) return null;
 
   // Bars are scaled to the largest item, so that a large "Unbekannt" does not

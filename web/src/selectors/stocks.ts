@@ -50,7 +50,7 @@ export type BreakdownKind =
   | 'currencyBreakdown';
 
 // onvista names the same country differently depending on the fund.
-const normalizeBreakdownName = (name: string): string =>
+const normalizeCountry = (name: string): string =>
   name === 'Vereinigte Staaten' || name === 'Vereinigte Staaten von Amerika'
     ? 'USA'
     : name;
@@ -65,7 +65,10 @@ export const breakdownShares = (
   kind: BreakdownKind
 ): FundShare[] =>
   (parseOnvistaList<StockBreakdownEntry>(stock[kind]) ?? []).map(e => ({
-    label: normalizeBreakdownName(e.nameBreakdown),
+    label:
+      kind === 'countryBreakdown'
+        ? normalizeCountry(e.nameBreakdown)
+        : e.nameBreakdown,
     value: e.investmentPct,
   }));
 

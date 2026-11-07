@@ -12,13 +12,17 @@ describe('onvista columns', () => {
     expect(holdingShares(stock(raw))).toBeNull();
   });
 
-  it('normalizes breakdown names', () => {
+  it('normalizes country names only', () => {
     const raw = JSON.stringify([
       { nameBreakdown: 'Vereinigte Staaten', investmentPct: 60 },
     ]);
+    const s = { countryBreakdown: raw, industryBreakdown: raw } as Stock;
 
-    expect(breakdownShares(stock(raw), 'currencyBreakdown')).toEqual([
+    expect(breakdownShares(s, 'countryBreakdown')).toEqual([
       { label: 'USA', value: 60 },
+    ]);
+    expect(breakdownShares(s, 'industryBreakdown')).toEqual([
+      { label: 'Vereinigte Staaten', value: 60 },
     ]);
   });
 });

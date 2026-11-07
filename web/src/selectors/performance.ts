@@ -61,3 +61,7 @@ export const getPeriodRange = (
   nextWeekDay(moment(period.start.date).add(1, 'days')).format('YYYY-MM-DD'),
   period.end.date,
 ];
+
+// The backend values a position at exactly 0 when its units are exactly 0, so
+// any other amount, even a float residue of a sale, is still held.
+export const isHeld = (p: PositionPerformance): boolean => p.end.units !== 0;

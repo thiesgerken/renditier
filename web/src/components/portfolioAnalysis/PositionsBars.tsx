@@ -11,14 +11,12 @@ import { find, map } from 'lodash';
 
 import type { PositionPerformance } from '../../types/api';
 import type { PerformanceState, StocksState } from '../../types/store';
-import { findStock, abbreviateTitle } from '../../selectors/stocks';
+import { findStock, capitalizeTitle } from '../../selectors/stocks';
+import { isHeld } from '../../selectors/performance';
 import { formatCurrency } from '../../format';
 import ProgressPaper from '../ProgressPaper';
 import BarList from '../BarList';
 import type { BarItem } from '../BarList';
-
-// Same threshold as the backend uses for "no units left".
-const isHeld = (p: PositionPerformance) => Math.abs(p.end.units) > 1e-8;
 
 const profit = (p: PositionPerformance) =>
   p.end.value === null ? null : p.end.invested + p.end.value;
@@ -75,17 +73,16 @@ const PositionsBars = ({ performance, stocks }: Props) => {
       ? []
       : map(total.positions, (p, isin) => {
           const stock = findStock(stocks, isin);
+          // the full title, because share classes of one fund differ only at
+          // its end, and the labels must tell them apart
           return {
-            label: stock === null ? isin : abbreviateTitle(stock.title),
-            title: stock === null ? isin : stock.title,
+            label: stock === null ? isin : capitalizeTitle(stock.title),
             amount: MODES[mode].amount(p),
           };
         });
 
   const items: BarItem[] = positions.flatMap(p =>
-    p.amount === null
-      ? []
-      : [{ label: p.label, title: p.title, value: p.amount }]
+    p.amount === null ? [] : [{ label: p.label, value: p.amount }]
   );
   const unpriced = positions.filter(p => p.amount === null);
 
