@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
-import { formatCurrency, formatDate, formatNumber } from '../format';
+import { formatCurrency, formatDate, formatUnits } from '../format';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
 import { useAppSelector } from '../store';
 
@@ -67,7 +67,7 @@ const ReceiptUploadDialog = ({ open, onClose }: Props) => {
 
                   return (
                     <li key={x.id}>
-                      {`${formatDate(x.date)}: ${formatNumber(x.units)} von ${stock} für ${formatCurrency(x.amount / 100)}`}
+                      {`${formatDate(x.date)}: ${formatUnits(x.units, { maxDigits: 2 })} von ${stock} für ${formatCurrency(x.amount / 100)}`}
                     </li>
                   );
                 })}
