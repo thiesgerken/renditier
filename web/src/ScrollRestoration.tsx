@@ -19,6 +19,10 @@ const ScrollRestoration = () => {
   const shown = useRef({ pathname, key });
 
   useEffect(() => {
+    // Otherwise the browser restores on back and forward too, before the old
+    // page has rendered, and the page jumps twice.
+    window.history.scrollRestoration = 'manual';
+
     const remember = () => positions.set(shown.current.key, window.scrollY);
     window.addEventListener('scroll', remember, { passive: true });
     return () => {
