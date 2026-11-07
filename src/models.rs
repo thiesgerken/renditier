@@ -74,7 +74,15 @@ pub struct HistoricalPrice {
 // grabbed periodically for watched ISINs; can be updated manually;
 // should do regular (or upon inserts) cleanups of these
 #[derive(
-    Debug, Clone, Queryable, Insertable, Identifiable, Associations, Serialize, Deserialize,
+    Debug,
+    Clone,
+    Queryable,
+    QueryableByName,
+    Insertable,
+    Identifiable,
+    Associations,
+    Serialize,
+    Deserialize,
 )]
 #[diesel(belongs_to(StockExchange, foreign_key = onvista_record_id))]
 #[diesel(primary_key(date, onvista_record_id))]
