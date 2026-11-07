@@ -1,4 +1,6 @@
-use crate::analysis::price::{DataSource, EitherPrice, Price, PriceMap};
+use crate::analysis::price::{
+    market_time, to_market_time, DataSource, EitherPrice, Price, PriceMap, MARKET_CLOSE,
+};
 use crate::analysis::{irr, price};
 use crate::models::*;
 use crate::schema::*;
@@ -84,6 +86,20 @@ impl Calendar {
     }
 }
 
+fn last_trading_day_until(mut day: NaiveDate) -> NaiveDate {
+    while day.weekday().number_from_monday() > 5 {
+        day = day.pred_opt().unwrap();
+    }
+    day
+}
+
+/// The trading day before the one of the newest price: its closing prices are where the
+/// "Heute" period starts. Trading days belong to the exchanges, not to the user's calendar.
+fn trading_day_before(newest_price: DateTime<Utc>) -> NaiveDate {
+    let current = last_trading_day_until(to_market_time(newest_price).date());
+    last_trading_day_until(current.pred_opt().unwrap())
+}
+
 /// Prices of the current moment and end-of-day prices of the period boundaries.
 struct Prices<'a> {
     current: &'a PriceMap<RealtimePrice>,
@@ -125,21 +141,13 @@ pub fn compute(
         price::find(connection, &isins, date, 4 * 24, 4 * 24)?;
 
     // assemble dates for which we need to get HistoricalPrices
-    let mut current_day = calendar.day_of(
+    let prev_day = trading_day_before(
         current_prices
             .values()
             .map(|d| d.price.date)
             .max()
             .unwrap_or(date),
     );
-    while current_day.weekday().number_from_monday() > 5 {
-        current_day = current_day.pred_opt().unwrap();
-    }
-
-    let mut prev_day = current_day.pred_opt().unwrap();
-    while prev_day.weekday().number_from_monday() > 5 {
-        prev_day = prev_day.pred_opt().unwrap();
-    }
 
     let first_transaction_date = ts
         .iter()
@@ -244,7 +252,7 @@ pub fn compute(
     // find_multiple needs DateTime<Utc> ...
     let utc_date_times = dates
         .iter()
-        .map(|d| d.and_hms_opt(17, 30, 0).unwrap().and_utc())
+        .map(|d| market_time(d.and_time(MARKET_CLOSE)))
         .collect::<Vec<_>>();
 
     // query db for prices on these dates
@@ -549,6 +557,27 @@ fn compute_performance(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn trading_days_follow_the_exchange_not_the_user() {
+        // Monday 09:00 at the exchange is still Sunday for a user in Etc/GMT+10
+        let monday_morning = "2026-11-09T08:00:00Z".parse().unwrap();
+        let date = |d| NaiveDate::from_ymd_opt(2026, 11, d).unwrap();
+
+        assert_eq!(
+            Calendar::new(chrono_tz::Etc::GMTPlus10, monday_morning).today,
+            date(8)
+        );
+        assert_eq!(trading_day_before(monday_morning), date(6));
+    }
+
+    #[test]
+    fn trading_days_skip_the_weekend() {
+        let saturday = "2026-11-07T10:00:00Z".parse().unwrap();
+        let date = |d| NaiveDate::from_ymd_opt(2026, 11, d).unwrap();
+
+        assert_eq!(trading_day_before(saturday), date(5));
+    }
 
     #[test]
     fn the_calendar_follows_the_configured_time_zone() {
