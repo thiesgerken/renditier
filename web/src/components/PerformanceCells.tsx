@@ -12,6 +12,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import type { PortfolioSnapshot, PositionSnapshot } from '../types/api';
 import { getPrice, profit } from '../selectors/performance';
@@ -26,15 +27,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 // a single stock share. Their cells show the value at the end of the period,
 // and its change over the period below it.
 
+// labelled by `performance.columns.*`
 const COLUMNS = {
-  period: { label: 'Zeitraum', icon: CalendarRange },
-  price: { label: 'Kurs', icon: ChartCandlestick },
-  units: { label: 'Einheiten', icon: Hash },
-  invested: { label: 'Investiert', icon: PiggyBank },
-  value: { label: 'Wert', icon: Wallet },
-  profit: { label: 'Gewinn', icon: TrendingUp },
-  irr: { label: 'Zinsfuß', icon: Percent },
-} satisfies Record<string, { label: string; icon: LucideIcon }>;
+  period: CalendarRange,
+  price: ChartCandlestick,
+  units: Hash,
+  invested: PiggyBank,
+  value: Wallet,
+  profit: TrendingUp,
+  irr: Percent,
+} satisfies Record<string, LucideIcon>;
 
 interface ColumnHeadProps {
   column: keyof typeof COLUMNS;
@@ -43,13 +45,14 @@ interface ColumnHeadProps {
 
 // Phones have no room for the icons.
 export const ColumnHead = ({ column, className }: ColumnHeadProps) => {
-  const { label, icon: Icon } = COLUMNS[column];
+  const { t } = useTranslation();
+  const Icon = COLUMNS[column];
 
   return (
     <TableHead className={cn(column !== 'period' && 'text-right', className)}>
       <span className="inline-flex items-center gap-1.5">
         <Icon className="hidden size-4 text-muted-foreground md:block" />
-        {label}
+        {t(`performance.columns.${column}`)}
       </span>
     </TableHead>
   );
@@ -191,6 +194,7 @@ export const UnitsCell = ({ period, className }: CellProps<PositionPeriod>) => {
 };
 
 export const InvestedCell = ({ period, className }: CellProps<Period>) => {
+  const { t } = useTranslation();
   const { money } = useTableFormat();
   const { start, end } = period;
 
@@ -201,10 +205,10 @@ export const InvestedCell = ({ period, className }: CellProps<Period>) => {
 
   const feesInfo = (
     <>
-      {line('davon Gebühren', -start.fees, -end.fees)}
+      {line(t('performance.feesIncluded'), -start.fees, -end.fees)}
       <br />
       {line(
-        'ohne Gebühren',
+        t('performance.feesExcluded'),
         -start.invested + start.fees,
         -end.invested + end.fees
       )}

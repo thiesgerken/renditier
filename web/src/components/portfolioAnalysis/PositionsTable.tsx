@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { map } from 'lodash';
 
@@ -34,6 +35,7 @@ interface Props {
 
 // The positions held at the end of the period, largest investment first.
 const PositionsTable = ({ period, loading, stocks }: Props) => {
+  const { t } = useTranslation();
   const positions =
     period === undefined
       ? []
@@ -45,14 +47,14 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
     <ProgressCard loading={loading}>
       {/* From md up, the dashboard's section heading names the card. */}
       <CardHeader className="md:hidden">
-        <CardTitle>Positionen</CardTitle>
+        <CardTitle>{t('dashboard.tabs.positions')}</CardTitle>
       </CardHeader>
       <div className="px-2">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="hidden xl:table-cell">ISIN</TableHead>
-              <TableHead>Name</TableHead>
+              <TableHead>{t('common.name')}</TableHead>
               <ColumnHead column="units" className="hidden sm:table-cell" />
               <ColumnHead column="price" className="hidden sm:table-cell" />
               <ColumnHead column="invested" className="hidden sm:table-cell" />

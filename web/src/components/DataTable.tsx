@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   createPaginatedRowModel,
   createSortedRowModel,
@@ -117,6 +118,7 @@ function DataTable<T extends RowData>({
   pagination: paging,
   onRowClick,
 }: Props<T>) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState(initialSorting);
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
   // A page beyond the data (a stale `?page=` or the last row of the last page
@@ -244,7 +246,7 @@ function DataTable<T extends RowData>({
               >
                 {isLoading ? (
                   <LoaderCircle
-                    aria-label="Wird geladen"
+                    aria-label={t('common.loading')}
                     className="mx-auto size-5 animate-spin"
                   />
                 ) : (
@@ -258,12 +260,12 @@ function DataTable<T extends RowData>({
       {paging !== undefined && (
         <div className="flex items-center justify-end gap-4 border-t px-2 pt-2 text-sm text-muted-foreground">
           <div className="hidden items-center gap-2 md:flex">
-            <span>Zeilen pro Seite</span>
+            <span>{t('table.rowsPerPage')}</span>
             <Select
               value={String(pageSize)}
               onValueChange={value => table.setPageSize(Number(value))}
             >
-              <SelectTrigger size="sm" aria-label="Zeilen pro Seite">
+              <SelectTrigger size="sm" aria-label={t('table.rowsPerPage')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -276,13 +278,17 @@ function DataTable<T extends RowData>({
             </Select>
           </div>
           <span className="tabular-nums">
-            {firstRow}–{lastRow} von {rowCount}
+            {t('table.range', {
+              first: firstRow,
+              last: lastRow,
+              count: rowCount,
+            })}
           </span>
           <div className="flex gap-1">
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Vorherige Seite"
+              aria-label={t('table.previousPage')}
               disabled={!table.getCanPreviousPage()}
               onClick={() => table.previousPage()}
             >
@@ -291,7 +297,7 @@ function DataTable<T extends RowData>({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label="Nächste Seite"
+              aria-label={t('table.nextPage')}
               disabled={!table.getCanNextPage()}
               onClick={() => table.nextPage()}
             >

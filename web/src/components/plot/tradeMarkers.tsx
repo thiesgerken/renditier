@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { Line } from 'recharts';
 import type { DotItemDotProps } from 'recharts';
 
 import { formatCurrency, formatNumber } from '../../format';
+import i18n from '../../i18n';
 import type { Trades } from './trades';
 import type { TooltipRow } from './PlotTooltip';
 
@@ -63,14 +65,17 @@ export const tradeRows = (
 
   const describe = (units: number, amount: number) =>
     withUnits
-      ? `${formatNumber(units, { digits: 3 })} für ${formatCurrency(amount)}`
+      ? i18n.t('plot.trade', {
+          units: formatNumber(units, { digits: 3 }),
+          amount: formatCurrency(amount),
+        })
       : formatCurrency(amount);
 
   return [
     ...(trades.boughtUnits > 0
       ? [
           {
-            label: 'Kauf',
+            label: i18n.t('plot.buy'),
             value: describe(trades.boughtUnits, trades.boughtAmount),
           },
         ]
@@ -78,7 +83,7 @@ export const tradeRows = (
     ...(trades.soldUnits > 0
       ? [
           {
-            label: 'Verkauf',
+            label: i18n.t('plot.sell'),
             value: describe(trades.soldUnits, trades.soldAmount),
           },
         ]
@@ -93,12 +98,13 @@ export const TradeLegend = ({
 }: {
   points: { trades: Trades | null }[];
 }) => {
+  const { t } = useTranslation();
   if (points.every(p => p.trades === null)) return null;
 
   return (
     <div className="flex justify-center gap-4 text-xs">
-      <span className="text-gain">▲ Kauf</span>
-      <span className="text-loss">▼ Verkauf</span>
+      <span className="text-gain">▲ {t('plot.buy')}</span>
+      <span className="text-loss">▼ {t('plot.sell')}</span>
     </div>
   );
 };

@@ -41,6 +41,8 @@ export interface FundShare {
   value: number;
   // set for a holding, which is a company of its own
   isin?: string;
+  // the ISO code of a country or currency
+  code?: string;
 }
 
 // The `Stock` columns that carry a StockBreakdownEntry[] encoded as a JSON

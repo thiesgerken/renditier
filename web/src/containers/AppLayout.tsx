@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from 'cn';
 import {
@@ -34,37 +35,34 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import {
+  DASHBOARD_TAB_ICONS,
   DASHBOARD_TABS,
   dashboardTabParam,
   toDashboardTab,
 } from './dashboardTabs';
 import type { DashboardTab } from './dashboardTabs';
 
-// `path` is the first segment of the route.
+// `path` is the first segment of the route, and names the destination.
 interface Destination {
-  path: string;
-  label: string;
+  path: 'dashboard' | 'stocks' | 'transactions' | 'accounts' | 'settings';
   icon: LucideIcon;
 }
 
-const ANALYSIS: Destination = {
-  path: 'dashboard',
-  label: 'Analyse',
-  icon: LayoutDashboard,
-};
+const ANALYSIS: Destination = { path: 'dashboard', icon: LayoutDashboard };
 
 // Four, so that the phone's tab bar has room for every label at 360px.
 const DESTINATIONS: Destination[] = [
   ANALYSIS,
-  { path: 'stocks', label: 'Wertpapiere', icon: ChartLine },
-  { path: 'transactions', label: 'Transaktionen', icon: ArrowLeftRight },
-  { path: 'accounts', label: 'Depots', icon: Landmark },
+  { path: 'stocks', icon: ChartLine },
+  { path: 'transactions', icon: ArrowLeftRight },
+  { path: 'accounts', icon: Landmark },
 ];
 
-const SETTINGS: Destination = {
-  path: 'settings',
-  label: 'Einstellungen',
-  icon: Settings,
+const SETTINGS: Destination = { path: 'settings', icon: Settings };
+
+const DestinationLabel = ({ destination }: { destination: Destination }) => {
+  const { t } = useTranslation();
+  return t(`nav.${destination.path}`);
 };
 
 // The dashboard is also the page for every unknown path, "/" included.
@@ -101,7 +99,7 @@ const SidebarLink = ({ destination, active }: LinkProps) => (
     <destination.icon
       className={cn('size-4', active && 'text-sidebar-primary')}
     />
-    {destination.label}
+    <DestinationLabel destination={destination} />
   </Link>
 );
 
@@ -114,29 +112,34 @@ interface DashboardTabLinksProps {
 // dashboard a click scrolls to the section and replaces the history entry, like
 // the scroll spy does, so that back leaves the page instead of stepping through
 // the sections.
-const DashboardTabLinks = ({ active }: DashboardTabLinksProps) => (
-  <div className="ml-5 flex flex-col gap-0.5 border-l pl-2">
-    {Object.entries(DASHBOARD_TABS).map(([tab, { label, icon: Icon }]) => {
-      const param = dashboardTabParam(tab);
+const DashboardTabLinks = ({ active }: DashboardTabLinksProps) => {
+  const { t } = useTranslation();
 
-      return (
-        <Link
-          key={tab}
-          to={param === null ? '/dashboard' : `/dashboard?tab=${param}`}
-          replace={active !== null}
-          aria-current={tab === active ? 'true' : undefined}
-          className={cn(
-            'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-            tab === active && 'font-medium text-sidebar-primary'
-          )}
-        >
-          <Icon className="size-3.5" />
-          {label}
-        </Link>
-      );
-    })}
-  </div>
-);
+  return (
+    <div className="ml-5 flex flex-col gap-0.5 border-l pl-2">
+      {DASHBOARD_TABS.map(tab => {
+        const Icon = DASHBOARD_TAB_ICONS[tab];
+        const param = dashboardTabParam(tab);
+
+        return (
+          <Link
+            key={tab}
+            to={param === null ? '/dashboard' : `/dashboard?tab=${param}`}
+            replace={active !== null}
+            aria-current={tab === active ? 'true' : undefined}
+            className={cn(
+              'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              tab === active && 'font-medium text-sidebar-primary'
+            )}
+          >
+            <Icon className="size-3.5" />
+            {t(`dashboard.tabs.${tab}`)}
+          </Link>
+        );
+      })}
+    </div>
+  );
+};
 
 const TabBarLink = ({ destination, active }: LinkProps) => (
   <Link
@@ -155,7 +158,7 @@ const TabBarLink = ({ destination, active }: LinkProps) => (
     >
       <destination.icon className="size-5" />
     </span>
-    {destination.label}
+    <DestinationLabel destination={destination} />
   </Link>
 );
 
@@ -169,6 +172,7 @@ interface UserMenuProps {
 
 const UserMenu = ({ name, compact, trigger }: UserMenuProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <DropdownMenu>
@@ -183,12 +187,12 @@ const UserMenu = ({ name, compact, trigger }: UserMenuProps) => {
         {compact && (
           <DropdownMenuItem onSelect={() => navigate(`/${SETTINGS.path}`)}>
             <SETTINGS.icon />
-            {SETTINGS.label}
+            <DestinationLabel destination={SETTINGS} />
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onSelect={() => navigate('/logout')}>
           <LogOut />
-          Ausloggen
+          {t('layout.logOut')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -197,17 +201,18 @@ const UserMenu = ({ name, compact, trigger }: UserMenuProps) => {
 
 const UpdateNotice = () => {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
 
   return (
     <Alert className="mx-auto mb-4 max-w-3xl">
       <RefreshCw />
-      <AlertTitle>Aktualisierung verfügbar</AlertTitle>
-      <AlertDescription>Bitte die App neu starten.</AlertDescription>
+      <AlertTitle>{t('layout.updateAvailable')}</AlertTitle>
+      <AlertDescription>{t('layout.restartToUpdate')}</AlertDescription>
       <AlertAction>
         <Button
           variant="ghost"
           size="icon-xs"
-          aria-label="Hinweis schließen"
+          aria-label={t('layout.dismiss')}
           onClick={() => dispatch(ignoreUpdate())}
         >
           <X />
@@ -225,6 +230,7 @@ interface Props {
 // menu, which also holds the settings, and a tab bar at the bottom within
 // reach of the thumb.
 const AppLayout = ({ children }: Props) => {
+  const { t } = useTranslation();
   const { pathname, search } = useLocation();
   const current = currentDestination(pathname);
   const dashboardTab =
@@ -281,7 +287,11 @@ const AppLayout = ({ children }: Props) => {
           name={name}
           compact
           trigger={
-            <Button variant="ghost" size="icon-lg" aria-label="Benutzermenü">
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              aria-label={t('layout.userMenu')}
+            >
               <CircleUser className="size-5" />
             </Button>
           }

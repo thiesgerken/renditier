@@ -10,6 +10,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import type { PortfolioPerformance } from '../../types/api';
 import { periodGain } from '../../selectors/performance';
@@ -72,9 +73,6 @@ const KpiTile = ({ icon: Icon, label, value, detail, tone }: TileProps) => {
   );
 };
 
-const count = (n: number, one: string, many: string) =>
-  `${n} ${n === 1 ? one : many}`;
-
 interface Props {
   period: PortfolioPerformance;
 }
@@ -83,6 +81,7 @@ interface Props {
 // in at its end, and what it gained, earned per year, cost in fees and how
 // often it traded during it.
 const KpiHeader = ({ period }: Props) => {
+  const { t } = useTranslation();
   const { signTone } = useTableFormat();
   const { start, end } = period;
 
@@ -111,61 +110,61 @@ const KpiHeader = ({ period }: Props) => {
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       <KpiTile
         icon={Wallet}
-        label="Depotwert"
+        label={t('kpi.portfolioValue')}
         value={euros(end.value)}
         detail={formatChange(start.value, end.value, euros)}
       />
       <KpiTile
         icon={PiggyBank}
-        label="Investiert"
+        label={t('kpi.invested')}
         value={euros(-end.invested)}
         detail={formatChange(-start.invested, -end.invested, euros)}
       />
       <KpiTile
         icon={gainTone === 'loss' ? TrendingDown : TrendingUp}
-        label="Gewinn im Zeitraum"
+        label={t('kpi.gain')}
         value={euros(gain, { signed: true })}
         detail={
           period.irrPeriod === null
             ? null
-            : `${formatPercent(period.irrPeriod, { signed: true })} Rendite`
+            : t('kpi.return', {
+                percent: formatPercent(period.irrPeriod, { signed: true }),
+              })
         }
         tone={gainTone}
       />
       <KpiTile
         icon={Percent}
-        label="Zinsfuß"
+        label={t('kpi.irr')}
         value={
           annualRate === null
             ? '—'
             : formatPercent(annualRate, { signed: true })
         }
-        detail={
-          isShortPeriod(period) ? 'erst ab einem Monat sinnvoll' : 'pro Jahr'
-        }
+        detail={isShortPeriod(period) ? t('kpi.irrTooShort') : t('kpi.perYear')}
         tone={signTone(annualRate, 4)}
       />
       <KpiTile
         icon={Receipt}
-        label="Gebühren"
+        label={t('kpi.fees')}
         value={formatCurrency(fees)}
         detail={
           period.kind === 'Total'
             ? null
-            : `insgesamt ${formatCurrency(-end.fees)}`
+            : t('kpi.feesTotal', { amount: formatCurrency(-end.fees) })
         }
       />
       <KpiTile
         icon={ArrowLeftRight}
-        label="Transaktionen"
+        label={t('kpi.transactions')}
         value={String(transactions.length)}
         detail={[
-          count(buys, 'Kauf', 'Käufe'),
-          count(sells, 'Verkauf', 'Verkäufe'),
+          t('kpi.buys', { count: buys }),
+          t('kpi.sells', { count: sells }),
           ...(distributions > 0
-            ? [count(distributions, 'Ausschüttung', 'Ausschüttungen')]
+            ? [t('kpi.distributions', { count: distributions })]
             : []),
-          ...(others > 0 ? [count(others, 'sonstige', 'sonstige')] : []),
+          ...(others > 0 ? [t('kpi.others', { count: others })] : []),
         ].join(' · ')}
       />
     </div>

@@ -1,5 +1,6 @@
 import { flatMap, find } from 'lodash';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Area, CartesianGrid, ComposedChart, Line, YAxis } from 'recharts';
 
 import type {
@@ -36,8 +37,8 @@ import useMediaQuery, { PHONE } from '../../useMediaQuery';
 import {
   DateRangeFields,
   PlotControls,
-  SOURCES,
   SelectField,
+  SourceField,
 } from '../plot/PlotControls';
 import type { DateRange } from '../plot/PlotControls';
 import { ZoomReset, useDragZoom } from '../plot/zoom';
@@ -67,8 +68,8 @@ function getData(
 // [startDate, endDate, source] of the last range that was actually requested.
 type PlotRange = [IsoDate, IsoDate, DataSourceSelection];
 
+// labelled by `plot.modes.*`
 interface ModeSpec {
-  label: string;
   tick: (value: number) => string;
   // a single series, colored by its sign
   signed?: {
@@ -79,25 +80,21 @@ interface ModeSpec {
 
 const MODES = {
   earnings: {
-    label: 'Gewinn',
     tick: currencyTick,
     signed: { key: 'earnings', curve: 'linear' },
   },
-  investedAndValue: { label: 'Kaufpreis und Wert', tick: currencyTick },
-  invested: { label: 'Kaufpreis', tick: currencyTick },
+  investedAndValue: { tick: currencyTick },
+  invested: { tick: currencyTick },
   investedRelStart: {
-    label: 'Kaufpreisveränderung',
     tick: percentTick,
     signed: { key: 'investedRelStart', curve: 'stepAfter' },
   },
-  value: { label: 'Wert', tick: currencyTick },
+  value: { tick: currencyTick },
   valueRelStart: {
-    label: 'Wertveränderung',
     tick: percentTick,
     signed: { key: 'valueRelStart', curve: 'linear' },
   },
   earningsRelInvested: {
-    label: 'Gewinn rel. zu Kaufpreis',
     tick: percentTick,
     signed: { key: 'earningsRelInvested', curve: 'linear' },
   },
@@ -118,6 +115,7 @@ interface Props {
 }
 
 const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
+  const { t } = useTranslation();
   const phone = useMediaQuery(PHONE);
   // The period that the custom range was set up for: picking another period
   // ends it, so that the plot follows the dashboard again.
@@ -199,18 +197,19 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
   const epochs = points.map(p => p.epoch);
   const intraday = hasIntradayPoints(epochs);
   const { tick, signed }: ModeSpec = MODES[mode];
+  const modeLabel = t(`plot.modes.${mode}`);
 
   const tooltipRows = (p: Point): TooltipRow[] => [
-    { label: 'Wert', value: formatCurrency(p.value) },
-    { label: 'Investiert', value: formatCurrency(p.invested) },
+    { label: t('plot.value'), value: formatCurrency(p.value) },
+    { label: t('plot.invested'), value: formatCurrency(p.invested) },
     {
-      label: 'Gewinn',
+      label: t('plot.gain'),
       value: formatAmountWithChange(p.earnings, p.earningsRelInvested),
     },
     ...(signed !== undefined && signed.key.endsWith('RelStart')
       ? [
           {
-            label: MODES[mode].label,
+            label: modeLabel,
             value: formatPlotPercent(p[signed.key] as number | null),
           },
         ]
@@ -239,7 +238,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
             {signed !== undefined &&
               signedArea(
                 signed.key,
-                MODES[mode].label,
+                modeLabel,
                 points.map(p => p[signed.key] as number | null),
                 signed.curve
               )}
@@ -248,7 +247,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
               <Area
                 type="linear"
                 dataKey="value"
-                name="Wert"
+                name={t('plot.value')}
                 stroke="var(--gain)"
                 fill="var(--gain)"
                 fillOpacity={0.15}
@@ -262,7 +261,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
               <Area
                 type="stepAfter"
                 dataKey="invested"
-                name="Investiert"
+                name={t('plot.invested')}
                 stroke="var(--loss)"
                 fill="var(--loss)"
                 fillOpacity={0.15}
@@ -276,7 +275,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
               <Line
                 type="stepAfter"
                 dataKey="invested"
-                name="Investiert"
+                name={t('plot.invested')}
                 stroke="var(--loss)"
                 strokeWidth={1.4}
                 dot={false}
@@ -295,19 +294,17 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
       <PlotControls>
         <SelectField
           id="portfolio-plot-mode"
-          label="Art"
+          label={t('plot.mode')}
           value={mode}
-          options={Object.entries(MODES).map(([value, { label }]) => ({
-            value: value as Mode,
-            label,
+          options={(Object.keys(MODES) as Mode[]).map(value => ({
+            value,
+            label: t(`plot.modes.${value}`),
           }))}
           onChange={setMode}
         />
-        <SelectField
+        <SourceField
           id="portfolio-plot-source"
-          label="Datenquelle"
           value={source}
-          options={SOURCES}
           onChange={setSource}
         />
         <div className="flex h-8 items-center gap-2">
@@ -316,7 +313,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
             checked={customRange}
             onCheckedChange={handleCustomRange}
           />
-          <Label htmlFor="portfolio-plot-custom">Eigener Zeitraum</Label>
+          <Label htmlFor="portfolio-plot-custom">{t('plot.customRange')}</Label>
         </div>
         {customRange && dates !== null && (
           <DateRangeFields value={dates} onChange={setDates} />

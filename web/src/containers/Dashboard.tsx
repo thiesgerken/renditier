@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { fetchPerformance } from '../slices/performance';
 import { fetchStocks } from '../slices/stocks';
@@ -30,6 +31,7 @@ import useMediaQuery, { DESKTOP } from '../useMediaQuery';
 import useQueryParam from '../useQueryParam';
 import DashboardSections from './DashboardSections';
 import {
+  DASHBOARD_TAB_ICONS,
   DASHBOARD_TABS,
   dashboardTabParam,
   toDashboardTab,
@@ -65,6 +67,7 @@ const priceDates = (period: PortfolioPerformance): [string, string] | null => {
 };
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const performance = useAppSelector(state => state.performance);
   const stocks = useAppSelector(state => state.stocks);
@@ -141,11 +144,16 @@ const Dashboard = () => {
       <div className="-mx-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 md:sticky md:top-0 md:z-20 md:bg-background/90 md:backdrop-blur">
         <div>
           <h1 className="text-lg font-semibold">
-            {period === undefined ? 'Analyse' : getPeriodDescription(period)}
+            {period === undefined
+              ? t('nav.dashboard')
+              : getPeriodDescription(period)}
           </h1>
           {range !== null && (
             <p className="text-xs text-muted-foreground">
-              {formatDate(range[0])} bis {formatDate(range[1])}
+              {t('dashboard.range', {
+                start: formatDate(range[0]),
+                end: formatDate(range[1]),
+              })}
             </p>
           )}
         </div>
@@ -168,11 +176,15 @@ const Dashboard = () => {
       ) : (
         <Tabs
           value={tab}
-          onValueChange={value => setTab(dashboardTabParam(value))}
+          onValueChange={value =>
+            setTab(dashboardTabParam(toDashboardTab(value)))
+          }
         >
           <TabsList className="w-full sm:w-fit max-sm:group-data-horizontal/tabs:h-auto">
-            {Object.entries(DASHBOARD_TABS).map(
-              ([value, { label, icon: Icon }]) => (
+            {DASHBOARD_TABS.map(value => {
+              const Icon = DASHBOARD_TAB_ICONS[value];
+
+              return (
                 // Icon next to the label does not fit four times into 360px,
                 // so phones stack them.
                 <TabsTrigger
@@ -181,10 +193,10 @@ const Dashboard = () => {
                   className="max-sm:flex-col max-sm:gap-0.5 max-sm:py-1 sm:px-3"
                 >
                   <Icon />
-                  {label}
+                  {t(`dashboard.tabs.${value}`)}
                 </TabsTrigger>
-              )
-            )}
+              );
+            })}
           </TabsList>
           {Object.entries(sections).map(([value, content]) => (
             <TabsContent key={value} value={value}>
@@ -196,13 +208,18 @@ const Dashboard = () => {
 
       {realtimeDates !== null && performance.lastRequest !== null && (
         <p className="px-1 text-xs text-muted-foreground">
-          {`Die Performance-Berechnungen wurden ${formatSince(
-            Temporal.Instant.fromEpochMilliseconds(performance.lastRequest),
-            Temporal.Now.zonedDateTimeISO()
-          )} aktualisiert. Alle Echtzeit-Preisberechnungen basieren auf Daten vom`}
+          {t('dashboard.updated', {
+            since: formatSince(
+              Temporal.Instant.fromEpochMilliseconds(performance.lastRequest),
+              Temporal.Now.zonedDateTimeISO()
+            ),
+          })}{' '}
           {realtimeDates[0] !== realtimeDates[1]
-            ? ` ${realtimeDates[0]} bis ${realtimeDates[1]}.`
-            : ` ${realtimeDates[0]}.`}
+            ? t('dashboard.pricesFromTo', {
+                start: realtimeDates[0],
+                end: realtimeDates[1],
+              })
+            : t('dashboard.pricesOn', { date: realtimeDates[0] })}
         </p>
       )}
     </div>

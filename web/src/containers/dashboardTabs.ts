@@ -1,24 +1,30 @@
 import { CalendarRange, ChartArea, ChartPie, Rows3 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 // The dashboard's tabs on phones and its sections on desktop, in the `?tab=`
-// parameter. The sidebar lists them too, as an anchor nav for the sections.
-// Labels short enough for all four to fit next to each other on a phone.
-export const DASHBOARD_TABS = {
-  chart: { label: 'Entwicklung', icon: ChartArea },
-  positions: { label: 'Positionen', icon: Rows3 },
-  periods: { label: 'Zeiträume', icon: CalendarRange },
-  composition: { label: 'Anteile', icon: ChartPie },
-};
+// parameter, in order. The sidebar lists them too, as an anchor nav for the
+// sections. Their labels are `dashboard.tabs.*`.
+export const DASHBOARD_TABS = [
+  'chart',
+  'positions',
+  'periods',
+  'composition',
+] as const;
 
-export type DashboardTab = keyof typeof DASHBOARD_TABS;
+export type DashboardTab = (typeof DASHBOARD_TABS)[number];
+
+export const DASHBOARD_TAB_ICONS: Record<DashboardTab, LucideIcon> = {
+  chart: ChartArea,
+  positions: Rows3,
+  periods: CalendarRange,
+  composition: ChartPie,
+};
 
 // The default tab has no parameter, and a stale or mistyped one shows it too.
 export const DEFAULT_TAB: DashboardTab = 'chart';
 
 export const toDashboardTab = (param: string | null): DashboardTab =>
-  param !== null && Object.hasOwn(DASHBOARD_TABS, param)
-    ? (param as DashboardTab)
-    : DEFAULT_TAB;
+  DASHBOARD_TABS.find(tab => tab === param) ?? DEFAULT_TAB;
 
-export const dashboardTabParam = (tab: string): string | null =>
+export const dashboardTabParam = (tab: DashboardTab): string | null =>
   tab === DEFAULT_TAB ? null : tab;

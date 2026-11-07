@@ -1,5 +1,6 @@
 import { map, every, mapValues, sortBy } from 'lodash';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDownIcon } from 'lucide-react';
 import { CartesianGrid, ComposedChart, Legend, Line, YAxis } from 'recharts';
 
@@ -24,8 +25,8 @@ import ProgressCard from './ProgressCard';
 import {
   DateRangeFields,
   PlotControls,
-  SOURCES,
   SelectField,
+  SourceField,
 } from './plot/PlotControls';
 import type { DateRange } from './plot/PlotControls';
 import { ZoomReset, useDragZoom } from './plot/zoom';
@@ -150,6 +151,7 @@ const StockComparisonPlot = ({
   data,
   updateData,
 }: Props) => {
+  const { t } = useTranslation();
   const phone = useMediaQuery(PHONE);
   // an index into performance.data, or CUSTOM
   const [period, setPeriod] = useState(0);
@@ -292,10 +294,13 @@ const StockComparisonPlot = ({
 
   // the names are long, so several are only counted
   let selectionSummary;
-  if (currentIsins.length === 0) selectionSummary = '(keine)';
+  if (currentIsins.length === 0) selectionSummary = t('stockComparison.none');
   else if (currentIsins.length === 1)
     selectionSummary = stockName(currentIsins[0]);
-  else selectionSummary = `${currentIsins.length} Wertpapiere`;
+  else
+    selectionSummary = t('stockComparison.selected', {
+      count: currentIsins.length,
+    });
 
   const zoom = useDragZoom({
     snapshot: { period, dates },
@@ -359,7 +364,7 @@ const StockComparisonPlot = ({
             htmlFor="comparison-isins"
             className="text-xs text-muted-foreground"
           >
-            Wertpapiere
+            {t('stockComparison.securities')}
           </Label>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -387,33 +392,31 @@ const StockComparisonPlot = ({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <SelectField
+        <SourceField
           id="comparison-source"
-          label="Datenquelle"
           value={source}
-          options={SOURCES}
           onChange={setSource}
         />
         <SelectField
           id="comparison-scale"
-          label="Skala"
+          label={t('stockComparison.scale')}
           value={logScale ? 'log' : 'linear'}
           options={[
-            { value: 'log', label: 'Logarithmisch' },
-            { value: 'linear', label: 'Linear' },
+            { value: 'log', label: t('stockComparison.logarithmic') },
+            { value: 'linear', label: t('stockComparison.linear') },
           ]}
           onChange={v => setLogScale(v === 'log')}
         />
         <SelectField
           id="comparison-period"
-          label="Zeitraum"
+          label={t('plot.period')}
           value={String(performance.data?.length ? period : CUSTOM)}
           options={[
             ...(performance.data ?? []).map((item, i) => ({
               value: String(i),
               label: getPeriodDescription(item),
             })),
-            { value: String(CUSTOM), label: 'Benutzerdefiniert' },
+            { value: String(CUSTOM), label: t('plot.custom') },
           ]}
           onChange={v => {
             setPeriod(Number(v));

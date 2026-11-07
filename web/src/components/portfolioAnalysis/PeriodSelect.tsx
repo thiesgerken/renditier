@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import type { PortfolioPerformance } from '../../types/api';
 import {
   RUNNING_PERIODS,
@@ -26,15 +28,16 @@ interface Props {
 // The running periods as a switch, the finished years and months, of which
 // there are too many for one, in a list next to it.
 const PeriodSelect = ({ periods, selected }: Props) => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const select = (key: string) => dispatch(selectPeriod(key));
 
-  const running = RUNNING_PERIODS.filter(r =>
-    periods.some(p => p.kind === r.kind)
+  const running = RUNNING_PERIODS.filter(kind =>
+    periods.some(p => p.kind === kind)
   );
   const years = periods.filter(p => p.kind === 'YearToYear');
   const months = periods.filter(p => p.kind === 'MonthToMonth');
-  const isRunning = running.some(r => r.kind === selected);
+  const isRunning = running.some(kind => kind === selected);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -46,27 +49,27 @@ const PeriodSelect = ({ periods, selected }: Props) => {
         // Radix reports '' when the active item is clicked again; the period
         // stays selected then.
         onValueChange={key => key !== '' && select(key)}
-        aria-label="Zeitraum"
+        aria-label={t('period.label')}
       >
-        {running.map(r => (
+        {running.map(kind => (
           <ToggleGroupItem
-            key={r.kind}
-            value={r.kind}
+            key={kind}
+            value={kind}
             className="px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
           >
-            {r.label}
+            {t(`period.short.${kind}`)}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
       {years.length + months.length > 0 && (
         <Select value={isRunning ? '' : selected} onValueChange={select}>
-          <SelectTrigger aria-label="Früherer Zeitraum" className="w-32">
-            <SelectValue placeholder="Früher" />
+          <SelectTrigger aria-label={t('period.earlierLabel')} className="w-32">
+            <SelectValue placeholder={t('period.earlier')} />
           </SelectTrigger>
           <SelectContent position="popper" align="end">
             {[
-              { label: 'Jahre', items: years },
-              { label: 'Monate', items: months },
+              { label: t('period.years'), items: years },
+              { label: t('period.months'), items: months },
             ].map(
               ({ label, items }) =>
                 items.length > 0 && (

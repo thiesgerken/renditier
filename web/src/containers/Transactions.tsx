@@ -9,6 +9,7 @@ import {
   Plus,
   Upload,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import DataTable, { dataTableFeatures } from '../components/DataTable';
@@ -29,6 +30,7 @@ import {
   formatDateTime,
   formatNumber,
 } from '../format';
+import i18n from '../i18n';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
 import { fetchAccounts } from '../slices/accounts';
 import { uploadReceipts } from '../slices/receipts';
@@ -103,15 +105,16 @@ const column = createColumnHelper<typeof dataTableFeatures, TransactionRow>();
 // stable while the transactions load, so that the table keeps its row models
 const NO_TRANSACTIONS: Transaction[] = [];
 
+// Headers are functions, so that they are translated when rendered.
 const columns = column.columns([
   column.accessor(row => kindOf(row).label, {
     id: 'kind',
-    header: 'Art',
+    header: () => i18n.t('transactions.columns.kind'),
     cell: ({ row }) => <KindIcon transaction={row.original} />,
   }),
   column.accessor(row => Temporal.Instant.from(row.date).epochMilliseconds, {
     id: 'date',
-    header: 'Datum',
+    header: () => i18n.t('transactions.columns.date'),
     meta: { icon: CalendarDays },
     cell: ({ row }) => (
       <>
@@ -123,23 +126,23 @@ const columns = column.columns([
     ),
   }),
   column.accessor('amount', {
-    header: 'Betrag',
+    header: () => i18n.t('transactions.columns.amount'),
     meta: { icon: Euro },
     cell: ({ getValue }) => <Money cents={getValue()} />,
   }),
   column.accessor('fees', {
-    header: 'Gebühren',
+    header: () => i18n.t('transactions.columns.fees'),
     meta: { showFrom: 'md' },
     cell: ({ getValue }) => <Money cents={getValue()} />,
   }),
   column.accessor('units', {
-    header: 'Stück',
+    header: () => i18n.t('transactions.columns.units'),
     meta: { showFrom: 'md' },
     cell: ({ getValue }) => <Units units={getValue()} />,
   }),
   column.accessor(row => row.stock?.title ?? row.isin, {
     id: 'stock',
-    header: 'Wertpapier',
+    header: () => i18n.t('transactions.columns.stock'),
     enableSorting: false,
     meta: { icon: ChartLine },
     cell: ({ row }) => {
@@ -167,16 +170,17 @@ const columns = column.columns([
     },
   }),
   column.accessor('exchangeDisplay', {
-    header: 'Handelsplatz',
+    header: () => i18n.t('transactions.columns.exchange'),
     meta: { icon: Building2, showFrom: 'md' },
   }),
   column.accessor('comments', {
-    header: 'Kommentare',
+    header: () => i18n.t('transactions.columns.comments'),
     meta: { icon: MessageSquare, showFrom: 'md' },
   }),
 ]);
 
 const Transactions = () => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const stocks = useAppSelector(state => state.stocks);
   const transactions = useAppSelector(state => state.transactions);
@@ -223,12 +227,14 @@ const Transactions = () => {
     <>
       <Card className="mx-auto max-w-(--breakpoint-xl)">
         <CardHeader>
-          <CardTitle>Transaktionen</CardTitle>
+          <CardTitle>{t('transactions.title')}</CardTitle>
           <CardAction className="flex gap-2">
             <Button asChild size="sm" variant="outline">
               <label>
                 <Upload />
-                <span className="max-sm:sr-only">Abrechnungen</span>
+                <span className="max-sm:sr-only">
+                  {t('transactions.receipts')}
+                </span>
                 <input
                   type="file"
                   className="sr-only"
@@ -243,7 +249,7 @@ const Transactions = () => {
             </Button>
             <Button size="sm" onClick={() => setTransactionId(-1)}>
               <Plus />
-              <span className="max-sm:sr-only">Neue Transaktion</span>
+              <span className="max-sm:sr-only">{t('transactions.new')}</span>
             </Button>
           </CardAction>
         </CardHeader>
@@ -254,7 +260,7 @@ const Transactions = () => {
             getRowId={transaction => String(transaction.id)}
             initialSorting={[{ id: 'date', desc: true }]}
             isLoading={isLoading}
-            emptyText="Noch keine Transaktionen"
+            emptyText={t('transactions.none')}
             pagination={{
               page: page === null ? 0 : parseInt(page, 10),
               onPageChange: p => setPage(p === 0 ? null : p),

@@ -23,7 +23,9 @@ const vendorChunkGroups = [
 
 function chunkForPackage(id, packageName) {
   const packagePath = `/node_modules/${packageName}/`;
-  return id.includes(packagePath) || id.endsWith(`/node_modules/${packageName}`);
+  return (
+    id.includes(packagePath) || id.endsWith(`/node_modules/${packageName}`)
+  );
 }
 
 function packageChunkName(id) {
@@ -87,7 +89,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: [
-      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+      {
+        find: '@',
+        replacement: fileURLToPath(new URL('./src', import.meta.url)),
+      },
     ],
   },
   build: {
@@ -106,5 +111,6 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    setupFiles: ['src/setupTests.ts'],
   },
 });

@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { map, filter, find, sumBy } from 'lodash';
 import { CircleAlert, LoaderCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { fetchPerformance } from '../slices/performance';
 import { fetchStocks } from '../slices/stocks';
@@ -41,6 +42,7 @@ interface Props {
 }
 
 const StockAnalysis = ({ isin }: Props) => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const stocks = useAppSelector(state => state.stocks);
   const performance = useAppSelector(state => state.performance);
@@ -65,7 +67,7 @@ const StockAnalysis = ({ isin }: Props) => {
     return (
       <div className="flex h-52 items-center justify-center">
         <LoaderCircle
-          aria-label="Lädt"
+          aria-label={t('common.loading')}
           className="size-6 animate-spin text-muted-foreground"
         />
       </div>
@@ -77,8 +79,8 @@ const StockAnalysis = ({ isin }: Props) => {
         <CircleAlert />
         <AlertDescription>
           {stock === null
-            ? `Die Datenbank enthält kein Wertpapier mit ISIN '${isin}'.`
-            : 'Keine Performance-Daten verfügbar.'}
+            ? t('stock.notFound', { isin })
+            : t('stock.noPerformance')}
         </AlertDescription>
       </Alert>
     );
@@ -114,11 +116,17 @@ const StockAnalysis = ({ isin }: Props) => {
 
   let transactionInfo;
   if (first === undefined || last === undefined)
-    transactionInfo = 'bisher keine';
+    transactionInfo = t('stock.noTransactions');
   else if (dates.length === 1)
-    transactionInfo = `eine, am ${formatDateTime(first)}`;
+    transactionInfo = t('stock.oneTransaction', {
+      date: formatDateTime(first),
+    });
   else
-    transactionInfo = `${dates.length}, vom ${formatDate(first)} bis ${formatDate(last)}`;
+    transactionInfo = t('stock.transactionRange', {
+      count: dates.length,
+      start: formatDate(first),
+      end: formatDate(last),
+    });
 
   const volume = sumBy(transactions, t => Math.abs(t.amount)) / 100;
   const fees = sumBy(transactions, t => Math.abs(t.fees)) / 100;
@@ -126,19 +134,28 @@ const StockAnalysis = ({ isin }: Props) => {
   // what onvista knows about the stock, then what the portfolio did with it;
   // facts onvista does not have are left out
   const facts: [string, string | null][] = [
-    ['Fondstyp', stock.fondsType],
-    ['Fokus', stock.focus],
-    ['Herausgeber', stock.company],
-    ['Index', stock.index],
-    ['Währung', stock.currency],
-    ['Auflagedatum', stock.launchDate && formatDate(stock.launchDate)],
-    ['Ausschüttung', stock.payoutType],
-    ['Kosten', stock.ter === null ? null : `${formatPercent(stock.ter)} p.a.`],
-    ['Kurs', currentPrice && formatPriceSource(currentPrice)],
-    ['Transaktionen', transactionInfo],
+    [t('stock.facts.fondsType'), stock.fondsType],
+    [t('stock.facts.focus'), stock.focus],
+    [t('stock.facts.company'), stock.company],
+    [t('stock.facts.index'), stock.index],
+    [t('stock.facts.currency'), stock.currency],
     [
-      'Volumen',
-      `${formatCurrency(volume)}, dazu ${formatCurrency(fees)} Gebühren`,
+      t('stock.facts.launchDate'),
+      stock.launchDate && formatDate(stock.launchDate),
+    ],
+    [t('stock.facts.payoutType'), stock.payoutType],
+    [
+      t('stock.facts.ter'),
+      stock.ter === null ? null : `${formatPercent(stock.ter)} p.a.`,
+    ],
+    [t('stock.facts.price'), currentPrice && formatPriceSource(currentPrice)],
+    [t('stock.facts.transactions'), transactionInfo],
+    [
+      t('stock.facts.volume'),
+      t('stock.volume', {
+        volume: formatCurrency(volume),
+        fees: formatCurrency(fees),
+      }),
     ],
   ];
 
@@ -195,7 +212,7 @@ const StockAnalysis = ({ isin }: Props) => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Transaktionen</CardTitle>
+          <CardTitle>{t('transactions.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <TransactionsTable
@@ -208,10 +225,10 @@ const StockAnalysis = ({ isin }: Props) => {
       {compositions.length > 0 && (
         <Card>
           <CardContent className="grid gap-6 md:grid-cols-2">
-            {compositions.map(({ title, icon, maxRows, items, marker }) => (
+            {compositions.map(({ id, icon, maxRows, items, marker }) => (
               <BarList
-                key={title}
-                title={title}
+                key={id}
+                title={t(`breakdowns.${id}`)}
                 icon={icon}
                 marker={marker}
                 items={items}

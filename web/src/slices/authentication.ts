@@ -2,6 +2,7 @@ import { createSlice, isFulfilled } from '@reduxjs/toolkit';
 import type { SerializedError } from '@reduxjs/toolkit';
 
 import { fetchOk } from '../api';
+import i18n from '../i18n';
 import { navigateTo } from '../navigation';
 import type { LoginData, UserInfo } from '../types/api';
 import type { AuthenticationState } from '../types/store';
@@ -76,7 +77,7 @@ const authentication = createSlice({
         state.messageType = 'error';
         state.message =
           action.error.message === WRONG_CREDENTIALS
-            ? 'Falsche Kombination aus Benutzername und Passwort!'
+            ? i18n.t('login.wrongCredentials')
             : (action.error.message ?? null);
       })
       // Only a login the user started reports its failure on the login page.
@@ -93,7 +94,7 @@ const authentication = createSlice({
         state.userInfo = null;
         state.error = null;
         state.messageType = 'success';
-        state.message = 'Erfolgreich ausgeloggt.';
+        state.message = i18n.t('login.loggedOut');
       })
       .addCase(logout.rejected, (state, action) => {
         state.isFetching = false;

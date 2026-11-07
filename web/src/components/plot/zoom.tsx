@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent, RefObject, TouchEvent } from 'react';
 import { RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ReferenceArea, useXAxisInverseDataSnapScale } from 'recharts';
 import type { InverseScaleFunction } from 'recharts';
 
@@ -128,9 +129,13 @@ export const useDragZoom = <S,>({
   };
 };
 
-export const ZoomReset = ({ onClick }: { onClick: () => void }) => (
-  <Button variant="outline" size="sm" onClick={onClick}>
-    <RotateCcw />
-    Zurücksetzen
-  </Button>
-);
+export const ZoomReset = ({ onClick }: { onClick: () => void }) => {
+  const { t } = useTranslation();
+
+  return (
+    <Button variant="outline" size="sm" onClick={onClick}>
+      <RotateCcw />
+      {t('plot.reset')}
+    </Button>
+  );
+};

@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 
 import './index.css';
+import './i18n';
 import App from './containers/App';
 import { TooltipProvider } from './components/ui/tooltip';
 import ServiceWorker from './containers/ServiceWorker';
