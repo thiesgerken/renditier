@@ -118,11 +118,9 @@ const KpiHeader = ({ period }: Props) => {
         value={
           annualRate === null
             ? '—'
-            : formatPercent(annualRate, { signed: true })
+            : `${formatPercent(annualRate, { signed: true })} p.a.`
         }
-        detail={
-          isShortPeriod(period) ? 'erst ab einem Monat sinnvoll' : 'pro Jahr'
-        }
+        detail={isShortPeriod(period) ? 'erst ab einem Monat sinnvoll' : null}
         tone={signTone(annualRate, 4)}
       />
       <KpiTile
