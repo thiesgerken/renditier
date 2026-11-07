@@ -15,7 +15,7 @@ use serde_json::Value;
 use std::error::Error;
 
 /// onvista quotes German exchanges; their prices and timestamps are in German local time. Crypto
-/// currencies are quoted on Bitstamp in UTC, but their daily prices are filed the same way.
+/// currencies are quoted in UTC, but their daily prices are filed the same way.
 pub const EXCHANGE_TIMEZONE: Tz = chrono_tz::Europe::Berlin;
 
 const API_URL: &str = "https://api.onvista.de/api/v1";
@@ -265,9 +265,9 @@ async fn get_crypto_snapshot(entity_value: &str) -> Result<Value, Box<dyn Error>
     .await
 }
 
-/// The quote of a crypto currency on its default exchange (Bitstamp), which is the one exchange
-/// stockdb tracks it on. The snapshot's quote list is no alternative: it holds Bitfinex quotes
-/// in EUR and USD alike.
+/// The quote of a crypto currency on onvista's default exchange for it (e.g. Bitstamp for Bitcoin,
+/// CoinDesk Data for Ether), the one exchange stockdb tracks it on. The snapshot's quote list is
+/// no alternative: it holds Bitfinex quotes in EUR and USD alike.
 async fn get_crypto_quote(isin: &str) -> Result<Value, Box<dyn Error>> {
     get_json(&format!(
         "instruments/{}/ISIN:{isin}/quote",

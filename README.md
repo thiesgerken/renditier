@@ -28,8 +28,9 @@ configuration.
 
 Exchange and receipt times are not affected: onvista quotes German exchanges and the supported
 banks issue German receipts, so their times are always read as German local time. Crypto currencies
-are the exception: onvista quotes them on Bitstamp, around the clock and with UTC timestamps.
-stockdb still files their daily prices under German market hours and weekdays like all others.
+are the exception: onvista quotes them around the clock and in UTC, from sources such as Bitstamp
+(Bitcoin) or CoinDesk (Ether). stockdb still files their daily prices under German market hours
+and weekdays like all others.
 
 ## Running the container
 
