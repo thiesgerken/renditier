@@ -1,7 +1,5 @@
-use crate::cli::push::Config as PushConfig;
 use crate::data::*;
 use crate::models::*;
-use crate::push;
 use crate::schema::stock_infos::dsl::*;
 use crate::{add_missing_stocks, web};
 
@@ -10,12 +8,10 @@ use clap::ArgMatches;
 use clap::{Arg, Command};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
-use log::{error, info, warn};
+use log::{error, info};
 use rocket::config::LogLevel;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use std::fs::File;
-use std::io::Read;
 use tokio;
 
 pub fn build() -> Command {
@@ -48,7 +44,6 @@ pub struct Config {
     pub secret_key: String, // for cookie encryption
     pub port: i64,
     pub address: String,
-    pub application_server_key: String, // for push notifications
     // if this is set to Some value, then the client will be instructed to redirect to this page.
     // should be used with trusted_header_authentication
     pub authentication_redirect: Option<String>,
@@ -63,7 +58,6 @@ impl Default for Config {
             secret_key: String::new(),
             port: 8383,
             address: "127.0.0.1".into(),
-            application_server_key: String::new(),
             authentication_redirect: None,
             trusted_header_authentication: false,
         }
@@ -138,7 +132,6 @@ pub async fn handle(
     sub_matches: &ArgMatches,
     pool: Pool<ConnectionManager<PgConnection>>,
     mut config: Config,
-    push_config: PushConfig,
     database: String,
     verbosity: i64,
 ) {
@@ -160,7 +153,6 @@ pub async fn handle(
         _ => LogLevel::Debug,
     };
 
-    let data_pool = pool.clone();
     tokio::spawn(async move {
         tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
@@ -168,37 +160,11 @@ pub async fn handle(
         loop {
             interval.tick().await;
 
-            add_missing_stocks(data_pool.clone()).await;
+            add_missing_stocks(pool.clone()).await;
 
-            fetch_data(data_pool.clone())
+            fetch_data(pool.clone())
                 .await
                 .unwrap_or_else(|e| error!("Error fetching new price data: {}", e));
-        }
-    });
-
-    tokio::spawn(async move {
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
-
-        let private_key_file = File::open(push_config.key_file);
-        let mut private_key = Vec::new();
-        if let Err(e) = private_key_file.and_then(|mut f| f.read_to_end(&mut private_key)) {
-            warn!(
-                "Error loading private key: {:?}, will not attempt to send notifications.",
-                e
-            );
-
-            private_key = Vec::new();
-        }
-
-        loop {
-            interval.tick().await;
-
-            if !private_key.is_empty() {
-                push::send_daily_notifications(pool.clone(), &private_key)
-                    .await
-                    .unwrap_or_else(|e| error!("Error sending notifications: {}", e));
-            }
         }
     });
 
@@ -212,7 +178,6 @@ pub async fn handle(
         },
         log_level: level,
         database_url: database,
-        application_server_key: config.application_server_key,
         trusted_header_authentication: config.trusted_header_authentication,
         authentication_redirect: config.authentication_redirect,
     })

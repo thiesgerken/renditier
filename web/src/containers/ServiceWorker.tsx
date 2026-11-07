@@ -2,27 +2,11 @@ import { connect } from 'react-redux';
 import type { ConnectedProps } from 'react-redux';
 
 import * as serviceWorker from '../serviceWorker';
-import {
-  updateRegistration as updateRegistrationAction,
-  subscribe as subscribeAction,
-  updateAvailable as updateAvailableAction,
-} from '../actions/notifications';
+import { updateAvailable as updateAvailableAction } from '../actions/notifications';
 import type { AppDispatch } from '../types/actions';
 
-const ServiceWorker = ({
-  updateRegistration,
-  subscribe,
-  updateAvailable,
-}: Props) => {
+const ServiceWorker = ({ updateAvailable }: Props) => {
   serviceWorker.register({
-    onInit: registration => {
-      updateRegistration(registration);
-
-      // Set the initial subscription value
-      registration.pushManager.getSubscription().then(() => {
-        subscribe();
-      });
-    },
     onUpdate: () => {
       updateAvailable();
     },
@@ -32,9 +16,6 @@ const ServiceWorker = ({
 };
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  updateRegistration: (registration: ServiceWorkerRegistration) =>
-    dispatch(updateRegistrationAction(registration)),
-  subscribe: () => dispatch(subscribeAction()),
   updateAvailable: () => dispatch(updateAvailableAction()),
 });
 

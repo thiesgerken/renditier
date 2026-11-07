@@ -3,7 +3,6 @@ pub mod cli;
 pub mod data;
 pub mod models;
 pub mod onvista;
-pub mod push;
 pub mod receipts;
 pub mod schema;
 pub mod serialization;
@@ -21,7 +20,8 @@ extern crate rocket;
 #[macro_use]
 extern crate rust_embed;
 
-use argonautica::{Hasher, Verifier};
+use argon2::password_hash::{phc::PasswordHash, PasswordHasher, PasswordVerifier};
+use argon2::Argon2;
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use base64::Engine;
 use diesel::prelude::*;
@@ -51,21 +51,21 @@ pub fn connect(database_url: &str) -> Result<PgConnection, Box<dyn Error>> {
     Ok(conn)
 }
 
+/// Verifies with the parameters encoded in `hash`, so hashes created with other parameters (or by
+/// another argon2 implementation) keep working.
 pub fn verify_password(pw: &str, hash: &str) -> bool {
-    Verifier::default()
-        .with_hash(hash)
-        .with_password(pw)
-        .verify()
-        .unwrap_or(false)
+    PasswordHash::new(hash).is_ok_and(|hash| {
+        Argon2::default()
+            .verify_password(pw.as_bytes(), &hash)
+            .is_ok()
+    })
 }
 
 pub fn hash_password(pw: &str) -> String {
-    Hasher::default()
-        .opt_out_of_secret_key(true)
-        .configure_iterations(32)
-        .with_password(pw)
-        .hash()
-        .unwrap()
+    Argon2::default()
+        .hash_password(pw.as_bytes())
+        .expect("unable to hash password")
+        .to_string()
 }
 
 /// A fresh API token, url-safe so it survives a shell and a header untouched. Only its hash is
@@ -101,6 +101,29 @@ pub fn hash_token(token: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn passwords_hashed_by_argonautica_still_verify() {
+        // created by the argonautica-based hash_password (32 iterations, one lane per CPU)
+        let hash = "$argon2id$v=19$m=4096,t=32,p=18$W0yj/DBbhPs1HXae6FDeGa8cIY9DzuUf8uJtH+II+AA$PbM6eIzL0BgQyQwnGcCpZlvRLUbirJR2cgs8Y/23rf0";
+
+        assert!(verify_password("correct horse battery staple", hash));
+        assert!(!verify_password("correct horse battery stapler", hash));
+    }
+
+    #[test]
+    fn hashed_passwords_verify() {
+        let hash = hash_password("hunter2");
+
+        assert!(verify_password("hunter2", &hash));
+        assert!(!verify_password("hunter3", &hash));
+        assert_ne!(hash, hash_password("hunter2"));
+    }
+
+    #[test]
+    fn malformed_hashes_do_not_verify() {
+        assert!(!verify_password("hunter2", "not a hash"));
+    }
 
     #[test]
     fn tokens_are_random_and_long_enough() {

@@ -137,22 +137,6 @@ pub struct NewAccount {
 }
 
 #[derive(
-    Debug, Clone, Queryable, Insertable, Associations, Identifiable, Serialize, Deserialize,
-)]
-#[diesel(belongs_to(User, foreign_key = user_id))]
-#[diesel(primary_key(endpoint))]
-#[serde(rename_all = "camelCase")]
-pub struct PushSubscription {
-    pub endpoint: String,
-    pub user_id: i32,
-    pub auth: String,
-    pub p256dh: String,
-    pub created: DateTime<Utc>,
-    pub last_contact: DateTime<Utc>,
-    pub last_notification: Option<DateTime<Utc>>,
-}
-
-#[derive(
     Debug,
     Clone,
     Queryable,

@@ -31,8 +31,6 @@ requires it and returns `401 Unauthorized` without it.
 | GET | `/api/analysis/performance` | — | — | `PortfolioPerformance[]` |
 | GET | `/api/analysis/plots/portfolio` | `start`, `end` (`YYYY-MM-DD`, required), `source` (`DataSourceSelection`, default `automatic`) | — | `PortfolioPlot` |
 | GET | `/api/analysis/plots/<isin>` | `start`, `end` (`YYYY-MM-DD`, required), `source` (`DataSourceSelection`, default `automatic`) | — | `StockPlot` |
-| POST | `/api/push/subscribe` | — | `SubscriptionInfo` | none (200; 404 if the endpoint belongs to another user) |
-| POST | `/api/push/unsubscribe` | — | `SubscriptionInfo` | none (200; 404 if unknown or owned by another user) |
 | POST | `/api/receipts` | — | `FileContents[]` | `Transaction[]`, or `ErrString` on failure |
 
 ## Notes

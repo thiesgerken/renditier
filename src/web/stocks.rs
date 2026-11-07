@@ -11,63 +11,11 @@ use rocket_sync_db_pools::diesel;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Stock {
-    isin: String,
-    wkn: String,
-    title: String,
-    kind: String,
-    company: String,
-    fonds_type: Option<String>,
-    focus: Option<String>,
-    persistent: bool,
-    onvista_url: String,
-    last_historical_update: Option<DateTime<Utc>>,
-    last_realtime_update: Option<DateTime<Utc>>,
-    industry_breakdown: Option<String>, // serialized Array of Arrays, containing a industry name and a percentage
-    instrument_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
-    country_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
-    currency_breakdown: Option<String>, // serialized Array of Arrays, containing a name and a percentage
-    holdings: Option<String>,           // serialized Vec<Holding>
-    launch_date: Option<DateTime<Utc>>,
-    currency: Option<String>,
-    management_type: Option<String>,
-    payout_type: Option<String>,
-    ter: Option<f64>,
-    description: Option<String>,
+    #[serde(flatten)]
+    info: StockInfo,
     exchanges: Vec<Exchange>,
     index: Option<String>,
-}
-
-impl Stock {
-    fn new(s: StockInfo, exchanges: Vec<Exchange>, index: Option<String>) -> Self {
-        Self {
-            isin: s.isin,
-            wkn: s.wkn,
-            title: s.title,
-            kind: s.kind,
-            fonds_type: s.fonds_type,
-            company: s.company,
-            focus: s.focus,
-            persistent: s.persistent,
-            onvista_url: s.onvista_url,
-            last_historical_update: s.last_historical_update,
-            last_realtime_update: s.last_realtime_update,
-            industry_breakdown: s.industry_breakdown,
-            instrument_breakdown: s.instrument_breakdown,
-            country_breakdown: s.country_breakdown,
-            currency_breakdown: s.currency_breakdown,
-            holdings: s.holdings,
-            launch_date: s.launch_date,
-            currency: s.currency,
-            management_type: s.management_type,
-            payout_type: s.payout_type,
-            ter: s.ter,
-            description: s.description,
-            exchanges,
-            index,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -158,7 +106,11 @@ pub async fn list(
                         .cloned()
                         .collect::<Vec<_>>();
                     let idx = find_index(&s);
-                    Stock::new(s, s_es, idx)
+                    Stock {
+                        info: s,
+                        exchanges: s_es,
+                        index: idx,
+                    }
                 })
                 .collect::<Vec<_>>();
 
@@ -212,7 +164,11 @@ pub async fn get(_uid: UserId, connection: DbConn, isin: String) -> Option<Json<
                 .collect();
 
             let idx = find_index(&info);
-            Some(Json(Stock::new(info, es, idx)))
+            Some(Json(Stock {
+                info,
+                exchanges: es,
+                index: idx,
+            }))
         })
         .await
 }
