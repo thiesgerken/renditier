@@ -114,12 +114,21 @@ const Dashboard = () => {
         onValueChange={value => setTab(dashboardTabParam(value))}
       >
         {/* From md up, the sidebar lists the tabs. */}
-        <TabsList className="w-full sm:w-fit md:hidden">
-          {Object.entries(DASHBOARD_TABS).map(([value, label]) => (
-            <TabsTrigger key={value} value={value} className="sm:px-3">
-              {label}
-            </TabsTrigger>
-          ))}
+        <TabsList className="w-full sm:w-fit md:hidden max-sm:group-data-horizontal/tabs:h-auto">
+          {Object.entries(DASHBOARD_TABS).map(
+            ([value, { label, icon: Icon }]) => (
+              // Icon next to the label does not fit four times into 360px, so
+              // phones stack them.
+              <TabsTrigger
+                key={value}
+                value={value}
+                className="max-sm:flex-col max-sm:gap-0.5 max-sm:py-1 sm:px-3"
+              >
+                <Icon />
+                {label}
+              </TabsTrigger>
+            )
+          )}
         </TabsList>
 
         <TabsContent value="chart">

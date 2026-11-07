@@ -115,7 +115,7 @@ interface DashboardTabLinksProps {
 // instead of stepping through the tabs.
 const DashboardTabLinks = ({ active }: DashboardTabLinksProps) => (
   <div className="ml-5 flex flex-col gap-0.5 border-l pl-2">
-    {Object.entries(DASHBOARD_TABS).map(([tab, label]) => {
+    {Object.entries(DASHBOARD_TABS).map(([tab, { label, icon: Icon }]) => {
       const param = dashboardTabParam(tab);
 
       return (
@@ -125,10 +125,11 @@ const DashboardTabLinks = ({ active }: DashboardTabLinksProps) => (
           replace={active !== null}
           aria-current={tab === active ? 'true' : undefined}
           className={cn(
-            'rounded-md px-3 py-1.5 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+            'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
             tab === active && 'font-medium text-sidebar-primary'
           )}
         >
+          <Icon className="size-3.5" />
           {label}
         </Link>
       );
