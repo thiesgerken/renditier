@@ -62,8 +62,9 @@ const PAGE_SIZES = [10, 25, 50];
 
 const collator = new Intl.Collator('de', { numeric: true });
 
-// Strings by German collation, numbers numerically, missing values first: the
-// order the MUI DataGrid used.
+// Strings by German collation with numbers in them compared by value ("Depot 2"
+// before "Depot 10"), numbers numerically, missing values first. The DataGrid
+// compared strings with the browser's default collation.
 function compareValues<T extends RowData>(
   a: Row<Features, T>,
   b: Row<Features, T>,
@@ -106,12 +107,16 @@ function DataTable<T extends RowData>({
 }: Props<T>) {
   const [sorting, setSorting] = useState(initialSorting);
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
-  const pagination = { pageIndex: page, pageSize };
+  // A page beyond the data (a stale `?page=` or the last row of the last page
+  // deleted) shows the last page instead of an empty one.
+  const pageCount = Math.max(1, Math.ceil(data.length / pageSize));
+  const pageIndex = Math.min(page, pageCount - 1);
+  const pagination = { pageIndex, pageSize };
 
   const onPaginationChange = (updater: Updater<PaginationState>) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater;
     setPageSize(next.pageSize);
-    if (next.pageIndex !== page) onPageChange(next.pageIndex);
+    if (next.pageIndex !== pageIndex) onPageChange(next.pageIndex);
   };
 
   const table = useTable({
@@ -123,13 +128,17 @@ function DataTable<T extends RowData>({
     onSortingChange: setSorting,
     onPaginationChange,
     defaultColumn: { sortFn: compareValues },
-    // Like the DataGrid: every column sorts ascending first.
+    // Like the DataGrid: one column at a time, ascending first.
+    enableMultiSort: false,
     sortDescFirst: false,
+    // The page lives in the URL and must survive a reload (data arriving after
+    // the first render), a refetch after a change, and a new sort order.
+    autoResetPageIndex: false,
   });
 
   const rowCount = table.getPrePaginatedRowModel().rows.length;
-  const firstRow = rowCount === 0 ? 0 : page * pageSize + 1;
-  const lastRow = Math.min(rowCount, (page + 1) * pageSize);
+  const firstRow = rowCount === 0 ? 0 : pageIndex * pageSize + 1;
+  const lastRow = Math.min(rowCount, (pageIndex + 1) * pageSize);
   const rows = table.getRowModel().rows;
 
   const openRow = (row: Row<Features, T>) => onRowClick(row.original);
