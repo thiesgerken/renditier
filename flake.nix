@@ -1,10 +1,17 @@
 {
-  description = "StockDB: dev shell";
+  description = "StockDB: dev shell and container image";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    crane.url = "github:ipetkov/crane";
+  };
 
   outputs =
-    { nixpkgs, ... }:
+    {
+      self,
+      nixpkgs,
+      crane,
+    }:
     let
       forSystems = nixpkgs.lib.genAttrs [
         "x86_64-linux"
@@ -38,5 +45,76 @@
           };
         }
       );
+
+      packages.x86_64-linux =
+        let
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          inherit (pkgs) lib;
+          craneLib = crane.mkLib pkgs;
+
+          web = pkgs.buildNpmPackage {
+            pname = "stockdb-web";
+            version = "0.1.0";
+            src = ./web;
+            npmDeps = pkgs.importNpmLock { npmRoot = ./web; };
+            inherit (pkgs.importNpmLock) npmConfigHook;
+            # The frontend shows the commit it was built from, and the sandbox has no git history.
+            env.BUILD_COMMIT = self.shortRev or self.dirtyShortRev or "dirty";
+            installPhase = "cp -r build $out";
+          };
+
+          cargoArgs = {
+            src = lib.fileset.toSource {
+              root = ./.;
+              fileset = lib.fileset.unions [
+                (craneLib.fileset.commonCargoSources ./.)
+                # embed_migrations! reads them at compile time.
+                ./migrations
+              ];
+            };
+            strictDeps = true;
+            nativeBuildInputs = [ pkgs.pkg-config ];
+            buildInputs = [
+              pkgs.openssl
+              pkgs.postgresql
+            ];
+          };
+
+          stockdb = craneLib.buildPackage (
+            cargoArgs
+            // {
+              cargoArtifacts = craneLib.buildDepsOnly cargoArgs;
+              cargoExtraArgs = "--locked --bin stockdb";
+              # rust-embed compiles the frontend into the binary.
+              preBuild = "mkdir web && cp -r ${web} web/build";
+              # The CI check job runs the tests.
+              doCheck = false;
+            }
+          );
+        in
+        {
+          image = pkgs.dockerTools.streamLayeredImage {
+            name = "stockdb";
+            config = {
+              # Numeric, because the image has no /etc/passwd to resolve a name and Kubernetes'
+              # runAsNonRoot can only verify a numeric user.
+              User = "65534:65534";
+              Cmd = [
+                "stockdb"
+                "serve"
+              ];
+              Env = [
+                # Receipts can be parsed with poppler's pdftotext, run as a subprocess.
+                "PATH=${
+                  lib.makeBinPath [
+                    stockdb
+                    pkgs.poppler-utils
+                  ]
+                }"
+                "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+              ];
+            };
+          };
+        };
     };
 }

@@ -7,4 +7,5 @@ stockdb
 zsh-completions
 bash-completions
 /.vscode
-*-export.json.direnv
+*-export.json
+result

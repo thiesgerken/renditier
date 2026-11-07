@@ -7,6 +7,9 @@ Tool to query and analyze stock and ETF investments using realtime and historica
 With Nix, the dev shell (`direnv allow` or `nix develop`) brings Rust, node, npm and the openssl
 and libpq the backend links against.
 
+The container image is built with Nix as well, for x86_64-linux only: `nix build .#image` yields a
+script that streams the image as a tarball, e.g. `./result | docker load`.
+
 ## Install
 
 - `openssl rand -base64 32` to obtain secret key
@@ -24,6 +27,47 @@ configuration.
 
 Exchange and receipt times are not affected: onvista quotes German exchanges and the supported
 banks issue German receipts, so their times are always read as German local time.
+
+## Running the container
+
+The image runs `stockdb serve` as UID and GID 65534 (`nobody`). The user is numeric because the
+image has no `/etc/passwd`, and Kubernetes' `runAsNonRoot` can only check a numeric one.
+
+The root filesystem can be read-only, and no path has to be writable: the server keeps no files,
+request bodies are JSON held in memory, and receipts are parsed in memory or piped through
+`pdftotext` via stdin and stdout. A future upload route using Rocket's `TempFile` would be the
+first thing to need a writable `/tmp` (an `emptyDir` or tmpfs).
+
+It listens on port 8383, the default of `STOCKDB__WEB__PORT`. A non-root process can't bind below
+1024, so map ports outside the container instead of setting 80. Set
+`STOCKDB__WEB__ADDRESS=0.0.0.0`; the default listens on localhost only.
+
+In Kubernetes:
+
+```yaml
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: stockdb
+      securityContext:
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+```
+
+With plain Docker (the image's user applies by default):
+
+```shell
+docker run --read-only --cap-drop ALL --security-opt no-new-privileges -p 8484:8383 \
+  -e STOCKDB__WEB__ADDRESS=0.0.0.0 -e STOCKDB__DATABASE=postgres://... \
+  -e STOCKDB__WEB__SECRET_KEY=... gitea.gerken.haus/thies/stockdb:main
+```
 
 ## API tokens
 
