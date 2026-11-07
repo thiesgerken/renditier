@@ -73,7 +73,7 @@ export const formatNumber = (
 
 // Units are whole for most stocks, but often a small fraction of a single coin
 // for crypto currencies, which would round to nothing at `maxDigits`. So they
-// keep three significant digits: 0,0123 instead of 0,01.
+// keep three significant digits by default: 0,0123 instead of 0,01.
 export const formatUnits = (
   value: number | null,
   options: NumberOptions = {}

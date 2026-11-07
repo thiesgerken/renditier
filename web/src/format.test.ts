@@ -53,6 +53,13 @@ describe('number formatting', () => {
     );
     expect(formatUnits(null)).toBe('—');
   });
+
+  it('keeps only the first significant digit of units where room is short', () => {
+    const phone = { maxDigits: 0, significantDigits: 1 };
+    expect(formatUnits(0.0123, phone)).toBe('0,01');
+    expect(formatUnits(12.345, phone)).toBe('12');
+    expect(formatUnits(1234, phone)).toBe('1.234');
+  });
 });
 
 describe('date formatting', () => {
