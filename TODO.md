@@ -1,7 +1,5 @@
 # TODO
 
-- web push not working because of tokio version mismatch
-
 ## Web
 
 - remove all cached data when the user logs out
@@ -16,7 +14,6 @@
 
 - add crypto currencies
 - add physical commodities like gold
-- push notifications on huge sudden changes
 - proper maintenance of stock data (renew every week?), exchanges are not updated currently at all (except on remove/add, which removes all data)
 - try to find out which index links to each ETF, grab data for those as well. Maybe the user has to make the connection ... -> save link in different table to avoid overwriting it on update; maybe only allow this via CLI
 - receipt parsing: also parse tax infos as soon as this is relevant? (units=0, amount=0, fees=...)

@@ -78,9 +78,9 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
             diesel::update(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
                 .set(persistent.eq(true))
                 .get_result::<StockInfo>(&mut connection)
-                .unwrap_or_else(|_| panic!("Unable to find ISIN {}", &isin_));
+                .unwrap_or_else(|_| panic!("Unable to find ISIN {}", isin_));
 
-            info!("Set stock {:?} as persistent", &isin_);
+            info!("Set stock {:?} as persistent", isin_);
         } else {
             match onvista::get_info(&isin_).await {
                 Ok((si, exs)) => {
@@ -99,7 +99,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
                         .execute(&mut connection)
                         .expect("Error saving exchanges");
 
-                    info!("Added stock {} and {} exchanges", &isin_, exs.len());
+                    info!("Added stock {} and {} exchanges", isin_, exs.len());
                 }
                 Err(e) => error!("Error obtaining stock infos for {}: {}", isin_, e),
             }
@@ -109,12 +109,18 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
             .load::<StockInfo>(&mut connection)
             .expect("error querying infos");
 
+        let mut failed_isins = Vec::new();
         for info in infos.iter() {
             debug!("updating stock info for {}", &info.isin);
 
-            let (new_info, _) = onvista::get_info(&info.isin)
-                .await
-                .expect("error obtaining stock info");
+            let new_info = match onvista::get_info(&info.isin).await {
+                Ok((new_info, _)) => new_info,
+                Err(e) => {
+                    error!("error obtaining stock info for {}: {}", info.isin, e);
+                    failed_isins.push(info.isin.as_str());
+                    continue;
+                }
+            };
             // onvista only provides the instrument data, the rest is our own bookkeeping
             let new_info = StockInfo {
                 persistent: info.persistent,
@@ -122,13 +128,26 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
                 last_realtime_update: info.last_realtime_update,
                 ..new_info
             };
-            diesel::update(stock_infos.filter(isin.eq(info.isin.clone())))
+            if let Err(e) = diesel::update(stock_infos.filter(isin.eq(info.isin.clone())))
                 .set(new_info.clone())
                 .execute(&mut connection)
-                .expect("error updating stock info");
+            {
+                error!("error saving stock info for {}: {}", info.isin, e);
+                failed_isins.push(info.isin.as_str());
+                continue;
+            }
 
-            info!("updated stock info for {}", &info.isin);
+            info!("updated stock info for {}", info.isin);
             debug!("new info: {:?}", &new_info);
+        }
+
+        if !failed_isins.is_empty() {
+            error!(
+                "could not update {} stock info(s): {}",
+                failed_isins.len(),
+                failed_isins.join(", ")
+            );
+            std::process::exit(1);
         }
     } else if let Some(isin_) = sub_matches.get_one::<String>("remove") {
         let isin_ = isin_.to_uppercase();
@@ -145,7 +164,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         let mut confirmation = String::new();
         println!(
         "Do you really want to delete this stock info? (It might appear again automatically!) If so, enter '{}'",
-        &isin_
+        isin_
     );
         io::stdin().read_line(&mut confirmation).unwrap();
         let confirmation = confirmation.trim_end(); // Remove the trailing newline
@@ -154,7 +173,7 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
         // delete stock info, deletes prices and so on because of ON DELETE CASCADE
         diesel::delete(stock_infos.filter(crate::schema::stock_infos::dsl::isin.eq(&isin_)))
             .execute(&mut connection)
-            .unwrap_or_else(|_| panic!("Unable to delete stock {}", &isin_));
+            .unwrap_or_else(|_| panic!("Unable to delete stock {}", isin_));
 
         info!("deleted stock '{}', its exchanges and price data", isin_);
     } else if *sub_matches.get_one::<bool>("list").unwrap() {

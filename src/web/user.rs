@@ -139,7 +139,6 @@ pub struct UserInfo {
     id: Option<i32>,
     name: Option<String>,
     full_name: Option<String>,
-    application_server_key: Option<String>,
     redirect: Option<String>,
 }
 
@@ -151,12 +150,11 @@ pub struct LoginData {
 }
 
 impl UserInfo {
-    pub fn new(user: User, application_server_key: String) -> Self {
+    pub fn new(user: User) -> Self {
         Self {
             id: Some(user.id),
             name: Some(user.name),
             full_name: Some(user.full_name),
-            application_server_key: Some(application_server_key),
             redirect: None,
         }
     }
@@ -171,14 +169,12 @@ pub async fn info(
     connection: DbConn,
 ) -> (Status, Option<Json<UserInfo>>) {
     if let Some(uid) = uid.0 {
-        let key = config.application_server_key.clone();
-
         let info = connection
             .run(move |c| {
                 users::table
                     .find(*uid)
                     .first(c)
-                    .map(|u| Json(UserInfo::new(u, key)))
+                    .map(|u| Json(UserInfo::new(u)))
                     .ok()
             })
             .await;
@@ -200,21 +196,15 @@ pub async fn info(
             if let Ok(u) = u {
                 info!(
                     "Successful login with username from trusted header: '{}'",
-                    &user_name
+                    user_name
                 );
                 cookies.add_private(Cookie::new("user_id", u.id.to_string()));
 
-                return (
-                    Status::Ok,
-                    Some(Json(UserInfo::new(
-                        u,
-                        config.application_server_key.clone(),
-                    ))),
-                );
+                return (Status::Ok, Some(Json(UserInfo::new(u))));
             } else {
                 warn!(
                 "Attempt to login with non-existing username via trusted header: '{}'; ignoring.",
-                &user_name
+                user_name
             );
             }
         }
@@ -226,7 +216,6 @@ pub async fn info(
             id: None,
             name: None,
             full_name: None,
-            application_server_key: None,
             redirect: config.authentication_redirect.clone(),
         })),
     )
@@ -240,7 +229,6 @@ pub fn logout(cookies: &CookieJar<'_>) -> Status {
 
 #[post("/user/login", data = "<login>")]
 pub async fn login(
-    config: &State<Config>,
     connection: DbConn,
     cookies: &CookieJar<'_>,
     login: Json<LoginData>,
@@ -254,17 +242,14 @@ pub async fn login(
     match u {
         Ok(u) => {
             if verify_password(&login.password, &u.hash) {
-                info!("Successful login with username '{}'", &login.user_name);
+                info!("Successful login with username '{}'", login.user_name);
                 cookies.add_private(Cookie::new("user_id", u.id.to_string()));
 
-                Ok(Json(UserInfo::new(
-                    u,
-                    config.application_server_key.clone(),
-                )))
+                Ok(Json(UserInfo::new(u)))
             } else {
                 warn!(
                     "Attempt to login with wrong password for user '{}'",
-                    &login.user_name
+                    login.user_name
                 );
 
                 Err(Status::Unauthorized)
@@ -273,7 +258,7 @@ pub async fn login(
         _ => {
             warn!(
                 "Attempt to login with non-existing username '{}'",
-                &login.user_name
+                login.user_name
             );
 
             Err(Status::Unauthorized)

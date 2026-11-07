@@ -84,12 +84,6 @@ export interface AuthenticationState {
 export type UserInfoState = UserInfo;
 
 export interface NotificationsState {
-  registration: ServiceWorkerRegistration | null;
-  subscribing: boolean;
-  subscribeError: StoredError | null;
-  subscription: PushSubscription | null;
-  unsubscribing: boolean;
-  unsubscribeError: StoredError | null;
   updateAvailable: boolean;
   updateIgnored: boolean;
 }

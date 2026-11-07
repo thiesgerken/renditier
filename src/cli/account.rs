@@ -138,7 +138,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
             .expect("Error loading accounts")
             .into_iter()
             .next()
-            .unwrap_or_else(|| panic!("there is no account with id '{}'!", &s_aid));
+            .unwrap_or_else(|| panic!("there is no account with id '{}'!", s_aid));
 
         let mut confirmation = String::new();
         println!(
@@ -157,7 +157,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
         // delete account
         diesel::delete(accounts.find(&s_aid))
             .execute(connection)
-            .unwrap_or_else(|_| panic!("Unable to delete account {}", &s_aid));
+            .unwrap_or_else(|_| panic!("Unable to delete account {}", s_aid));
 
         info!("deleted account '{}'", s_aid);
     } else if *sub_matches.get_one::<bool>("list").unwrap() {

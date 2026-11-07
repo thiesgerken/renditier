@@ -76,7 +76,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
                 .expect("Error loading accounts")
                 >= 1,
             "there is no account with id '{}'!",
-            &s_aid
+            s_aid
         );
 
         let mut s_isin = String::new();
@@ -163,7 +163,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
                 .expect("Error loading transaction")
                 > 0,
             "there is no transaction with id '{}'!",
-            &s_tid
+            s_tid
         );
 
         let mut confirmation = String::new();
@@ -177,7 +177,7 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
 
         diesel::delete(crate::schema::transactions::table.find(&s_tid))
             .execute(connection)
-            .unwrap_or_else(|_| panic!("Unable to delete transaction {}", &s_tid));
+            .unwrap_or_else(|_| panic!("Unable to delete transaction {}", s_tid));
 
         info!("deleted transaction '{}'", s_tid);
     } else if let Some(file_names) = sub_matches.get_many::<String>("receipts") {
