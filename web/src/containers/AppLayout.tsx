@@ -181,12 +181,20 @@ const UserMenu = ({ name, compact, trigger }: UserMenuProps) => {
           </>
         )}
         {compact && (
-          <DropdownMenuItem onSelect={() => navigate(`/${SETTINGS.path}`)}>
+          <DropdownMenuItem
+            onSelect={() => {
+              void navigate(`/${SETTINGS.path}`);
+            }}
+          >
             <SETTINGS.icon />
             {SETTINGS.label}
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onSelect={() => navigate('/logout')}>
+        <DropdownMenuItem
+          onSelect={() => {
+            void navigate('/logout');
+          }}
+        >
           <LogOut />
           Ausloggen
         </DropdownMenuItem>

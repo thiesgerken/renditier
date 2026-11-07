@@ -187,7 +187,10 @@ const StockPlot = ({
       sd = dates[0].toString();
       ed = dates[1].toString();
     } else {
-      [sd, ed] = getPeriodRange(performance.data[period]);
+      const selected = performance.data[period];
+      // `period` is in range, see above
+      if (selected === undefined) throw new Error(`no period ${period}`);
+      [sd, ed] = getPeriodRange(selected);
     }
 
     plotData = getData(data, isin, sd, ed, source);

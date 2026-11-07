@@ -39,8 +39,8 @@ const hasFlag = (code: string) =>
 
 const countryCodes = () => {
   const names = new Intl.DisplayNames('de', { type: 'region' });
-  const codes = [...LETTERS]
-    .flatMap(a => [...LETTERS].map(b => a + b))
+  const codes = Array.from(LETTERS)
+    .flatMap(a => Array.from(LETTERS, b => a + b))
     .filter(hasFlag);
 
   return lookup([
@@ -50,8 +50,9 @@ const countryCodes = () => {
       // unknown codes come back unchanged
       if (name === undefined || name === code) return [];
       // retired codes ("DD") share the name of their successor ("DE")
-      const current = Intl.getCanonicalLocales(`und-${code}`)[0].slice(4);
-      return [[normalizeCountry(name), current]];
+      const [canonical] = Intl.getCanonicalLocales(`und-${code}`);
+      if (canonical === undefined) return [];
+      return [[normalizeCountry(name), canonical.slice(4)]];
     }),
   ]);
 };

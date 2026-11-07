@@ -48,7 +48,7 @@ const Accounts = () => {
   const [page, setPage] = useQueryParam('page');
 
   useEffect(() => {
-    dispatch(fetchAccounts());
+    void dispatch(fetchAccounts());
   });
 
   const items = accounts.data ?? NO_ACCOUNTS;

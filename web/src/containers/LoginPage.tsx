@@ -13,7 +13,7 @@ const LoginPage = () => {
       message={message}
       messageType={messageType}
       onSubmit={(userName, password) => {
-        dispatch(login({ userName, password }));
+        void dispatch(login({ userName, password }));
       }}
     />
   );

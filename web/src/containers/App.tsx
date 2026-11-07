@@ -30,7 +30,7 @@ const LogoutRoute = () => {
   React.useEffect(() => {
     // Navigating away first would render the app's pages for a moment after
     // the session ended.
-    dispatch(logout()).then(action => {
+    void dispatch(logout()).then(action => {
       if (logout.fulfilled.match(action)) navigateTo('/');
     });
   }, [dispatch]);
@@ -44,7 +44,7 @@ const App = () => {
   const initialized = useAppSelector(isAuthenticationInitialized);
 
   if (!initialized) {
-    dispatch(checkLogin());
+    void dispatch(checkLogin());
     return <></>;
   }
 

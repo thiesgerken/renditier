@@ -56,8 +56,8 @@ const StockAnalysis = ({ isin }: Props) => {
   );
 
   useEffect(() => {
-    dispatch(fetchPerformance());
-    dispatch(fetchStocks());
+    void dispatch(fetchPerformance());
+    void dispatch(fetchStocks());
   });
 
   const stock = findStock(stocks, isin);
@@ -108,7 +108,7 @@ const StockAnalysis = ({ isin }: Props) => {
   const transactions = totalPerformance ? totalPerformance.transactions : [];
   const dates = transactions
     .map(t => Temporal.Instant.from(t.date))
-    .sort(Temporal.Instant.compare);
+    .sort((a, b) => Temporal.Instant.compare(a, b));
   const first = dates.at(0);
   const last = dates.at(-1);
 
