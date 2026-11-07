@@ -5,7 +5,7 @@ import { CircleAlert, Trash2 } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
 import FormDialogContent from '../components/FormDialogContent';
 import NumberInput from '../components/NumberInput';
-import { Alert, AlertDescription } from '../components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +42,7 @@ import {
 } from '../slices/transactions';
 import { useAppDispatch, useAppSelector } from '../store';
 import type { Exchange, Transaction } from '../types/api';
+import useChange from '../useChange';
 import type { AccountsState, StocksState } from '../types/store';
 
 // What `Transactions` hands in: a real transaction when editing, or a blank one
@@ -213,6 +214,7 @@ const TransactionForm = ({
   );
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
+  const { failure, pending, run } = useChange(onClose);
 
   const update = (changes: Partial<EditableTransaction>) =>
     setTransaction({ ...transaction, ...changes });
@@ -242,8 +244,11 @@ const TransactionForm = ({
 
   const onDelete = () => {
     // The delete button only renders when `transaction.id !== null`.
-    if (transaction.id !== null) dispatch(deleteTransaction(transaction.id));
-    onClose();
+    if (transaction.id !== null)
+      void run(
+        dispatch(deleteTransaction(transaction.id)),
+        'Löschen fehlgeschlagen'
+      );
   };
 
   const onSave = () => {
@@ -254,13 +259,12 @@ const TransactionForm = ({
       return;
     }
 
-    if (t.id === null) {
-      dispatch(createTransaction(t));
-    } else {
-      dispatch(updateTransaction({ ...t, id: t.id }));
-    }
-
-    onClose();
+    void run(
+      t.id === null
+        ? dispatch(createTransaction(t))
+        : dispatch(updateTransaction({ ...t, id: t.id })),
+      'Speichern fehlgeschlagen'
+    );
   };
 
   return (
@@ -435,12 +439,20 @@ const TransactionForm = ({
               </AlertDescription>
             </Alert>
           )}
+        {failure !== null && (
+          <Alert variant="destructive">
+            <CircleAlert />
+            <AlertTitle>{failure.title}</AlertTitle>
+            <AlertDescription>{failure.message}</AlertDescription>
+          </Alert>
+        )}
         <DialogFooter className="mt-auto">
           {transaction.id !== null && (
             <Button
               type="button"
               variant="destructive"
               className="sm:mr-auto"
+              disabled={pending}
               onClick={() => setConfirmOpen(true)}
             >
               <Trash2 />
@@ -450,7 +462,9 @@ const TransactionForm = ({
           <Button type="button" variant="outline" onClick={onClose}>
             Abbrechen
           </Button>
-          <Button type="submit">Speichern</Button>
+          <Button type="submit" disabled={pending}>
+            Speichern
+          </Button>
         </DialogFooter>
       </form>
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

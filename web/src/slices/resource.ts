@@ -1,4 +1,9 @@
-import { createSlice, isFulfilled, isRejected } from '@reduxjs/toolkit';
+import {
+  createSlice,
+  isAnyOf,
+  isFulfilled,
+  isRejected,
+} from '@reduxjs/toolkit';
 import type {
   ActionCreatorWithoutPayload,
   AsyncThunk,
@@ -25,8 +30,8 @@ export interface Resource<T> {
 
 // An API list, fetched again once it is outdated or invalidated by a change
 // elsewhere. `changes` are the thunks that modify the list itself: once one
-// settles, the list is outdated, and a failure is reported through `error` like
-// a failed load.
+// settles, the list is outdated. Their failures are for the caller to show
+// (see useChange); `error` is only about loading the list.
 //
 // RootState is inferred from the reducers this returns, so the signature must
 // not depend on it: the return type is spelled out, and the slice is found by
@@ -83,15 +88,12 @@ export const createResourceSlice = <T>(
         });
 
       if (changes !== undefined) {
-        builder
-          .addMatcher(isFulfilled(...changes), state => {
+        builder.addMatcher(
+          isAnyOf(isFulfilled(...changes), isRejected(...changes)),
+          state => {
             state.didInvalidate = true;
-            state.error = null;
-          })
-          .addMatcher(isRejected(...changes), (state, action) => {
-            state.didInvalidate = true;
-            state.error = action.error;
-          });
+          }
+        );
       }
     },
   });
