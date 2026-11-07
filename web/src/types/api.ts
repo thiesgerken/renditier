@@ -471,7 +471,7 @@ export type DataSourceSelection =
 // ---------------------------------------------------------------------------
 // Import / export payloads (src/serialization.rs)
 // ---------------------------------------------------------------------------
-// These are CLI-only file formats (stockdb import/export). No HTTP route serves them;
+// These are CLI-only file formats (renditier import/export). No HTTP route serves them;
 // they are included because they describe the same models.
 
 // Rust: serialization::NativeFormat (no rename_all)

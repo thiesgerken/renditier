@@ -1,9 +1,9 @@
 .direnv
 target
 backup.json
-stockdb.toml
+renditier.toml
 config-dist.toml
-stockdb
+renditier
 zsh-completions
 bash-completions
 /.vscode
