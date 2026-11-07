@@ -72,7 +72,7 @@ function registerValidSW(swUrl: string, config?: ServiceWorkerConfig): void {
 
       serviceWorkerRegistration = registration;
     })
-    .catch(error => {
+    .catch((error: unknown) => {
       console.error('Error during service worker registration:', error);
     });
 }
@@ -152,8 +152,8 @@ export function unregister(): void {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready
       .then(registration => registration.unregister())
-      .catch(error => {
-        console.error(error.message);
+      .catch((error: unknown) => {
+        console.error(error);
       });
   }
 }

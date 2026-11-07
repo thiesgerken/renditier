@@ -59,8 +59,6 @@ export default defineConfig(
       // Its findings are generics that name the expected shape of untyped data
       // (JSON.parse, recharts payloads) at the call site.
       '@typescript-eslint/no-unnecessary-type-parameters': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/use-unknown-in-catch-callback-variable': 'off',
       '@typescript-eslint/no-misused-spread': 'off',
       '@typescript-eslint/no-deprecated': 'off',
     },
