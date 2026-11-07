@@ -3,12 +3,12 @@
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
 
-/* There is no theme switch: the app follows the system, like MUI's color
-   schemes do. */
+/* There is no theme switch: the app follows the system. */
 @custom-variant dark (@media (prefers-color-scheme: dark));
 
-/* MUI's breakpoints, so that the shell and the MUI pages change layout at the
-   same widths while both exist. */
+/* Wider steps than Tailwind's defaults: sm is where a phone's portrait layout
+   ends, xl where the content stops growing. Inherited from MUI and kept, since
+   the pages' layouts are tuned to these widths. */
 @theme {
   --breakpoint-*: initial;
   --breakpoint-sm: 600px;
@@ -16,7 +16,6 @@
   --breakpoint-lg: 1200px;
   --breakpoint-xl: 1536px;
 
-  /* not inlined, so that the MUI theme can use it as var(--font-sans) */
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
 }
 

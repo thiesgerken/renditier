@@ -6,7 +6,6 @@
 - invalidate user info as soon as a 401 is encountered anywhere
 - unify querying functions
 - unify api access functions
-- Use new daterange component as soon as it works better https://github.com/mui-org/material-ui-pickers
 - show percentages over all, not only IRR (at least on hover as tooltip)
 - check that redux state is correctly deep cloned on plot data requests
 
