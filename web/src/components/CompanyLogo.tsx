@@ -3,10 +3,12 @@ import {
   siActivision,
   siAmd,
   siApple,
+  siBitcoin,
   siCdprojekt,
   siChase,
   siCocacola,
   siEa,
+  siEthereum,
   siGoogle,
   siHsbc,
   siNvidia,
@@ -21,7 +23,8 @@ import {
 } from 'simple-icons';
 import type { SimpleIcon } from 'simple-icons';
 
-// The largest companies in the portfolio's funds and its own shares, by ISIN.
+// The largest companies in the portfolio's funds, its own shares and crypto
+// currencies, by ISIN.
 // Simple Icons has no logo for many others (Microsoft, Amazon, ASML, ...),
 // which removed theirs on request; those get a monogram. Only the icons
 // imported here end up in the bundle.
@@ -45,6 +48,8 @@ const LOGOS: Partial<Record<string, SimpleIcon>> = {
   US8740541094: siTaketwointeractivesoftware,
   US7710491033: siRoblox,
   PLOPTTC00011: siCdprojekt,
+  EU000A2YZK67: siBitcoin, // BTCEUR
+  EU000A2YZK75: siEthereum, // ETHEUR
 };
 
 // The first letter of a name, in a muted circle the size of a logo, so that
