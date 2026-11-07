@@ -6,7 +6,8 @@ use diesel::{
     PgConnection,
     r2d2::{ConnectionManager, Pool},
 };
-use log::debug;
+use log::{debug, warn};
+use std::time::Duration;
 use tokio::runtime::Builder;
 
 fn main() {
@@ -36,8 +37,15 @@ fn main() {
         debug!("config={:?}", config);
         receipts::configure(&config.receipts);
 
-        let mut connection =
-            connect(&config.database).expect("error connecting and migrating to db");
+        let mut connection = match connect(&config.database) {
+            Ok(connection) => connection,
+            Err(e) => {
+                // A freshly started pod may not be allowed through to the database yet.
+                warn!("Could not connect to the database ({}), retrying in 10s", e);
+                tokio::time::sleep(Duration::from_secs(10)).await;
+                connect(&config.database).expect("error connecting and migrating to db")
+            }
+        };
 
         let manager = ConnectionManager::<PgConnection>::new(&config.database);
         let pool = Pool::builder().max_size(10).build(manager).unwrap();
