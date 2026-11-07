@@ -14,6 +14,47 @@ script that streams the image as a tarball, e.g. `./result | docker load`.
 
 - `openssl rand -base64 32` to obtain secret key
 
+## Running the container
+
+The image runs `stockdb serve` as UID and GID 65534 (`nobody`). The user is numeric because the
+image has no `/etc/passwd`, and Kubernetes' `runAsNonRoot` can only check a numeric one.
+
+The root filesystem can be read-only, and no path has to be writable: the server keeps no files,
+request bodies are JSON held in memory, and receipts are parsed in memory or piped through
+`pdftotext` via stdin and stdout. A future upload route using Rocket's `TempFile` would be the
+first thing to need a writable `/tmp` (an `emptyDir` or tmpfs).
+
+It listens on port 8383, the default of `STOCKDB__WEB__PORT`. A non-root process can't bind below
+1024, so map ports outside the container instead of setting 80. Set
+`STOCKDB__WEB__ADDRESS=0.0.0.0`; the default listens on localhost only.
+
+In Kubernetes:
+
+```yaml
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: stockdb
+      securityContext:
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+```
+
+With plain Docker (the image's user applies by default):
+
+```shell
+docker run --read-only --cap-drop ALL --security-opt no-new-privileges -p 8484:8383 \
+  -e STOCKDB__WEB__ADDRESS=0.0.0.0 -e STOCKDB__DATABASE=postgres://... \
+  -e STOCKDB__WEB__SECRET_KEY=... gitea.gerken.haus/thies/stockdb:main
+```
+
 ## API tokens
 
 The API otherwise expects a browser: a session cookie, or the `Remote-User` header from the

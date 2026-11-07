@@ -3,13 +3,12 @@ services:
     image: gitea.gerken.haus/thies/stockdb:main
     restart: unless-stopped
     ports:
-      - "8484:80"
+      - "8484:8383"
     environment:
       - STOCKDB__DATABASE=postgres://postgres@postgres/stocks
       # Demo value for local use only: anyone can decrypt the session cookies with it.
       # Generate a real one with `openssl rand -base64 32`.
       - STOCKDB__WEB__SECRET_KEY=WD91xfOSUW8WQwQM3vihMj5+SVNM3ICkCmN6rqHdr8o=
-      - STOCKDB__WEB__PORT=80
       - STOCKDB__WEB__ADDRESS=0.0.0.0
     command: stockdb -v serve
 
