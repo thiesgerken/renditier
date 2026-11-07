@@ -31,6 +31,9 @@ const columns = column.columns([
   }),
 ]);
 
+// stable while the accounts load, so that the table keeps its row models
+const NO_ACCOUNTS: Account[] = [];
+
 const newAccount: AccountDraft = {
   id: null,
   userId: -1,
@@ -48,8 +51,9 @@ const Accounts = () => {
     dispatch(fetchAccounts());
   });
 
+  const items = accounts.data ?? NO_ACCOUNTS;
   const initialAccount =
-    accounts.items.find(item => String(item.id) === accountId) ?? newAccount;
+    items.find(item => String(item.id) === accountId) ?? newAccount;
 
   return (
     <>
@@ -65,7 +69,7 @@ const Accounts = () => {
         </CardHeader>
         <CardContent>
           <DataTable
-            data={accounts.items}
+            data={items}
             columns={columns}
             getRowId={account => String(account.id)}
             initialSorting={[{ id: 'name', desc: false }]}

@@ -131,6 +131,9 @@ const Units = ({ units }: { units: number }) => {
 
 const column = createColumnHelper<typeof dataTableFeatures, TransactionRow>();
 
+// stable while the transactions load, so that the table keeps its row models
+const NO_TRANSACTIONS: Transaction[] = [];
+
 const columns = column.columns([
   column.accessor(row => kindOf(row).label, {
     id: 'kind',
@@ -227,9 +230,12 @@ const Transactions = () => {
     dispatch(fetchAccounts());
   });
 
+  const accountList = accounts.data ?? [];
+  const items = transactions.data ?? NO_TRANSACTIONS;
+
   const newTransaction: TransactionDraft = {
     id: null,
-    accountId: accounts.items.length === 1 ? accounts.items[0].id : null,
+    accountId: accountList.length === 1 ? accountList[0].id : null,
     isin: null,
     date: Temporal.Now.instant().toString(),
     units: 0,
@@ -241,16 +247,15 @@ const Transactions = () => {
     receiptNumber: null,
   };
   const initialTransaction =
-    transactions.items.find(item => String(item.id) === transactionId) ??
-    newTransaction;
+    items.find(item => String(item.id) === transactionId) ?? newTransaction;
 
   const isLoading =
     transactions.isFetching || stocks.isFetching || accounts.isFetching;
 
   // The table recomputes its row models whenever `data` is a new array.
   const rows = useMemo(
-    () => transactions.items.map(transaction => toRow(stocks, transaction)),
-    [transactions.items, stocks]
+    () => items.map(transaction => toRow(stocks, transaction)),
+    [items, stocks]
   );
 
   return (

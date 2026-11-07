@@ -1,28 +1,10 @@
-import { createSlice, isFulfilled, isRejected } from '@reduxjs/toolkit';
-
-import { fetchJson, fetchOk } from '../api';
+import { fetchOk } from '../api';
 import type { Account, NewAccount } from '../types/api';
-import type { AccountsState } from '../types/store';
 import { createAppAsyncThunk } from './createAppAsyncThunk';
-import { needsFetch } from './freshness';
 import { invalidatePerformance } from './performance';
+import { createResourceSlice } from './resource';
+import type { Resource } from './resource';
 import { invalidateTransactions } from './transactions';
-
-const initialState: AccountsState = {
-  isFetching: false,
-  didInvalidate: false,
-  items: [],
-  fetchError: null,
-  lastUpdated: null,
-};
-
-export const fetchAccounts = createAppAsyncThunk(
-  'accounts/fetch',
-  () => fetchJson<Account[]>('/api/accounts'),
-  {
-    condition: (_, { getState }) => needsFetch(getState().accounts),
-  }
-);
 
 export const createAccount = createAppAsyncThunk(
   'accounts/create',
@@ -53,41 +35,13 @@ export const deleteAccount = createAppAsyncThunk(
   }
 );
 
-const modifications = [createAccount, updateAccount, deleteAccount] as const;
-
-const accounts = createSlice({
-  name: 'accounts',
-  initialState,
-  reducers: {},
-  extraReducers: builder => {
-    builder
-      .addCase(fetchAccounts.pending, state => {
-        state.isFetching = true;
-      })
-      .addCase(fetchAccounts.fulfilled, (state, action) => {
-        state.isFetching = false;
-        state.didInvalidate = false;
-        state.items = action.payload;
-        state.lastUpdated = Date.now();
-        state.fetchError = null;
-      })
-      .addCase(fetchAccounts.rejected, (state, action) => {
-        state.isFetching = false;
-        state.didInvalidate = false;
-        state.items = [];
-        state.fetchError = action.error;
-        state.lastUpdated = Date.now();
-      })
-      .addMatcher(isFulfilled(...modifications), state => {
-        state.didInvalidate = true;
-        state.fetchError = null;
-      })
-      // A failed change is reported through `fetchError` like a failed load.
-      .addMatcher(isRejected(...modifications), (state, action) => {
-        state.didInvalidate = true;
-        state.fetchError = action.error;
-      });
-  },
-});
+// Annotated: the change thunks' types depend on RootState, which in turn is
+// inferred from this reducer.
+const accounts: Resource<Account[]> = createResourceSlice(
+  'accounts',
+  '/api/accounts',
+  [createAccount, updateAccount, deleteAccount]
+);
 
 export default accounts.reducer;
+export const fetchAccounts = accounts.fetch;

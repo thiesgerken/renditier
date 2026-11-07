@@ -313,7 +313,7 @@ const TransactionForm = ({
               ))}
             </datalist>
           </div>
-          {(accounts.items.length > 1 ||
+          {((accounts.data ?? []).length > 1 ||
             findAccount(accounts, transaction.accountId) === null) && (
             <div className="col-span-2 grid gap-2">
               <Label htmlFor="transaction-account">Depot</Label>
@@ -336,7 +336,7 @@ const TransactionForm = ({
                   <SelectValue placeholder="Depot wählen" />
                 </SelectTrigger>
                 <SelectContent>
-                  {accounts.items.map(account => (
+                  {(accounts.data ?? []).map(account => (
                     <SelectItem key={account.id} value={String(account.id)}>
                       {account.name}
                     </SelectItem>

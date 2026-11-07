@@ -4,9 +4,9 @@ import { toEditable, toTransaction, withDate } from './TransactionDialog';
 const accounts: AccountsState = {
   isFetching: false,
   didInvalidate: false,
-  items: [{ id: 7, userId: 1, name: 'Depot', iban: null }],
-  fetchError: null,
-  lastUpdated: null,
+  data: [{ id: 7, userId: 1, name: 'Depot', iban: null }],
+  error: null,
+  lastRequest: null,
 };
 
 const stocks: StocksState = {
