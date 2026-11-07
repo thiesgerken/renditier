@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { map, filter, find, sumBy, min, max } from 'lodash';
+import { map, filter, find, sumBy } from 'lodash';
 import {
   useTheme,
   Grid,
@@ -13,7 +13,6 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
-import moment from 'moment';
 
 import { fetchPerformance } from '../slices/performance';
 import { fetchStocks } from '../slices/stocks';
@@ -133,12 +132,13 @@ const StockAnalysis = ({ isin }: Props) => {
   const transactions = totalPerformance ? totalPerformance.transactions : [];
   const transactionVolume = sumBy(transactions, t => Math.abs(t.amount));
   const transactionFees = sumBy(transactions, t => Math.abs(t.fees));
-  const firstTransaction = min(map(transactions, t => moment(t.date)));
-  const lastTransaction = max(map(transactions, t => moment(t.date)));
+  const dates = transactions
+    .map(t => Temporal.Instant.from(t.date))
+    .sort(Temporal.Instant.compare);
+  const firstTransaction = dates.at(0);
+  const lastTransaction = dates.at(-1);
 
   let transactionInfo;
-  // lodash min/max are undefined exactly when there are no transactions, which
-  // is the `transactions.length === 0` test this replaces, but narrowing.
   if (firstTransaction === undefined || lastTransaction === undefined)
     transactionInfo = 'Transaktionen: bisher nicht gehandelt';
   else if (transactions.length === 1)

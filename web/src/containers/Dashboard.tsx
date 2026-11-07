@@ -1,7 +1,4 @@
 import { useCallback, useEffect } from 'react';
-import { filter, max, min, map } from 'lodash';
-import moment from 'moment';
-import type { Moment } from 'moment';
 
 import { fetchPerformance } from '../slices/performance';
 import { fetchStocks } from '../slices/stocks';
@@ -19,7 +16,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '../components/ui/tabs';
-import { formatDate, formatDateTime } from '../format';
+import { formatDate, formatDateTime, formatSince } from '../format';
 import {
   findSelectedPeriod,
   getPeriodDescription,
@@ -31,25 +28,31 @@ import { useAppDispatch, useAppSelector } from '../store';
 import useQueryParam from '../useQueryParam';
 import type {
   DataSourceSelection,
+  EitherPrice,
   IsoDate,
   PortfolioPerformance,
 } from '../types/api';
 
-// When the realtime prices behind the positions of a period were taken, as
-// "from" and "to"; null when no position has a price.
-const priceDates = (period: PortfolioPerformance): [string, string] | null => {
-  const dates = filter(
-    map(period.positions, p =>
-      p.end.dataSource !== null ? moment(p.end.dataSource.price.date) : null
-    ),
-    (d): d is Moment => d !== null
-  );
-  const oldest = min(dates);
-  const newest = max(dates);
+// A historical price has a day only, which counts from its start.
+const priceInstant = (price: EitherPrice): Temporal.Instant =>
+  price.type === 'RealtimePrice'
+    ? Temporal.Instant.from(price.date)
+    : Temporal.PlainDate.from(price.date)
+        .toZonedDateTime(Temporal.Now.timeZoneId())
+        .toInstant();
 
-  return oldest === undefined || newest === undefined
+// When the prices behind the positions of a period were taken, as "from" and
+// "to"; null when no position has a price.
+const priceDates = (period: PortfolioPerformance): [string, string] | null => {
+  const dates = Object.values(period.positions)
+    .flatMap(p =>
+      p.end.dataSource === null ? [] : [priceInstant(p.end.dataSource.price)]
+    )
+    .sort(Temporal.Instant.compare);
+
+  return dates.length === 0
     ? null
-    : [formatDateTime(oldest), formatDateTime(newest)];
+    : [formatDateTime(dates[0]), formatDateTime(dates[dates.length - 1])];
 };
 
 // short enough for all four to fit next to each other on a phone
@@ -167,11 +170,12 @@ const Dashboard = () => {
         </TabsContent>
       </Tabs>
 
-      {realtimeDates !== null && (
+      {realtimeDates !== null && performance.lastRequest !== null && (
         <p className="px-1 text-xs text-muted-foreground">
-          {`Die Performance-Berechnungen wurden ${moment(
-            performance.lastRequest
-          ).fromNow()} aktualisiert. Alle Echtzeit-Preisberechnungen basieren auf Daten vom`}
+          {`Die Performance-Berechnungen wurden ${formatSince(
+            Temporal.Instant.fromEpochMilliseconds(performance.lastRequest),
+            Temporal.Now.zonedDateTimeISO()
+          )} aktualisiert. Alle Echtzeit-Preisberechnungen basieren auf Daten vom`}
           {realtimeDates[0] !== realtimeDates[1]
             ? ` ${realtimeDates[0]} bis ${realtimeDates[1]}.`
             : ` ${realtimeDates[0]}.`}

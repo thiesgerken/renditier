@@ -1,22 +1,17 @@
-import moment from 'moment';
-import 'moment/dist/locale/de';
-
 import {
   formatChange,
   formatCurrency,
   formatDate,
   formatDateTime,
+  formatTime,
   formatIrr,
   formatNumber,
   formatPercent,
+  formatSince,
 } from './format';
 
 // Intl separates number and unit with a no-break space, written as _ here.
 const nbsp = (s: string) => s.replace(/_/g, '\u00a0');
-
-beforeAll(() => {
-  moment.locale('de');
-});
 
 describe('number formatting', () => {
   it('formats euros the German way', () => {
@@ -45,10 +40,20 @@ describe('number formatting', () => {
 });
 
 describe('date formatting', () => {
+  // 19:30 in whatever time zone the tests run in
+  const evening = Temporal.PlainDateTime.from('2026-11-06T19:30')
+    .toZonedDateTime(Temporal.Now.timeZoneId())
+    .toInstant();
+
   it('uses German dates and 24h times', () => {
-    const d = moment('2026-11-06T19:30:00');
-    expect(formatDate(d)).toBe('06.11.2026');
-    expect(formatDateTime(d)).toBe('06.11.2026, 19:30');
+    expect(formatDate(evening)).toBe('06.11.2026');
+    expect(formatDateTime(evening)).toBe('06.11.2026, 19:30');
+    expect(formatTime(evening)).toBe('19:30');
+  });
+
+  it("reads the API's days and instants", () => {
+    expect(formatDate('2026-11-06')).toBe('06.11.2026');
+    expect(formatDateTime(evening.toString())).toBe('06.11.2026, 19:30');
   });
 });
 
@@ -99,5 +104,24 @@ describe('formatIrr', () => {
     expect(formatIrr(period('2025-12-31', '2026-11-06'))).toBe(
       nbsp('+10,00_% p.a.')
     );
+  });
+});
+
+const now = Temporal.ZonedDateTime.from(
+  '2026-03-30T12:00:00+02:00[Europe/Berlin]'
+);
+const ago = (iso: string) => formatSince(Temporal.Instant.from(iso), now);
+
+describe('formatSince', () => {
+  it('names the largest unit the span reaches', () => {
+    expect(ago('2026-03-27T09:00:00Z')).toBe('vor 3 Tagen');
+    expect(ago('2026-03-30T09:30:00Z')).toBe('vor 30 Minuten');
+  });
+
+  it('counts whole units instead of naming calendar days or years', () => {
+    // 1 day 23 hours: the day before yesterday, so not "gestern"
+    expect(ago('2026-03-28T12:00:00Z')).toBe('vor 1 Tag');
+    // 1 year 11 months: two calendar years back, so not "letztes Jahr"
+    expect(ago('2024-05-01T00:00:00Z')).toBe('vor 1 Jahr');
   });
 });
