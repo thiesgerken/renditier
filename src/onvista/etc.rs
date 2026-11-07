@@ -1,5 +1,5 @@
 use super::json_utils::*;
-use super::{parse_base_info, EntityType};
+use super::{EntityType, parse_base_info};
 use crate::models::StockInfo;
 
 use serde_json::Value;

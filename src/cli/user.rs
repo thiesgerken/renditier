@@ -7,7 +7,7 @@ use clap::ArgMatches;
 use clap::{Arg, ArgGroup, Command};
 use diesel::prelude::*;
 use log::info;
-use prettytable::{row, Table};
+use prettytable::{Table, row};
 use std::io;
 
 pub fn build() -> Command {
@@ -152,9 +152,9 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
 
         let mut confirmation = String::new();
         println!(
-          "Do you really want to delete this user? If so, enter '{}'.\n Note that this will also delete relevant accounts and transactions!",
-          uname
-      );
+            "Do you really want to delete this user? If so, enter '{}'.\n Note that this will also delete relevant accounts and transactions!",
+            uname
+        );
         io::stdin().read_line(&mut confirmation).unwrap();
         let confirmation = confirmation.trim_end(); // Remove the trailing newline
         assert_eq!(confirmation, *uname, "Confirmation failed");

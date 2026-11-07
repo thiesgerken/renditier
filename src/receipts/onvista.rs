@@ -1,4 +1,4 @@
-use super::{parse_float, ParsedReceiptTransaction};
+use super::{ParsedReceiptTransaction, parse_float};
 use crate::models::NewTransaction;
 
 use chrono::{Local, TimeZone, Utc};

@@ -55,6 +55,8 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
         // debug!("{:?}", p);
 
         p.write_to(connection);
-        warn!("Imported from backup. You might want to run `stockdb -v stock --fetch && stockdb -v data --fetch` now.")
+        warn!(
+            "Imported from backup. You might want to run `stockdb -v stock --fetch && stockdb -v data --fetch` now."
+        )
     }
 }

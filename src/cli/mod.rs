@@ -7,7 +7,7 @@ pub mod stock;
 pub mod transaction;
 pub mod user;
 
-use clap::{crate_authors, crate_name, crate_version, Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, crate_authors, crate_name, crate_version};
 use config::ConfigError;
 use serde::{Deserialize, Serialize};
 use std::path::Path;

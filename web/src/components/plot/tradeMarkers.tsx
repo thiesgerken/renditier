@@ -17,6 +17,7 @@ const SIZE = 7;
 // buys so that both stay visible on days with both.
 const triangle =
   (direction: Direction, color: string) =>
+  // eslint-disable-next-line react/display-name -- a recharts render callback, not a component
   ({ cx, cy, value, index }: DotItemDotProps) => {
     if (value === null || cx === undefined || cy === undefined) return null;
 

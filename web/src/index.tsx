@@ -4,7 +4,10 @@ import { Provider } from 'react-redux';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
-import 'typeface-oxygen';
+// Oxygen has no 500 or 600 cut: CSS font matching renders MUI's medium weight
+// with 400 and the tables' 600 with 700. Nothing uses the light 300.
+import '@fontsource/oxygen/400.css';
+import '@fontsource/oxygen/700.css';
 import { pink, teal } from '@mui/material/colors';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';

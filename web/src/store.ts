@@ -1,11 +1,9 @@
 // Store construction lives here so that the app entry point and the tests build
 // an identical store instead of duplicating the setup.
 
-import { createLogger } from 'redux-logger';
 import { useDispatch, useSelector } from 'react-redux';
 import { applyMiddleware, compose, createStore } from 'redux';
 import { thunk as thunkMiddleware } from 'redux-thunk';
-import type { Middleware, StoreEnhancer } from 'redux';
 
 import rootReducer from './reducers';
 import type { AppDispatch } from './types/actions';
@@ -18,19 +16,13 @@ declare global {
 }
 
 export const createAppStore = () => {
-  const middlewares: Middleware[] = [thunkMiddleware];
-  let composeEnhancers: (...funcs: StoreEnhancer[]) => StoreEnhancer = compose;
-
-  if (import.meta.env.DEV) {
-    middlewares.push(createLogger());
-
-    composeEnhancers =
-      window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ ?? composeEnhancers;
-  }
+  const composeEnhancers =
+    (import.meta.env.DEV && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
+    compose;
 
   return createStore(
     rootReducer,
-    composeEnhancers(applyMiddleware(...middlewares))
+    composeEnhancers(applyMiddleware(thunkMiddleware))
   );
 };
 

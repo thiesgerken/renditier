@@ -310,7 +310,6 @@ const TransactionDialog = ({
                 renderOption={(props, option) => {
                   const { key, ...optionProps } = props;
                   return (
-                    // eslint-disable-next-line react/jsx-props-no-spreading
                     <li key={key} {...optionProps}>
                       {`${option.isin} (${abbreviateTitle(option.title, true)})`}
                     </li>
@@ -327,7 +326,6 @@ const TransactionDialog = ({
                 openOnFocus
                 renderInput={params => (
                   <TextField
-                    // eslint-disable-next-line react/jsx-props-no-spreading
                     {...params}
                     label="ISIN"
                     variant="standard"
@@ -365,7 +363,6 @@ const TransactionDialog = ({
                 value={transaction.exchange || ''}
                 renderInput={params => (
                   <TextField
-                    // eslint-disable-next-line react/jsx-props-no-spreading
                     {...params}
                     label="Handelsplatz"
                     variant="standard"
@@ -398,7 +395,6 @@ const TransactionDialog = ({
                   value={transaction.account || ''}
                   renderInput={params => (
                     <TextField
-                      // eslint-disable-next-line react/jsx-props-no-spreading
                       {...params}
                       label="Depot"
                       variant="standard"
@@ -593,6 +589,7 @@ const TransactionDialog = ({
           <Button
             onClick={() => setConfirmOpen(false)}
             color="primary"
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- the safe choice of a destructive confirmation
             autoFocus
           >
             Nein

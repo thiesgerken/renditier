@@ -12,7 +12,7 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
 };
 use log::{error, info};
-use prettytable::{row, Row, Table};
+use prettytable::{Row, Table, row};
 use std::error::Error;
 use std::io;
 
@@ -163,9 +163,9 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
 
         let mut confirmation = String::new();
         println!(
-        "Do you really want to delete this stock info? (It might appear again automatically!) If so, enter '{}'",
-        isin_
-    );
+            "Do you really want to delete this stock info? (It might appear again automatically!) If so, enter '{}'",
+            isin_
+        );
         io::stdin().read_line(&mut confirmation).unwrap();
         let confirmation = confirmation.trim_end(); // Remove the trailing newline
         assert_eq!(confirmation, isin_, "Confirmation failed");
