@@ -189,6 +189,16 @@ export interface Exchange {
   currentPrice: StockExchangeCurrentPrice | null;
 }
 
+// Rust: analysis::returns::StockReturns
+// Route: GET /api/stocks/returns (returns Record<isin, StockReturns>)
+// How the current realtime price changed since the previous trading day's
+// close and the closes a month and a year back, as ratios (0.05 = +5 %).
+export interface StockReturns {
+  today: number | null;
+  month: number | null;
+  year: number | null;
+}
+
 // Rust: web::stocks::Stock
 // Routes: GET /api/stocks, GET /api/stocks/<isin>
 export interface Stock {

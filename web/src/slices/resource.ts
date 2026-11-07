@@ -37,7 +37,7 @@ export interface Resource<T> {
 // not depend on it: the return type is spelled out, and the slice is found by
 // its name instead of a selector argument.
 export const createResourceSlice = <T>(
-  name: 'stocks' | 'performance' | 'accounts' | 'transactions',
+  name: 'stocks' | 'stockReturns' | 'performance' | 'accounts' | 'transactions',
   url: string,
   changes?: [Change, ...Change[]]
 ): Resource<T> => {
