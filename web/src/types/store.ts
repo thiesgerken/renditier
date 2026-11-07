@@ -37,26 +37,12 @@ export interface ResourceState<T> {
 
 export type StocksState = ResourceState<Stock[]>;
 export type PerformanceState = ResourceState<PortfolioPerformance[]>;
+export type AccountsState = ResourceState<Account[]>;
+export type TransactionsState = ResourceState<Transaction[]>;
 
 // --------------------------------------------------------------------------
 // Hand-written slices
 // --------------------------------------------------------------------------
-
-export interface AccountsState {
-  isFetching: boolean;
-  didInvalidate: boolean;
-  items: Account[];
-  fetchError: StoredError | null;
-  lastUpdated: Timestamp | null;
-}
-
-export interface TransactionsState {
-  isFetching: boolean;
-  didInvalidate: boolean;
-  items: Transaction[];
-  fetchError: StoredError | null;
-  lastUpdated: Timestamp | null;
-}
 
 export interface AuthenticationState {
   isFetching: boolean;

@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, isFulfilled, isRejected } from '@reduxjs/toolkit';
 import type {
   ActionCreatorWithoutPayload,
   AsyncThunk,
@@ -11,21 +11,30 @@ import type { ResourceState } from '../types/store';
 import { createAppAsyncThunk } from './createAppAsyncThunk';
 import { needsFetch } from './freshness';
 
-interface Resource<T> {
+type ThunkApi = { state: RootState; dispatch: AppDispatch };
+
+// The thunks' argument types differ, and AsyncThunk is invariant in them.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Change = AsyncThunk<void, any, ThunkApi>;
+
+export interface Resource<T> {
   reducer: Reducer<ResourceState<T>>;
-  fetch: AsyncThunk<T, void, { state: RootState; dispatch: AppDispatch }>;
+  fetch: AsyncThunk<T, void, ThunkApi>;
   invalidate: ActionCreatorWithoutPayload;
 }
 
-// A read-only API list, fetched again once it is outdated or invalidated by a
-// change elsewhere.
+// An API list, fetched again once it is outdated or invalidated by a change
+// elsewhere. `changes` are the thunks that modify the list itself: once one
+// settles, the list is outdated, and a failure is reported through `error` like
+// a failed load.
 //
 // RootState is inferred from the reducers this returns, so the signature must
 // not depend on it: the return type is spelled out, and the slice is found by
 // its name instead of a selector argument.
 export const createResourceSlice = <T>(
-  name: 'stocks' | 'performance',
-  url: string
+  name: 'stocks' | 'performance' | 'accounts' | 'transactions',
+  url: string,
+  changes?: [Change, ...Change[]]
 ): Resource<T> => {
   const initialState: ResourceState<T> = {
     isFetching: false,
@@ -72,6 +81,18 @@ export const createResourceSlice = <T>(
           state.error = action.error;
           state.lastRequest = Date.now();
         });
+
+      if (changes !== undefined) {
+        builder
+          .addMatcher(isFulfilled(...changes), state => {
+            state.didInvalidate = true;
+            state.error = null;
+          })
+          .addMatcher(isRejected(...changes), (state, action) => {
+            state.didInvalidate = true;
+            state.error = action.error;
+          });
+      }
     },
   });
 
