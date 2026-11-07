@@ -36,7 +36,20 @@ const clientX = (event: ChartEvent) =>
 // zoom into. The plots fetch whole days, so a zoom is a custom date range:
 // it gets points at the resolution of the narrower range and a rescaled y
 // axis, which merely clipping the x axis would not.
-export const useDragZoom = (onZoom: (range: DateRange) => void) => {
+//
+// `snapshot` is the plot's state that a zoom changes. The state from before
+// the first zoom is kept, so that `reset` can bring it back; `forget` drops it
+// when the plot moves on by other means, e.g. another period.
+export const useDragZoom = <S,>({
+  snapshot,
+  zoomTo,
+  restore,
+}: {
+  snapshot: S;
+  zoomTo: (range: DateRange) => void;
+  restore: (before: S) => void;
+}) => {
+  const [before, setBefore] = useState<{ state: S } | null>(null);
   const scaleRef = useRef<Inverse>(undefined);
   // The epochs of the points where the drag started and where it is now. The
   // ref is what the handlers read, since events can arrive faster than React
@@ -73,11 +86,20 @@ export const useDragZoom = (onZoom: (range: DateRange) => void) => {
     update(null);
     if (selected !== null && selected[0] !== selected[1]) {
       const [from, to] = [...selected].sort((a, b) => a - b);
-      onZoom([dayOf(from), dayOf(to)]);
+      if (before === null) setBefore({ state: snapshot });
+      zoomTo([dayOf(from), dayOf(to)]);
     }
   };
 
   return {
+    reset:
+      before === null
+        ? null
+        : () => {
+            restore(before.state);
+            setBefore(null);
+          },
+    forget: () => setBefore(null),
     chartProps: {
       onMouseDown: start,
       onMouseMove: move,

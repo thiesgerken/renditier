@@ -177,11 +177,6 @@ const StockPlot = ({
     return [today.with({ month: 1, day: 1 }), today];
   });
   const [prevRange, setPrevRange] = useState<Range | null>(null);
-  // what the plot showed before the first zoom, for going back to it
-  const [beforeZoom, setBeforeZoom] = useState<{
-    period: number;
-    dates: DateRange;
-  } | null>(null);
 
   let plotData: StockPlotItem | null = null;
   let sd: IsoDate | null = null;
@@ -261,18 +256,17 @@ const StockPlot = ({
     ...tradeRows(p.trades, true),
   ];
 
-  const zoom = useDragZoom(range => {
-    if (beforeZoom === null) setBeforeZoom({ period, dates });
-    setDates(range);
-    setPeriod(CUSTOM);
+  const zoom = useDragZoom({
+    snapshot: { period, dates },
+    zoomTo: range => {
+      setDates(range);
+      setPeriod(CUSTOM);
+    },
+    restore: before => {
+      setPeriod(before.period);
+      setDates(before.dates);
+    },
   });
-
-  const resetZoom = () => {
-    if (beforeZoom === null) return;
-    setPeriod(beforeZoom.period);
-    setDates(beforeZoom.dates);
-    setBeforeZoom(null);
-  };
 
   const loading =
     plotData === null || plotData.isFetching || performance.isFetching;
@@ -448,13 +442,13 @@ const StockPlot = ({
           ]}
           onChange={v => {
             setPeriod(Number(v));
-            setBeforeZoom(null);
+            zoom.forget();
           }}
         />
         {period === CUSTOM && (
           <DateRangeFields value={dates} onChange={setDates} />
         )}
-        {beforeZoom !== null && <ZoomReset onClick={resetZoom} />}
+        {zoom.reset !== null && <ZoomReset onClick={zoom.reset} />}
       </PlotControls>
     </ProgressCard>
   );

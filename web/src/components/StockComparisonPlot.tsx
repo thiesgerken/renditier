@@ -162,11 +162,6 @@ const StockComparisonPlot = ({
   const [prevRange, setPrevRange] = useState<
     [IsoDate | null, IsoDate | null, DataSourceSelection] | null
   >(null);
-  // what the plot showed before the first zoom, for going back to it
-  const [beforeZoom, setBeforeZoom] = useState<{
-    period: number;
-    dates: DateRange;
-  } | null>(null);
   let [isins, setIsins] = useState<string[] | null>(null); // eslint-disable-line prefer-const
 
   const plotData: Record<string, StockPlotItem | null> = {};
@@ -302,18 +297,17 @@ const StockComparisonPlot = ({
     selectionSummary = stockName(currentIsins[0]);
   else selectionSummary = `${currentIsins.length} Wertpapiere`;
 
-  const zoom = useDragZoom(range => {
-    if (beforeZoom === null) setBeforeZoom({ period, dates });
-    setDates(range);
-    setPeriod(CUSTOM);
+  const zoom = useDragZoom({
+    snapshot: { period, dates },
+    zoomTo: range => {
+      setDates(range);
+      setPeriod(CUSTOM);
+    },
+    restore: before => {
+      setPeriod(before.period);
+      setDates(before.dates);
+    },
   });
-
-  const resetZoom = () => {
-    if (beforeZoom === null) return;
-    setPeriod(beforeZoom.period);
-    setDates(beforeZoom.dates);
-    setBeforeZoom(null);
-  };
 
   const loading =
     !every(plotData, p => p !== null && !p.isFetching) ||
@@ -423,13 +417,13 @@ const StockComparisonPlot = ({
           ]}
           onChange={v => {
             setPeriod(Number(v));
-            setBeforeZoom(null);
+            zoom.forget();
           }}
         />
         {period === CUSTOM && (
           <DateRangeFields value={dates} onChange={setDates} />
         )}
-        {beforeZoom !== null && <ZoomReset onClick={resetZoom} />}
+        {zoom.reset !== null && <ZoomReset onClick={zoom.reset} />}
       </PlotControls>
     </ProgressCard>
   );

@@ -128,16 +128,24 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
   // only read while customRange is on, which seeds it first
   const [dates, setDates] = useState<DateRange | null>(null);
   const [prevRange, setPrevRange] = useState<PlotRange | null>(null);
-  // what the plot showed before the first zoom, for going back to it
-  const [beforeZoom, setBeforeZoom] = useState<{
-    customFor: string | null;
-    dates: DateRange | null;
-  } | null>(null);
+
+  const zoom = useDragZoom({
+    snapshot: { customFor, dates },
+    zoomTo: range => {
+      if (period === undefined) return;
+      setDates(range);
+      setCustomFor(periodKey(period));
+    },
+    restore: before => {
+      setCustomFor(before.customFor);
+      setDates(before.dates);
+    },
+  });
 
   // starts from the period's range, so that switching it on changes nothing
   // until the dates are edited
   const handleCustomRange = (on: boolean) => {
-    setBeforeZoom(null);
+    zoom.forget();
     if (!on || period === undefined) {
       setCustomFor(null);
       return;
@@ -209,23 +217,6 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
       : []),
     ...tradeRows(p.trades, false),
   ];
-
-  const zoom = useDragZoom(range => {
-    if (period === undefined) return;
-    if (beforeZoom === null) setBeforeZoom({ customFor, dates });
-    setDates(range);
-    setCustomFor(periodKey(period));
-  });
-
-  // another dashboard period ends the custom range, and with it the zoom
-  const resetZoom =
-    beforeZoom !== null && customRange
-      ? () => {
-          setCustomFor(beforeZoom.customFor);
-          setDates(beforeZoom.dates);
-          setBeforeZoom(null);
-        }
-      : null;
 
   const loading =
     plotData === null || plotData.isFetching || performance.isFetching;
@@ -330,7 +321,10 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
         {customRange && dates !== null && (
           <DateRangeFields value={dates} onChange={setDates} />
         )}
-        {resetZoom !== null && <ZoomReset onClick={resetZoom} />}
+        {/* another dashboard period ends the custom range, and the zoom */}
+        {zoom.reset !== null && customRange && (
+          <ZoomReset onClick={zoom.reset} />
+        )}
       </PlotControls>
     </ProgressCard>
   );
