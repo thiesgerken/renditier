@@ -1,4 +1,3 @@
-import { createElement } from 'react';
 import { cn } from 'cn';
 import {
   Bot,
@@ -89,7 +88,7 @@ import type { SimpleIcon } from 'simple-icons';
 // the bundle. Porsche's and Unilever's logos are left out: at icon size they
 // are a blur, at about 50 KB each.
 export const LOGOS: Partial<Record<string, SimpleIcon>> = {
-  // United States
+  // North America
   US00507V1098: siActivision,
   US0090661010: siAirbnb,
   US02079K3059: siGoogle, // Alphabet A
@@ -159,29 +158,38 @@ export const LOGOS: Partial<Record<string, SimpleIcon>> = {
 };
 
 // What a name says a fund holds, for anything without a logo: mostly funds,
-// but a company called "... Water" gets the droplet too. The first match wins, so themes come before the regions they are often
-// combined with ("Global Water", "MSCI World Energy"). Whole words only:
-// "Goldman" is no gold, "Euronext" no euro.
-const THEMES: [RegExp, LucideIcon][] = [
-  [/\bgold\b/i, Coins],
-  [/\bwater\b/i, Droplet],
-  [/\b(clean energy|solar|renewable)\b/i, Sun],
-  [/\b(oil|energy)\b/i, Fuel],
-  [/\bsemiconductors?\b/i, Cpu],
-  [/\b(artificial intelligence|ai|digitali[sz]ation)\b/i, Brain],
-  [/\b(robotics|automation)\b/i, Bot],
-  [/\b(health ?care|health)\b/i, HeartPulse],
-  [/\b(real estate|reits?|property)\b/i, Building],
-  [/\b(dividends?|aristocrats)\b/i, HandCoins],
-  [/\b(bonds?|treasury|govt|government)\b/i, ScrollText],
-  [/\b(gaming|esports)\b/i, Gamepad2],
-  [/\bemerging markets?\b/i, Sprout],
-  [/\b(euro|eurozone|europe)\b/i, Euro],
-  [/\b(world|acwi|global)\b/i, Globe],
+// but a company called "... Water" gets the droplet too. The first match
+// wins, so themes come before the regions they are often combined with
+// ("Global Water", "MSCI World Energy"). Whole words only: "Goldman" is no
+// gold, "Euronext" no euro.
+interface Theme {
+  keywords: RegExp;
+  icon: LucideIcon;
+}
+
+const THEMES: Theme[] = [
+  { keywords: /\bgold\b/i, icon: Coins },
+  { keywords: /\bwater\b/i, icon: Droplet },
+  { keywords: /\b(clean energy|solar|renewable)\b/i, icon: Sun },
+  { keywords: /\b(oil|energy)\b/i, icon: Fuel },
+  { keywords: /\bsemiconductors?\b/i, icon: Cpu },
+  {
+    keywords: /\b(artificial intelligence|ai|digitali[sz]ation)\b/i,
+    icon: Brain,
+  },
+  { keywords: /\b(robotics|automation)\b/i, icon: Bot },
+  { keywords: /\b(health ?care|health)\b/i, icon: HeartPulse },
+  { keywords: /\b(real estate|reits?|property)\b/i, icon: Building },
+  { keywords: /\b(dividends?|aristocrats)\b/i, icon: HandCoins },
+  { keywords: /\b(bonds?|treasury|govt|government)\b/i, icon: ScrollText },
+  { keywords: /\b(gaming|esports)\b/i, icon: Gamepad2 },
+  { keywords: /\bemerging markets?\b/i, icon: Sprout },
+  { keywords: /\b(euro|eurozone|europe)\b/i, icon: Euro },
+  { keywords: /\b(world|acwi|global)\b/i, icon: Globe },
 ];
 
-export const themeIcon = (name: string): LucideIcon | undefined =>
-  THEMES.find(([keywords]) => keywords.test(name))?.[1];
+export const themeOf = (name: string): Theme | undefined =>
+  THEMES.find(({ keywords }) => keywords.test(name));
 
 // The first letter of a name, in a muted circle the size of a logo, so that
 // names line up whether or not they have one.
@@ -213,15 +221,17 @@ interface Props {
 // A company's logo in the text colour, else its name's theme, else a monogram.
 const CompanyLogo = ({ isin, name, className }: Props) => {
   const logo = LOGOS[isin];
-  const theme = themeIcon(name);
+  const theme = themeOf(name);
 
-  // createElement, since the icon is a value from the table rather than a
-  // component declared here
-  if (logo === undefined && theme !== undefined)
-    return createElement(theme, {
-      'aria-hidden': true,
-      className: cn('size-4 shrink-0 text-muted-foreground', className),
-    });
+  if (logo === undefined && theme !== undefined) {
+    const { icon: Icon } = theme;
+    return (
+      <Icon
+        aria-hidden
+        className={cn('size-4 shrink-0 text-muted-foreground', className)}
+      />
+    );
+  }
   if (logo === undefined) return <Monogram name={name} className={className} />;
 
   return (
