@@ -39,6 +39,8 @@ export const abbreviateTitle = (
 export interface FundShare {
   label: string;
   value: number;
+  // set for a holding, which is a company of its own
+  isin?: string;
 }
 
 // The `Stock` columns that carry a StockBreakdownEntry[] encoded as a JSON
@@ -77,4 +79,5 @@ export const holdingShares = (stock: Stock): FundShare[] | null =>
   parseOnvistaList<StockHolding>(stock.holdings)?.map(h => ({
     label: unescape(h.instrument.name).replace('/The', ''),
     value: h.investmentPct,
+    isin: h.instrument.isin,
   })) ?? null;
