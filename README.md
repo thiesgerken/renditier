@@ -13,8 +13,8 @@ script that streams the image as a tarball, e.g. `./result | docker load`.
 
 ## Backups
 
-`stockdb export > backup.json` writes all users with their accounts and transactions as JSON,
-`stockdb import < backup.json` reads such a backup back in. The import replaces the users the backup
+`renditier export > backup.json` writes all users with their accounts and transactions as JSON,
+`renditier import < backup.json` reads such a backup back in. The import replaces the users the backup
 contains, matched by name: an existing user with the same name is deleted together with their
 accounts and transactions, then recreated from the backup. Every other user stays untouched, so
 importing one user's backup into a database shared with others is safe.
@@ -34,13 +34,13 @@ JSON by hand: ids only need to be unique within the file.
 Against a local database (never the production one):
 
 ```shell
-export STOCKDB__DATABASE=postgres://user@localhost/stocks
-stockdb import < docs/demo/rudolph.json
-stockdb -v stock --fetch    # adds the stocks the transactions reference
-stockdb -v data --fetch     # prices from onvista, takes a minute
+export RENDITIER__DATABASE=postgres://user@localhost/stocks
+renditier import < docs/demo/rudolph.json
+renditier -v stock --fetch    # adds the stocks the transactions reference
+renditier -v data --fetch     # prices from onvista, takes a minute
 ```
 
-Then serve it with `STOCKDB__WEB__TRUSTED_HEADER_AUTHENTICATION=true stockdb serve` and let the
+Then serve it with `RENDITIER__WEB__TRUSTED_HEADER_AUTHENTICATION=true renditier serve` and let the
 Vite dev server (`npm start` in `web`) log you in as Rudolph by adding the header to its proxy in
 `web/vite.config.mjs`:
 
@@ -51,7 +51,7 @@ proxy: {
 ```
 
 The import test against a real database runs with
-`STOCKDB_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (it rolls back
+`RENDITIER_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (it rolls back
 everything it writes). CI starts a throwaway Postgres for it and runs it on every push.
 
 ## Install
@@ -60,9 +60,9 @@ everything it writes). CI starts a throwaway Postgres for it and runs it on ever
 
 ## Configuration
 
-Settings come from `/etc/stockdb/config.*`, `./stockdb.*` (any format the `config` crate reads,
-e.g. TOML) or the file given with `--config`, and are overridden by `STOCKDB__*` environment
-variables (`STOCKDB__WEB__PORT` for `[web] port`). `stockdb --dump` prints the effective
+Settings come from `/etc/renditier/config.*`, `./renditier.*` (any format the `config` crate reads,
+e.g. TOML) or the file given with `--config`, and are overridden by `RENDITIER__*` environment
+variables (`RENDITIER__WEB__PORT` for `[web] port`). `renditier --dump` prints the effective
 configuration.
 
 | Key | Default | Meaning |
@@ -72,12 +72,12 @@ configuration.
 Exchange and receipt times are not affected: onvista quotes German exchanges and the supported
 banks issue German receipts, so their times are always read as German local time. Crypto currencies
 are the exception: onvista quotes them around the clock and in UTC, from sources such as Bitstamp
-(Bitcoin) or CoinDesk (Ether). stockdb still files their daily prices under German market hours
+(Bitcoin) or CoinDesk (Ether). renditier still files their daily prices under German market hours
 and weekdays like all others.
 
 ## Running the container
 
-The image runs `stockdb serve` as UID and GID 65534 (`nobody`). The user is numeric because the
+The image runs `renditier serve` as UID and GID 65534 (`nobody`). The user is numeric because the
 image has no `/etc/passwd`, and Kubernetes' `runAsNonRoot` can only check a numeric one.
 
 The root filesystem can be read-only, and no path has to be writable: the server keeps no files,
@@ -85,9 +85,9 @@ request bodies are JSON held in memory, and receipts are parsed in memory or pip
 `pdftotext` via stdin and stdout. A future upload route using Rocket's `TempFile` would be the
 first thing to need a writable `/tmp` (an `emptyDir` or tmpfs).
 
-It listens on port 8383, the default of `STOCKDB__WEB__PORT`. A non-root process can't bind below
+It listens on port 8383, the default of `RENDITIER__WEB__PORT`. A non-root process can't bind below
 1024, so map ports outside the container instead of setting 80. Set
-`STOCKDB__WEB__ADDRESS=0.0.0.0`; the default listens on localhost only.
+`RENDITIER__WEB__ADDRESS=0.0.0.0`; the default listens on localhost only.
 
 In Kubernetes:
 
@@ -100,7 +100,7 @@ spec:
     seccompProfile:
       type: RuntimeDefault
   containers:
-    - name: stockdb
+    - name: renditier
       securityContext:
         readOnlyRootFilesystem: true
         allowPrivilegeEscalation: false
@@ -112,8 +112,8 @@ With plain Docker (the image's user applies by default):
 
 ```shell
 docker run --read-only --cap-drop ALL --security-opt no-new-privileges -p 8484:8383 \
-  -e STOCKDB__WEB__ADDRESS=0.0.0.0 -e STOCKDB__DATABASE=postgres://... \
-  -e STOCKDB__WEB__SECRET_KEY=... gitea.gerken.haus/thies/stockdb:main
+  -e RENDITIER__WEB__ADDRESS=0.0.0.0 -e RENDITIER__DATABASE=postgres://... \
+  -e RENDITIER__WEB__SECRET_KEY=... gitea.gerken.haus/thies/renditier:main
 ```
 
 ## API tokens
@@ -122,8 +122,8 @@ The API otherwise expects a browser: a session cookie, or the `Remote-User` head
 proxy. A program gets in with a token instead.
 
 ```shell
-stockdb user --token <name>          # issue one, replacing any existing token
-stockdb user --revoke-token <name>   # take it away again
+renditier user --token <name>          # issue one, replacing any existing token
+renditier user --revoke-token <name>   # take it away again
 ```
 
 The token is printed once at issue time and only its hash is stored, so a lost one is reissued

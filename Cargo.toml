@@ -1,9 +1,9 @@
 [package]
-name = "stockdb"
+name = "renditier"
 version = "0.1.0"
 authors = ["Thies Gerken <thies@thiesgerken.de>"]
 edition = "2024"
-default-run = "stockdb"
+default-run = "renditier"
 
 [dependencies]
 argon2 = "0.6"

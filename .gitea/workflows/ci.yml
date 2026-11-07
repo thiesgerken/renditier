@@ -7,7 +7,7 @@ on:
       - devel
   pull_request:
 
-# Parallel runs on main all push stockdb:main, and the one that finishes last wins the tag even
+# Parallel runs on main all push renditier:main, and the one that finishes last wins the tag even
 # if it built an older commit. Cancelling the older run loses nothing: the newer one builds,
 # pushes and deploys anyway.
 concurrency:
@@ -49,7 +49,7 @@ jobs:
       # Jobs run on the runner host, so there is no `services:` container. The devshell's Postgres
       # runs inside the step instead, reachable only through a socket in its own temp dir, so
       # concurrent jobs can't collide on a port. `--include-ignored` runs the tests that need it,
-      # which fail rather than skip without STOCKDB_TEST_DATABASE.
+      # which fail rather than skip without RENDITIER_TEST_DATABASE.
       # ponytail: a cancelled run can leave this Postgres behind, clean up by hand if that piles up.
       - name: Test backend
         run: |
@@ -57,7 +57,7 @@ jobs:
           trap 'pg_ctl --pgdata "$pg" --mode immediate stop; rm -rf "$pg"' EXIT
           initdb --pgdata "$pg" --auth trust --username postgres --no-sync >/dev/null
           pg_ctl --pgdata "$pg" --log "$pg/log" --options "-k $pg -c listen_addresses=''" --wait start
-          STOCKDB_TEST_DATABASE="postgres:///postgres?host=$pg&user=postgres" cargo test -- --include-ignored
+          RENDITIER_TEST_DATABASE="postgres:///postgres?host=$pg&user=postgres" cargo test -- --include-ignored
 
   image:
     needs: check
@@ -81,7 +81,7 @@ jobs:
           # images skopeo accepts as a source, here our own fresh build.
           skopeo() { nix run --inputs-from . nixpkgs#skopeo -- --insecure-policy "$@"; }
           skopeo login --username thies --password-stdin gitea.gerken.haus <<< "$REGISTRY_PASSWORD"
-          ./result | skopeo copy docker-archive:/dev/stdin docker://gitea.gerken.haus/thies/stockdb:${{ github.ref_name }}
+          ./result | skopeo copy docker-archive:/dev/stdin docker://gitea.gerken.haus/thies/renditier:${{ github.ref_name }}
 
       - name: Remove registry credentials
         if: always()
@@ -108,10 +108,10 @@ jobs:
           kubectl config set-context context \
             --cluster=cluster \
             --user=user \
-            --namespace=apps-stockdb
+            --namespace=apps-renditier
           kubectl config use-context context
 
       - name: Restart deployment
         run: |
-          kubectl rollout restart deployment/stockdb -n apps-stockdb
-          kubectl rollout status deployment/stockdb -n apps-stockdb --timeout=300s
+          kubectl rollout restart deployment/renditier -n apps-renditier
+          kubectl rollout status deployment/renditier -n apps-renditier --timeout=300s
