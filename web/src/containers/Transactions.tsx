@@ -165,12 +165,12 @@ const columns = column.columns([
   }),
   column.accessor('fees', {
     header: 'Gebühren',
-    meta: { desktopOnly: true },
+    meta: { showFrom: 'md' },
     cell: ({ getValue }) => <Money cents={getValue()} />,
   }),
   column.accessor('units', {
     header: 'Stück',
-    meta: { desktopOnly: true },
+    meta: { showFrom: 'md' },
     cell: ({ getValue }) => <Units units={getValue()} />,
   }),
   column.accessor(row => row.stock?.title ?? row.isin, {
@@ -204,11 +204,11 @@ const columns = column.columns([
   }),
   column.accessor('exchangeDisplay', {
     header: 'Handelsplatz',
-    meta: { icon: Building2, desktopOnly: true },
+    meta: { icon: Building2, showFrom: 'md' },
   }),
   column.accessor('comments', {
     header: 'Kommentare',
-    meta: { icon: MessageSquare, desktopOnly: true },
+    meta: { icon: MessageSquare, showFrom: 'md' },
   }),
 ]);
 
@@ -289,8 +289,10 @@ const Transactions = () => {
             initialSorting={[{ id: 'date', desc: true }]}
             isLoading={isLoading}
             emptyText="Noch keine Transaktionen"
-            page={page === null ? 0 : parseInt(page, 10)}
-            onPageChange={p => setPage(p === 0 ? null : p)}
+            pagination={{
+              page: page === null ? 0 : parseInt(page, 10),
+              onPageChange: p => setPage(p === 0 ? null : p),
+            }}
             onRowClick={transaction => setTransactionId(transaction.id)}
           />
         </CardContent>

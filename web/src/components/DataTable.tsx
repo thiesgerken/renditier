@@ -46,12 +46,20 @@ import {
 interface DataTableColumnMeta {
   // Shown next to the header from `md` up; phones get the plain label.
   icon?: LucideIcon;
-  // Hidden on phones, where only the essential columns fit.
-  desktopOnly?: boolean;
+  // The breakpoint from which the column shows; narrower screens only have
+  // room for the essential ones.
+  showFrom?: 'sm' | 'md' | 'xl';
 }
 
+// Spelled out, so that Tailwind finds the class names.
+const SHOW_FROM = {
+  sm: 'hidden sm:table-cell',
+  md: 'hidden md:table-cell',
+  xl: 'hidden xl:table-cell',
+};
+
 const visibility = (meta: DataTableColumnMeta | undefined) =>
-  meta?.desktopOnly ? 'hidden md:table-cell' : undefined;
+  meta?.showFrom === undefined ? undefined : SHOW_FROM[meta.showFrom];
 
 export const dataTableFeatures = tableFeatures({
   rowSortingFeature,
@@ -94,8 +102,8 @@ interface Props<T extends RowData> {
   initialSorting: SortingState;
   isLoading: boolean;
   emptyText: string;
-  page: number;
-  onPageChange: (page: number) => void;
+  // Without it, the table shows all rows on one page.
+  pagination?: { page: number; onPageChange: (page: number) => void };
   onRowClick: (row: T) => void;
 }
 
@@ -106,8 +114,7 @@ function DataTable<T extends RowData>({
   initialSorting,
   isLoading,
   emptyText,
-  page,
-  onPageChange,
+  pagination: paging,
   onRowClick,
 }: Props<T>) {
   const [sorting, setSorting] = useState(initialSorting);
@@ -115,13 +122,13 @@ function DataTable<T extends RowData>({
   // A page beyond the data (a stale `?page=` or the last row of the last page
   // deleted) shows the last page instead of an empty one.
   const pageCount = Math.max(1, Math.ceil(data.length / pageSize));
-  const pageIndex = Math.min(page, pageCount - 1);
+  const pageIndex = Math.min(paging?.page ?? 0, pageCount - 1);
   const pagination = { pageIndex, pageSize };
 
   const onPaginationChange = (updater: Updater<PaginationState>) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater;
     setPageSize(next.pageSize);
-    if (next.pageIndex !== pageIndex) onPageChange(next.pageIndex);
+    if (next.pageIndex !== pageIndex) paging?.onPageChange(next.pageIndex);
   };
 
   const table = useTable({
@@ -144,7 +151,10 @@ function DataTable<T extends RowData>({
   const rowCount = table.getPrePaginatedRowModel().rows.length;
   const firstRow = rowCount === 0 ? 0 : pageIndex * pageSize + 1;
   const lastRow = Math.min(rowCount, (pageIndex + 1) * pageSize);
-  const rows = table.getRowModel().rows;
+  const rows =
+    paging === undefined
+      ? table.getPrePaginatedRowModel().rows
+      : table.getRowModel().rows;
 
   const openRow = (row: Row<Features, T>) => onRowClick(row.original);
 
@@ -245,49 +255,51 @@ function DataTable<T extends RowData>({
           )}
         </TableBody>
       </Table>
-      <div className="flex items-center justify-end gap-4 border-t px-2 pt-2 text-sm text-muted-foreground">
-        <div className="hidden items-center gap-2 md:flex">
-          <span>Zeilen pro Seite</span>
-          <Select
-            value={String(pageSize)}
-            onValueChange={value => table.setPageSize(Number(value))}
-          >
-            <SelectTrigger size="sm" aria-label="Zeilen pro Seite">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map(size => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {paging !== undefined && (
+        <div className="flex items-center justify-end gap-4 border-t px-2 pt-2 text-sm text-muted-foreground">
+          <div className="hidden items-center gap-2 md:flex">
+            <span>Zeilen pro Seite</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={value => table.setPageSize(Number(value))}
+            >
+              <SelectTrigger size="sm" aria-label="Zeilen pro Seite">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZES.map(size => (
+                  <SelectItem key={size} value={String(size)}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <span className="tabular-nums">
+            {firstRow}–{lastRow} von {rowCount}
+          </span>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Vorherige Seite"
+              disabled={!table.getCanPreviousPage()}
+              onClick={() => table.previousPage()}
+            >
+              <ChevronLeft />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Nächste Seite"
+              disabled={!table.getCanNextPage()}
+              onClick={() => table.nextPage()}
+            >
+              <ChevronRight />
+            </Button>
+          </div>
         </div>
-        <span className="tabular-nums">
-          {firstRow}–{lastRow} von {rowCount}
-        </span>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Vorherige Seite"
-            disabled={!table.getCanPreviousPage()}
-            onClick={() => table.previousPage()}
-          >
-            <ChevronLeft />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Nächste Seite"
-            disabled={!table.getCanNextPage()}
-            onClick={() => table.nextPage()}
-          >
-            <ChevronRight />
-          </Button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
