@@ -71,8 +71,10 @@ const Accounts = () => {
             initialSorting={[{ id: 'name', desc: false }]}
             isLoading={accounts.isFetching}
             emptyText="Noch keine Depots"
-            page={page === null ? 0 : parseInt(page, 10)}
-            onPageChange={p => setPage(p === 0 ? null : p)}
+            pagination={{
+              page: page === null ? 0 : parseInt(page, 10),
+              onPageChange: p => setPage(p === 0 ? null : p),
+            }}
             onRowClick={account => setAccountId(account.id)}
           />
         </CardContent>
