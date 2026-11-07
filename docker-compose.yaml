@@ -1,8 +1,6 @@
 services:
   stockdb:
-    build:
-      context: .
-    image: gitea.gerken.haus/thies/stockdb:latest
+    image: gitea.gerken.haus/thies/stockdb:main
     restart: unless-stopped
     ports:
       - "8484:80"
