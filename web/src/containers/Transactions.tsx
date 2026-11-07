@@ -196,7 +196,7 @@ const Transactions = () => {
 
   const newTransaction: TransactionDraft = {
     id: null,
-    accountId: accountList.length === 1 ? accountList[0].id : null,
+    accountId: accountList.length === 1 ? (accountList[0]?.id ?? null) : null,
     isin: null,
     date: Temporal.Now.instant().toString(),
     units: 0,

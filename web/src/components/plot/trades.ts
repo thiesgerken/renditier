@@ -45,9 +45,10 @@ export const assignTrades = <P extends { epoch: number }>(
   transactions: Transaction[]
 ): (P & { trades: Trades | null })[] => {
   const result = points.map(p => ({ ...p, trades: null as Trades | null }));
-  if (result.length === 0) return result;
+  const first = result[0];
+  if (first === undefined) return result;
 
-  const rangeStart = Temporal.Instant.fromEpochMilliseconds(result[0].epoch)
+  const rangeStart = Temporal.Instant.fromEpochMilliseconds(first.epoch)
     .toZonedDateTimeISO(Temporal.Now.timeZoneId())
     .startOfDay().epochMilliseconds;
   const epochOf = (t: Transaction) =>
@@ -58,10 +59,14 @@ export const assignTrades = <P extends { epoch: number }>(
     const epoch = epochOf(t);
     if (t.units === 0 || epoch < rangeStart) return;
 
-    while (i < result.length && result[i].epoch < epoch) i += 1;
-    if (i === result.length) return;
+    let point = result[i];
+    while (point !== undefined && point.epoch < epoch) {
+      i += 1;
+      point = result[i];
+    }
+    if (point === undefined) return;
 
-    result[i].trades = addTrade(result[i].trades ?? NO_TRADES, t);
+    point.trades = addTrade(point.trades ?? NO_TRADES, t);
   });
 
   return result;

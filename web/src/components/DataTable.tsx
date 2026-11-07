@@ -71,7 +71,8 @@ export const dataTableFeatures = tableFeatures({
 
 type Features = typeof dataTableFeatures;
 
-const PAGE_SIZES = [10, 25, 50];
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZES = [DEFAULT_PAGE_SIZE, 25, 50];
 
 const collator = new Intl.Collator('de', { numeric: true });
 
@@ -120,7 +121,7 @@ function DataTable<T extends RowData>({
   onRowClick,
 }: Props<T>) {
   const [sorting, setSorting] = useState(initialSorting);
-  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   // A page beyond the data (a stale `?page=` or the last row of the last page
   // deleted) shows the last page instead of an empty one.
   const pageCount = Math.max(1, Math.ceil(data.length / pageSize));

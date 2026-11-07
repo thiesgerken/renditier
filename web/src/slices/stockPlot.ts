@@ -42,6 +42,8 @@ const decorate = (plot: StockPlot): StoredStockPlot => {
   }));
 
   const first = decorated[0];
+  if (first === undefined) return { ...plot, points: [] };
+
   const points = map(decorated, p => ({
     ...p,
     // A missing value or price counts as 0.
@@ -60,7 +62,7 @@ const decorate = (plot: StockPlot): StoredStockPlot => {
   }));
 
   let i = 0;
-  while (points.length > 0 && points.slice(-1)[0].value === null && i < 5) {
+  while (points.at(-1)?.value === null && i < 5) {
     points.pop();
     i += 1;
   }

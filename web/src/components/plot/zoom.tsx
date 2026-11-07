@@ -27,10 +27,14 @@ const dayOf = (epoch: number) =>
 type ChartEvent =
   MouseEvent<SVGGraphicsElement> | TouchEvent<SVGGraphicsElement>;
 
-const clientX = (event: ChartEvent) =>
-  'touches' in event
-    ? (event.touches[0] ?? event.changedTouches[0]).clientX
-    : event.clientX;
+const clientX = (event: ChartEvent) => {
+  if (!('touches' in event)) return event.clientX;
+
+  // A lifted finger is no longer in `touches`, only in `changedTouches`.
+  const touch = event.touches[0] ?? event.changedTouches[0];
+  if (touch === undefined) throw new Error('touch event without a touch');
+  return touch.clientX;
+};
 
 // Dragging across a chart, with the mouse or a finger, selects the days to
 // zoom into. The plots fetch whole days, so a zoom is a custom date range:
@@ -85,9 +89,8 @@ export const useDragZoom = <S,>({
     const selected = dragRef.current;
     update(null);
     if (selected !== null && selected[0] !== selected[1]) {
-      const [from, to] = [...selected].sort((a, b) => a - b);
       if (before === null) setBefore({ state: snapshot });
-      zoomTo([dayOf(from), dayOf(to)]);
+      zoomTo([dayOf(Math.min(...selected)), dayOf(Math.max(...selected))]);
     }
   };
 

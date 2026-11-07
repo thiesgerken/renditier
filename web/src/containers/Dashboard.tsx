@@ -59,9 +59,11 @@ const priceDates = (period: PortfolioPerformance): [string, string] | null => {
     )
     .sort((a, b) => Temporal.Instant.compare(a, b));
 
-  return dates.length === 0
+  const first = dates[0];
+  const last = dates.at(-1);
+  return first === undefined || last === undefined
     ? null
-    : [formatDateTime(dates[0]), formatDateTime(dates[dates.length - 1])];
+    : [formatDateTime(first), formatDateTime(last)];
 };
 
 const Dashboard = () => {
