@@ -123,7 +123,7 @@ interface Props {
   currentPrice: DataSource<EitherPrice> | null;
 }
 
-// A stock's buys, sells and dividends, newest first; a row opens the
+// A stock's buys, sells, dividends and fees, newest first; a row opens the
 // transaction on the transactions page.
 const TransactionsTable = ({ transactions, currentPrice }: Props) => {
   const navigate = useNavigate();
