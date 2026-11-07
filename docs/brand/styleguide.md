@@ -30,7 +30,7 @@ line that breaks out to a new high, marked by the orange dot.
 | `icons/icon-{96,192,512}.png` | PWA manifest icons |
 
 The eyes in the mark are holes, so it works on any background colour. The lockups are PNG because
-the wordmark is set in Fraunces. A vector lockup needs the text converted to outlines (see
+the wordmark is set in Outfit. A vector lockup needs the text converted to outlines (see
 [migration](migration.md)).
 
 ### Sizes
@@ -101,7 +101,7 @@ All text pairs above reach at least 4.5:1 on their background.
 
 | Use | Typeface |
 | --- | --- |
-| Wordmark | Fraunces 600, letter spacing -0.01em, "Rendi" in navy (cream on dark), "tier" in orange |
+| Wordmark | Outfit 700, letter spacing -0.01em, "Rendi" in navy (cream on dark), "tier" in orange |
 | UI | Geist (already the app font) |
 
-Fraunces is for the wordmark only. Don't set UI headings in it.
+At 700, the geometric strokes of Outfit match the antler.

@@ -82,9 +82,9 @@ Other places:
 
 ## 4. Wordmark
 
-The lockups are PNG for now because the wordmark is set in Fraunces. For the app, convert "Renditier"
+The lockups are PNG for now because the wordmark is set in Outfit. For the app, convert "Renditier"
 to outlined paths and ship one SVG lockup (light and dark via `currentColor` for "Rendi"). That avoids
-loading Fraunces just for one word.
+loading Outfit just for one word.
 
 ## 5. Dev shell banner
 
