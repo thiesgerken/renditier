@@ -89,7 +89,9 @@ function compareValues<T extends RowData>(
     return y === null || y === undefined ? 0 : -1;
   if (y === null || y === undefined) return 1;
   if (typeof x === 'number' && typeof y === 'number') return x - y;
-  return collator.compare(String(x), String(y));
+  if (typeof x === 'string' && typeof y === 'string')
+    return collator.compare(x, y);
+  throw new Error(`column ${columnId} cannot be sorted by its values`);
 }
 
 interface Props<T extends RowData> {
