@@ -125,11 +125,7 @@ const KpiHeader = ({ period }: Props) => {
         icon={gainTone === 'loss' ? TrendingDown : TrendingUp}
         label="Gewinn im Zeitraum"
         value={euros(gain, { signed: true })}
-        detail={
-          period.irrPeriod === null
-            ? null
-            : `${formatPercent(period.irrPeriod, { signed: true })} Rendite`
-        }
+        detail={null}
         tone={gainTone}
       />
       <KpiTile
