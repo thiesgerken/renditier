@@ -17,6 +17,7 @@ import PositionsTable from '../components/portfolioAnalysis/PositionsTable';
 import PositionsPie from '../components/portfolioAnalysis/PositionsPie';
 import Hidden from '../components/Hidden';
 import Breakdowns from '../components/portfolioAnalysis/Breakdowns';
+import { formatDateTime } from '../format';
 
 import type { DataSourceSelection, IsoDate } from '../types/api';
 import type { AppDispatch } from '../types/actions';
@@ -60,8 +61,8 @@ const Dashboard = ({
       const oldest = min(dates);
       const newest = max(dates);
       if (oldest !== undefined && newest !== undefined) {
-        oldestTodayData = oldest.format('LLL');
-        newestTodayData = newest.format('LLL');
+        oldestTodayData = formatDateTime(oldest);
+        newestTodayData = formatDateTime(newest);
       }
     }
   }

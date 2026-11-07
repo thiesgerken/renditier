@@ -9,6 +9,7 @@ import { pink, teal } from '@mui/material/colors';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import moment from 'moment';
+import 'moment/dist/locale/de';
 
 import App from './containers/App';
 import ServiceWorker from './containers/ServiceWorker';
@@ -23,6 +24,8 @@ function NavigationBridge() {
   return null;
 }
 
+moment.locale('de');
+
 const store = createAppStore();
 
 const theme = createTheme({
@@ -32,6 +35,14 @@ const theme = createTheme({
   palette: {
     primary: teal,
     secondary: pink,
+  },
+  components: {
+    MuiTableCell: {
+      styleOverrides: {
+        // right-aligned cells hold numbers, whose digits should line up
+        alignRight: { fontVariantNumeric: 'tabular-nums' },
+      },
+    },
   },
 });
 
@@ -47,6 +58,7 @@ createRoot(container).render(
         <LocalizationProvider
           dateAdapter={AdapterMoment}
           dateLibInstance={moment}
+          adapterLocale="de"
         >
           <ServiceWorker />
           <App />

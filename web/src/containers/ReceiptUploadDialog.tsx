@@ -17,8 +17,8 @@ import type { ConnectedProps } from 'react-redux';
 import { map } from 'lodash';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
-import moment from 'moment';
 import { findStock, abbreviateTitle } from '../selectors/stocks';
+import { formatCurrency, formatDate, formatNumber } from '../format';
 
 import type { RootState } from '../types/store';
 
@@ -90,11 +90,9 @@ const ReceiptUploadDialog = ({ receipts, stocks, open, onClose }: Props) => {
                 return (
                   <ListItem>
                     <ListItemText
-                      primary={`${moment(x.date).format(
-                        'L'
-                      )}: ${x.units.toFixed(2)} von ${stock} für ${(
-                        x.amount / 100
-                      ).toFixed(2)}€`}
+                      primary={`${formatDate(x.date)}: ${formatNumber(
+                        x.units
+                      )} von ${stock} für ${formatCurrency(x.amount / 100)}`}
                     />
                   </ListItem>
                 );

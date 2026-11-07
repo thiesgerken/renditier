@@ -3,7 +3,8 @@ use crate::models::*;
 use crate::schema::*;
 
 use chrono::offset::TimeZone;
-use chrono::{DateTime, Duration, Local, Utc};
+use chrono::{DateTime, Duration, Local, NaiveDateTime, NaiveTime, Utc};
+use chrono_tz::Europe::Berlin;
 use diesel::prelude::*;
 use log::debug;
 use serde::{Deserialize, Serialize};
@@ -17,6 +18,24 @@ pub struct DataSource<T> {
 }
 
 pub type PriceMap<T> = HashMap<String, DataSource<T>>;
+
+// Historical prices are stored per day; these are the times of day their opening and
+// closing prices are attributed to. They belong to the (German) exchanges, not to the
+// host, whose clock may well run on UTC.
+pub const MARKET_OPEN: NaiveTime = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
+pub const MARKET_CLOSE: NaiveTime = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
+
+pub fn market_time(time: NaiveDateTime) -> DateTime<Utc> {
+    Berlin
+        .from_local_datetime(&time)
+        .earliest()
+        .expect("market hours never fall into a DST gap")
+        .with_timezone(&Utc)
+}
+
+pub fn to_market_time(time: DateTime<Utc>) -> NaiveDateTime {
+    time.with_timezone(&Berlin).naive_local()
+}
 
 pub trait Price {
     // hard_threshold: amount of hours the price may be off
@@ -160,14 +179,7 @@ impl Price for HistoricalPrice {
     }
 
     fn date(&self) -> DateTime<Utc> {
-        // does not have to be exact
-        let d = self.date.and_hms_opt(18, 0, 0).unwrap();
-
-        chrono::Local
-            .from_local_datetime(&d)
-            .earliest()
-            .unwrap_or_else(|| chrono::Local.from_utc_datetime(&d))
-            .with_timezone(&Utc)
+        market_time(self.date.and_time(MARKET_CLOSE))
     }
 
     fn find_multiple(
@@ -298,13 +310,7 @@ impl EitherPrice {
         match self {
             EitherPrice::RealtimePrice(p) => p.date(),
             EitherPrice::HistoricalPrice(p) => p.date(),
-            EitherPrice::HistoricalPriceOpening(p) => chrono::Local
-                .from_local_datetime(&p.date.and_hms_opt(9, 0, 0).unwrap())
-                .earliest()
-                .unwrap_or_else(|| {
-                    chrono::Local.from_utc_datetime(&p.date.and_hms_opt(9, 0, 0).unwrap())
-                })
-                .with_timezone(&Utc),
+            EitherPrice::HistoricalPriceOpening(p) => market_time(p.date.and_time(MARKET_OPEN)),
         }
     }
 
@@ -314,5 +320,26 @@ impl EitherPrice {
             EitherPrice::HistoricalPrice(p) => p.onvista_record_id(),
             EitherPrice::HistoricalPriceOpening(p) => p.onvista_record_id(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDate;
+
+    #[test]
+    fn market_times_are_berlin_times_regardless_of_the_host() {
+        let close = |y, m, d| {
+            market_time(
+                NaiveDate::from_ymd_opt(y, m, d)
+                    .unwrap()
+                    .and_time(MARKET_CLOSE),
+            )
+        };
+
+        assert_eq!(close(2026, 11, 6).to_rfc3339(), "2026-11-06T17:00:00+00:00");
+        assert_eq!(close(2026, 7, 6).to_rfc3339(), "2026-07-06T16:00:00+00:00");
+        assert_eq!(to_market_time(close(2026, 7, 6)).time(), MARKET_CLOSE);
     }
 }

@@ -1,11 +1,11 @@
-import type { CSSProperties } from 'react';
-
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
-import moment from 'moment';
-import { useTheme, useMediaQuery, Tooltip } from '@mui/material';
+import { Tooltip } from '@mui/material';
 
 import Hidden from '../Hidden';
+import useTableFormat from '../useTableFormat';
+import { getPrice } from '../../selectors/performance';
+import { formatDate, formatDateTime, formatPercent } from '../../format';
 import type { DataSource, EitherPrice, Transaction } from '../../types/api';
 
 interface Props {
@@ -14,44 +14,7 @@ interface Props {
 }
 
 const TransactionRow = ({ transaction, currentPrice = null }: Props) => {
-  const theme = useTheme();
-  const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const colorize = (v: number | null | undefined): CSSProperties =>
-    v === null || v === undefined || Math.abs(v) < 5e-3
-      ? {}
-      : {
-          color:
-            v < 0 ? theme.palette.secondary.dark : theme.palette.primary.dark,
-        };
-
-  const formatPercentage = (value: number | null): string =>
-    value === null
-      ? ''
-      : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(xsDown ? 1 : 2)}%`;
-
-  const formatAmount = (value: number | null, unit?: string): string =>
-    value === null
-      ? '\u2014'
-      : `${value.toFixed(xsDown ? 0 : 2)}${unit === undefined ? '€' : unit}`;
-
-  const formatUnits = (value: number | null): string => {
-    if (value === null || value === 0) return '\u2014';
-
-    return `${value >= 0 ? '+' : ''}${value.toFixed(xsDown ? 0 : 2)}`;
-  };
-
-  const getPrice = (
-    dataSource: DataSource<EitherPrice> | null
-  ): number | null => {
-    if (dataSource === null) return null;
-
-    // The original tested `dataSource.price.price !== undefined`, which is true
-    // for exactly the RealtimePrice variant of the tagged EitherPrice union.
-    if (dataSource.price.type === 'RealtimePrice')
-      return dataSource.price.price;
-    return dataSource.price.closing;
-  };
+  const { money, units, signColor, percentDigits } = useTableFormat();
 
   let currentValueInfo = '\u2014';
   let valueDevelopment: number | undefined;
@@ -63,48 +26,49 @@ const TransactionRow = ({ transaction, currentPrice = null }: Props) => {
 
     valueDevelopment =
       (transaction.fees + transaction.amount) / 100 + currentValue;
-    currentValueInfo = `${formatAmount(currentValue)} (${formatPercentage(
-      ((-1 * valueDevelopment) / (transaction.fees + transaction.amount)) * 100
+    currentValueInfo = `${money(currentValue)} (${formatPercent(
+      ((-1 * valueDevelopment) / (transaction.fees + transaction.amount)) * 100,
+      { digits: percentDigits, signed: true }
     )})`;
   }
 
   return (
     <TableRow>
       <TableCell align="left">
-        <Tooltip title={moment(transaction.date).format('L [um] LT')} arrow>
-          <span>{moment(transaction.date).format('L')}</span>
+        <Tooltip title={formatDateTime(transaction.date)} arrow>
+          <span>{formatDate(transaction.date)}</span>
         </Tooltip>
       </TableCell>
-      <TableCell align="right" style={colorize(transaction.units)}>
-        {formatUnits(transaction.units)}
+      <TableCell align="right" style={signColor(transaction.units)}>
+        {transaction.units === 0
+          ? '\u2014'
+          : units(transaction.units, { signed: true })}
       </TableCell>
       <Hidden lgDown>
         <TableCell align="right">
           {transaction.units !== 0
-            ? formatAmount((-1 * transaction.amount) / 100 / transaction.units)
+            ? money((-1 * transaction.amount) / 100 / transaction.units)
             : '\u2014'}
         </TableCell>
       </Hidden>
       <TableCell
         align="right"
-        style={colorize(transaction.amount + transaction.fees)}
+        style={signColor((transaction.amount + transaction.fees) / 100)}
       >
         <Tooltip
           title={
             transaction.fees !== 0
-              ? `enthält Gebühren in Höhe von ${formatAmount(
+              ? `enthält Gebühren in Höhe von ${money(
                   (-1 * transaction.fees) / 100
                 )}`
               : ''
           }
           arrow
         >
-          <span>
-            {formatAmount((transaction.amount + transaction.fees) / 100)}
-          </span>
+          <span>{money((transaction.amount + transaction.fees) / 100)}</span>
         </Tooltip>
       </TableCell>
-      <TableCell align="right" style={colorize(valueDevelopment)}>
+      <TableCell align="right" style={signColor(valueDevelopment)}>
         {currentValueInfo}
       </TableCell>
     </TableRow>

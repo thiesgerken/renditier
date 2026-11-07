@@ -10,20 +10,11 @@ import {
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
+import { flatMap, find } from 'lodash';
 import moment from 'moment';
 import type { Moment } from 'moment';
-import { useState, Fragment, useCallback, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import {
-  Area,
-  CartesianGrid,
-  ComposedChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import type { TooltipValueType } from 'recharts';
+import { useState, useCallback, useEffect } from 'react';
+import { Area, CartesianGrid, ComposedChart, Line, YAxis } from 'recharts';
 
 import type { DataSourceSelection, IsoDate } from '../../types/api';
 import type {
@@ -31,8 +22,29 @@ import type {
   PortfolioPlotItem,
   StoredPortfolioPlotPoint,
 } from '../../types/store';
-import { getPeriodDescription } from '../../selectors/performance';
+import {
+  getPeriodDescription,
+  getPeriodRange,
+} from '../../selectors/performance';
+import { formatCurrency } from '../../format';
 import ProgressPaper from '../ProgressPaper';
+import PlotArea from '../plot/PlotArea';
+import type { TooltipRow } from '../plot/PlotTooltip';
+import {
+  currencyTick,
+  formatAmountWithChange,
+  formatPlotPercent,
+  hasIntradayPoints,
+  percentTick,
+} from '../plot/axes';
+import { assignTrades } from '../plot/trades';
+import {
+  TRADES_AXIS,
+  TradeLegend,
+  tradeMarkers,
+  tradeRows,
+} from '../plot/tradeMarkers';
+import { pointTooltip, signedArea, timeXAxis } from '../plot/elements';
 
 function getData(
   items: PortfolioPlotItem[],
@@ -59,6 +71,44 @@ const formControlSx = { m: 1, minWidth: 120 };
 // [startDate, endDate, source] of the last range that was actually requested.
 type PlotRange = [IsoDate, IsoDate, DataSourceSelection];
 
+interface ModeSpec {
+  label: string;
+  tick: (value: number) => string;
+  // a single series, colored by its sign
+  signed?: {
+    key: keyof StoredPortfolioPlotPoint;
+    curve: 'linear' | 'stepAfter';
+  };
+}
+
+const MODES = {
+  earnings: {
+    label: 'Gewinn',
+    tick: currencyTick,
+    signed: { key: 'earnings', curve: 'linear' },
+  },
+  investedAndValue: { label: 'Kaufpreis und Wert', tick: currencyTick },
+  invested: { label: 'Kaufpreis', tick: currencyTick },
+  investedRelStart: {
+    label: 'Kaufpreisveränderung',
+    tick: percentTick,
+    signed: { key: 'investedRelStart', curve: 'stepAfter' },
+  },
+  value: { label: 'Wert', tick: currencyTick },
+  valueRelStart: {
+    label: 'Wertveränderung',
+    tick: percentTick,
+    signed: { key: 'valueRelStart', curve: 'linear' },
+  },
+  earningsRelInvested: {
+    label: 'Gewinn rel. zu Kaufpreis',
+    tick: percentTick,
+    signed: { key: 'earningsRelInvested', curve: 'linear' },
+  },
+} satisfies Record<string, ModeSpec>;
+
+type Mode = keyof typeof MODES;
+
 interface Props {
   data: PortfolioPlotItem[];
   updateData: (
@@ -71,10 +121,9 @@ interface Props {
 
 const PortfolioPlot = ({ performance, data, updateData }: Props) => {
   const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up('md'));
   const xsDown = useMediaQuery(theme.breakpoints.down('sm'));
   const [period, setPeriod] = useState(0);
-  const [mode, setMode] = useState('earnings');
+  const [mode, setMode] = useState<Mode>('earnings');
   const [source, setSource] = useState<DataSourceSelection>('auto');
   const [dates, setDates] = useState<[Moment | null, Moment | null]>([
     moment().startOf('year'),
@@ -86,7 +135,7 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
     setPeriod(event.target.value);
   }, []);
 
-  const handleModeChange = useCallback((event: SelectChangeEvent<string>) => {
+  const handleModeChange = useCallback((event: SelectChangeEvent<Mode>) => {
     setMode(event.target.value);
   }, []);
 
@@ -101,22 +150,13 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
     setDates(v);
   }, []);
 
-  const nextWeekDay = (date: Moment | string): Moment => {
-    let d = moment(date);
-    while (d.day() === 0 || d.day() === 6) d = d.add(1, 'days');
-    return d;
-  };
-
   let plotData: PortfolioPlotItem | null = null;
   let sd: IsoDate | null = null;
   let ed: IsoDate | null = null;
 
   if (performance.data !== null && period < performance.data.length) {
     if (period >= 0) {
-      sd = nextWeekDay(
-        moment(performance.data[period].start.date).add(1, 'days')
-      ).format('YYYY-MM-DD');
-      ed = performance.data[period].end.date;
+      [sd, ed] = getPeriodRange(performance.data[period]);
     } else {
       // FIXME(tsx-migration): the DatePickers hand back `null` when the user
       // clears a field, and the original called `.isValid()` on it unguarded,
@@ -147,257 +187,119 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
     return undefined;
   }, [sd, ed, source, updateData]);
 
-  const points: StoredPortfolioPlotPoint[] =
-    plotData !== null && plotData.data !== null ? plotData.data.points : [];
+  // Every buy and sell is part of the "Total" period's positions.
+  const total = find(performance.data, p => p.kind === 'Total');
+  const points = assignTrades(
+    plotData !== null && plotData.data !== null ? plotData.data.points : [],
+    total === undefined
+      ? []
+      : flatMap(Object.values(total.positions), p => p.transactions)
+  );
+  type Point = (typeof points)[number];
 
-  let axisTimeFormat = 'L';
-  if (points.length === 1) {
-    axisTimeFormat = 'L LT';
-  } else if (points.length >= 2) {
-    const fd = moment(points[0].date);
-    const ld = moment(points[points.length - 1].date);
+  const epochs = points.map(p => p.epoch);
+  const intraday = hasIntradayPoints(epochs);
+  const { tick, signed }: ModeSpec = MODES[mode];
 
-    if (fd.isSame(ld, 'year')) axisTimeFormat = 'DD.MM.';
+  const tooltipRows = (p: Point): TooltipRow[] => [
+    { label: 'Wert', value: formatCurrency(p.value) },
+    { label: 'Investiert', value: formatCurrency(p.invested) },
+    {
+      label: 'Gewinn',
+      value: formatAmountWithChange(p.earnings, p.earningsRelInvested),
+    },
+    ...(signed !== undefined && signed.key.endsWith('RelStart')
+      ? [
+          {
+            label: MODES[mode].label,
+            value: formatPlotPercent(p[signed.key] as number | null),
+          },
+        ]
+      : []),
+    ...tradeRows(p.trades, false),
+  ];
 
-    // `ld - fd` in the original; Moment coerces to epoch millis via valueOf().
-    if (
-      moment.duration(ld.valueOf() - fd.valueOf()) <=
-      moment.duration(10, 'days')
-    )
-      axisTimeFormat += ' LT';
-  }
-
-  // to color the areas differently
-  const makeOffset = (
-    f: (point: StoredPortfolioPlotPoint) => number | null
-  ) => {
-    // The derived fields are nullable; Math.max/min turned `null` into 0 in the
-    // original, which `?? 0` reproduces.
-    const values = points.map(p => f(p) ?? 0);
-    const dataMax = Math.max(...values);
-    const dataMin = Math.min(...values);
-
-    if (dataMax <= 0) {
-      return 0;
-    }
-    if (dataMin >= 0) {
-      return 1;
-    }
-
-    return dataMax / (dataMax - dataMin);
-  };
-
-  const earningsOffset = makeOffset(i => i.earnings);
-  const earningsRelInvestedOffset = makeOffset(i => i.earningsRelInvested);
-  const valueRelStartOffset = makeOffset(i => i.valueRelStart);
-  const investedRelStartOffset = makeOffset(i => i.investedRelStart);
-
-  const interpolation = 'monotone';
-  const showDots = points.length < 100;
-  const dot = showDots
-    ? {
-        stroke: '#00000033',
-        strokeWidth: 1,
-        fill: '#00000033',
-      }
-    : false;
-
-  const activeDot = {
-    stroke: '#00000033',
-    strokeWidth: 1,
-    fill: '#eeeeee',
-  };
+  const loading =
+    plotData === null || plotData.isFetching || performance.isFetching;
 
   return (
     <Container maxWidth="xl" style={{ padding: '0px' }}>
       <ProgressPaper
         style={{ width: '100%', padding: theme.spacing(1) }}
-        loading={
-          plotData === null || plotData.isFetching || performance.isFetching
-        }
+        loading={loading}
       >
         <Grid container style={{ width: '100%' }}>
           <Grid size={12}>
-            <ResponsiveContainer aspect={mdUp ? 5 : 3} width="100%">
+            <PlotArea isEmpty={points.length === 0} isLoading={loading}>
               <ComposedChart data={points}>
-                <XAxis
-                  dataKey="epoch"
-                  type="number"
-                  scale="utc"
-                  domain={['dataMin', 'dataMax']}
-                  tickFormatter={(d: number) =>
-                    moment(d).format(axisTimeFormat)
-                  }
-                />
+                {timeXAxis(epochs)}
                 <YAxis
-                  unit={mode.indexOf('Rel') >= 0 ? '%' : '€'}
+                  tickFormatter={tick}
                   domain={['auto', 'auto']}
+                  width={90}
                   hide={xsDown}
                 />
-                <CartesianGrid strokeDasharray="5 5" />
+                <YAxis yAxisId={TRADES_AXIS} domain={[0, 1]} hide />
+                <CartesianGrid
+                  vertical={false}
+                  stroke={theme.palette.divider}
+                />
 
-                <defs>
-                  {[
-                    {
-                      offset: earningsOffset,
-                      name: 'earnings',
-                    },
-                    {
-                      offset: earningsRelInvestedOffset,
-                      name: 'earningsRelInvested',
-                    },
-                    {
-                      offset: valueRelStartOffset,
-                      name: 'valueRelStart',
-                    },
-                    {
-                      offset: investedRelStartOffset,
-                      name: 'investedRelStart',
-                    },
-                  ].map(({ offset, name }) => (
-                    <Fragment key={name}>
-                      <linearGradient
-                        id={`${name}Color`}
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset={offset}
-                          stopColor={theme.palette.primary.dark}
-                          stopOpacity={1}
-                        />
-                        <stop
-                          offset={offset}
-                          stopColor={theme.palette.secondary.dark}
-                          stopOpacity={1}
-                        />
-                      </linearGradient>
-                      <linearGradient
-                        id={`${name}Fill`}
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset={offset}
-                          stopColor={theme.palette.primary.main}
-                          stopOpacity={0.8}
-                        />
-                        <stop
-                          offset={offset}
-                          stopColor={theme.palette.secondary.main}
-                          stopOpacity={0.8}
-                        />
-                      </linearGradient>
-                    </Fragment>
-                  ))}
-                </defs>
-
-                {(mode === 'investedAndValue' || mode === 'invested') && (
-                  <Area
-                    type={interpolation}
-                    dataKey="invested"
-                    stroke={theme.palette.secondary.dark}
-                    fill={theme.palette.secondary.main}
-                    strokeWidth={1.4}
-                    unit="€"
-                    dot={dot}
-                    activeDot={activeDot}
-                    name="Investiert"
-                    fillOpacity={0.2}
-                  />
-                )}
+                {signed !== undefined &&
+                  signedArea(
+                    signed.key,
+                    MODES[mode].label,
+                    points.map(p => p[signed.key] as number | null),
+                    signed.curve,
+                    theme
+                  )}
 
                 {(mode === 'investedAndValue' || mode === 'value') && (
                   <Area
-                    type={interpolation}
+                    type="linear"
                     dataKey="value"
-                    unit="€"
+                    name="Wert"
                     stroke={theme.palette.primary.dark}
                     fill={theme.palette.primary.main}
+                    fillOpacity={0.15}
                     strokeWidth={1.4}
-                    name="Wert"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
+                    dot={false}
+                    isAnimationActive={false}
                   />
                 )}
 
-                {mode === 'earnings' && (
+                {mode === 'invested' && (
                   <Area
-                    type={interpolation}
-                    dataKey="earnings"
-                    unit="€"
-                    stroke="url(#earningsColor)"
+                    type="stepAfter"
+                    dataKey="invested"
+                    name="Investiert"
+                    stroke={theme.palette.secondary.dark}
+                    fill={theme.palette.secondary.main}
+                    fillOpacity={0.15}
                     strokeWidth={1.4}
-                    fill="url(#earningsFill)"
-                    name="Gewinn"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
+                    dot={false}
+                    isAnimationActive={false}
                   />
                 )}
 
-                {mode === 'valueRelStart' && (
-                  <Area
-                    type={interpolation}
-                    dataKey="valueRelStart"
-                    unit="%"
-                    stroke="url(#valueRelStartColor)"
+                {mode === 'investedAndValue' && (
+                  <Line
+                    type="stepAfter"
+                    dataKey="invested"
+                    name="Investiert"
+                    stroke={theme.palette.secondary.dark}
                     strokeWidth={1.4}
-                    fill="url(#valueRelStartFill)"
-                    name="Wertveränderung"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
+                    dot={false}
+                    isAnimationActive={false}
                   />
                 )}
 
-                {mode === 'investedRelStart' && (
-                  <Area
-                    type={interpolation}
-                    dataKey="investedRelStart"
-                    unit="%"
-                    stroke="url(#investedRelStartColor)"
-                    strokeWidth={1.4}
-                    fill="url(#investedRelStartFill)"
-                    name="Kaufpreisveränderung"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
-                  />
-                )}
+                {tradeMarkers(theme)}
 
-                {mode === 'earningsRelInvested' && (
-                  <Area
-                    type={interpolation}
-                    dataKey="earningsRelInvested"
-                    unit="%"
-                    stroke="url(#earningsRelInvestedColor)"
-                    strokeWidth={1.4}
-                    fill="url(#earningsRelInvestedFill)"
-                    name="Gewinn rel. Kaufpreis"
-                    dot={dot}
-                    activeDot={activeDot}
-                    fillOpacity={0.2}
-                  />
-                )}
-
-                <Tooltip
-                  // every series plotted here is numeric
-                  formatter={(v: TooltipValueType | undefined) =>
-                    (v as number).toFixed(2)
-                  }
-                  // the label is the `epoch` value of the XAxis
-                  labelFormatter={(d: ReactNode) =>
-                    moment(d as number).format('LLLL')
-                  }
-                />
+                {pointTooltip(intraday, tooltipRows)}
               </ComposedChart>
-            </ResponsiveContainer>
+            </PlotArea>
+            <TradeLegend points={points} />
           </Grid>
           <Grid size={9}>
             <FormControl sx={formControlSx} variant="standard">
@@ -410,17 +312,11 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
                 autoWidth
                 onChange={handleModeChange}
               >
-                <MenuItem value="earnings">Gewinn</MenuItem>
-                <MenuItem value="investedAndValue">Kaufpreis und Wert</MenuItem>
-                <MenuItem value="invested">Kaufpreis</MenuItem>
-                <MenuItem value="investedRelStart">
-                  Kaufpreisveränderung
-                </MenuItem>
-                <MenuItem value="value">Wert</MenuItem>
-                <MenuItem value="valueRelStart">Wertveränderung</MenuItem>
-                <MenuItem value="earningsRelInvested">
-                  Gewinn rel. zu Kaufpreis
-                </MenuItem>
+                {Object.entries(MODES).map(([value, { label }]) => (
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <FormControl sx={formControlSx} variant="standard">
@@ -476,7 +372,7 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
                 <DatePicker
                   label="Start"
                   value={dates[0]}
-                  format="DD/MM/YYYY"
+                  format="L"
                   // MUI wants `undefined`, not `null`, for "no bound"
                   maxDate={dates[1] ?? undefined}
                   onChange={d => handleDateChange([d, dates[1]])}
@@ -492,7 +388,7 @@ const PortfolioPlot = ({ performance, data, updateData }: Props) => {
                 <DatePicker
                   label="Ende"
                   value={dates[1]}
-                  format="DD/MM/YYYY"
+                  format="L"
                   // MUI wants `undefined`, not `null`, for "no bound"
                   minDate={dates[0] ?? undefined}
                   onChange={d => handleDateChange([dates[0], d])}

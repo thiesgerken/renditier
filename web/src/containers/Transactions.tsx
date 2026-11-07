@@ -38,9 +38,19 @@ import type { RootState, StocksState } from '../types/store';
 import TransactionDialog from './TransactionDialog';
 import type { TransactionDraft } from './TransactionDialog';
 import ReceiptUploadDialog from './ReceiptUploadDialog';
+import useTableFormat from '../components/useTableFormat';
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatNumber,
+} from '../format';
 
 // One DataGrid row: the transaction plus the resolved exchange name.
 type TransactionRow = Transaction & { exchangeDisplay: string | null };
+
+// Savings plans buy fractional units, so units keep all their decimals.
+const UNIT_DIGITS = 6;
 
 function useQuery(
   key: string
@@ -102,6 +112,7 @@ const Transactions = ({
   const [page, setPage] = useQuery('page');
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const { signColor } = useTableFormat();
   const navigate = useNavigate();
   const [pageSize, setPageSize] = React.useState(10);
 
@@ -145,20 +156,10 @@ const Transactions = ({
   const isLoading =
     transactions.isFetching || stocks.isFetching || accounts.isFetching;
 
-  const colorize = (value: number | null | undefined) =>
-    value === null || value === undefined || value === 0
-      ? {}
-      : {
-          color:
-            value < 0
-              ? theme.palette.secondary.dark
-              : theme.palette.primary.dark,
-        };
-
-  const formatAmount = (value: number) => (
-    <span style={colorize(value)}>{`${(value / 100).toFixed(
-      mdUp ? 2 : 0
-    )}€`}</span>
+  const formatAmount = (cents: number) => (
+    <span style={signColor(cents / 100, mdUp ? 2 : 0)}>
+      {formatCurrency(cents / 100, { digits: mdUp ? 2 : 0 })}
+    </span>
   );
 
   const rows = (transactions.items ?? []).map(transaction =>
@@ -176,7 +177,7 @@ const Transactions = ({
       headerName: 'Datum',
       minWidth: mdUp ? 150 : 110,
       renderCell: (params: GridRenderCellParams<TransactionRow, string>) =>
-        moment(params.value).format(mdUp ? 'L LT' : 'L'),
+        mdUp ? formatDateTime(params.value) : formatDate(params.value),
     },
     {
       field: 'amount',
@@ -243,7 +244,12 @@ const Transactions = ({
       field: 'units',
       headerName: 'Einheiten',
       renderCell: (params: GridRenderCellParams<TransactionRow, number>) => (
-        <span style={colorize(params.value)}>{params.value}</span>
+        <span style={signColor(params.value, UNIT_DIGITS)}>
+          {formatNumber(params.value ?? null, {
+            digits: 0,
+            maxDigits: UNIT_DIGITS,
+          })}
+        </span>
       ),
     },
     {

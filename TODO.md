@@ -4,10 +4,9 @@
 
 - remove all cached data when the user logs out
 - invalidate user info as soon as a 401 is encountered anywhere
-- unify formatting and querying functions
+- unify querying functions
 - unify api access functions
 - Use new daterange component as soon as it works better https://github.com/mui-org/material-ui-pickers
-- "Today" plot is broken, maybe only if no historical data available yet for today
 - show percentages over all, not only IRR (at least on hover as tooltip)
 - check that redux state is correctly deep cloned on plot data requests
 
