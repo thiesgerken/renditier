@@ -38,7 +38,7 @@ import TransactionsTable from '../components/stockAnalysis/TransactionsTable';
 import StockPlot from '../components/stockAnalysis/StockPlot';
 import BarList from '../components/BarList';
 
-import type { StockPerformancePeriod } from '../components/stockAnalysis/StockPerformanceRow';
+import type { StockPerformancePeriod } from '../components/stockAnalysis/StockPerformanceTable';
 import type { DataSourceSelection, IsoDate } from '../types/api';
 import { useAppDispatch, useAppSelector } from '../store';
 import type { ResourceState } from '../types/store';

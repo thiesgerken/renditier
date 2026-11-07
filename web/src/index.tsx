@@ -12,6 +12,7 @@ import 'moment/dist/locale/de';
 import './index.css';
 import App from './containers/App';
 import muiTheme from './muiTheme';
+import { TooltipProvider } from './components/ui/tooltip';
 import ServiceWorker from './containers/ServiceWorker';
 import { createAppStore } from './store';
 import { setNavigate } from './navigation';
@@ -49,8 +50,10 @@ createRoot(container).render(
             dateLibInstance={moment}
             adapterLocale="de"
           >
-            <ServiceWorker />
-            <App />
+            <TooltipProvider>
+              <ServiceWorker />
+              <App />
+            </TooltipProvider>
           </LocalizationProvider>
         </ThemeProvider>
       </StyledEngineProvider>

@@ -36,6 +36,47 @@ export const getPeriodDescription = (item: PerformancePeriod): string => {
   }
 };
 
+// Identifies a period across reloads of the performance data: the running
+// periods exist once each and keep their key from day to day, finished years
+// and months are told apart by their end.
+export const periodKey = (period: PerformancePeriod): string =>
+  period.kind === 'YearToYear' || period.kind === 'MonthToMonth'
+    ? `${period.kind}/${period.end.date}`
+    : period.kind;
+
+// The running periods, shortest first, with the labels of the period switch.
+export const RUNNING_PERIODS: { kind: PerformanceKind; label: string }[] = [
+  { kind: 'Today', label: 'Heute' },
+  { kind: 'WeekToDate', label: 'Woche' },
+  { kind: 'MonthToDate', label: 'Monat' },
+  { kind: 'YearToDate', label: 'Jahr' },
+  { kind: 'Total', label: 'Gesamt' },
+];
+
+// The selected period, or the whole time if it is gone from the data, e.g. a
+// month that dropped out of the last twelve while the app was open.
+export const findSelectedPeriod = (
+  periods: PortfolioPerformance[],
+  key: string
+): PortfolioPerformance | undefined =>
+  periods.find(p => periodKey(p) === key) ??
+  periods.find(p => p.kind === 'Total');
+
+// The row groups of a performance table: running periods, years (with the
+// whole time), months; each in the order of the data, empty ones left out.
+const PERIOD_GROUPS: PerformanceKind[][] = [
+  ['Today', 'WeekToDate'],
+  ['Total', 'YearToDate', 'YearToYear'],
+  ['MonthToDate', 'MonthToMonth'],
+];
+
+export const groupPeriods = <T extends { kind: PerformanceKind }>(
+  periods: T[]
+): T[][] =>
+  PERIOD_GROUPS.map(kinds =>
+    periods.filter(p => kinds.includes(p.kind))
+  ).filter(group => group.length > 0);
+
 export const getPrice = (
   dataSource: DataSource<EitherPrice> | null
 ): number | null => {

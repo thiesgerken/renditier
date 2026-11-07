@@ -1,9 +1,9 @@
-import { Container, Grid, Typography } from '@mui/material';
-import { find, map, partition, sumBy } from 'lodash';
+import { map, partition, sumBy } from 'lodash';
 
 import type { PortfolioPerformance, Stock } from '../../types/api';
-import type { PerformanceState, StocksState } from '../../types/store';
-import ProgressPaper from '../ProgressPaper';
+import type { StocksState } from '../../types/store';
+import ProgressCard from '../ProgressCard';
+import { CardContent } from '../ui/card';
 import BarList from '../BarList';
 import type { BarItem } from '../BarList';
 import { formatCurrency } from '../../format';
@@ -75,50 +75,46 @@ const LISTS = [
 ];
 
 interface Props {
-  performance: PerformanceState;
+  // the positions at the end of this period
+  period: PortfolioPerformance | undefined;
+  loading: boolean;
   stocks: StocksState;
 }
 
 // The portfolio's holdings, industries, currencies and countries, by invested
 // amount.
-const Breakdowns = ({ stocks, performance }: Props) => {
-  const total = find(performance.data, p => p.kind === 'Total');
+const Breakdowns = ({ period, loading, stocks }: Props) => {
   // A held position with no positive net cost (more taken out than paid in)
   // has no share of the invested amount to split; spreading its negative
   // amount over its fund's names would silently net it against other funds.
   const [invested, drawnDown] = partition(
-    total === undefined ? [] : heldPositions(stocks, total),
+    period === undefined ? [] : heldPositions(stocks, period),
     p => p.invested > 0
   );
 
   return (
-    <Container maxWidth="xl" style={{ padding: '0px' }}>
-      <ProgressPaper loading={stocks.isFetching || performance.isFetching}>
-        <Grid container>
+    <ProgressCard loading={loading}>
+      <CardContent className="flex flex-col gap-6">
+        <div className="grid gap-6 md:grid-cols-2">
           {LISTS.map(({ title, maxRows, shares }) => (
-            <Grid key={title} size={{ xs: 12, md: 6 }}>
-              <BarList
-                title={title}
-                items={breakdown(invested, shares)}
-                maxRows={maxRows}
-                total={sumBy(invested, 'invested')}
-                formatValue={v => formatCurrency(v, { digits: 0 })}
-              />
-            </Grid>
+            <BarList
+              key={title}
+              title={title}
+              items={breakdown(invested, shares)}
+              maxRows={maxRows}
+              total={sumBy(invested, 'invested')}
+              formatValue={v => formatCurrency(v, { digits: 0 })}
+            />
           ))}
-        </Grid>
+        </div>
         {drawnDown.length > 0 && (
-          <Typography
-            variant="caption"
-            component="p"
-            sx={{ p: 1, color: 'text.secondary' }}
-          >
+          <p className="text-xs text-muted-foreground">
             Mehr entnommen als eingezahlt, daher nicht enthalten:{' '}
             {drawnDown.map(p => capitalizeTitle(p.stock.title)).join(', ')}
-          </Typography>
+          </p>
         )}
-      </ProgressPaper>
-    </Container>
+      </CardContent>
+    </ProgressCard>
   );
 };
 
