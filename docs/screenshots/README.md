@@ -10,6 +10,7 @@ Rudolph, e.g. a Vite config that extends `web/vite.config.mjs` with
 server: { proxy: { '/api': { target: 'http://localhost:8383', headers: { 'Remote-User': 'Rudolph' } } } }
 ```
 
-Then take each page at 1280×800 with device scale factor 2, once with `prefers-color-scheme: light`
-and once with `dark`, for example with headless Chrome's `--screenshot` and
-`--blink-settings=preferredColorScheme=1` (light) or `=0` (dark).
+Then take each page (`/dashboard`, `/stocks/IE00B4L5Y983`, `/transactions`, `/stocks`) at 1280×800
+with device scale factor 2, once with `prefers-color-scheme: light` and once with `dark`, for example
+with headless Chrome's `--screenshot`, `--blink-settings=preferredColorScheme=1` (light) or `=0`
+(dark), and `--virtual-time-budget=15000` so the charts have loaded.

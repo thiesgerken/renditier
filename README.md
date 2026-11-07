@@ -1,79 +1,122 @@
-<h1 align="center">
+<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo/renditier-lockup-reversed.png">
     <img alt="Renditier" src="docs/brand/logo/renditier-lockup.png" width="360">
   </picture>
-</h1>
+</p>
+<p align="center"><strong>What your depots are worth, and what they really earned.</strong></p>
 
-Renditier tracks stock, ETF and crypto currency investments with realtime and historical prices:
-what the depots are worth, what they earned, and how the positions compare. The name is *Rendite*
-(return) plus *Rentier*, the reindeer and the person who lives off their investments.
+<p align="center">Stocks, ETFs and crypto with prices from onvista. Receipts straight from the bank's PDF.</p>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dashboard-dark.png">
-  <img alt="The dashboard: depot value, invested amount, gain and its development since 2019" src="docs/screenshots/dashboard-light.png">
-</picture>
+<p align="center">
+  <a href="#-getting-started">🚀 Getting started</a>
+  ·
+  <a href="#-screenshots">📸 Screenshots</a>
+  ·
+  <a href="#-configuration">🔧 Configuration</a>
+  ·
+  <a href="docs/brand/styleguide.md">🎨 Brand</a>
+</p>
 
-The screenshots show the demo user Rudolph, whose transactions are made up
-([`docs/demo/rudolph.json`](docs/demo/rudolph.json)); the prices are real. Brand, colours and
-fonts are in [`docs/brand/styleguide.md`](docs/brand/styleguide.md).
+Renditier keeps track of your securities accounts (depots): what you bought and sold, what it is
+worth now and what it has earned, per position and for any period. It fetches realtime and
+historical prices from onvista, reads the transactions from your bank's PDF receipts, and looks
+through funds into what they hold. It runs on your own server, serves a household of users, and
+installs on an Android phone as an app. The name is *Rendite* (return) plus *Rentier*: the
+reindeer, and the person who lives off their investments.
 
-## Development
+## ✨ Highlights
 
-With Nix, the dev shell (`direnv allow` or `nix develop`) brings Rust, node, npm and the openssl
-and libpq the backend links against.
+- 📈 **The return that counts.** Depot value, invested amount, gain and the money-weighted return
+  (IRR, % p.a.) for today, this week, month or year, any earlier year, or all time.
+- 🔍 **Every position, every period.** Positions with value, gain and return, a table of periods,
+  and the allocation by holding, sector, currency and country, looking through funds into what
+  they hold.
+- ⏱️ **Prices on their own.** Realtime quotes and full price history from onvista for stocks, ETFs,
+  funds, Bitcoin and Ether, fetched in the background every minute. A security is added as soon as
+  a transaction references it.
+- 🧾 **Receipts instead of typing.** Upload the PDF receipts of comdirect and onvista bank, and the
+  buy, sell or dividend is booked with its date, exchange and fees.
+- 📊 **Charts that answer something.** Gain over time with every buy and sell marked, price and
+  units held per security, several securities compared on a log scale, and drag to zoom.
+- 👥 **For the household.** Several users with their own depots. Log in with a password, or behind
+  a reverse proxy via its `Remote-User` header; scripts and other apps get read-only API tokens.
+- 📱 **On the phone too.** Installable as a web app on Android, with a layout for small screens,
+  German and English, light and dark following the system.
+- 🐳 **Small to run.** One container next to Postgres, built with Nix, running as non-root on a
+  read-only root filesystem.
 
-The container image is built with Nix as well, for x86_64-linux only: `nix build .#image` yields a
-script that streams the image as a tarball, e.g. `./result | docker load`.
+## 💡 Motivation
 
-## Backups
+<!-- Draft. Thies rewrites this in his own words. -->
 
-`renditier export > backup.json` writes all users with their accounts and transactions as JSON,
-`renditier import < backup.json` reads such a backup back in. The import replaces the users the backup
-contains, matched by name: an existing user with the same name is deleted together with their
-accounts and transactions, then recreated from the backup. Every other user stays untouched, so
-importing one user's backup into a database shared with others is safe.
+Banks show what a depot is worth today, and little about what it earned once deposits,
+withdrawals and fees are taken into account. Renditier answers that question for every position
+and period, across all depots, with data that stays on my own server.
 
-All rows get fresh ids from the database, the backup's ids only link its rows among each other.
-Replacing a user therefore changes their id and ends their sessions. A backup whose ids are
-ambiguous (a user name or id twice) or dangling (an account of a user that is not in the backup)
-is rejected before anything is written, and any error rolls the whole import back.
+## 📸 Screenshots
 
-## Demo data
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dashboard-dark.png">
+    <img alt="Dashboard" src="docs/screenshots/dashboard-light.png" width="1000">
+  </picture>
+</p>
 
-[`docs/demo/rudolph.json`](docs/demo/rudolph.json) holds the made-up user `Rudolph` with three
-accounts and a few years of buys, sells, dividends and a custody fee in well-known stocks, ETFs and
-Bitcoin. Use it for screenshots and for trying things out without real data. To edit it, change the
-JSON by hand: ids only need to be unique within the file.
+<p align="center"><em>The dashboard: depot value, invested amount, gain and IRR, and the gain over time with every buy and sell.</em></p>
 
-Against a local database (never the production one):
+<br>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stock-dark.png">
+    <img alt="A security" src="docs/screenshots/stock-light.png" width="1000">
+  </picture>
+</p>
+
+<p align="center"><em>A security: its facts from onvista, the price in brand orange and the units held in blue.</em></p>
+
+<br>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/transactions-dark.png">
+    <img alt="Transactions" src="docs/screenshots/transactions-light.png" width="1000">
+  </picture>
+</p>
+
+<p align="center"><em>Transactions: buys, sells and dividends with their fees, typed in or read from bank receipts.</em></p>
+
+<br>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stocks-dark.png">
+    <img alt="Securities" src="docs/screenshots/stocks-light.png" width="1000">
+  </picture>
+</p>
+
+<p align="center"><em>Securities compared over any period, and the list with their returns.</em></p>
+
+All screenshots show the demo user Rudolph: his transactions are made up, the prices are real.
+
+## 🚀 Getting started
+
+[`docker-compose.yaml`](docker-compose.yaml) runs Renditier with a Postgres next to it:
 
 ```shell
-export RENDITIER__DATABASE=postgres://user@localhost/stocks
-renditier import < docs/demo/rudolph.json
-renditier -v stock --fetch    # adds the stocks the transactions reference
-renditier -v data --fetch     # prices from onvista, takes a minute
+docker compose up -d
+docker compose exec renditier renditier user --add <name>   # asks for full name and password
 ```
 
-Then serve it with `RENDITIER__WEB__TRUSTED_HEADER_AUTHENTICATION=true renditier serve` and let the
-Vite dev server (`npm start` in `web`) log you in as Rudolph by adding the header to its proxy in
-`web/vite.config.mjs`:
+Open <http://localhost:8484> and log in. Create a depot under *Depots*, then add transactions by
+hand or upload receipts under *Transactions*. Prices arrive within a minute.
 
-```js
-proxy: {
-  '/api': { target: 'http://localhost:8383', headers: { 'Remote-User': 'Rudolph' } },
-},
-```
+The compose file's secret key is a demo value: anyone could decrypt the session cookies with it.
+Generate a real one with `openssl rand -base64 32` before using Renditier for real data. Running the
+image elsewhere, Kubernetes included, is in [operations](docs/operations.md).
 
-The import test against a real database runs with
-`RENDITIER_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (it rolls back
-everything it writes). CI starts a throwaway Postgres for it and runs it on every push.
-
-## Install
-
-- `openssl rand -base64 32` to obtain secret key
-
-## Configuration
+## 🔧 Configuration
 
 Settings come from `/etc/renditier/config.*`, `./renditier.*` (any format the `config` crate reads,
 e.g. TOML) or the file given with `--config`, and are overridden by `RENDITIER__*` environment
@@ -82,118 +125,52 @@ configuration.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `timezone` | `Europe/Berlin` | The users' time zone (IANA name). It decides where "Heute", weeks, months and years begin and on which day a transaction counts. An unknown name stops the program at startup. |
+| `database` | `postgres://localhost/stocks` | The Postgres connection URL. |
+| `timezone` | `Europe/Berlin` | The users' time zone (IANA name). It decides where "today", weeks, months and years begin and on which day a transaction counts. An unknown name stops the program at startup. |
+| `web.address` | `127.0.0.1` | The address to listen on; `0.0.0.0` in a container. |
+| `web.port` | `8383` | The port to listen on. |
+| `web.secret_key` | none | Encrypts the session cookies: 32 random bytes in base64 (`openssl rand -base64 32`). |
+| `web.trusted_header_authentication` | `false` | Trust the user name in the `Remote-User` header. Only behind a reverse proxy that sets it. |
+| `web.authentication_redirect` | none | Where the app sends a visitor who isn't logged in, e.g. the proxy's login page. |
+| `receipts.prefer_pdftotext` | `false` | Read receipts with `pdftotext` (poppler) first and the built-in parser as the fallback, instead of the other way round. |
 
-Exchange and receipt times are not affected: onvista quotes German exchanges and the supported
-banks issue German receipts, so their times are always read as German local time. Crypto currencies
-are the exception: onvista quotes them around the clock and in UTC, from sources such as Bitstamp
-(Bitcoin) or CoinDesk (Ether). renditier still files their daily prices under German market hours
-and weekdays like all others.
+Exchange and receipt times are not affected by `timezone`: onvista quotes German exchanges and the
+supported banks issue German receipts, so their times are always read as German local time. Crypto
+currencies are the exception: onvista quotes them around the clock and in UTC, from sources such as
+Bitstamp (Bitcoin) or CoinDesk (Ether). Renditier still files their daily prices under German market
+hours and weekdays like all others.
 
-## Running the container
+## 🛠️ Development
 
-The image runs `renditier serve` as UID and GID 65534 (`nobody`). The user is numeric because the
-image has no `/etc/passwd`, and Kubernetes' `runAsNonRoot` can only check a numeric one.
+With Nix, the dev shell (`direnv allow` or `nix develop`) brings Rust, node, npm and the openssl
+and libpq the backend links against. The backend embeds the built frontend, so build it once
+(`cd web && npm run build`), then start the backend with `cargo run -- serve` and the frontend with
+hot reload with `npm start` in `web`.
 
-The root filesystem can be read-only, and no path has to be writable: the server keeps no files,
-request bodies are JSON held in memory, and receipts are parsed in memory or piped through
-`pdftotext` via stdin and stdout. A future upload route using Rocket's `TempFile` would be the
-first thing to need a writable `/tmp` (an `emptyDir` or tmpfs).
+The container image is built with Nix as well, for x86_64-linux only: `nix build .#image` yields a
+script that streams the image as a tarball, e.g. `./result | docker load`.
 
-It listens on port 8383, the default of `RENDITIER__WEB__PORT`. A non-root process can't bind below
-1024, so map ports outside the container instead of setting 80. Set
-`RENDITIER__WEB__ADDRESS=0.0.0.0`; the default listens on localhost only.
-
-In Kubernetes:
-
-```yaml
-spec:
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 65534
-    runAsGroup: 65534
-    seccompProfile:
-      type: RuntimeDefault
-  containers:
-    - name: renditier
-      securityContext:
-        readOnlyRootFilesystem: true
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop: [ALL]
-```
-
-With plain Docker (the image's user applies by default):
+[`docs/demo/rudolph.json`](docs/demo/rudolph.json) holds the made-up user Rudolph with three
+depots and a few years of buys, sells, dividends and a custody fee. Import it into a local database,
+never the production one, to try things out or to take screenshots:
 
 ```shell
-docker run --read-only --cap-drop ALL --security-opt no-new-privileges -p 8484:8383 \
-  -e RENDITIER__WEB__ADDRESS=0.0.0.0 -e RENDITIER__DATABASE=postgres://... \
-  -e RENDITIER__WEB__SECRET_KEY=... gitea.gerken.haus/thies/renditier:main
+renditier import < docs/demo/rudolph.json
+renditier -v stock --fetch    # adds the securities the transactions reference
+renditier -v data --fetch     # prices from onvista, takes a minute
 ```
 
-## API tokens
+[Screenshots](docs/screenshots/README.md) explains how to log in as Rudolph from the dev server.
 
-The API otherwise expects a browser: a session cookie, or the `Remote-User` header from the
-proxy. A program gets in with a token instead.
+The import test against a real database runs with
+`RENDITIER_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (it rolls back
+everything it writes). CI starts a throwaway Postgres for it on every push.
 
-```shell
-renditier user --token <name>          # issue one, replacing any existing token
-renditier user --revoke-token <name>   # take it away again
-```
+To test the receipt parser on local PDFs without a database:
+`cargo run --bin parse_receipt -- [--json] [-v] receipt.pdf…`.
 
-The token is printed once at issue time and only its hash is stored, so a lost one is reissued
-rather than looked up. Present it as `Authorization: Bearer <token>`.
+## 📚 More
 
-**A token reads and never writes.** It sees exactly what its user sees, but only through `GET`;
-anything that creates, changes or deletes answers 401 no matter how valid the token is, and wants
-a session behind it instead. A token carries no second factor and cannot be asked to confirm
-anything, so a leaked one is a leaked copy of the data rather than a leaked ability to destroy it.
-
-`GET /api/accounts/<id>/portfolio` is the same computation as `/api/analysis/portfolio` narrowed
-to one account, which is what a caller after the current value of a single depot wants.
-
-## Testing receipt parsing
-
-Use the dedicated parse-only binary to test receipt parsing on local PDF files without connecting to PostgreSQL or writing any transactions:
-
-```shell
-cargo run --bin parse_receipt -- path/to/receipt.pdf
-```
-
-For machine-readable output:
-
-```shell
-cargo run --bin parse_receipt -- --json path/to/receipt.pdf
-```
-
-You can pass multiple files and add `-v` for parser debug logging.
-
-## Fixing sequences
-
-Usually needed after a database dump was imported, cf. <https://wiki.postgresql.org/wiki/Fixing_Sequences>
-
-```sql
-SELECT 'SELECT SETVAL(' ||
-       quote_literal(quote_ident(PGT.schemaname) || '.' || quote_ident(S.relname)) ||
-       ', COALESCE(MAX(' ||quote_ident(C.attname)|| '), 1) ) FROM ' ||
-       quote_ident(PGT.schemaname)|| '.'||quote_ident(T.relname)|| ';'
-FROM pg_class AS S,
-     pg_depend AS D,
-     pg_class AS T,
-     pg_attribute AS C,
-     pg_tables AS PGT
-WHERE S.relkind = 'S'
-    AND S.oid = D.objid
-    AND D.refobjid = T.oid
-    AND D.refobjid = C.attrelid
-    AND D.refobjsubid = C.attnum
-    AND T.relname = PGT.tablename
-ORDER BY S.relname;
-```
-
-Write to `reset.sql`, then run
-
-```shell
-psql -Atq -f reset.sql -o temp -d stocks -U postgres
-psql -f temp -d stocks -U postgres
-```
+- [Operations](docs/operations.md): running the container hardened, Kubernetes, backups.
+- [API](docs/api.md): read-only tokens for scripts and other apps.
+- [Brand](docs/brand/styleguide.md): logo, colours, type.
