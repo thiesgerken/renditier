@@ -16,6 +16,7 @@ import {
 } from '../PerformanceCells';
 import OnvistaButton from '../OnvistaButton';
 import ProgressCard from '../ProgressCard';
+import { Badge } from '../ui/badge';
 import { CardHeader, CardTitle } from '../ui/card';
 import {
   Table,
@@ -71,15 +72,28 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
                     {p.isin}
                   </TableCell>
                   <TableCell className="min-w-32 whitespace-normal sm:min-w-40">
-                    <Link
-                      to={`/stocks/${p.isin}`}
-                      className="flex items-center gap-2 font-medium text-primary hover:underline"
-                    >
-                      <ChartLine className="size-4 shrink-0" />
-                      <span className="line-clamp-3 sm:line-clamp-2">
-                        {stock === null ? p.isin : capitalizeTitle(stock.title)}
-                      </span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/stocks/${p.isin}`}
+                        className="flex items-center gap-2 font-medium text-primary hover:underline"
+                      >
+                        <ChartLine className="size-4 shrink-0" />
+                        <span className="line-clamp-3 sm:line-clamp-2">
+                          {stock === null
+                            ? p.isin
+                            : capitalizeTitle(stock.title)}
+                        </span>
+                      </Link>
+                      {/* no room on a phone */}
+                      {stock !== null && (
+                        <Badge
+                          variant="secondary"
+                          className="hidden shrink-0 sm:inline-flex"
+                        >
+                          {stock.kind}
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <UnitsCell period={p} className="hidden sm:table-cell" />
                   <PriceCell period={p} className="hidden sm:table-cell" />

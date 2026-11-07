@@ -1,6 +1,8 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from 'cn';
 import {
+  ArrowDownRight,
+  ArrowUpRight,
   CalendarRange,
   ChartCandlestick,
   Hash,
@@ -16,6 +18,7 @@ import { getPrice } from '../selectors/performance';
 import { formatChange, formatPriceSource } from '../format';
 import type { IrrPeriod } from '../format';
 import useTableFormat from './useTableFormat';
+import type { Tone } from './useTableFormat';
 import { TableCell, TableHead } from './ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
@@ -62,13 +65,15 @@ interface PositionPeriod {
   end: PositionSnapshot;
 }
 
+const TONE_TEXT = { gain: 'text-gain', loss: 'text-loss' };
+
 interface ValueWithChangeProps {
   value: string;
   // see formatChange; nothing is shown below the value when it is null
   change: string | null;
-  // e.g. signColor for a gain or loss; without it, the change is neutral
+  // whether the change is a gain or a loss; without it, the change is neutral
   // because its direction is neither good nor bad (more units, more invested)
-  changeStyle?: CSSProperties;
+  changeTone?: Tone;
 }
 
 // A table value with its change over the period below it, smaller. Neither
@@ -76,29 +81,45 @@ interface ValueWithChangeProps {
 const ValueWithChange = ({
   value,
   change,
-  changeStyle,
-}: ValueWithChangeProps) => (
-  <div className="whitespace-nowrap">
-    {value}
-    {change !== null && (
-      <div className="text-xs text-muted-foreground" style={changeStyle}>
-        {change}
-      </div>
-    )}
-  </div>
-);
+  changeTone = null,
+}: ValueWithChangeProps) => {
+  const Trend = changeTone === 'loss' ? ArrowDownRight : ArrowUpRight;
+
+  return (
+    <div className="whitespace-nowrap">
+      {value}
+      {change !== null && (
+        <div
+          className={cn(
+            'flex items-center justify-end gap-0.5 text-xs text-muted-foreground',
+            changeTone !== null && TONE_TEXT[changeTone]
+          )}
+        >
+          {changeTone !== null && <Trend className="size-3" />}
+          {change}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Numbers are right-aligned, with digits of equal width so that they line up.
 const NumberCell = ({
   children,
   className,
-  style,
+  tone = null,
 }: {
   children: ReactNode;
   className?: string;
-  style?: CSSProperties;
+  tone?: Tone;
 }) => (
-  <TableCell className={cn('text-right tabular-nums', className)} style={style}>
+  <TableCell
+    className={cn(
+      'text-right tabular-nums',
+      tone !== null && TONE_TEXT[tone],
+      className
+    )}
+  >
     {children}
   </TableCell>
 );
@@ -128,7 +149,7 @@ const difference = (start: number | null, end: number | null) =>
   start === null || end === null ? null : end - start;
 
 export const PriceCell = ({ period, className }: CellProps<PositionPeriod>) => {
-  const { money, percent, ratioColor } = useTableFormat();
+  const { money, percent, ratioTone } = useTableFormat();
   const start = getPrice(period.start.dataSource);
   const end = getPrice(period.end.dataSource);
   const ratio = start === null || end === null ? null : (end - start) / start;
@@ -149,7 +170,7 @@ export const PriceCell = ({ period, className }: CellProps<PositionPeriod>) => {
         <ValueWithChange
           value={money(end)}
           change={formatChange(start, end, money, percent)}
-          changeStyle={ratioColor(ratio)}
+          changeTone={ratioTone(ratio)}
         />
       </WithInfo>
     </NumberCell>
@@ -221,26 +242,26 @@ const profit = (snapshot: PortfolioSnapshot) =>
   snapshot.value === null ? null : snapshot.value + snapshot.invested;
 
 export const ProfitCell = ({ period, className }: CellProps<Period>) => {
-  const { money, signColor } = useTableFormat();
+  const { money, signTone } = useTableFormat();
   const start = profit(period.start);
   const end = profit(period.end);
 
   return (
-    <NumberCell className={className} style={signColor(end)}>
+    <NumberCell className={className} tone={signTone(end)}>
       <ValueWithChange
         value={money(end)}
         change={formatChange(start, end, money)}
-        changeStyle={signColor(difference(start, end))}
+        changeTone={signTone(difference(start, end))}
       />
     </NumberCell>
   );
 };
 
 export const IrrCell = ({ period, className }: CellProps<IrrPeriod>) => {
-  const { irr, ratioColor } = useTableFormat();
+  const { irr, ratioTone } = useTableFormat();
 
   return (
-    <NumberCell className={className} style={ratioColor(period.irrAnnual)}>
+    <NumberCell className={className} tone={ratioTone(period.irrAnnual)}>
       {irr(period)}
     </NumberCell>
   );

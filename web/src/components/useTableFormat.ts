@@ -10,6 +10,8 @@ import {
 } from '../format';
 import type { Formatter } from '../format';
 
+export type Tone = 'gain' | 'loss' | null;
+
 // Number formatting for table cells. Phones only have room for whole euros and
 // units and one decimal of percentages.
 const useTableFormat = () => {
@@ -36,7 +38,7 @@ const useTableFormat = () => {
   const signTone = (
     value: number | null | undefined,
     shownDigits = digits
-  ): 'gain' | 'loss' | null => {
+  ): Tone => {
     if (value === null || value === undefined) return null;
     if (Math.abs(value) < 0.5 * 10 ** -shownDigits) return null;
     return value < 0 ? 'loss' : 'gain';
@@ -52,10 +54,10 @@ const useTableFormat = () => {
   };
 
   // for ratios shown as percentages, e.g. IRRs and relative changes
-  const ratioColor = (ratio: number | null) =>
-    signColor(ratio, percentDigits + 2);
+  const ratioTone = (ratio: number | null) =>
+    signTone(ratio, percentDigits + 2);
 
-  return { money, units, percent, irr, signTone, signColor, ratioColor };
+  return { money, units, percent, irr, signTone, signColor, ratioTone };
 };
 
 export default useTableFormat;

@@ -20,6 +20,7 @@ import {
 } from '../../format';
 import type { Formatter } from '../../format';
 import useTableFormat from '../useTableFormat';
+import type { Tone } from '../useTableFormat';
 import { Card } from '../ui/card';
 
 // Headline numbers have no room for cents.
@@ -37,7 +38,7 @@ interface TileProps {
   label: string;
   value: string;
   detail: string | null;
-  tone?: 'gain' | 'loss' | null;
+  tone?: Tone;
 }
 
 const KpiTile = ({ icon: Icon, label, value, detail, tone }: TileProps) => {
