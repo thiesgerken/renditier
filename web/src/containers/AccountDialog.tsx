@@ -49,9 +49,9 @@ const toIBAN = (s: string | null): string | null => {
   return null;
 };
 
-const toAccount = (t: AccountDraft): AccountDraft | null => {
+export const toAccount = (t: AccountDraft): AccountDraft | null => {
   const iban = toIBAN(t.iban);
-  if (t.name.trim() === '') return null;
+  if (t.name.trim() === '' || (t.iban !== null && iban === null)) return null;
 
   return {
     userId: -1,
