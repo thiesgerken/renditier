@@ -31,6 +31,9 @@ const useTableFormat = () => {
   const irr = (period: Parameters<typeof formatIrr>[0]) =>
     formatIrr(period, percentDigits);
 
+  // The theme's CSS variables, unlike theme.palette, follow the color scheme.
+  const palette = (theme.vars ?? theme).palette;
+
   // Gains in the primary, losses in the secondary color. Values that are
   // displayed as zero at `shownDigits` fraction digits stay neutral.
   const signColor = (
@@ -42,10 +45,7 @@ const useTableFormat = () => {
     Math.abs(value) < 0.5 * 10 ** -shownDigits
       ? {}
       : {
-          color:
-            value < 0
-              ? theme.palette.secondary.dark
-              : theme.palette.primary.dark,
+          color: value < 0 ? palette.secondary.dark : palette.primary.dark,
         };
 
   // for ratios shown as percentages, e.g. IRRs and relative changes
