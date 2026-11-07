@@ -1,0 +1,102 @@
+{
+  "instrument": {
+    "entityType": "DERIVATIVE",
+    "entityValue": "128897970",
+    "name": "EUWAX Gold II",
+    "urls": {
+      "WEBSITE": "https://www.onvista.de/derivate/ETCs/128897970-EWG2LD-DE000EWG2LD7"
+    },
+    "isin": "DE000EWG2LD7",
+    "wkn": "EWG2LD",
+    "displayType": "ETC-/ETN-Zertifikat"
+  },
+  "quoteList": {
+    "list": [
+      {
+        "market": {
+          "name": "Stuttgart",
+          "codeMarket": "_STU",
+          "nameExchange": "Stuttgart",
+          "codeExchange": "STU",
+          "idNotation": 199856773,
+          "isoCountry": "DE"
+        },
+        "isoCurrency": "EUR",
+        "codeQualityPrice": "RLT",
+        "last": 120.15,
+        "datetimeLast": "2026-11-06T20:56:56.529+00:00"
+      },
+      {
+        "market": {
+          "name": "Tradegate BSX",
+          "codeMarket": "_GAT",
+          "nameExchange": "Tradegate BSX",
+          "codeExchange": "GAT",
+          "idNotation": 510051515,
+          "isoCountry": "DE"
+        },
+        "isoCurrency": "EUR",
+        "codeQualityPrice": "RLT",
+        "last": 119.7,
+        "datetimeLast": "2026-11-06T21:03:09.969+00:00",
+        "bid": 119.11,
+        "datetimeBid": "2026-11-06T21:00:14.361+00:00",
+        "ask": 120.31,
+        "datetimeAsk": "2026-11-06T21:00:14.361+00:00"
+      }
+    ]
+  },
+  "derivativesIssuer": {
+    "id": 66124,
+    "name": "Börse Stuttgart Commodities",
+    "urlWebsite": "https://www.boerse-stuttgart.de/",
+    "shortDisclaimer": "Basisinformationsblatt, Basisprospekt und Endgültige Bedingungen erhalten Sie über das Dokument-Icon."
+  },
+  "derivativesDetails": {
+    "shortName": "BOERSE STUTTGART ETC AUF 100 GRAMM GOLD",
+    "officialName": "EUWAX Gold II ETC",
+    "urlProspectus": "https://www.boerse-stuttgart.de/de-de/produkte/etps/etcs/",
+    "idExerciseStyle": 1,
+    "codeExerciseStyle": "A",
+    "nameExerciseStyle": "Amerikanisch",
+    "idExerciseRight": 2,
+    "codeExerciseRight": "C",
+    "nameExerciseRight": "CALL",
+    "idCategory": 2,
+    "nameCategory": "Anlageprodukte",
+    "idSubcategory": 2430,
+    "nameSubcategory": "ETC's/ETNs",
+    "idTypeSettlement": 2,
+    "hasGuarantee": false,
+    "isoCountry": "DE",
+    "hasBarrierBeenHit": false,
+    "minOrderValue": 1,
+    "nameTypeInterestRate": "",
+    "idUnitPriceEmission": 1,
+    "isoCurrencySubstitutionFee": "",
+    "hasActiveManagement": false,
+    "hasAfterHourTrading": false,
+    "nameProductIssuer": "Boerse Stuttgart ETC",
+    "hasOnlyBidPrices": false,
+    "hasSpecialTaxTreatment": false,
+    "emissionVolume": 20000000.0,
+    "hasSavingsPlan": false,
+    "idProductIssuer": 850245,
+    "datetimeFirstTradingDay": "2017-10-09T12:00:00.000+00:00",
+    "datetimeEmission": "2017-10-09T12:00:00.000+00:00",
+    "hasIndicativeDetails": false,
+    "scopeGroupRating": "",
+    "idCurrency": 63,
+    "numberUnderlyings": 2,
+    "isoCurrency": "EUR",
+    "hasAutomaticExercise": true,
+    "dataStatus": 3,
+    "nameTypeSettlement": "Physisch",
+    "etpIsDistributingEarnings": false,
+    "underlyingSpread": false,
+    "totalLossOnKnockout": false,
+    "privatePlacement": false,
+    "quanto": false,
+    "openEnded": true
+  }
+}

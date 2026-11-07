@@ -280,8 +280,75 @@ fn parse_price(quote: &Value) -> Option<RealtimePrice> {
 mod tests {
     use super::*;
 
-    use chrono::{Duration, Utc};
+    use chrono::{Duration, TimeZone, Utc};
     use test_log::test;
+
+    /// A real onvista response, trimmed to what the parsers read, from `src/onvista/fixtures`.
+    pub(super) fn fixture(name: &str) -> Value {
+        let path = format!(
+            "{}/src/onvista/fixtures/{name}.json",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let json = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
+        serde_json::from_str(&json).unwrap()
+    }
+
+    /// Tradegate's quote of the Vanguard FTSE All-World, which has both a last and a bid price.
+    fn tradegate_quote() -> Value {
+        quotes(&fixture("etf_snapshot")).unwrap()[1].clone()
+    }
+
+    #[test]
+    fn test_quotes() {
+        assert_eq!(quotes(&fixture("etf_snapshot")).unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_parse_exchange() {
+        let exchange = parse_exchange("IE00BK5BQT80", &tradegate_quote()).unwrap();
+
+        assert_eq!(exchange.isin, "IE00BK5BQT80");
+        assert_eq!(exchange.onvista_record_id, 264715168);
+        assert_eq!(exchange.onvista_exchange_id, None);
+        assert_eq!(exchange.code, "GAT");
+        assert_eq!(exchange.name, "Tradegate BSX");
+        assert_eq!(exchange.quality.as_deref(), Some("RLT"));
+    }
+
+    #[test]
+    fn test_parse_price() {
+        let price = parse_price(&tradegate_quote()).unwrap();
+
+        assert_eq!(price.onvista_record_id, 264715168);
+        assert_eq!(price.price, 164.76);
+        assert_eq!(
+            price.date,
+            Utc.with_ymd_and_hms(2026, 11, 6, 21, 3, 10).unwrap() + Duration::milliseconds(80)
+        );
+    }
+
+    #[test]
+    fn test_parse_price_falls_back_to_bid() {
+        let mut quote = tradegate_quote();
+        quote.as_object_mut().unwrap().remove("last");
+        let price = parse_price(&quote).unwrap();
+
+        assert_eq!(price.price, 164.62);
+        assert_eq!(
+            price.date,
+            Utc.with_ymd_and_hms(2026, 11, 6, 21, 2, 1).unwrap() + Duration::milliseconds(560)
+        );
+    }
+
+    #[test]
+    fn test_parse_price_without_any_price() {
+        let mut quote = tradegate_quote();
+        let fields = quote.as_object_mut().unwrap();
+        fields.remove("last");
+        fields.remove("bid");
+
+        assert!(parse_price(&quote).is_none());
+    }
 
     async fn check_info(isin: &str, kind: &str) {
         let (info, exs) = get_info(isin).await.unwrap();

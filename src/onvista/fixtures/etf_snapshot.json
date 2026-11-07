@@ -1,0 +1,148 @@
+{
+  "instrument": {
+    "entityType": "FUND",
+    "entityValue": "156424987",
+    "name": "Vanguard FTSE All-World UCITS ETF USD Acc.",
+    "urls": {
+      "WEBSITE": "https://www.onvista.de/etf/Vanguard-FTSE-All-World-UCITS-ETF-USD-Acc-ETF-IE00BK5BQT80"
+    },
+    "isin": "IE00BK5BQT80",
+    "wkn": "A2PKXG",
+    "displayType": "ETF"
+  },
+  "quoteList": {
+    "list": [
+      {
+        "market": {
+          "name": "Xetra",
+          "codeMarket": "_GER",
+          "nameExchange": "Xetra",
+          "codeExchange": "GER",
+          "idNotation": 262733170,
+          "isoCountry": "DE"
+        },
+        "isoCurrency": "EUR",
+        "codeQualityPrice": "DLY",
+        "last": 165.06,
+        "datetimeLast": "2026-11-06T20:51:53.350+00:00",
+        "bid": 164.74,
+        "datetimeBid": "2026-11-06T21:00:30.180+00:00",
+        "ask": 164.92,
+        "datetimeAsk": "2026-11-06T21:00:13.210+00:00"
+      },
+      {
+        "market": {
+          "name": "Tradegate BSX",
+          "codeMarket": "_GAT",
+          "nameExchange": "Tradegate BSX",
+          "codeExchange": "GAT",
+          "idNotation": 264715168,
+          "isoCountry": "DE"
+        },
+        "isoCurrency": "EUR",
+        "codeQualityPrice": "RLT",
+        "last": 164.76,
+        "datetimeLast": "2026-11-06T21:03:10.080+00:00",
+        "bid": 164.62,
+        "datetimeBid": "2026-11-06T21:02:01.560+00:00",
+        "ask": 164.82,
+        "datetimeAsk": "2026-11-06T21:02:01.560+00:00"
+      },
+      {
+        "market": {
+          "name": "London Stock Exchange",
+          "codeMarket": "_LSE",
+          "nameExchange": "London Stock Exchange",
+          "codeExchange": "LSE",
+          "idNotation": 255296152,
+          "isoCountry": "GB"
+        },
+        "isoCurrency": "USD",
+        "codeQualityPrice": "DLY",
+        "last": 184.98,
+        "datetimeLast": "2026-11-06T16:35:14.281+00:00",
+        "bid": 184.68,
+        "datetimeBid": "2026-11-06T16:30:00.137+00:00",
+        "ask": 184.8,
+        "datetimeAsk": "2026-11-06T16:30:00.137+00:00"
+      }
+    ]
+  },
+  "fundsIssuer": {
+    "id": 67653,
+    "name": "Vanguard Group (Ireland) Limited",
+    "idGroupIssuer": 60085,
+    "nameGroupIssuer": "Vanguard",
+    "photoId": "ov/yvffz3rga1gpwxjmfqpv",
+    "customerId": 265
+  },
+  "fundsDetails": {
+    "shortName": "Vanguard FTSE All-World UCITS ETF - (USD",
+    "officialName": "Vanguard FTSE All-World UCITS ETF - USD ACC",
+    "idTypeFund": 71,
+    "nameTypeFund": "Aktienfonds",
+    "idInvestmentFocus": 5564,
+    "nameInvestmentFocus": "Aktien International",
+    "idInstrumentBenchmarkTopEtf": 9322182,
+    "fundsTypeCapitalisation": {
+      "id": 1,
+      "name": "Thesaurierend"
+    }
+  },
+  "fundsBaseData": {
+    "dateEmission": "2019-07-23T00:00:00.000+00:00",
+    "isoCurrencyFund": "USD",
+    "isoCountry": "IE",
+    "nameCountry": "Irland",
+    "volumeFundEuro": 78461992960.0,
+    "isoCurrencyVolume": "USD",
+    "volumeFund": 88092434432.0,
+    "dateVolume": "2026-11-05T00:00:00.000+00:00",
+    "managementFeeExPostMifid": 0.20000000298023224,
+    "ongoingCharges": 0.14119000732898712,
+    "idCustodianBank": 18186,
+    "nameCustodianBank": "Brown Brothers Harriman Trustee Services (Ireland) Limited",
+    "maxPctInitialFee": 0.0,
+    "isoCurrencyFees": "",
+    "maxPctDistributionFee": 0.0,
+    "maxPctRedemptionFee": 0.0,
+    "isoCurrInvestmentInitial": "",
+    "isoCurrInvestmentFollow": "",
+    "hasSavingsPlan": false,
+    "dayStartFiscalYear": 1,
+    "monthStartFiscalYear": 7,
+    "listCountriesRegistered": "AT,DE",
+    "fundAge": 7.0,
+    "hasOvbSavingsPlan": false,
+    "hasOvbPromotion": false,
+    "hasOvbNoInitialFee": false,
+    "hasScalableSavingsPlan": false,
+    "hasComdirectSavingsPlan": false,
+    "institutional": false
+  },
+  "background": [
+    {
+      "type": "NewsParagraph",
+      "ignoreIfUnknown": false,
+      "value": "Der Fonds verfolgt einen Passivmanagement- bzw. Indexierungsanlageansatz, indem er Wertpapiere physisch erwirbt und versucht, die Wertentwicklung des FTSE All-World Index (der 'Index') nachzubilden. Der Fonds versucht: 1. Die Wertentwicklung des Index nachzubilden, indem eine repräsentative Auswahl von im Index enthaltenen Wertpapieren physisch erworben wird. 2. dauerhaft sein gesamtes investierbares Vermögen zu investieren, außer unter außergewöhnlichen Marktbedingungen, in besonderen politischen Situationen oder unter anderen besonderen Umständen, in denen der Fonds vorübergehend von dieser Anlagepolitik abweichen kann, um Verluste zu vermeiden."
+    }
+  ],
+  "fundsBenchmarkList": {
+    "list": [
+      {
+        "instrument": {
+          "type": "Instrument",
+          "entityType": "INDEX",
+          "entityValue": "8330158",
+          "name": "FTSE All World",
+          "instrumentType": "Instrument",
+          "isin": "XS2716761668",
+          "wkn": "A3LWJN",
+          "displayType": "Index",
+          "urlName": "FTSE-ALL-WORLD",
+          "tinyName": "FTSE All World"
+        }
+      }
+    ]
+  }
+}
