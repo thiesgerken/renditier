@@ -28,6 +28,7 @@ line that breaks out to a new high, marked by the orange dot.
 | [`icons/favicon.svg`](icons/favicon.svg) | 16 px: only the price line survives at that size |
 | [`icons/favicon.ico`](icons/favicon.ico) | 16, 32 and 48 px, each from its own drawing |
 | `icons/icon-{96,192,512}.png` | PWA manifest icons |
+| [`icons/icon-maskable.svg`](icons/icon-maskable.svg), `icon-maskable-512.png` | Android adaptive icon: full-bleed orange, mark inside the safe zone |
 
 The eyes in the mark are holes, so it works on any background colour. The lockups are PNG because
 the wordmark is set in Outfit. A vector lockup needs the text converted to outlines (see
