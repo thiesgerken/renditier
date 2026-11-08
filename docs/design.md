@@ -95,6 +95,13 @@ can follow the reason where no rule fits. Colours, type and the logo are in the
 - **A new version announces itself ("Update available") instead of reloading on its own.** A reload
   in the middle of typing a transaction would lose it.
 
+## Known gaps
+
+Places where the app breaks a rule above. They are bugs, not exceptions.
+
+- **The dashboard's positions and periods tables scroll sideways at 360px** (fine from 384px). The
+  interest rate column ("+22,3 % p.a.") is the widest. Fix it when touching those tables.
+
 ## Tried and rejected
 
 - **Teal as the brand colour.** Navy and orange replaced it with the rename, in the UI and in
