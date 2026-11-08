@@ -6,6 +6,7 @@ pub mod onvista;
 pub mod receipts;
 pub mod schema;
 pub mod serialization;
+pub mod service;
 pub mod web;
 
 #[macro_use]

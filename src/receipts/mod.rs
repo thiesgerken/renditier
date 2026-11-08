@@ -5,7 +5,6 @@ use crate::models::*;
 
 use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use chrono_tz::Tz;
-use diesel::prelude::*;
 use log::{debug, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -47,116 +46,18 @@ pub fn parse_mem_preview(
     Ok(ts.into_iter().flatten().collect::<Vec<_>>())
 }
 
-pub fn parse_mem(
-    connection: &mut PgConnection,
-    uid: i32,
-    files: &[(String, Vec<u8>)],
-) -> Result<Vec<Transaction>, Box<dyn Error>> {
-    let ts = parse_mem_preview(files)?;
-
-    let accs = crate::schema::accounts::table
-        .filter(crate::schema::accounts::user_id.eq(uid))
-        .load::<Account>(connection)?;
-    let account_ids = accs.iter().map(|a| a.id).collect::<Vec<_>>();
-
-    // find out if one of the receipt ids already exists,
-    // warn the user about them and remove them from the list
-    let orig_len = ts.len();
-    let receipt_numbers = ts
+/// Reads the files into the `(name, contents)` pairs the parsers take.
+pub fn read_files(file_names: &[&str]) -> std::io::Result<Vec<(String, Vec<u8>)>> {
+    file_names
         .iter()
-        .flat_map(|t| t.content.receipt_number)
-        .collect::<Vec<_>>();
-    let ex_receipt_numbers = crate::schema::transactions::table
-        .filter(crate::schema::transactions::dsl::receipt_number.eq_any(&receipt_numbers))
-        .filter(crate::schema::transactions::dsl::account_id.eq_any(&account_ids))
-        .load::<Transaction>(connection)?
-        .iter()
-        .flat_map(|t| t.receipt_number)
-        .map(Some)
-        .collect::<Vec<_>>();
-    let ts = ts
-        .into_iter()
-        .filter(|t| !ex_receipt_numbers.contains(&t.content.receipt_number))
-        .collect::<Vec<_>>();
-
-    if ts.len() < orig_len {
-        warn!(
-            "Removed {} of the parsed transactions from the list because they already exist in the database",
-            orig_len - ts.len()
-        );
-    }
-
-    // try to replace the exchange names with an id (unless they were traded over the counter)
-    let isins = ts
-        .iter()
-        .map(|t| t.content.isin.clone())
-        .collect::<Vec<_>>();
-    let exs = crate::schema::stock_exchanges::table
-        .filter(crate::schema::stock_exchanges::dsl::isin.eq_any(&isins))
-        .load::<StockExchange>(connection)?;
-    let mut ts = ts
-        .into_iter()
-        .map(|t| replace_exchange(&exs, t))
-        .collect::<Vec<_>>();
-
-    for t in ts.iter_mut() {
-        let account = accs
-            .iter()
-            .find(|a| {
-                a.iban
-                    .as_ref()
-                    .map(|iban| iban.contains(&t.account_number.to_string()))
-                    .unwrap_or(false)
-            })
-            .ok_or_else(|| {
-                format!(
-                    "Cannot find account for account number {}",
-                    t.account_number
-                )
-            })?;
-
-        t.content.account_id = account.id;
-    }
-
-    let ts = ts.into_iter().map(|t| t.content).collect::<Vec<_>>();
-    let inserted = diesel::insert_into(crate::schema::transactions::table)
-        .values(&ts)
-        .load::<Transaction>(connection)?;
-    info!("Inserted {} transactions into the database", inserted.len());
-
-    Ok(inserted)
-}
-
-pub fn parse_files(
-    connection: &mut PgConnection,
-    uid: i32,
-    file_names: &[&str],
-) -> Result<Vec<Transaction>, Box<dyn Error>> {
-    let files = file_names
-        .iter()
-        .map(|file_name| {
-            let buf = std::fs::read(file_name)?;
-
-            Ok((file_name.to_string(), buf))
-        })
-        .collect::<Result<Vec<(String, Vec<u8>)>, Box<dyn Error>>>()?;
-
-    parse_mem(connection, uid, &files)
+        .map(|file_name| Ok((file_name.to_string(), std::fs::read(file_name)?)))
+        .collect()
 }
 
 pub fn parse_preview_files(
     file_names: &[&str],
 ) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
-    let files = file_names
-        .iter()
-        .map(|file_name| {
-            let buf = std::fs::read(file_name)?;
-
-            Ok((file_name.to_string(), buf))
-        })
-        .collect::<Result<Vec<(String, Vec<u8>)>, Box<dyn Error>>>()?;
-
-    parse_mem_preview(&files)
+    parse_mem_preview(&read_files(file_names)?)
 }
 
 fn extract_with_pdf_extract(buf: &[u8]) -> Result<String, Box<dyn Error>> {
@@ -374,7 +275,8 @@ fn parse_float(s: &str) -> Result<f64, <f64 as FromStr>::Err> {
     s.replace('.', "").replace(',', ".").parse()
 }
 
-fn replace_exchange(
+/// Replaces the exchange's name with its id where it is known, unless traded over the counter.
+pub fn replace_exchange(
     exchanges: &[StockExchange],
     mut transaction: ParsedReceiptTransaction,
 ) -> ParsedReceiptTransaction {
