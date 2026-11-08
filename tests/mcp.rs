@@ -456,6 +456,45 @@ async fn a_write_key_books_changes_and_deletes_only_its_users_transactions() {
         assert!(tool_error(call(&client, tool, arguments).await).contains("not found"));
     }
 
+    let refund: i32 = diesel::insert_into(transactions::table)
+        .values(NewTransaction {
+            account_id: fixture.account,
+            isin: ISIN.into(),
+            date: "2026-05-01T09:00:00Z".parse().unwrap(),
+            units: 0.0,
+            amount: 0,
+            fees: 250,
+            onvista_exchange_id: None,
+            comments: String::new(),
+            exchange: None,
+            receipt_number: None,
+        })
+        .returning(transactions::id)
+        .get_result(&mut renditier::connect(&url).unwrap())
+        .unwrap();
+    let commented = structured(
+        &client,
+        "update_transaction",
+        json!({"id": refund, "comments": "tax refund"}),
+    )
+    .await;
+    assert_eq!(
+        commented["fees"], 2.5,
+        "a stored sign is not judged: {commented}"
+    );
+    assert!(
+        tool_error(
+            call(
+                &client,
+                "update_transaction",
+                json!({"id": refund, "fees": 3})
+            )
+            .await
+        )
+        .contains("zero or negative")
+    );
+    structured(&client, "delete_transaction", json!({"id": refund})).await;
+
     let deleted = structured(&client, "delete_transaction", json!({"id": id})).await;
     assert_eq!(deleted, json!({"deleted": id}));
     let left = structured(&client, "list_transactions", json!({"from": "2026-04-01"})).await;

@@ -324,12 +324,13 @@ pub struct NewTransactionArgs {
     isin: String,
     /// When it was traded or paid, RFC 3339 with an offset, e.g. `2026-03-02T09:00:00+01:00`.
     date: DateTime<Utc>,
-    /// Positive for a buy, negative for a sale, zero for a dividend or a fee.
+    /// Positive for a buy, negative for a sale, zero for a dividend or a standalone fee.
     units: f64,
     /// Euros, without fees: negative for a buy (money goes out), positive for a sale or a
-    /// dividend. At most two decimals.
+    /// dividend, zero for a standalone fee. At most two decimals.
     amount: f64,
-    /// Euros, zero or negative. At most two decimals.
+    /// Euros, zero or negative. At most two decimals. A standalone fee (e.g. for custody) is
+    /// `units` 0, `amount` 0 and the fee here.
     fees: f64,
     #[serde(default)]
     comments: String,
@@ -339,12 +340,12 @@ pub struct NewTransactionArgs {
     receipt_number: Option<i64>,
 }
 
+/// Fields left out or null keep their value, so `exchange` and `receipt_number` cannot be
+/// cleared. The same units and signs as for `create_transaction`.
 #[derive(Deserialize, JsonSchema)]
 pub struct UpdateTransactionArgs {
     /// The transaction's `id`.
     id: i32,
-    /// Fields left out keep their value. The same units and signs as for
-    /// `create_transaction`.
     account: Option<i32>,
     isin: Option<String>,
     date: Option<DateTime<Utc>>,
@@ -615,6 +616,9 @@ impl Renditier {
     ) -> Result<Json<TransactionOut>, String> {
         let amount = args.amount.map(cents).transpose()?;
         let fees = args.fees.map(cents).transpose()?;
+        // Stored rows may have signs the check refuses (a tax refund books positive fees), so
+        // only a change of the money is judged, against the stored rest.
+        let changes_money = args.units.is_some() || amount.is_some() || fees.is_some();
 
         let updated = run(&parts, move |c, user| {
             let stored = service::transactions::get(c, user, args.id)?;
@@ -626,12 +630,20 @@ impl Renditier {
                 amount: amount.unwrap_or(stored.amount),
                 fees: fees.unwrap_or(stored.fees),
                 comments: args.comments.unwrap_or(stored.comments),
+                // The id is resolved from the name, so a new name invalidates it.
+                onvista_exchange_id: if args.exchange.is_some() {
+                    None
+                } else {
+                    stored.onvista_exchange_id
+                },
                 exchange: args.exchange.or(stored.exchange),
                 receipt_number: args.receipt_number.or(stored.receipt_number),
                 ..stored
             };
-            check_signs(transaction.units, transaction.amount, transaction.fees)
-                .map_err(DomainError::Invalid)?;
+            if changes_money {
+                check_signs(transaction.units, transaction.amount, transaction.fees)
+                    .map_err(DomainError::Invalid)?;
+            }
 
             service::transactions::update(c, user, args.id, transaction.clone())?;
             Ok(transaction)
@@ -767,10 +779,11 @@ fn euros(cents: i64) -> f64 {
     cents as f64 / 100.0
 }
 
-/// Refuses fractions of a cent rather than rounding them away unnoticed.
+/// Refuses fractions of a cent rather than rounding them away unnoticed, and amounts too large to
+/// be meant (or to fit) rather than saturating them.
 fn cents(euros: f64) -> Result<i64, String> {
     let cents = (euros * 100.0).round();
-    if !euros.is_finite() || (euros * 100.0 - cents).abs() > 1e-6 {
+    if !euros.is_finite() || (euros * 100.0 - cents).abs() > 1e-6 || cents.abs() > 1e15 {
         return Err(format!(
             "{euros} is not an amount of euros with at most two decimals"
         ));
@@ -948,6 +961,7 @@ mod tests {
         assert_eq!(cents(0.07), Ok(7));
         assert!(cents(1.234).is_err());
         assert!(cents(f64::NAN).is_err());
+        assert!(cents(1e20).is_err());
     }
 
     #[test]
