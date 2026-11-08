@@ -40,7 +40,7 @@ const PeriodSelect = ({ periods, selected }: Props) => {
   const isRunning = running.some(kind => kind === selected);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
       <ToggleGroup
         type="single"
         variant="outline"
@@ -50,12 +50,16 @@ const PeriodSelect = ({ periods, selected }: Props) => {
         // stays selected then.
         onValueChange={key => key !== '' && select(key)}
         aria-label={t('period.label')}
+        // Android scales text with the system font size: on phones the row
+        // spans the width with little padding, and scrolls once even that is
+        // too narrow rather than widening the page.
+        className="max-sm:w-full max-sm:overflow-x-auto"
       >
         {running.map(kind => (
           <ToggleGroupItem
             key={kind}
             value={kind}
-            className="px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground max-sm:grow max-sm:px-1!"
           >
             {t(`period.short.${kind}`)}
           </ToggleGroupItem>
