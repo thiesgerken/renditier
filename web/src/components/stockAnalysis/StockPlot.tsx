@@ -274,7 +274,11 @@ const StockPlot = ({
 
   return (
     <ProgressCard loading={loading} className="px-2">
-      <PlotArea isEmpty={points.length === 0} isLoading={loading}>
+      <PlotArea
+        isEmpty={points.length === 0}
+        emptyText={t('plot.empty.prices')}
+        isLoading={loading}
+      >
         <ComposedChart data={points} {...zoom.chartProps}>
           {timeXAxis(epochs)}
           <YAxis

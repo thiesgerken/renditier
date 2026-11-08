@@ -6,7 +6,6 @@ const de: typeof en = {
     date: 'Datum',
     pickDate: 'Datum wählen',
     loading: 'Lädt',
-    noData: 'Keine Daten',
     save: 'Speichern',
     cancel: 'Abbrechen',
     close: 'Schließen',
@@ -134,12 +133,13 @@ const de: typeof en = {
       month: '1 Monat',
       year: '1 Jahr',
     },
-    noneHeld: 'Keine gehaltenen Wertpapiere',
-    none: 'Noch keine Wertpapiere',
+    noneHeld:
+      'Derzeit keine gehalten. Ohne „Nur gehaltene“ erscheinen alle Wertpapiere.',
+    none: 'Noch keine Wertpapiere. Wertpapiere erscheinen mit ihrer ersten Transaktion.',
   },
   stockComparison: {
     securities: 'Wertpapiere',
-    none: '(keine)',
+    none: 'keine ausgewählt',
     selected: '{{count}} Wertpapiere',
     scale: 'Skala',
     logarithmic: 'Logarithmisch',
@@ -171,8 +171,8 @@ const de: typeof en = {
     title: 'Transaktionen',
     receipts: 'Abrechnungen',
     new: 'Neue Transaktion',
-    none: 'Noch keine Transaktionen',
-    noneForStock: 'Keine Transaktionen',
+    none: 'Noch keine Transaktionen. Neue anlegen oder Abrechnungen hochladen.',
+    noneForStock: 'Keine Transaktionen zu diesem Wertpapier.',
     includesFees: 'enthält Gebühren von {{amount}}',
     kinds: {
       buy: 'Kauf',
@@ -219,7 +219,7 @@ const de: typeof en = {
   accounts: {
     title: 'Depots',
     new: 'Neues Depot',
-    none: 'Noch keine Depots',
+    none: 'Noch keine Depots. Transaktionen werden in einem Depot gebucht, also zuerst eines anlegen.',
     edit: 'Depot bearbeiten',
     create: 'Depot erstellen',
     incomplete: 'Depot ist unvollständig!',
@@ -233,6 +233,13 @@ const de: typeof en = {
     nextPage: 'Nächste Seite',
   },
   plot: {
+    empty: {
+      noTransactions:
+        'Noch keine Transaktionen. Der Verlauf beginnt mit dem ersten Kauf.',
+      period: 'In diesem Zeitraum wurde nichts gehalten.',
+      prices: 'Für diesen Zeitraum gibt es keine Kurse.',
+      noneSelected: 'Wertpapiere zum Vergleichen auswählen.',
+    },
     mode: 'Art',
     modes: {
       earnings: 'Gewinn',
