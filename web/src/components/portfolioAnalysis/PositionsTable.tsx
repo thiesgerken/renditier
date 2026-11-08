@@ -26,15 +26,17 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
+import type { LoadFailure } from '../../useLoadFailure';
 
 interface Props {
   period: PortfolioPerformance | undefined;
   loading: boolean;
+  failure: LoadFailure | null;
   stocks: StocksState;
 }
 
 // The positions held at the end of the period, largest investment first.
-const PositionsTable = ({ period, loading, stocks }: Props) => {
+const PositionsTable = ({ period, loading, failure, stocks }: Props) => {
   const { t } = useTranslation();
   const positions =
     period === undefined
@@ -44,7 +46,7 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
           .sort((a, b) => a.end.invested - b.end.invested);
 
   return (
-    <ProgressCard loading={loading}>
+    <ProgressCard loading={loading} failure={failure}>
       {/* From md up, the dashboard's section heading names the card. */}
       <CardHeader className="md:hidden">
         <CardTitle>{t('dashboard.tabs.positions')}</CardTitle>

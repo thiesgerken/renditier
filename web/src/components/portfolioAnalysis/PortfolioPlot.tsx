@@ -15,6 +15,9 @@ import type {
 } from '../../types/store';
 import { getPeriodRange, periodKey } from '../../selectors/performance';
 import { formatCurrency } from '../../format';
+import { retryPerformance } from '../../slices/performance';
+import { retryPortfolioPlot } from '../../slices/portfolioPlot';
+import useLoadFailure from '../../useLoadFailure';
 import ProgressCard from '../ProgressCard';
 import PlotArea from '../plot/PlotArea';
 import type { TooltipRow } from '../plot/PlotTooltip';
@@ -223,9 +226,13 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
 
   const loading =
     plotData === null || plotData.isFetching || performance.isFetching;
+  const failure = useLoadFailure(
+    [performance, retryPerformance()],
+    plotData && [plotData, retryPortfolioPlot(plotData)]
+  );
 
   return (
-    <ProgressCard loading={loading} className="px-2">
+    <ProgressCard loading={loading} failure={failure} className="px-2">
       <div>
         <PlotArea
           isEmpty={points.length === 0}

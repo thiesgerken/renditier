@@ -146,6 +146,7 @@ const TransactionsTable = ({ transactions, currentPrice }: Props) => {
       initialSorting={[{ id: 'date', desc: true }]}
       // the stock page only renders once everything has loaded
       isLoading={false}
+      failure={null}
       emptyText={t('transactions.noneForStock')}
       onRowClick={transaction => {
         void navigate(`/transactions?id=${transaction.id}`);

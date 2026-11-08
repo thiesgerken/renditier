@@ -11,7 +11,7 @@ import type {
 } from '@reduxjs/toolkit';
 
 import { fetchJson } from '../api';
-import type { AppDispatch, RootState } from '../store';
+import type { AppDispatch, AppThunk, RootState } from '../store';
 import type { ResourceState } from '../types/store';
 import { createAppAsyncThunk } from './createAppAsyncThunk';
 import { needsFetch } from './freshness';
@@ -26,6 +26,8 @@ export interface Resource<T> {
   reducer: Reducer<ResourceState<T>>;
   fetch: AsyncThunk<T, void, ThunkApi>;
   invalidate: ActionCreatorWithoutPayload;
+  // Loads again right away, even though a failed load counts as fresh.
+  retry: () => AppThunk;
 }
 
 // An API list, fetched again once it is outdated or invalidated by a change
@@ -72,6 +74,7 @@ export const createResourceSlice = <T>(
       builder
         .addCase(fetchResource.pending, state => {
           state.isFetching = true;
+          state.error = null;
         })
         .addCase(fetchResource.fulfilled, (_, action) => ({
           isFetching: false,
@@ -102,5 +105,9 @@ export const createResourceSlice = <T>(
     reducer: slice.reducer,
     fetch: fetchResource,
     invalidate: slice.actions.invalidate,
+    retry: () => dispatch => {
+      dispatch(slice.actions.invalidate());
+      void dispatch(fetchResource());
+    },
   };
 };

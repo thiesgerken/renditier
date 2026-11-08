@@ -37,8 +37,13 @@ interface Props {
   performance: ResourceState<StockPerformancePeriod[]>;
 }
 
+// containers/StockAnalysis shows a failed load in place of the whole page.
 const StockPerformanceTable = ({ performance }: Props) => (
-  <ProgressCard loading={performance.isFetching} className="px-2">
+  <ProgressCard
+    loading={performance.isFetching}
+    failure={null}
+    className="px-2"
+  >
     <Table>
       <TableHeader>
         <TableRow>

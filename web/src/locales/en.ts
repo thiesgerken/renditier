@@ -16,6 +16,8 @@ const en = {
     deleteFailed: 'Could not delete',
     unknownError: 'Unknown error',
     reload: 'Reload',
+    loadFailed: 'Could not load the data',
+    retry: 'Try again',
   },
   nav: {
     dashboard: 'Analysis',

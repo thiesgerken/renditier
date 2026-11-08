@@ -25,23 +25,25 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
+import type { LoadFailure } from '../../useLoadFailure';
 
 interface Props {
   periods: PortfolioPerformance[];
   loading: boolean;
+  failure: LoadFailure | null;
   // the periodKey of the dashboard's period, whose row is highlighted
   selected: string | null;
 }
 
 // Every period side by side, to compare them; picking a row makes it the
 // dashboard's period, which is highlighted.
-const PerformanceTable = ({ periods, loading, selected }: Props) => {
+const PerformanceTable = ({ periods, loading, failure, selected }: Props) => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const select = (key: string) => dispatch(selectPeriod(key));
 
   return (
-    <ProgressCard loading={loading}>
+    <ProgressCard loading={loading} failure={failure}>
       {/* From md up, the dashboard's section heading names the card. */}
       <CardHeader className="md:hidden">
         <CardTitle>{t('dashboard.tabs.periods')}</CardTitle>

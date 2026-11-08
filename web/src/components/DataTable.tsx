@@ -45,6 +45,8 @@ import {
   TableHeader,
   TableRow,
 } from './ui/table';
+import type { LoadFailure } from '../useLoadFailure';
+import LoadError from './LoadError';
 
 interface DataTableColumnMeta {
   // Shown next to the header from `md` up; phones get the plain label.
@@ -111,6 +113,8 @@ interface Props<T extends RowData> {
   getRowId: (row: T) => string;
   initialSorting: SortingState;
   isLoading: boolean;
+  // shown instead of the table, whose empty text would claim there is no data
+  failure: LoadFailure | null;
   emptyText: string;
   // Without it, the table shows all rows on one page.
   pagination?: { page: number; onPageChange: (page: number) => void };
@@ -123,6 +127,7 @@ function DataTable<T extends RowData>({
   getRowId,
   initialSorting,
   isLoading,
+  failure,
   emptyText,
   pagination: paging,
   onRowClick,
@@ -168,6 +173,8 @@ function DataTable<T extends RowData>({
       : table.getRowModel().rows;
 
   const openRow = (row: Row<Features, T>) => onRowClick(row.original);
+
+  if (failure !== null) return <LoadError failure={failure} />;
 
   return (
     <div aria-busy={isLoading}>

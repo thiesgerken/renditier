@@ -12,6 +12,7 @@ import { isHeld } from '../../selectors/performance';
 import { capitalizeTitle, findStock } from '../../selectors/stocks';
 import type { FundShare } from '../../selectors/stocks';
 import useTableFormat from '../useTableFormat';
+import type { LoadFailure } from '../../useLoadFailure';
 
 interface HeldPosition {
   stock: Stock;
@@ -52,12 +53,13 @@ interface Props {
   // the positions at the end of this period
   period: PortfolioPerformance | undefined;
   loading: boolean;
+  failure: LoadFailure | null;
   stocks: StocksState;
 }
 
 // The portfolio's holdings, industries, currencies and countries, by invested
 // amount.
-const Breakdowns = ({ period, loading, stocks }: Props) => {
+const Breakdowns = ({ period, loading, failure, stocks }: Props) => {
   const { money } = useTableFormat();
   const { t } = useTranslation();
   // A held position with no positive net cost (more taken out than paid in)
@@ -69,7 +71,7 @@ const Breakdowns = ({ period, loading, stocks }: Props) => {
   );
 
   return (
-    <ProgressCard loading={loading}>
+    <ProgressCard loading={loading} failure={failure}>
       <CardContent className="flex flex-col gap-6">
         {/* onvista only has the funds' composition of today; running periods
             end today, finished ones do not */}

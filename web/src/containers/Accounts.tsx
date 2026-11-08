@@ -16,8 +16,9 @@ import {
   CardTitle,
 } from '../components/ui/card';
 import i18n from '../i18n';
-import { fetchAccounts } from '../slices/accounts';
+import { fetchAccounts, retryAccounts } from '../slices/accounts';
 import { useAppDispatch, useAppSelector } from '../store';
+import useLoadFailure from '../useLoadFailure';
 import type { Account } from '../types/api';
 import useQueryParam from '../useQueryParam';
 import AccountDialog from './AccountDialog';
@@ -57,6 +58,7 @@ const Accounts = () => {
   useEffect(() => {
     void dispatch(fetchAccounts());
   });
+  const failure = useLoadFailure([accounts, retryAccounts()]);
 
   const items = accounts.data ?? NO_ACCOUNTS;
   const initialAccount =
@@ -81,6 +83,7 @@ const Accounts = () => {
             getRowId={account => String(account.id)}
             initialSorting={[{ id: 'name', desc: false }]}
             isLoading={accounts.isFetching}
+            failure={failure}
             emptyText={t('accounts.none')}
             pagination={{
               page: page === null ? 0 : parseInt(page, 10),

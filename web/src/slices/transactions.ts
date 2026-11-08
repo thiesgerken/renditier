@@ -45,4 +45,5 @@ const transactions: Resource<Transaction[]> = createResourceSlice(
 
 export default transactions.reducer;
 export const fetchTransactions = transactions.fetch;
+export const retryTransactions = transactions.retry;
 export const invalidateTransactions = transactions.invalidate;

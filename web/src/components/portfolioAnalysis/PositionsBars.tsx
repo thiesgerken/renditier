@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import useTableFormat from '../useTableFormat';
+import type { LoadFailure } from '../../useLoadFailure';
 
 // The amount of a position per mode (labelled by `positionsBars.modes.*`);
 // null when it is unknown because the position has no price. Sold positions
@@ -49,12 +50,13 @@ interface Props {
   // the positions at the end of this period
   period: PortfolioPerformance | undefined;
   loading: boolean;
+  failure: LoadFailure | null;
   stocks: StocksState;
 }
 
 const isMode = (value: string): value is Mode => value in MODES;
 
-const PositionsBars = ({ period, loading, stocks }: Props) => {
+const PositionsBars = ({ period, loading, failure, stocks }: Props) => {
   const { money } = useTableFormat();
   const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>('invested');
@@ -78,7 +80,7 @@ const PositionsBars = ({ period, loading, stocks }: Props) => {
   const unpriced = positions.filter(p => p.amount === null);
 
   return (
-    <ProgressCard loading={loading}>
+    <ProgressCard loading={loading} failure={failure}>
       <CardContent className="flex flex-col gap-3">
         <BarList
           title={t(`positionsBars.titles.${mode}`)}

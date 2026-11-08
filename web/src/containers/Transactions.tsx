@@ -35,11 +35,12 @@ import {
 } from '../format';
 import i18n from '../i18n';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
-import { fetchAccounts } from '../slices/accounts';
+import { fetchAccounts, retryAccounts } from '../slices/accounts';
 import { uploadReceipts } from '../slices/receipts';
-import { fetchStocks } from '../slices/stocks';
-import { fetchTransactions } from '../slices/transactions';
+import { fetchStocks, retryStocks } from '../slices/stocks';
+import { fetchTransactions, retryTransactions } from '../slices/transactions';
 import { useAppDispatch, useAppSelector } from '../store';
+import useLoadFailure from '../useLoadFailure';
 import type { Stock, Transaction } from '../types/api';
 import type { StocksState } from '../types/store';
 import useQueryParam from '../useQueryParam';
@@ -206,6 +207,11 @@ const Transactions = () => {
     void dispatch(fetchStocks());
     void dispatch(fetchAccounts());
   });
+  const failure = useLoadFailure(
+    [transactions, retryTransactions()],
+    [stocks, retryStocks()],
+    [accounts, retryAccounts()]
+  );
 
   const accountList = accounts.data ?? [];
   const items = transactions.data ?? NO_TRANSACTIONS;
@@ -272,6 +278,7 @@ const Transactions = () => {
             getRowId={transaction => String(transaction.id)}
             initialSorting={[{ id: 'date', desc: true }]}
             isLoading={isLoading}
+            failure={failure}
             emptyText={t('transactions.none')}
             pagination={{
               page: page === null ? 0 : parseInt(page, 10),

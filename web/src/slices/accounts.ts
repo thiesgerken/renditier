@@ -45,3 +45,4 @@ const accounts: Resource<Account[]> = createResourceSlice(
 
 export default accounts.reducer;
 export const fetchAccounts = accounts.fetch;
+export const retryAccounts = accounts.retry;

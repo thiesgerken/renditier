@@ -40,6 +40,10 @@ import {
 import { Label } from './ui/label';
 import { abbreviateTitle, findStock } from '../selectors/stocks';
 import useMediaQuery, { PHONE } from '../useMediaQuery';
+import { retryPerformance } from '../slices/performance';
+import { retryStockPlot } from '../slices/stockPlot';
+import { retryStocks } from '../slices/stocks';
+import useLoadFailure from '../useLoadFailure';
 
 function getData(
   items: StockPlotItem[],
@@ -322,9 +326,16 @@ const StockComparisonPlot = ({
   const loading =
     !every(plotData, p => p !== null && !p.isFetching) ||
     performance.isFetching;
+  const failure = useLoadFailure(
+    [stocks, retryStocks()],
+    [performance, retryPerformance()],
+    ...Object.values(plotData).map(
+      item => item && ([item, retryStockPlot(item)] as const)
+    )
+  );
 
   return (
-    <ProgressCard loading={loading} className="px-2">
+    <ProgressCard loading={loading} failure={failure} className="px-2">
       <PlotArea
         isEmpty={chartPoints.length === 0}
         emptyText={
