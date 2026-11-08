@@ -42,7 +42,7 @@ The tool descriptions say the same, so an agent does not need this page.
 | --- | --- | --- |
 | `list_accounts` | | the user's accounts with their ids |
 | `portfolio` | optional `date`, `account` | each position's title, units, `invested`, `value`, `irr_annual` and the price used; now at the newest quotes, or as of a day's market close |
-| `performance` | optional `account`, `period` | without `period`: the overview of total, today, week/month/year to date, each of the last 12 months (`YYYY-MM`) and each past year (`YYYY`), with start and end snapshots, `irr_annual` and `irr_period`; with `period`: that one period, per position too |
+| `performance` | optional `account`, `period` | without `period`: the overview of total, today, week/month/year to date, each of the last 12 months (`YYYY-MM`) and each past year (`YYYY`), with start and end snapshots, `irr_annual` and `irr_period`; with `period`: that one period, per position too. `Today` is the move of the newest price's trading day, from the previous trading day's close; on weekends, holidays and before the morning's first trade that is not today |
 | `list_transactions` | optional `account`, `isin`, `from`, `to` (inclusive) | transactions with their stock's title and account name, oldest first |
 | `search_stocks` | `query`: ISIN, WKN or part of a name | up to 20 stocks and funds |
 | `get_stock` | `isin` | details, the newest price on each exchange, and the price `portfolio` values it at |
