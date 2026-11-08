@@ -59,6 +59,8 @@ const PeriodSelect = ({ periods, selected }: Props) => {
           <ToggleGroupItem
             key={kind}
             value={kind}
+            // `!` because the group's own padding for spacing 0 sits behind a
+            // more specific selector than a plain px-*.
             className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground max-sm:grow max-sm:px-1!"
           >
             {t(`period.short.${kind}`)}
