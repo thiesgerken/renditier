@@ -6,13 +6,18 @@ All routes are mounted under `/api/` (see `src/web/mod.rs`). Type names refer to
 Authentication is via a Rocket private cookie `user_id`, set by `POST /api/user/login`
 (or, if `trusted_header_authentication` is enabled, by `GET /api/user` reading the
 `Remote-User` header). Every route except `POST /api/user/login` and `GET /api/user`
-requires it and returns `401 Unauthorized` without it.
+requires it and returns `401 Unauthorized` without it. An API key (`Authorization: Bearer rk_...`,
+see `docs/api.md`) works in place of the cookie on every route except `/api/keys`; a read key on
+anything but `GET` returns `403 Forbidden`.
 
 | Method | Path | Query params | Request body | Response body |
 | --- | --- | --- | --- | --- |
 | POST | `/api/user/login` | — | `LoginData` | `UserInfo` (401, no body, on bad credentials) |
 | GET | `/api/user/logout` | — | — | none (200) |
 | GET | `/api/user` | — | — | `UserInfo` (200 logged in; 401 + all-null `UserInfo` carrying `redirect` otherwise; 403 + no body if the cookie names an unknown user) |
+| GET | `/api/keys` | — | — | `ApiKey[]` (session only) |
+| POST | `/api/keys` | — | `NewApiKey` | `CreatedApiKey` (session only; 422 on an empty name or past expiry, 409 on a taken name) |
+| DELETE | `/api/keys/<id>` | — | — | none (200 / 404; session only) |
 | GET | `/api/accounts` | `offset`, `count` (i64) | — | `Account[]` |
 | GET | `/api/accounts/<id>` | — | — | `Account` (404 if not owned) |
 | POST | `/api/accounts` | — | `NewAccount` | `Account` |

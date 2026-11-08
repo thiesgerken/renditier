@@ -23,6 +23,7 @@ import { LANGUAGES, chooseLanguage, chosenLanguage } from '../i18n';
 import type { Language } from '../i18n';
 import { installUpdate } from '../serviceWorker';
 import { useAppSelector } from '../store';
+import ApiKeys from './ApiKeys';
 
 // Each language by its own name, so that it can be found in any.
 const LANGUAGE_NAMES: Record<Language, string> = {
@@ -80,6 +81,8 @@ const Settings = () => {
           </Select>
         </CardContent>
       </Card>
+
+      <ApiKeys />
 
       <Card>
         <CardHeader>

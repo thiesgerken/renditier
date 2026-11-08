@@ -40,7 +40,8 @@ reindeer, and the person who lives off their investments.
 - 📊 **Charts that answer something.** Gain over time with every buy and sell marked, price and
   units held per security, several securities compared on a log scale, and drag to zoom.
 - 👥 **For the household.** Several users with their own depots. Log in with a password, or behind
-  a reverse proxy via its `Remote-User` header; scripts and other apps get read-only API tokens.
+  a reverse proxy via its `Remote-User` header; scripts and agents get read or write API keys,
+  managed in the settings.
 - 📱 **On the phone too.** Installable as a web app on Android, with a layout for small screens,
   German and English, light and dark following the system.
 - 🐳 **Small to run.** One container next to Postgres, built with Nix, running as non-root on a

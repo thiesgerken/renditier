@@ -275,6 +275,42 @@ export interface UserInfo {
   redirect: string | null;
 }
 
+// ---------------------------------------------------------------------------
+// API keys (src/api_keys.rs, src/web/api_keys.rs)
+// ---------------------------------------------------------------------------
+
+// Rust: api_keys::Access. A write key may also read.
+export type ApiKeyAccess = 'read' | 'write';
+
+// Rust: api_keys::ApiKey — everything but the secret.
+// Route: GET /api/keys (session only, newest first)
+export interface ApiKey {
+  id: number;
+  name: string;
+  prefix: string;
+  access: ApiKeyAccess;
+  expiresAt: IsoDateTime | null;
+  createdAt: IsoDateTime;
+  lastUsedAt: IsoDateTime | null;
+}
+
+// Rust: api_keys::NewApiKey
+// Route: POST /api/keys (request body; 422 on an empty name or a past expiry,
+//        409 on a name the user already has)
+export interface NewApiKey {
+  name: string;
+  access: ApiKeyAccess;
+  expiresAt: IsoDateTime | null;
+}
+
+// Rust: api_keys::CreatedApiKey
+// Route: POST /api/keys (response). `token` is the whole credential,
+// rk_<prefix>.<secret>, and is never returned again.
+export interface CreatedApiKey {
+  apiKey: ApiKey;
+  token: string;
+}
+
 // Rust: web::user::LoginData
 // Route: POST /api/user/login (request body)
 export interface LoginData {
