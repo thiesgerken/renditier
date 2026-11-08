@@ -3,6 +3,7 @@ import { cn } from 'cn';
 import { LoaderCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { SECTION_CARD } from './sectionCard';
 import { Card } from './ui/card';
 
 interface Props {
@@ -16,7 +17,10 @@ const ProgressCard = ({ loading, className, children }: Props) => {
   const { t } = useTranslation();
 
   return (
-    <Card className={cn('relative min-h-32', className)} aria-busy={loading}>
+    <Card
+      className={cn(SECTION_CARD, 'relative min-h-32', className)}
+      aria-busy={loading}
+    >
       {children}
       {loading && (
         <LoaderCircle

@@ -8,6 +8,7 @@ import { cn } from 'cn';
 import CompanyLogo from '../components/CompanyLogo';
 import DataTable, { dataTableFeatures } from '../components/DataTable';
 import StockComparisonPlot from '../components/StockComparisonPlot';
+import { SECTION_CARD } from '../components/sectionCard';
 import { Badge } from '../components/ui/badge';
 import {
   Card,
@@ -177,7 +178,7 @@ const StockTable = () => {
           performance={performance}
         />
       </div>
-      <Card>
+      <Card className={SECTION_CARD}>
         <CardHeader>
           <CardTitle>{t('nav.stocks')}</CardTitle>
           <CardAction className="flex items-center gap-2">

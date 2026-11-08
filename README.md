@@ -1,8 +1,6 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo/renditier-lockup-reversed.png">
-    <img alt="Renditier" src="docs/brand/logo/renditier-lockup.png" width="360">
-  </picture>
+  <img alt="Renditier" src="docs/brand/logo/renditier-lockup.png#gh-light-mode-only" width="360">
+  <img alt="Renditier" src="docs/brand/logo/renditier-lockup-reversed.png#gh-dark-mode-only" width="360">
 </p>
 <p align="center"><strong>What your depots are worth, and what they really earned.</strong></p>
 
@@ -58,10 +56,8 @@ and period, across all depots, with data that stays on my own server.
 ## 📸 Screenshots
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dashboard-dark.png">
-    <img alt="Dashboard" src="docs/screenshots/dashboard-light.png" width="1000">
-  </picture>
+  <img alt="Dashboard" src="docs/screenshots/dashboard-light.png#gh-light-mode-only" width="1000">
+  <img alt="Dashboard" src="docs/screenshots/dashboard-dark.png#gh-dark-mode-only" width="1000">
 </p>
 
 <p align="center"><em>The dashboard: depot value, invested amount, gain and IRR, and the gain over time with every buy and sell.</em></p>
@@ -69,10 +65,8 @@ and period, across all depots, with data that stays on my own server.
 <br>
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stock-dark.png">
-    <img alt="A security" src="docs/screenshots/stock-light.png" width="1000">
-  </picture>
+  <img alt="A security" src="docs/screenshots/stock-light.png#gh-light-mode-only" width="1000">
+  <img alt="A security" src="docs/screenshots/stock-dark.png#gh-dark-mode-only" width="1000">
 </p>
 
 <p align="center"><em>A security: its facts from onvista, the price in brand orange and the units held in blue.</em></p>
@@ -80,10 +74,8 @@ and period, across all depots, with data that stays on my own server.
 <br>
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/transactions-dark.png">
-    <img alt="Transactions" src="docs/screenshots/transactions-light.png" width="1000">
-  </picture>
+  <img alt="Transactions" src="docs/screenshots/transactions-light.png#gh-light-mode-only" width="1000">
+  <img alt="Transactions" src="docs/screenshots/transactions-dark.png#gh-dark-mode-only" width="1000">
 </p>
 
 <p align="center"><em>Transactions: buys, sells and dividends with their fees, typed in or read from bank receipts.</em></p>
@@ -91,10 +83,8 @@ and period, across all depots, with data that stays on my own server.
 <br>
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stocks-dark.png">
-    <img alt="Securities" src="docs/screenshots/stocks-light.png" width="1000">
-  </picture>
+  <img alt="Securities" src="docs/screenshots/stocks-light.png#gh-light-mode-only" width="1000">
+  <img alt="Securities" src="docs/screenshots/stocks-dark.png#gh-dark-mode-only" width="1000">
 </p>
 
 <p align="center"><em>Securities compared over any period, and the list with their returns.</em></p>

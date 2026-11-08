@@ -6,7 +6,6 @@ const en = {
     date: 'Date',
     pickDate: 'Pick a date',
     loading: 'Loading',
-    noData: 'No data',
     save: 'Save',
     cancel: 'Cancel',
     close: 'Close',
@@ -133,12 +132,13 @@ const en = {
       month: '1 month',
       year: '1 year',
     },
-    noneHeld: 'No securities held',
-    none: 'No securities yet',
+    noneHeld:
+      'None held right now. Without “Held only”, all securities are listed.',
+    none: 'No securities yet. Securities appear with their first transaction.',
   },
   stockComparison: {
     securities: 'Securities',
-    none: '(none)',
+    none: 'none selected',
     selected: '{{count}} securities',
     scale: 'Scale',
     logarithmic: 'Logarithmic',
@@ -170,8 +170,8 @@ const en = {
     title: 'Transactions',
     receipts: 'Receipts',
     new: 'New transaction',
-    none: 'No transactions yet',
-    noneForStock: 'No transactions',
+    none: 'No transactions yet. Add one, or upload receipts.',
+    noneForStock: 'No transactions for this security.',
     includesFees: 'includes {{amount}} in fees',
     kinds: {
       buy: 'Buy',
@@ -220,7 +220,7 @@ const en = {
   accounts: {
     title: 'Accounts',
     new: 'New account',
-    none: 'No accounts yet',
+    none: 'No accounts yet. Transactions are booked in an account, so create one first.',
     edit: 'Edit account',
     create: 'New account',
     incomplete: 'The account is incomplete.',
@@ -234,6 +234,14 @@ const en = {
     nextPage: 'Next page',
   },
   plot: {
+    // why a plot is empty; each names one cause
+    empty: {
+      noTransactions:
+        'No transactions yet. The development starts with the first purchase.',
+      period: 'Nothing was held in this period.',
+      prices: 'No prices for this period.',
+      noneSelected: 'Pick securities to compare.',
+    },
     mode: 'Metric',
     modes: {
       earnings: 'Gain',

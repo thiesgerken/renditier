@@ -49,7 +49,7 @@ const PositionsTable = ({ period, loading, stocks }: Props) => {
       <CardHeader className="md:hidden">
         <CardTitle>{t('dashboard.tabs.positions')}</CardTitle>
       </CardHeader>
-      <div className="px-2">
+      <div className="px-2 max-sm:px-0">
         <Table>
           <TableHeader>
             <TableRow>

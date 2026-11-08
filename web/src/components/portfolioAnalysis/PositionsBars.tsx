@@ -9,7 +9,6 @@ import type {
 import type { StocksState } from '../../types/store';
 import { findStock, capitalizeTitle } from '../../selectors/stocks';
 import { isHeld, periodGain } from '../../selectors/performance';
-import { formatCurrency } from '../../format';
 import ProgressCard from '../ProgressCard';
 import BarList from '../BarList';
 import type { BarItem } from '../BarList';
@@ -21,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
+import useTableFormat from '../useTableFormat';
 
 // The amount of a position per mode (labelled by `positionsBars.modes.*`);
 // null when it is unknown because the position has no price. Sold positions
@@ -55,6 +55,7 @@ interface Props {
 const isMode = (value: string): value is Mode => value in MODES;
 
 const PositionsBars = ({ period, loading, stocks }: Props) => {
+  const { money } = useTableFormat();
   const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>('invested');
 
@@ -83,7 +84,7 @@ const PositionsBars = ({ period, loading, stocks }: Props) => {
           title={t(`positionsBars.titles.${mode}`)}
           items={items}
           maxRows={MAX_ROWS}
-          formatValue={v => formatCurrency(v, { digits: 0 })}
+          formatValue={v => money(v, { digits: 0 })}
           note={
             unpriced.length > 0
               ? t('positionsBars.unpriced', {
