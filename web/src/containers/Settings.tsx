@@ -57,7 +57,7 @@ const Settings = () => {
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="px-1 text-lg font-medium">{t('settings.title')}</h1>
+      <h1 className="text-lg font-medium">{t('settings.title')}</h1>
 
       <Card className={SECTION_CARD}>
         <CardContent className="flex items-center justify-between gap-4">
