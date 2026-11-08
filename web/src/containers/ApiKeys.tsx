@@ -3,6 +3,7 @@ import { Check, CircleAlert, Copy, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import FormDialogContent from '../components/FormDialogContent';
+import { SECTION_CARD } from '../components/sectionCard';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import {
   AlertDialog,
@@ -333,7 +334,7 @@ const ApiKeys = () => {
   };
 
   return (
-    <Card>
+    <Card className={SECTION_CARD}>
       <CardHeader>
         <CardTitle>{t('settings.apiKeys.title')}</CardTitle>
         <CardDescription>{t('settings.apiKeys.description')}</CardDescription>

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { SECTION_CARD } from '../components/sectionCard';
 import { Button } from '../components/ui/button';
 import {
   Card,
@@ -58,7 +59,7 @@ const Settings = () => {
     <div className="mx-auto flex max-w-xl flex-col gap-4">
       <h1 className="px-1 text-lg font-medium">{t('settings.title')}</h1>
 
-      <Card>
+      <Card className={SECTION_CARD}>
         <CardContent className="flex items-center justify-between gap-4">
           <CardTitle id="settings-language">{t('settings.language')}</CardTitle>
           <Select value={language ?? AUTOMATIC} onValueChange={choose}>
@@ -84,7 +85,7 @@ const Settings = () => {
 
       <ApiKeys />
 
-      <Card>
+      <Card className={SECTION_CARD}>
         <CardHeader>
           <CardTitle>{t('settings.about')}</CardTitle>
         </CardHeader>
