@@ -21,11 +21,12 @@ import { Switch } from '../components/ui/switch';
 import useTableFormat from '../components/useTableFormat';
 import i18n from '../i18n';
 import { abbreviateTitle } from '../selectors/stocks';
-import { fetchPerformance } from '../slices/performance';
+import { fetchPerformance, retryPerformance } from '../slices/performance';
 import { updateStockPlot } from '../slices/stockPlot';
-import { fetchStockReturns } from '../slices/stockReturns';
-import { fetchStocks } from '../slices/stocks';
+import { fetchStockReturns, retryStockReturns } from '../slices/stockReturns';
+import { fetchStocks, retryStocks } from '../slices/stocks';
 import { useAppDispatch, useAppSelector } from '../store';
+import useLoadFailure from '../useLoadFailure';
 import type {
   DataSourceSelection,
   IsoDate,
@@ -146,6 +147,11 @@ const StockTable = () => {
     // Apart from the stocks: it takes a while, and the list shows without it.
     void dispatch(fetchStockReturns());
   });
+  const failure = useLoadFailure(
+    [stocks, retryStocks()],
+    onlyHeld ? [performance, retryPerformance()] : null,
+    [stockReturns, retryStockReturns()]
+  );
 
   // A new array only when the inputs change, so that the table keeps its row
   // models and sorting.
@@ -196,6 +202,7 @@ const StockTable = () => {
             getRowId={stock => stock.isin}
             initialSorting={[]}
             isLoading={loading(stocks) || (onlyHeld && loading(performance))}
+            failure={failure}
             emptyText={onlyHeld ? t('stocks.noneHeld') : t('stocks.none')}
             onRowClick={stock => {
               void navigate(`/stocks/${stock.isin}`);

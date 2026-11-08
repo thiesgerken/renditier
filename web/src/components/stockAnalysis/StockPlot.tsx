@@ -53,6 +53,9 @@ import {
 } from '../plot/PlotControls';
 import type { DateRange } from '../plot/PlotControls';
 import { ZoomReset, useDragZoom } from '../plot/zoom';
+import { retryPerformance } from '../../slices/performance';
+import { retryStockPlot } from '../../slices/stockPlot';
+import useLoadFailure from '../../useLoadFailure';
 
 interface Props {
   isin: string;
@@ -271,9 +274,13 @@ const StockPlot = ({
 
   const loading =
     plotData === null || plotData.isFetching || performance.isFetching;
+  const failure = useLoadFailure(
+    [performance, retryPerformance()],
+    plotData && [plotData, retryStockPlot(plotData)]
+  );
 
   return (
-    <ProgressCard loading={loading} className="px-2">
+    <ProgressCard loading={loading} failure={failure} className="px-2">
       <PlotArea isEmpty={points.length === 0} isLoading={loading}>
         <ComposedChart data={points} {...zoom.chartProps}>
           {timeXAxis(epochs)}

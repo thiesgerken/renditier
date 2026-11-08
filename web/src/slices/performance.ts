@@ -8,4 +8,5 @@ const performance = createResourceSlice<PortfolioPerformance[]>(
 
 export default performance.reducer;
 export const fetchPerformance = performance.fetch;
+export const retryPerformance = performance.retry;
 export const invalidatePerformance = performance.invalidate;

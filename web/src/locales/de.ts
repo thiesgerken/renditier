@@ -17,6 +17,8 @@ const de: typeof en = {
     deleteFailed: 'Löschen fehlgeschlagen',
     unknownError: 'Unbekannter Fehler',
     reload: 'Neu laden',
+    loadFailed: 'Die Daten konnten nicht geladen werden',
+    retry: 'Erneut versuchen',
   },
   nav: {
     dashboard: 'Analyse',

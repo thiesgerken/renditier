@@ -2,8 +2,8 @@ import { useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { fetchPerformance } from '../slices/performance';
-import { fetchStocks } from '../slices/stocks';
+import { fetchPerformance, retryPerformance } from '../slices/performance';
+import { fetchStocks, retryStocks } from '../slices/stocks';
 import { updatePortfolioPlot } from '../slices/portfolioPlot';
 import KpiHeader from '../components/portfolioAnalysis/KpiHeader';
 import PeriodSelect from '../components/portfolioAnalysis/PeriodSelect';
@@ -27,6 +27,7 @@ import {
 } from '../selectors/performance';
 
 import { useAppDispatch, useAppSelector } from '../store';
+import useLoadFailure from '../useLoadFailure';
 import useMediaQuery, { DESKTOP } from '../useMediaQuery';
 import useQueryParam from '../useQueryParam';
 import DashboardSections from './DashboardSections';
@@ -91,6 +92,12 @@ const Dashboard = () => {
     void dispatch(fetchPerformance());
     void dispatch(fetchStocks());
   });
+  const performanceLoad = [performance, retryPerformance()] as const;
+  const performanceFailure = useLoadFailure(performanceLoad);
+  const positionsFailure = useLoadFailure(performanceLoad, [
+    stocks,
+    retryStocks(),
+  ]);
 
   const periods = performance.data ?? [];
   // The backend always sends a Total period, so this is undefined only until
@@ -114,11 +121,13 @@ const Dashboard = () => {
         <PositionsTable
           period={period}
           loading={performance.isFetching}
+          failure={positionsFailure}
           stocks={stocks}
         />
         <PositionsBars
           period={period}
           loading={performance.isFetching}
+          failure={positionsFailure}
           stocks={stocks}
         />
       </div>
@@ -127,6 +136,7 @@ const Dashboard = () => {
       <PerformanceTable
         periods={periods}
         loading={performance.isFetching}
+        failure={performanceFailure}
         selected={period === undefined ? null : periodKey(period)}
       />
     ),
@@ -134,6 +144,7 @@ const Dashboard = () => {
       <Breakdowns
         period={period}
         loading={stocks.isFetching || performance.isFetching}
+        failure={positionsFailure}
         stocks={stocks}
       />
     ),
@@ -164,7 +175,11 @@ const Dashboard = () => {
         )}
       </div>
 
-      {period !== undefined && <KpiHeader period={period} />}
+      {/* Old figures next to cards that say the reload failed would read as
+          current. */}
+      {period !== undefined && performanceFailure === null && (
+        <KpiHeader period={period} />
+      )}
 
       {desktop ? (
         <DashboardSections

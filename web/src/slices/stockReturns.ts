@@ -8,3 +8,4 @@ const stockReturns = createResourceSlice<Record<string, StockReturns>>(
 
 export default stockReturns.reducer;
 export const fetchStockReturns = stockReturns.fetch;
+export const retryStockReturns = stockReturns.retry;

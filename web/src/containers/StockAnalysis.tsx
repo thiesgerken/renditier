@@ -3,8 +3,8 @@ import { map, filter, find, sumBy } from 'lodash';
 import { CircleAlert, LoaderCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { fetchPerformance } from '../slices/performance';
-import { fetchStocks } from '../slices/stocks';
+import { fetchPerformance, retryPerformance } from '../slices/performance';
+import { fetchStocks, retryStocks } from '../slices/stocks';
 import { updateStockPlot } from '../slices/stockPlot';
 import { capitalizeTitle, findStock } from '../selectors/stocks';
 import {
@@ -35,6 +35,8 @@ import {
 import type { StockPerformancePeriod } from '../components/stockAnalysis/StockPerformanceTable';
 import type { DataSourceSelection, IsoDate } from '../types/api';
 import { useAppDispatch, useAppSelector } from '../store';
+import useLoadFailure from '../useLoadFailure';
+import LoadError from '../components/LoadError';
 import type { ResourceState } from '../types/store';
 
 interface Props {
@@ -61,8 +63,20 @@ const StockAnalysis = ({ isin }: Props) => {
     void dispatch(fetchPerformance());
     void dispatch(fetchStocks());
   });
+  const failure = useLoadFailure(
+    [stocks, retryStocks()],
+    [performance, retryPerformance()]
+  );
 
   const stock = findStock(stocks, isin);
+  if (failure !== null)
+    return (
+      <LoadError
+        failure={failure}
+        className="mx-auto max-w-(--breakpoint-lg)"
+      />
+    );
+
   if (stocks.isFetching || performance.isFetching)
     return (
       <div className="flex h-52 items-center justify-center">

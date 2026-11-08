@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import { map } from 'lodash';
 
 import { fetchJson } from '../api';
@@ -110,11 +111,18 @@ const itemFor = (state: PortfolioPlotState, key: PlotKey) => {
 const portfolioPlot = createSlice({
   name: 'portfolioPlot',
   initialState,
-  reducers: {},
+  reducers: {
+    forget: (state, action: PayloadAction<PlotKey>) => {
+      const forgotten = findItem(state.items, action.payload);
+      state.items = state.items.filter(item => item !== forgotten);
+    },
+  },
   extraReducers: builder => {
     builder
       .addCase(fetchPortfolioPlot.pending, (state, action) => {
-        itemFor(state, action.meta.arg).isFetching = true;
+        const item = itemFor(state, action.meta.arg);
+        item.isFetching = true;
+        item.error = null;
       })
       .addCase(fetchPortfolioPlot.fulfilled, (state, action) => {
         const item = itemFor(state, action.meta.arg);
@@ -131,5 +139,15 @@ const portfolioPlot = createSlice({
       });
   },
 });
+
+// Loads again right away, even though a failed load counts as fresh.
+// Takes a stored item as well, but keeps only the key of it.
+export const retryPortfolioPlot =
+  ({ startDate, endDate, source }: PlotKey): AppThunk =>
+  dispatch => {
+    const key = { startDate, endDate, source };
+    dispatch(portfolioPlot.actions.forget(key));
+    void dispatch(fetchPortfolioPlot(key));
+  };
 
 export default portfolioPlot.reducer;
