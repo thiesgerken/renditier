@@ -182,7 +182,9 @@ const Dashboard = () => {
             setTab(dashboardTabParam(toDashboardTab(value)))
           }
         >
-          <TabsList className="w-full sm:w-fit max-sm:group-data-horizontal/tabs:h-auto">
+          {/* Scrolls rather than widening the page when Android's text
+              scaling makes the labels too wide for the phone. */}
+          <TabsList className="w-full sm:w-fit max-sm:overflow-x-auto max-sm:group-data-horizontal/tabs:h-auto">
             {DASHBOARD_TABS.map(value => {
               const Icon = DASHBOARD_TAB_ICONS[value];
 
@@ -192,7 +194,7 @@ const Dashboard = () => {
                 <TabsTrigger
                   key={value}
                   value={value}
-                  className="max-sm:flex-col max-sm:gap-0.5 max-sm:py-1 sm:px-3"
+                  className="max-sm:flex-col max-sm:gap-0.5 max-sm:px-0 max-sm:py-1 sm:px-3"
                 >
                   <Icon />
                   {t(`dashboard.tabs.${value}`)}
