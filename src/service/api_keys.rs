@@ -3,6 +3,7 @@
 //! creates a key is the one moment anyone can read it.
 
 use crate::schema::api_keys;
+use crate::service::DomainError;
 
 use base64::Engine;
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
@@ -14,6 +15,7 @@ use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error};
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use diesel::sql_types::Text;
+use log::info;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs::File;
@@ -85,33 +87,27 @@ pub struct CreatedApiKey {
     pub token: String,
 }
 
-#[derive(Debug)]
-pub enum CreateError {
-    EmptyName,
-    ExpiryNotInFuture,
-    NameTaken,
-    Database(Error),
-}
-
-pub fn list(c: &mut PgConnection, user_id: i32) -> QueryResult<Vec<ApiKey>> {
-    api_keys::table
+pub fn list(c: &mut PgConnection, user_id: i32) -> Result<Vec<ApiKey>, DomainError> {
+    Ok(api_keys::table
         .filter(api_keys::user_id.eq(user_id))
         .order(api_keys::created_at.desc())
         .select(ApiKey::as_select())
-        .load(c)
+        .load(c)?)
 }
 
 pub fn create(
     c: &mut PgConnection,
     user_id: i32,
     key: NewApiKey,
-) -> Result<CreatedApiKey, CreateError> {
+) -> Result<CreatedApiKey, DomainError> {
     let name = key.name.trim();
     if name.is_empty() {
-        return Err(CreateError::EmptyName);
+        return Err(DomainError::Invalid("a key needs a name".into()));
     }
     if key.expires_at.is_some_and(|e| e <= Utc::now()) {
-        return Err(CreateError::ExpiryNotInFuture);
+        return Err(DomainError::Invalid(
+            "the expiry must be in the future".into(),
+        ));
     }
 
     let prefix = format!("{:08x}", u32::from_be_bytes(random_bytes()));
@@ -134,31 +130,41 @@ pub fn create(
             Error::DatabaseError(DatabaseErrorKind::UniqueViolation, ref info)
                 if info.constraint_name() == Some("api_keys_name_unique") =>
             {
-                CreateError::NameTaken
+                DomainError::Invalid(format!("there already is a key named '{name}'"))
             }
-            e => CreateError::Database(e),
+            e => e.into(),
         })?;
 
+    info!(
+        "Created API key '{}' ({:?}) for user {}",
+        api_key.name, api_key.access, user_id
+    );
     Ok(CreatedApiKey {
         api_key,
         token: format!("{TOKEN_PREFIX}{prefix}.{secret}"),
     })
 }
 
-/// Whether the user had a key with this id.
-pub fn delete(c: &mut PgConnection, user_id: i32, id: i32) -> QueryResult<bool> {
+pub fn delete(c: &mut PgConnection, user_id: i32, id: i32) -> Result<(), DomainError> {
     let deleted = diesel::delete(
         api_keys::table
             .filter(api_keys::id.eq(id))
             .filter(api_keys::user_id.eq(user_id)),
     )
     .execute(c)?;
+    if deleted == 0 {
+        return Err(DomainError::NotFound);
+    }
 
-    Ok(deleted > 0)
+    info!("Deleted API key {} of user {}", id, user_id);
+    Ok(())
 }
 
 /// The owner and access of the key in `token`, or `None` if it is malformed, unknown or expired.
-pub fn authenticate(c: &mut PgConnection, token: &str) -> QueryResult<Option<(i32, Access)>> {
+pub fn authenticate(
+    c: &mut PgConnection,
+    token: &str,
+) -> Result<Option<(i32, Access)>, DomainError> {
     let Some((prefix, secret)) = token
         .strip_prefix(TOKEN_PREFIX)
         .and_then(|t| t.split_once('.'))
@@ -233,10 +239,8 @@ mod tests {
     #[test]
     #[ignore = "needs a database in RENDITIER_TEST_DATABASE"]
     fn keys_authenticate_until_they_expire_or_are_deleted() {
-        let url =
-            std::env::var("RENDITIER_TEST_DATABASE").expect("RENDITIER_TEST_DATABASE not set");
-        let mut connection = crate::connect(&url).unwrap();
-        connection.test_transaction::<_, Error, _>(|c| {
+        let mut connection = crate::test_connection();
+        connection.test_transaction::<_, DomainError, _>(|c| {
             let user_id = diesel::insert_into(users::table)
                 .values(NewUser {
                     name: "keyholder".into(),
@@ -296,19 +300,22 @@ mod tests {
                 .execute(c)?;
             assert_eq!(authenticate(c, &write.token)?, None);
 
-            assert!(!delete(c, user_id + 1, read.api_key.id)?);
-            assert!(delete(c, user_id, read.api_key.id)?);
+            assert_eq!(
+                delete(c, user_id + 1, read.api_key.id),
+                Err(DomainError::NotFound)
+            );
+            delete(c, user_id, read.api_key.id)?;
             assert_eq!(authenticate(c, &read.token)?, None);
             assert_eq!(list(c, user_id)?.len(), 1);
 
             // Last, because the unique violation aborts the surrounding transaction.
             assert!(matches!(
-                create(c, user_id, new_key("lumi", Access::Read)),
-                Err(CreateError::NameTaken)
+                create(c, user_id, new_key("  ", Access::Write)),
+                Err(DomainError::Invalid(_))
             ));
             assert!(matches!(
-                create(c, user_id, new_key("  ", Access::Write)),
-                Err(CreateError::EmptyName)
+                create(c, user_id, new_key("lumi", Access::Read)),
+                Err(DomainError::Invalid(_))
             ));
             Ok(())
         });

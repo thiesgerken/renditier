@@ -24,7 +24,7 @@ delete the others.
 | Method | Path | Body | Response |
 | --- | --- | --- | --- |
 | `GET` | `/api/keys` | | the user's keys, newest first, without secrets |
-| `POST` | `/api/keys` | `{"name", "access": "read" \| "write", "expiresAt": ISO 8601 \| null}` | `{"apiKey", "token"}`; 422 on an empty name or a past expiry, 409 on a name the user already has |
+| `POST` | `/api/keys` | `{"name", "access": "read" \| "write", "expiresAt": ISO 8601 \| null}` | `{"apiKey", "token"}`; 400 with `{"error"}` on an empty name, a past expiry or a name the user already has |
 | `DELETE` | `/api/keys/<id>` | | 200, or 404 if the user has no such key |
 
 The `token` in the response to `POST` is the whole key and is never returned again.

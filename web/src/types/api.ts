@@ -295,8 +295,8 @@ export interface ApiKey {
 }
 
 // Rust: api_keys::NewApiKey
-// Route: POST /api/keys (request body; 422 on an empty name or a past expiry,
-//        409 on a name the user already has)
+// Route: POST /api/keys (request body; 400 with an ErrString on an empty name,
+//        a past expiry or a name the user already has)
 export interface NewApiKey {
   name: string;
   access: ApiKeyAccess;

@@ -16,7 +16,7 @@ anything but `GET` returns `403 Forbidden`.
 | GET | `/api/user/logout` | — | — | none (200) |
 | GET | `/api/user` | — | — | `UserInfo` (200 logged in; 401 + all-null `UserInfo` carrying `redirect` otherwise; 403 + no body if the cookie names an unknown user) |
 | GET | `/api/keys` | — | — | `ApiKey[]` (session only) |
-| POST | `/api/keys` | — | `NewApiKey` | `CreatedApiKey` (session only; 422 on an empty name or past expiry, 409 on a taken name) |
+| POST | `/api/keys` | — | `NewApiKey` | `CreatedApiKey` (session only; 400 + `ErrString` on an empty name, a past expiry or a taken name) |
 | DELETE | `/api/keys/<id>` | — | — | none (200 / 404; session only) |
 | GET | `/api/accounts` | `offset`, `count` (i64) | — | `Account[]` |
 | GET | `/api/accounts/<id>` | — | — | `Account` (404 if not owned) |

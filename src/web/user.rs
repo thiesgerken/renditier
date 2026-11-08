@@ -1,6 +1,6 @@
-use crate::api_keys::{self, Access};
 use crate::models::*;
 use crate::schema::*;
+use crate::service::api_keys::{self, Access};
 use crate::verify_password;
 use crate::web::{Config, DbConn};
 
@@ -81,10 +81,16 @@ fn session_user_id(request: &Request<'_>) -> Option<i32> {
 
 /// Who is calling, and with which access. A session may do everything its user may.
 async fn caller(request: &Request<'_>) -> Outcome<(i32, Access), ()> {
-    if let Some(id) = session_user_id(request) {
-        return Outcome::Success((id, Access::Write));
+    match session_user_id(request) {
+        Some(id) => Outcome::Success((id, Access::Write)),
+        None => api_key_caller(request).await,
     }
+}
 
+/// The owner and access of the API key in the `Authorization` header, ignoring any session. For
+/// routes that only machines use, where a session cookie a browser sends along cross-site must
+/// not count.
+pub(crate) async fn api_key_caller(request: &Request<'_>) -> Outcome<(i32, Access), ()> {
     let Some(token) = bearer_token(request) else {
         return Outcome::Error((Status::Unauthorized, ()));
     };
