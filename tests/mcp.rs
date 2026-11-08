@@ -17,8 +17,10 @@ const RECORD: i32 = 990_001;
 
 struct Fixture {
     read_key: String,
+    write_key: String,
     account: i32,
     foreign_account: i32,
+    foreign_transaction: i32,
 }
 
 fn insert_user(c: &mut PgConnection, name: &str) -> (User, Account) {
@@ -48,6 +50,22 @@ fn insert_fixture(c: &mut PgConnection) -> Fixture {
     let run = Utc::now().timestamp_nanos_opt().unwrap();
     let (user, account) = insert_user(c, &format!("agent-{run}"));
     let (_, foreign) = insert_user(c, &format!("other-{run}"));
+    let foreign_transaction = diesel::insert_into(transactions::table)
+        .values(NewTransaction {
+            account_id: foreign.id,
+            isin: ISIN.into(),
+            date: "2026-03-02T09:00:00Z".parse().unwrap(),
+            units: 1.0,
+            amount: -10_000,
+            fees: 0,
+            onvista_exchange_id: None,
+            comments: String::new(),
+            exchange: None,
+            receipt_number: None,
+        })
+        .returning(transactions::id)
+        .get_result(c)
+        .unwrap();
 
     diesel::insert_into(stock_infos::table)
         .values(StockInfo {
@@ -131,22 +149,26 @@ fn insert_fixture(c: &mut PgConnection) -> Fixture {
         .execute(c)
         .unwrap();
 
-    let read_key = api_keys::create(
-        c,
-        user.id,
-        NewApiKey {
-            name: "agent".into(),
-            access: Access::Read,
-            expires_at: None,
-        },
-    )
-    .unwrap()
-    .token;
+    let mut key = |name: &str, access| {
+        api_keys::create(
+            c,
+            user.id,
+            NewApiKey {
+                name: name.into(),
+                access,
+                expires_at: None,
+            },
+        )
+        .unwrap()
+        .token
+    };
 
     Fixture {
-        read_key,
+        read_key: key("reader", Access::Read),
+        write_key: key("writer", Access::Write),
         account: account.id,
         foreign_account: foreign.id,
+        foreign_transaction,
     }
 }
 
@@ -347,4 +369,166 @@ async fn mcp_takes_api_keys_only_and_post_only() {
     assert_eq!(unknown.status(), 401);
     assert_eq!(get.status(), 405);
     assert_eq!(get.headers()["allow"], "POST");
+}
+
+fn tool_error(result: CallToolResult) -> String {
+    assert_eq!(result.is_error, Some(true), "{result:?}");
+    format!("{result:?}")
+}
+
+#[tokio::test]
+#[ignore = "needs a database in RENDITIER_TEST_DATABASE"]
+async fn a_write_key_books_changes_and_deletes_only_its_users_transactions() {
+    let url = database();
+    let fixture = insert_fixture(&mut renditier::connect(&url).unwrap());
+    let base = serve(&url).await;
+    let client = connect(&base, &fixture.write_key).await;
+    let names = client
+        .list_all_tools()
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|tool| tool.name.into_owned())
+        .collect::<Vec<_>>();
+    assert!(
+        names.contains(&"delete_transaction".to_owned()),
+        "{names:?}"
+    );
+
+    let created = structured(
+        &client,
+        "create_transaction",
+        json!({"account": fixture.account, "isin": ISIN.to_lowercase(),
+               "date": "2026-04-01T10:00:00+02:00", "units": -2, "amount": 210.5, "fees": -1.5}),
+    )
+    .await;
+    let id = created["id"].clone();
+    assert_eq!(created["isin"], ISIN, "{created}");
+    assert_eq!(created["date"], "2026-04-01T08:00:00Z");
+    assert_eq!(
+        (created["amount"].clone(), created["fees"].clone()),
+        (json!(210.5), json!(-1.5))
+    );
+
+    let updated = structured(
+        &client,
+        "update_transaction",
+        json!({"id": id, "comments": "partial sale"}),
+    )
+    .await;
+    assert_eq!(updated["comments"], "partial sale");
+    assert_eq!(updated["amount"], 210.5, "the other fields stay: {updated}");
+
+    assert!(
+        tool_error(
+            call(
+                &client,
+                "create_transaction",
+                json!({"account": fixture.account, "isin": ISIN, "date": "2026-04-01T10:00:00Z",
+                       "units": 1, "amount": 100, "fees": 0}),
+            )
+            .await
+        )
+        .contains("negative amount")
+    );
+    assert!(
+        tool_error(
+            call(
+                &client,
+                "create_transaction",
+                json!({"account": fixture.foreign_account, "isin": ISIN,
+                       "date": "2026-04-01T10:00:00Z", "units": 0, "amount": 1, "fees": 0}),
+            )
+            .await
+        )
+        .contains("not found")
+    );
+    for (tool, arguments) in [
+        (
+            "update_transaction",
+            json!({"id": fixture.foreign_transaction, "comments": "mine now"}),
+        ),
+        (
+            "delete_transaction",
+            json!({"id": fixture.foreign_transaction}),
+        ),
+    ] {
+        assert!(tool_error(call(&client, tool, arguments).await).contains("not found"));
+    }
+
+    let refund: i32 = diesel::insert_into(transactions::table)
+        .values(NewTransaction {
+            account_id: fixture.account,
+            isin: ISIN.into(),
+            date: "2026-05-01T09:00:00Z".parse().unwrap(),
+            units: 0.0,
+            amount: 0,
+            fees: 250,
+            onvista_exchange_id: None,
+            comments: String::new(),
+            exchange: None,
+            receipt_number: None,
+        })
+        .returning(transactions::id)
+        .get_result(&mut renditier::connect(&url).unwrap())
+        .unwrap();
+    let commented = structured(
+        &client,
+        "update_transaction",
+        json!({"id": refund, "comments": "tax refund"}),
+    )
+    .await;
+    assert_eq!(
+        commented["fees"], 2.5,
+        "a stored sign is not judged: {commented}"
+    );
+    assert!(
+        tool_error(
+            call(
+                &client,
+                "update_transaction",
+                json!({"id": refund, "fees": 3})
+            )
+            .await
+        )
+        .contains("zero or negative")
+    );
+    structured(&client, "delete_transaction", json!({"id": refund})).await;
+
+    let deleted = structured(&client, "delete_transaction", json!({"id": id})).await;
+    assert_eq!(deleted, json!({"deleted": id}));
+    let left = structured(&client, "list_transactions", json!({"from": "2026-04-01"})).await;
+    assert_eq!(left, json!({"transactions": []}));
+}
+
+#[tokio::test]
+#[ignore = "needs a database in RENDITIER_TEST_DATABASE"]
+async fn a_read_key_cannot_write() {
+    let url = database();
+    let fixture = insert_fixture(&mut renditier::connect(&url).unwrap());
+    let base = serve(&url).await;
+    let client = connect(&base, &fixture.read_key).await;
+
+    let tools = client.list_all_tools().await.unwrap();
+    assert!(
+        tools
+            .iter()
+            .all(|tool| !tool.name.ends_with("_transaction")),
+        "{tools:?}"
+    );
+    let created = call(
+        &client,
+        "create_transaction",
+        json!({"account": fixture.account, "isin": ISIN, "date": "2026-04-01T10:00:00Z",
+               "units": 0, "amount": 1, "fees": 0}),
+    )
+    .await;
+
+    assert!(tool_error(created).contains("needs an API key with write access"));
+    let count = transactions::table
+        .filter(transactions::account_id.eq(fixture.account))
+        .count()
+        .get_result::<i64>(&mut renditier::connect(&url).unwrap())
+        .unwrap();
+    assert_eq!(count, 1);
 }
