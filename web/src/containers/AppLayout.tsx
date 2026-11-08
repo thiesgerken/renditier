@@ -6,7 +6,6 @@ import { cn } from 'cn';
 import {
   ArrowLeftRight,
   ChartLine,
-  CircleUser,
   Landmark,
   LayoutDashboard,
   LogOut,
@@ -16,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import { initials } from '../initials';
 import { installUpdate } from '../serviceWorker';
 import { ignoreUpdate } from '../slices/notifications';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -26,6 +26,7 @@ import {
   AlertTitle,
 } from '../components/ui/alert';
 import { Lockup } from '../components/Logo';
+import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Button } from '../components/ui/button';
 import {
   DropdownMenu,
@@ -166,6 +167,22 @@ const TabBarLink = ({ destination, active }: LinkProps) => (
   </Link>
 );
 
+interface UserAvatarProps {
+  text: string;
+  size?: 'sm' | 'default';
+  className?: string;
+}
+
+// Decoration: the trigger is named by the full name next to it, or by its
+// label on phones.
+const UserAvatar = ({ text, size = 'default', className }: UserAvatarProps) => (
+  <Avatar size={size} aria-hidden="true" className={className}>
+    <AvatarFallback className="bg-secondary font-medium text-secondary-foreground">
+      {text}
+    </AvatarFallback>
+  </Avatar>
+);
+
 interface UserMenuProps {
   name: string | null;
   // The phone's trigger is only an icon, and there is no settings link next
@@ -254,9 +271,11 @@ const AppLayout = ({ children }: Props) => {
       ? toDashboardTab(new URLSearchParams(search).get('tab'))
       : null;
   // App only mounts the layout once logged in, but the state type admits null.
-  const name = useAppSelector(
-    ({ authentication }) => authentication.userInfo?.fullName ?? null
+  const userInfo = useAppSelector(
+    ({ authentication }) => authentication.userInfo
   );
+  const name = userInfo?.fullName ?? null;
+  const userInitials = initials(name, userInfo?.name ?? null);
   const updateAvailable = useAppSelector(
     ({ notifications }) =>
       notifications.updateAvailable && !notifications.updateIgnored
@@ -287,9 +306,11 @@ const AppLayout = ({ children }: Props) => {
             trigger={
               <Button
                 variant="ghost"
-                className="h-9 justify-start gap-3 px-3 font-normal"
+                className="h-9 justify-start gap-2 px-3 font-normal"
               >
-                <CircleUser className="size-4" />
+                {/* Centred on the sidebar's icon column, with the name in line
+                    with the labels above. */}
+                <UserAvatar text={userInitials} size="sm" className="-ml-1" />
                 <span className="truncate">{name}</span>
               </Button>
             }
@@ -308,7 +329,7 @@ const AppLayout = ({ children }: Props) => {
               size="icon-lg"
               aria-label={t('layout.userMenu')}
             >
-              <CircleUser className="size-5" />
+              <UserAvatar text={userInitials} />
             </Button>
           }
         />

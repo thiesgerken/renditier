@@ -8,10 +8,10 @@ import { CardContent } from '../ui/card';
 import BarList from '../BarList';
 import type { BarItem } from '../BarList';
 import { BREAKDOWNS } from '../breakdowns';
-import { formatCurrency } from '../../format';
 import { isHeld } from '../../selectors/performance';
 import { capitalizeTitle, findStock } from '../../selectors/stocks';
 import type { FundShare } from '../../selectors/stocks';
+import useTableFormat from '../useTableFormat';
 import type { LoadFailure } from '../../useLoadFailure';
 
 interface HeldPosition {
@@ -60,6 +60,7 @@ interface Props {
 // The portfolio's holdings, industries, currencies and countries, by invested
 // amount.
 const Breakdowns = ({ period, loading, failure, stocks }: Props) => {
+  const { money } = useTableFormat();
   const { t } = useTranslation();
   // A held position with no positive net cost (more taken out than paid in)
   // has no share of the invested amount to split; spreading its negative
@@ -95,7 +96,7 @@ const Breakdowns = ({ period, loading, failure, stocks }: Props) => {
               )}
               maxRows={maxRows}
               total={sumBy(invested, 'invested')}
-              formatValue={v => formatCurrency(v, { digits: 0 })}
+              formatValue={v => money(v, { digits: 0 })}
             />
           ))}
         </div>

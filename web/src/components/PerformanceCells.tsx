@@ -72,6 +72,8 @@ const TONE_TEXT = { gain: 'text-gain', loss: 'text-loss' };
 
 interface ValueWithChangeProps {
   value: string;
+  // the exact value where `value` is rounded or abbreviated
+  title?: string;
   // see formatChange; nothing is shown below the value when it is null
   change: string | null;
   // whether the change is a gain or a loss; without it, the change is neutral
@@ -83,6 +85,7 @@ interface ValueWithChangeProps {
 // line wraps, so that a cell never takes more than these two lines.
 const ValueWithChange = ({
   value,
+  title,
   change,
   changeTone = null,
 }: ValueWithChangeProps) => {
@@ -90,7 +93,13 @@ const ValueWithChange = ({
 
   return (
     <div className="whitespace-nowrap">
-      {value}
+      {title === undefined ? (
+        value
+      ) : (
+        <abbr title={title} className="no-underline">
+          {value}
+        </abbr>
+      )}
       {change !== null && (
         <div
           className={cn(
@@ -152,7 +161,7 @@ const difference = (start: number | null, end: number | null) =>
   start === null || end === null ? null : end - start;
 
 export const PriceCell = ({ period, className }: CellProps<PositionPeriod>) => {
-  const { money, percent, ratioTone } = useTableFormat();
+  const { money, exactMoney, percent, ratioTone } = useTableFormat();
   const start = getPrice(period.start.dataSource);
   const end = getPrice(period.end.dataSource);
   const ratio = start === null || end === null ? null : (end - start) / start;
@@ -172,6 +181,7 @@ export const PriceCell = ({ period, className }: CellProps<PositionPeriod>) => {
       <WithInfo info={sources}>
         <ValueWithChange
           value={money(end)}
+          title={exactMoney(end)}
           change={formatChange(start, end, money, percent)}
           changeTone={ratioTone(ratio)}
         />
@@ -195,7 +205,7 @@ export const UnitsCell = ({ period, className }: CellProps<PositionPeriod>) => {
 
 export const InvestedCell = ({ period, className }: CellProps<Period>) => {
   const { t } = useTranslation();
-  const { money } = useTableFormat();
+  const { money, exactMoney } = useTableFormat();
   const { start, end } = period;
 
   const line = (label: string, startValue: number, endValue: number) => {
@@ -220,6 +230,7 @@ export const InvestedCell = ({ period, className }: CellProps<Period>) => {
       <WithInfo info={feesInfo}>
         <ValueWithChange
           value={money(-end.invested)}
+          title={exactMoney(-end.invested)}
           change={formatChange(-start.invested, -end.invested, money)}
         />
       </WithInfo>
@@ -230,12 +241,13 @@ export const InvestedCell = ({ period, className }: CellProps<Period>) => {
 // The change of the value includes what was invested or taken out, so it is
 // no gain or loss and stays neutral.
 export const ValueCell = ({ period, className }: CellProps<Period>) => {
-  const { money } = useTableFormat();
+  const { money, exactMoney } = useTableFormat();
 
   return (
     <NumberCell className={className}>
       <ValueWithChange
         value={money(period.end.value)}
+        title={exactMoney(period.end.value)}
         change={formatChange(period.start.value, period.end.value, money)}
       />
     </NumberCell>
@@ -243,7 +255,7 @@ export const ValueCell = ({ period, className }: CellProps<Period>) => {
 };
 
 export const ProfitCell = ({ period, className }: CellProps<Period>) => {
-  const { money, signTone } = useTableFormat();
+  const { money, exactMoney, signTone } = useTableFormat();
   const start = profit(period.start);
   const end = profit(period.end);
 
@@ -251,6 +263,7 @@ export const ProfitCell = ({ period, className }: CellProps<Period>) => {
     <NumberCell className={className} tone={signTone(end)}>
       <ValueWithChange
         value={money(end)}
+        title={exactMoney(end)}
         change={formatChange(start, end, money)}
         changeTone={signTone(difference(start, end))}
       />
