@@ -4,7 +4,7 @@
 //! Money is in euros as decimals, in and out (the domain counts cents). Signs are the domain's:
 //! negative means money goes out of the user's pocket.
 
-use crate::analysis::performance::{PerformanceKind, PortfolioPerformance};
+use crate::analysis::performance::{PerformanceKind, PortfolioPerformance, PositionSnapshot};
 use crate::analysis::portfolio::Portfolio as DomainPortfolio;
 use crate::analysis::price::{DataSource, Price};
 use crate::models::*;
@@ -31,7 +31,7 @@ use rmcp::transport::streamable_http_server::{StreamableHttpServerConfig, Stream
 use rmcp::{ErrorData, Json, RoleServer, ServerHandler, tool, tool_router};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 const INSTRUCTIONS: &str = "Renditier tracks the user's securities portfolio: their accounts \
@@ -40,7 +40,8 @@ stocks and funds involved. Money is in euros as decimals everywhere, in argument
 Signs follow the user's pocket: negative means money goes out (a buy, a fee), positive means it \
 comes in (a sale, a dividend). So `invested` is negative while more was bought than sold, and \
 the gain is `value + invested`. IRRs are decimals (0.05 is 5 %): `irr_annual` per year, \
-`irr_period` over the period it belongs to. Dates are `YYYY-MM-DD` days in the server's time zone.";
+`irr_period` over the period it belongs to. Dates are `YYYY-MM-DD` days in the server's time zone. \
+Without write tools in the list, the key is read-only; tell the user so.";
 
 /// The `/mcp` endpoint. Stateless: every request stands alone.
 pub type Service = StreamableHttpService<Renditier, NeverSessionManager>;
@@ -132,6 +133,8 @@ pub struct Portfolio {
 #[derive(Serialize, JsonSchema)]
 pub struct Position {
     isin: String,
+    /// The stock's or fund's name. Absent when Renditier does not know the ISIN.
+    title: Option<String>,
     /// Zero for a position that was sold off entirely.
     units: f64,
     invested: f64,
@@ -152,10 +155,14 @@ pub struct Quote {
 }
 
 #[derive(Deserialize, JsonSchema)]
-pub struct AccountArg {
+pub struct PerformanceArgs {
     /// Only this account (an `id` from `list_accounts`). All of the user's accounts when left
     /// out.
     account: Option<i32>,
+    /// One `period` of the overview, to get it with its positions: `Total`, `Today`,
+    /// `WeekToDate`, `MonthToDate`, `YearToDate`, a month as `YYYY-MM` or a year as `YYYY`.
+    /// The overview of all periods, without positions, when left out.
+    period: Option<String>,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -165,10 +172,10 @@ pub struct Performances {
 
 #[derive(Serialize, JsonSchema)]
 pub struct Performance {
-    /// `Total` since the first transaction, `Today`, `WeekToDate`, `MonthToDate` and
-    /// `YearToDate`, or a whole past calendar month (`MonthToMonth`, the last 12) or year
-    /// (`YearToYear`).
-    kind: PerformanceKind,
+    /// `Total` since the first transaction, `Today`, `WeekToDate`, `MonthToDate`,
+    /// `YearToDate`, one of the last 12 whole calendar months as `YYYY-MM`, or a whole past
+    /// calendar year as `YYYY`.
+    period: String,
     start: Snapshot,
     end: Snapshot,
     /// Internal rate of return per year, as a decimal (0.05 is 5 %). Absent when it cannot be
@@ -176,8 +183,9 @@ pub struct Performance {
     irr_annual: Option<f64>,
     /// Internal rate of return over the period itself, as a decimal (0.05 is 5 %).
     irr_period: Option<f64>,
-    /// By ISIN.
-    positions: BTreeMap<String, PositionPerformance>,
+    /// By ISIN. Only when a single `period` was asked for.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    positions: Option<BTreeMap<String, PositionPerformance>>,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -194,6 +202,8 @@ pub struct Snapshot {
 
 #[derive(Serialize, JsonSchema)]
 pub struct PositionPerformance {
+    /// The stock's or fund's name. Absent when Renditier does not know the ISIN.
+    title: Option<String>,
     start: Snapshot,
     end: Snapshot,
     /// Internal rate of return per year, as a decimal (0.05 is 5 %). Absent when it cannot be
@@ -225,7 +235,10 @@ pub struct Transactions {
 pub struct TransactionOut {
     id: i32,
     account: i32,
+    account_name: String,
     isin: String,
+    /// The stock's or fund's name. Absent when Renditier does not know the ISIN.
+    title: Option<String>,
     date: DateTime<Utc>,
     /// Positive for a buy, negative for a sale, zero for a dividend or a fee.
     units: f64,
@@ -400,7 +413,8 @@ impl Renditier {
 
     #[tool(
         description = "The user's portfolio: what each position cost and is worth, and its \
-        IRR. Now at the latest prices, or as of a past day's market close. Euros as decimals. \
+        IRR. Without `date`, now at the newest quotes, which can differ from a day's official \
+        close; with `date`, as of that day's market close. Euros as decimals. \
         `invested` counts from the user's pocket: negative means more money went out (buys, \
         fees) than came back (sales, dividends). The gain is `value + invested`.",
         annotations(read_only_hint = true, open_world_hint = false)
@@ -413,15 +427,17 @@ impl Renditier {
         let portfolio = match args.date {
             Some(date) => {
                 run(&parts, move |c, user| {
-                    service::analysis::historic_portfolio(c, user, args.account, date)
-                        .map(portfolio_out)
+                    let p = service::analysis::historic_portfolio(c, user, args.account, date)?;
+                    let titles = titles(c, p.stocks.iter().map(|s| &s.isin))?;
+                    Ok(portfolio_out(p, &titles))
                 })
                 .await?
             }
             None => {
                 run(&parts, move |c, user| {
-                    service::analysis::portfolio(c, user, args.account, Utc::now())
-                        .map(portfolio_out)
+                    let p = service::analysis::portfolio(c, user, args.account, Utc::now())?;
+                    let titles = titles(c, p.stocks.iter().map(|s| &s.isin))?;
+                    Ok(portfolio_out(p, &titles))
                 })
                 .await?
             }
@@ -433,25 +449,42 @@ impl Renditier {
     #[tool(
         description = "How the user's portfolio performed: in total, today, week, month and \
         year to date, in each of the last 12 calendar months and in each past calendar year. \
-        Each period has its start and end snapshot, its IRR per year and over the period, and \
-        the same per position. Euros as decimals; `invested` and `fees` are negative when money \
-        went out.",
+        Each period has its start and end snapshot and its IRR per year and over the period. \
+        Without `period`, the overview of all periods; with `period`, that one with the same \
+        per position. Euros as decimals; `invested` and `fees` are negative when money went \
+        out.",
         annotations(read_only_hint = true, open_world_hint = false)
     )]
     async fn performance(
         &self,
         Extension(parts): Extension<Parts>,
-        Parameters(args): Parameters<AccountArg>,
+        Parameters(args): Parameters<PerformanceArgs>,
     ) -> Result<Json<Performances>, String> {
         let timezone = self.timezone;
         let periods = run(&parts, move |c, user| {
-            service::analysis::performance(c, user, args.account, Utc::now(), timezone)
+            let periods =
+                service::analysis::performance(c, user, args.account, Utc::now(), timezone)?;
+            let Some(period) = args.period else {
+                return Ok(periods
+                    .into_iter()
+                    .map(|p| performance_out(p, None))
+                    .collect());
+            };
+
+            let labels = periods.iter().map(period_label).collect::<Vec<_>>();
+            let Some(index) = labels.iter().position(|l| *l == period) else {
+                return Err(DomainError::Invalid(format!(
+                    "there is no period {period:?}, only {}",
+                    labels.join(", ")
+                )));
+            };
+            let p = periods.into_iter().nth(index).expect("found above");
+            let titles = titles(c, p.positions.keys())?;
+            Ok(vec![performance_out(p, Some(&titles))])
         })
         .await?;
 
-        Ok(Json(Performances {
-            periods: periods.into_iter().map(performance_out).collect(),
-        }))
+        Ok(Json(Performances { periods }))
     }
 
     #[tool(
@@ -475,14 +508,17 @@ impl Renditier {
                 .transpose()?,
         };
         let mut transactions = run(&parts, move |c, user| {
-            service::transactions::list(c, user, filter, None, None)
+            let transactions = service::transactions::list(c, user, filter, None, None)?;
+            let names = Names::load(c, user, &transactions)?;
+            Ok(transactions
+                .into_iter()
+                .map(|t| transaction_out(t, &names))
+                .collect::<Vec<_>>())
         })
         .await?;
         transactions.sort_by_key(|t| t.date);
 
-        Ok(Json(Transactions {
-            transactions: transactions.into_iter().map(transaction_out).collect(),
-        }))
+        Ok(Json(Transactions { transactions }))
     }
 
     #[tool(
@@ -598,11 +634,13 @@ impl Renditier {
         check_signs(transaction.units, transaction.amount, transaction.fees)?;
 
         let created = run(&parts, move |c, user| {
-            service::transactions::create(c, user, transaction)
+            let created = service::transactions::create(c, user, transaction)?;
+            let names = Names::load(c, user, std::slice::from_ref(&created))?;
+            Ok(transaction_out(created, &names))
         })
         .await?;
 
-        Ok(Json(transaction_out(created)))
+        Ok(Json(created))
     }
 
     #[tool(
@@ -653,11 +691,12 @@ impl Renditier {
             }
 
             service::transactions::update(c, user, args.id, transaction.clone())?;
-            Ok(transaction)
+            let names = Names::load(c, user, std::slice::from_ref(&transaction))?;
+            Ok(transaction_out(transaction, &names))
         })
         .await?;
 
-        Ok(Json(transaction_out(updated)))
+        Ok(Json(updated))
     }
 
     #[tool(
@@ -806,6 +845,54 @@ fn cents(euros: f64) -> Result<i64, String> {
     Ok(cents as i64)
 }
 
+/// Units add up to noise like `0.030000000000000002` too. Six decimals keep fractional shares.
+fn units(units: f64) -> f64 {
+    (units * 1e6).round() / 1e6
+}
+
+/// Titles by ISIN, so an agent need not guess names from ISINs.
+fn titles<'a>(
+    c: &mut PgConnection,
+    isins: impl Iterator<Item = &'a String>,
+) -> Result<HashMap<String, String>, DomainError> {
+    service::stocks::titles(c, &isins.cloned().collect::<Vec<_>>())
+}
+
+/// What a transaction's ids stand for.
+struct Names {
+    titles: HashMap<String, String>,
+    accounts: HashMap<i32, String>,
+}
+
+impl Names {
+    fn load(
+        c: &mut PgConnection,
+        user_id: i32,
+        transactions: &[Transaction],
+    ) -> Result<Self, DomainError> {
+        Ok(Names {
+            titles: titles(c, transactions.iter().map(|t| &t.isin))?,
+            accounts: service::accounts::list(c, user_id, None, None)?
+                .into_iter()
+                .map(|a| (a.id, a.name))
+                .collect(),
+        })
+    }
+}
+
+/// How `performance` names a period, and takes it as its `period` argument.
+fn period_label(p: &PortfolioPerformance) -> String {
+    match p.kind {
+        PerformanceKind::Total => "Total".into(),
+        PerformanceKind::Today => "Today".into(),
+        PerformanceKind::WeekToDate => "WeekToDate".into(),
+        PerformanceKind::MonthToDate => "MonthToDate".into(),
+        PerformanceKind::YearToDate => "YearToDate".into(),
+        PerformanceKind::MonthToMonth => p.end.date.format("%Y-%m").to_string(),
+        PerformanceKind::YearToYear => p.end.date.format("%Y").to_string(),
+    }
+}
+
 /// The signs an agent is most likely to get wrong, checked before they end up in the books.
 fn check_signs(units: f64, amount: i64, fees: i64) -> Result<(), String> {
     if fees > 0 {
@@ -821,7 +908,7 @@ fn check_signs(units: f64, amount: i64, fees: i64) -> Result<(), String> {
     Ok(())
 }
 
-fn portfolio_out<T: Price>(p: DomainPortfolio<T>) -> Portfolio {
+fn portfolio_out<T: Price>(p: DomainPortfolio<T>, titles: &HashMap<String, String>) -> Portfolio {
     Portfolio {
         invested: money(p.invested),
         value: p.value.map(money),
@@ -830,8 +917,9 @@ fn portfolio_out<T: Price>(p: DomainPortfolio<T>) -> Portfolio {
             .stocks
             .into_iter()
             .map(|s| Position {
+                title: titles.get(&s.isin).cloned(),
                 isin: s.isin,
-                units: s.units,
+                units: units(s.units),
                 invested: money(s.invested),
                 value: s.value.map(money),
                 irr_annual: s.irr,
@@ -841,9 +929,13 @@ fn portfolio_out<T: Price>(p: DomainPortfolio<T>) -> Portfolio {
     }
 }
 
-fn performance_out(p: PortfolioPerformance) -> Performance {
+/// With `titles`, including the positions.
+fn performance_out(
+    p: PortfolioPerformance,
+    titles: Option<&HashMap<String, String>>,
+) -> Performance {
     Performance {
-        kind: p.kind,
+        period: period_label(&p),
         start: Snapshot {
             date: p.start.date,
             units: None,
@@ -860,36 +952,40 @@ fn performance_out(p: PortfolioPerformance) -> Performance {
         },
         irr_annual: p.irr_annual,
         irr_period: p.irr_period,
-        positions: p
-            .positions
-            .into_iter()
-            .map(|(isin, p)| {
-                let snapshot = |s: crate::analysis::performance::PositionSnapshot| Snapshot {
-                    date: s.date,
-                    units: Some(s.units),
-                    invested: money(s.invested),
-                    fees: money(s.fees),
-                    value: s.value.map(money),
-                };
-                let position = PositionPerformance {
-                    start: snapshot(p.start),
-                    end: snapshot(p.end),
-                    irr_annual: p.irr_annual,
-                    irr_period: p.irr_period,
-                };
-                (isin, position)
-            })
-            .collect(),
+        positions: titles.map(|titles| {
+            p.positions
+                .into_iter()
+                .map(|(isin, p)| {
+                    let snapshot = |s: PositionSnapshot| Snapshot {
+                        date: s.date,
+                        units: Some(units(s.units)),
+                        invested: money(s.invested),
+                        fees: money(s.fees),
+                        value: s.value.map(money),
+                    };
+                    let position = PositionPerformance {
+                        title: titles.get(&isin).cloned(),
+                        start: snapshot(p.start),
+                        end: snapshot(p.end),
+                        irr_annual: p.irr_annual,
+                        irr_period: p.irr_period,
+                    };
+                    (isin, position)
+                })
+                .collect()
+        }),
     }
 }
 
-fn transaction_out(t: Transaction) -> TransactionOut {
+fn transaction_out(t: Transaction, names: &Names) -> TransactionOut {
     TransactionOut {
         id: t.id,
         account: t.account_id,
+        account_name: names.accounts[&t.account_id].clone(),
+        title: names.titles.get(&t.isin).cloned(),
         isin: t.isin,
         date: t.date,
-        units: t.units,
+        units: units(t.units),
         amount: euros(t.amount),
         fees: euros(t.fees),
         comments: t.comments,
@@ -959,6 +1055,12 @@ mod tests {
         assert!(!read.may_use(&tool(None)));
         assert!(write.may_use(&tool(Some(false))));
         assert!(write.may_use(&tool(None)));
+    }
+
+    #[test]
+    fn units_are_rounded_to_six_decimals() {
+        assert_eq!(units(0.030000000000000002), 0.03);
+        assert_eq!(units(47.730599999999995), 47.7306);
     }
 
     #[test]

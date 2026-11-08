@@ -290,6 +290,7 @@ async fn an_agent_reads_the_portfolio_with_a_read_key() {
     let portfolio = structured(&client, "portfolio", json!({"account": fixture.account})).await;
     let position = &portfolio["positions"][0];
     assert_eq!(position["isin"], ISIN, "{portfolio}");
+    assert_eq!(position["title"], "MCP Test Fund");
     assert_eq!(position["invested"], -1009.9);
     assert_eq!(position["value"], 1050.0);
     assert_eq!(position["price"]["exchange"], "Xetra");
@@ -302,8 +303,23 @@ async fn an_agent_reads_the_portfolio_with_a_read_key() {
     }
 
     let performance = structured(&client, "performance", json!({})).await;
-    assert_eq!(performance["periods"][0]["kind"], "Total", "{performance}");
+    assert_eq!(
+        performance["periods"][0]["period"], "Total",
+        "{performance}"
+    );
     assert_eq!(performance["periods"][0]["end"]["invested"], -1009.9);
+    assert_eq!(performance["periods"][0]["positions"], Value::Null);
+    let total = structured(&client, "performance", json!({"period": "Total"})).await;
+    assert_eq!(total["periods"].as_array().unwrap().len(), 1, "{total}");
+    assert_eq!(
+        total["periods"][0]["positions"][ISIN]["title"],
+        "MCP Test Fund"
+    );
+    let unknown = call(&client, "performance", json!({"period": "1999"})).await;
+    assert!(
+        format!("{unknown:?}").contains("there is no period"),
+        "{unknown:?}"
+    );
 
     let transactions = structured(
         &client,
@@ -315,6 +331,8 @@ async fn an_agent_reads_the_portfolio_with_a_read_key() {
     assert_eq!(transaction["amount"], -1000.0, "{transactions}");
     assert_eq!(transaction["fees"], -9.9);
     assert_eq!(transaction["account"], fixture.account);
+    assert_eq!(transaction["account_name"], "Depot");
+    assert_eq!(transaction["title"], "MCP Test Fund");
     let before = structured(&client, "list_transactions", json!({"to": "2026-03-01"})).await;
     assert_eq!(before, json!({"transactions": []}));
 

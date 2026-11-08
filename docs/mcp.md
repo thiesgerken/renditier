@@ -25,6 +25,7 @@ The server is stateless: no session id, JSON responses, no server-sent events. `
 ## Units
 
 - Money is in **euros as decimals**, in arguments and results (the REST API counts cents).
+  Results are rounded to cents, and units to six decimals.
 - Signs follow the user's pocket: **negative means money goes out** (a buy, a fee), positive means
   it comes in (a sale, a dividend). `invested` is negative while more was bought than sold, and the
   gain is `value + invested`.
@@ -40,9 +41,9 @@ The tool descriptions say the same, so an agent does not need this page.
 | Tool | Arguments | Result |
 | --- | --- | --- |
 | `list_accounts` | | the user's accounts with their ids |
-| `portfolio` | optional `date`, `account` | each position's units, `invested`, `value`, `irr_annual` and the price used; now, or as of a day's market close |
-| `performance` | optional `account` | total, today, week/month/year to date, each of the last 12 months and each past year: start and end snapshots, `irr_annual`, `irr_period`, per position too |
-| `list_transactions` | optional `account`, `isin`, `from`, `to` (inclusive) | transactions, oldest first |
+| `portfolio` | optional `date`, `account` | each position's title, units, `invested`, `value`, `irr_annual` and the price used; now at the newest quotes, or as of a day's market close |
+| `performance` | optional `account`, `period` | without `period`: the overview of total, today, week/month/year to date, each of the last 12 months (`YYYY-MM`) and each past year (`YYYY`), with start and end snapshots, `irr_annual` and `irr_period`; with `period`: that one period, per position too |
+| `list_transactions` | optional `account`, `isin`, `from`, `to` (inclusive) | transactions with their stock's title and account name, oldest first |
 | `search_stocks` | `query`: ISIN, WKN or part of a name | up to 20 stocks and funds |
 | `get_stock` | `isin` | details, the newest price on each exchange, and the price `portfolio` values it at |
 | `price_history` | `isin`, `from`, `to` | daily closes from the most preferred exchange that has any |
