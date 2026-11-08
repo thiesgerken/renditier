@@ -70,7 +70,6 @@ export interface PeriodState {
   selected: string;
 }
 
-// POST /api/receipts returns one entry per uploaded file.
 export interface ReceiptsState {
   isUploading: boolean;
   data: ReceiptImport | null;

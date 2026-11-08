@@ -6,6 +6,7 @@ use crate::service::DomainError;
 use diesel::prelude::*;
 use log::info;
 use serde::Serialize;
+use std::collections::HashSet;
 
 #[derive(Debug, Serialize)]
 pub struct ReceiptImport<T> {
@@ -38,54 +39,80 @@ pub fn import(
     book(c, plan)
 }
 
+/// `parsed` holds the transactions of each file.
 fn plan(
     c: &mut PgConnection,
     user_id: i32,
-    parsed: Vec<ParsedReceiptTransaction>,
+    parsed: Vec<Vec<ParsedReceiptTransaction>>,
 ) -> Result<ReceiptImport<NewTransaction>, DomainError> {
     let accounts = accounts::table
         .filter(accounts::user_id.eq(user_id))
         .load::<Account>(c)?;
     let exchanges = stock_exchanges::table
-        .filter(stock_exchanges::isin.eq_any(parsed.iter().map(|t| &t.content.isin)))
+        .filter(stock_exchanges::isin.eq_any(parsed.iter().flatten().map(|t| &t.content.isin)))
         .load::<StockExchange>(c)?;
 
-    let ts = parsed
+    let files = parsed
         .into_iter()
-        .map(|t| {
-            let account = accounts
-                .iter()
-                .find(|a| {
-                    a.iban
-                        .as_ref()
-                        .is_some_and(|iban| iban.contains(&t.account_number))
-                })
-                .ok_or_else(|| {
-                    DomainError::Invalid(format!(
-                        "no account matches the account number {}",
-                        t.account_number
-                    ))
-                })?;
-
-            Ok(NewTransaction {
-                account_id: account.id,
-                ..receipts::replace_exchange(&exchanges, t).content
-            })
+        .map(|file| {
+            file.into_iter()
+                .map(|t| to_new_transaction(&accounts, &exchanges, t))
+                .collect::<Result<Vec<_>, _>>()
         })
-        .collect::<Result<Vec<_>, DomainError>>()?;
+        .collect::<Result<Vec<_>, _>>()?;
 
-    let booked = transactions::table
+    // Receipt numbers booked already or by an earlier file of this upload. Not by an earlier
+    // transaction of the same file, since one receipt may yield several transactions.
+    let mut seen = transactions::table
         .filter(transactions::account_id.eq_any(accounts.iter().map(|a| a.id)))
-        .filter(transactions::receipt_number.eq_any(ts.iter().filter_map(|t| t.receipt_number)))
+        .filter(
+            transactions::receipt_number
+                .eq_any(files.iter().flatten().filter_map(|t| t.receipt_number)),
+        )
         .select(transactions::receipt_number)
-        .load::<Option<i64>>(c)?;
-    let (duplicates, transactions) = ts
+        .load::<Option<i64>>(c)?
         .into_iter()
-        .partition(|t| booked.contains(&t.receipt_number));
+        .flatten()
+        .collect::<HashSet<_>>();
 
-    Ok(ReceiptImport {
-        transactions,
-        duplicates,
+    let mut import = ReceiptImport {
+        transactions: Vec::new(),
+        duplicates: Vec::new(),
+    };
+    for file in files {
+        let (duplicates, transactions): (Vec<_>, Vec<_>) = file
+            .into_iter()
+            .partition(|t| t.receipt_number.is_some_and(|n| seen.contains(&n)));
+        seen.extend(transactions.iter().filter_map(|t| t.receipt_number));
+        import.transactions.extend(transactions);
+        import.duplicates.extend(duplicates);
+    }
+
+    Ok(import)
+}
+
+fn to_new_transaction(
+    accounts: &[Account],
+    exchanges: &[StockExchange],
+    t: ParsedReceiptTransaction,
+) -> Result<NewTransaction, DomainError> {
+    let account = accounts
+        .iter()
+        .find(|a| {
+            a.iban
+                .as_ref()
+                .is_some_and(|iban| iban.contains(&t.account_number))
+        })
+        .ok_or_else(|| {
+            DomainError::Invalid(format!(
+                "no account matches the account number {}",
+                t.account_number
+            ))
+        })?;
+
+    Ok(NewTransaction {
+        account_id: account.id,
+        ..receipts::replace_exchange(exchanges, t).content
     })
 }
 
@@ -154,19 +181,31 @@ mod tests {
                 })
                 .get_result(c)?;
 
-            let first = plan(c, user.id, vec![parsed(1)]).unwrap();
+            let first = plan(c, user.id, vec![vec![parsed(1)]]).unwrap();
             let first = book(c, first).unwrap();
             assert_eq!(first.transactions.len(), 1);
             assert_eq!(first.transactions[0].account_id, account.id);
 
-            let preview = plan(c, user.id, vec![parsed(1), parsed(2)]).unwrap();
             let numbers =
                 |ts: &[NewTransaction]| ts.iter().map(|t| t.receipt_number).collect::<Vec<_>>();
-            assert_eq!(numbers(&preview.transactions), [Some(2)]);
-            assert_eq!(numbers(&preview.duplicates), [Some(1)]);
+
+            // 1 is booked already, the second file repeats the first, and 3 is one receipt
+            // yielding two transactions.
+            let preview = plan(
+                c,
+                user.id,
+                vec![
+                    vec![parsed(1), parsed(2)],
+                    vec![parsed(2)],
+                    vec![parsed(3), parsed(3)],
+                ],
+            )
+            .unwrap();
+            assert_eq!(numbers(&preview.transactions), [Some(2), Some(3), Some(3)]);
+            assert_eq!(numbers(&preview.duplicates), [Some(1), Some(2)]);
 
             assert_eq!(
-                plan(c, -1, vec![parsed(3)]).map(|_| ()),
+                plan(c, -1, vec![vec![parsed(4)]]).map(|_| ()),
                 Err(DomainError::Invalid(
                     "no account matches the account number 1234567".into()
                 ))

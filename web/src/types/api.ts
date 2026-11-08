@@ -295,8 +295,7 @@ export interface FileContents {
 }
 
 // Rust: service::receipts::ReceiptImport (no rename_all)
-// Route: POST /api/receipts (response body; with ?preview=true, `transactions`
-// holds what would be booked, so without ids)
+// Route: POST /api/receipts (response body)
 export interface ReceiptImport {
   transactions: Transaction[];
   // already booked under the same receipt number, and therefore skipped

@@ -35,15 +35,14 @@ pub struct ParsedReceiptTransaction {
     pub over_the_counter: bool,
 }
 
+/// The transactions on each file, in the order of `files`.
 pub fn parse_mem_preview(
     files: &[(String, Vec<u8>)],
-) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
-    let ts = files
+) -> Result<Vec<Vec<ParsedReceiptTransaction>>, Box<dyn Error>> {
+    Ok(files
         .iter()
         .map(|(file_name, buf)| parse_receipt(buf).map_err(|e| format!("{}: {}", file_name, e)))
-        .collect::<Result<Vec<Vec<ParsedReceiptTransaction>>, String>>()?;
-
-    Ok(ts.into_iter().flatten().collect::<Vec<_>>())
+        .collect::<Result<_, String>>()?)
 }
 
 /// Reads the files into the `(name, contents)` pairs the parsers take.
@@ -57,7 +56,10 @@ pub fn read_files(file_names: &[&str]) -> std::io::Result<Vec<(String, Vec<u8>)>
 pub fn parse_preview_files(
     file_names: &[&str],
 ) -> Result<Vec<ParsedReceiptTransaction>, Box<dyn Error>> {
-    parse_mem_preview(&read_files(file_names)?)
+    Ok(parse_mem_preview(&read_files(file_names)?)?
+        .into_iter()
+        .flatten()
+        .collect())
 }
 
 fn extract_with_pdf_extract(buf: &[u8]) -> Result<String, Box<dyn Error>> {
