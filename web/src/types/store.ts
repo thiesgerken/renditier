@@ -5,11 +5,13 @@ import type { SerializedError } from '@reduxjs/toolkit';
 
 import type {
   Account,
+  ApiKey,
   DataSourceSelection,
   IsoDate,
   PortfolioPerformance,
   PortfolioPlot,
   PortfolioPlotDataPoint,
+  ReceiptImport,
   Stock,
   StockReturns,
   StockPlot,
@@ -40,6 +42,7 @@ export type StocksState = ResourceState<Stock[]>;
 export type PerformanceState = ResourceState<PortfolioPerformance[]>;
 export type StockReturnsState = ResourceState<Record<string, StockReturns>>;
 export type AccountsState = ResourceState<Account[]>;
+export type ApiKeysState = ResourceState<ApiKey[]>;
 export type TransactionsState = ResourceState<Transaction[]>;
 
 // --------------------------------------------------------------------------
@@ -69,10 +72,9 @@ export interface PeriodState {
   selected: string;
 }
 
-// POST /api/receipts returns one entry per uploaded file.
 export interface ReceiptsState {
   isUploading: boolean;
-  data: Transaction[] | null;
+  data: ReceiptImport | null;
   uploadError: StoredError | null;
   lastUpload: Timestamp | null;
 }

@@ -1,12 +1,13 @@
 use crate::models::*;
 use crate::receipts;
+use crate::service;
 
 use chrono::{DateTime, Utc};
 use clap::ArgAction;
 use clap::ArgMatches;
 use clap::{Arg, ArgGroup, Command};
 use diesel::prelude::*;
-use log::info;
+use log::{info, warn};
 use prettytable::{Table, row};
 use std::io;
 
@@ -190,8 +191,17 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
             .parse()
             .expect("Could not parse user id!");
 
-        receipts::parse_files(connection, uid, &file_names)
-            .unwrap_or_else(|e| panic!("Error adding receipts: {:?}", e));
+        let files = receipts::read_files(&file_names)
+            .unwrap_or_else(|e| panic!("Error reading receipts: {e}"));
+        let import = service::receipts::import(connection, uid, &files)
+            .unwrap_or_else(|e| panic!("Error adding receipts: {e}"));
+
+        for t in import.duplicates {
+            warn!(
+                "Skipped receipt {:?} of {}, it is booked already",
+                t.receipt_number, t.date
+            );
+        }
     } else if *sub_matches.get_one::<bool>("list").unwrap() {
         let ts = if let Some(s_aid) = sub_matches.get_one::<String>("account") {
             let s_aid: i32 = s_aid.parse().expect("Could not parse account id!");

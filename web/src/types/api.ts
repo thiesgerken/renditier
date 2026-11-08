@@ -275,6 +275,42 @@ export interface UserInfo {
   redirect: string | null;
 }
 
+// ---------------------------------------------------------------------------
+// API keys (src/api_keys.rs, src/web/api_keys.rs)
+// ---------------------------------------------------------------------------
+
+// Rust: api_keys::Access. A write key may also read.
+export type ApiKeyAccess = 'read' | 'write';
+
+// Rust: api_keys::ApiKey — everything but the secret.
+// Route: GET /api/keys (session only, newest first)
+export interface ApiKey {
+  id: number;
+  name: string;
+  prefix: string;
+  access: ApiKeyAccess;
+  expiresAt: IsoDateTime | null;
+  createdAt: IsoDateTime;
+  lastUsedAt: IsoDateTime | null;
+}
+
+// Rust: api_keys::NewApiKey
+// Route: POST /api/keys (request body; 400 with an ErrString on an empty name,
+//        a past expiry or a name the user already has)
+export interface NewApiKey {
+  name: string;
+  access: ApiKeyAccess;
+  expiresAt: IsoDateTime | null;
+}
+
+// Rust: api_keys::CreatedApiKey
+// Route: POST /api/keys (response). `token` is the whole credential,
+// rk_<prefix>.<secret>, and is never returned again.
+export interface CreatedApiKey {
+  apiKey: ApiKey;
+  token: string;
+}
+
 // Rust: web::user::LoginData
 // Route: POST /api/user/login (request body)
 export interface LoginData {
@@ -294,8 +330,16 @@ export interface FileContents {
   bytes: string;
 }
 
-// Rust: web::receipts::ErrString (no rename_all)
-// Route: POST /api/receipts (error response body)
+// Rust: service::receipts::ReceiptImport (no rename_all)
+// Route: POST /api/receipts (response body)
+export interface ReceiptImport {
+  transactions: Transaction[];
+  // already booked under the same receipt number, and therefore skipped
+  duplicates: NewTransaction[];
+}
+
+// Rust: web::util::ErrString (no rename_all)
+// Body of every 400 response: what was wrong with the request
 export interface ErrString {
   error: string;
 }

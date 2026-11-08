@@ -38,7 +38,8 @@ reindeer, and the person who lives off their investments.
 - 📊 **Charts that answer something.** Gain over time with every buy and sell marked, price and
   units held per security, several securities compared on a log scale, and drag to zoom.
 - 👥 **For the household.** Several users with their own depots. Log in with a password, or behind
-  a reverse proxy via its `Remote-User` header; scripts and other apps get read-only API tokens.
+  a reverse proxy via its `Remote-User` header; scripts and agents get read or write API keys,
+  managed in the settings, and agents an MCP server.
 - 📱 **On the phone too.** Installable as a web app on Android, with a layout for small screens,
   German and English, light and dark following the system.
 - 🐳 **Small to run.** One container next to Postgres, built with Nix, running as non-root on a
@@ -152,9 +153,9 @@ renditier -v data --fetch     # prices from onvista, takes a minute
 
 [Screenshots](docs/screenshots/README.md) explains how to log in as Rudolph from the dev server.
 
-The import test against a real database runs with
-`RENDITIER_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (it rolls back
-everything it writes). CI starts a throwaway Postgres for it on every push.
+The tests against a real database run with
+`RENDITIER_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (they roll back
+everything they write). CI starts a throwaway Postgres for it on every push.
 
 To test the receipt parser on local PDFs without a database:
 `cargo run --bin parse_receipt -- [--json] [-v] receipt.pdf…`.
@@ -162,5 +163,6 @@ To test the receipt parser on local PDFs without a database:
 ## 📚 More
 
 - [Operations](docs/operations.md): running the container hardened, Kubernetes, backups.
-- [API](docs/api.md): read-only tokens for scripts and other apps.
+- [API](docs/api.md): API keys for scripts and other apps.
+- [MCP](docs/mcp.md): the portfolio, transactions and prices for agents.
 - [Brand](docs/brand/styleguide.md): logo, colours, type.

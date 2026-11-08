@@ -219,6 +219,8 @@ const de: typeof en = {
     succeeded: 'Erfolgreich',
     added_one: 'Es wurde eine Transaktion hinzugefügt.',
     added_other: 'Es wurden {{count}} Transaktionen hinzugefügt.',
+    skipped_one: 'Eine war bereits gebucht und wurde übersprungen.',
+    skipped_other: '{{count}} waren bereits gebucht und wurden übersprungen.',
     transaction: '{{date}}: {{units}} von {{stock}} für {{amount}}',
   },
   accounts: {
@@ -290,6 +292,37 @@ const de: typeof en = {
     version: 'Version',
     built: 'Gebaut',
     updateAvailable: 'Aktualisierung verfügbar',
+    apiKeys: {
+      title: 'API-Schlüssel',
+      description:
+        'Programme und Agenten melden sich mit einem Schlüssel statt mit einem Passwort an.',
+      new: 'Neuer Schlüssel',
+      none: 'Noch keine API-Schlüssel',
+      accessLabel: 'Zugriff',
+      access: {
+        read: 'Nur lesen',
+        write: 'Lesen und schreiben',
+      },
+      expiry: 'Läuft ab',
+      never: 'Nie',
+      days: 'In {{days}} Tagen',
+      created: 'erstellt am {{date}}',
+      lastUsed: 'zuletzt benutzt {{since}}',
+      neverUsed: 'nie benutzt',
+      expires: 'läuft am {{date}} ab',
+      expired: 'abgelaufen am {{date}}',
+      neverExpires: 'läuft nie ab',
+      create: 'Erstellen',
+      nameMissing: 'Der Schlüssel braucht einen Namen.',
+      nameTaken: 'Es gibt schon einen Schlüssel mit diesem Namen.',
+      createdTitle: 'Schlüssel erstellt',
+      copyNow:
+        'Jetzt kopieren: Der Schlüssel wird nur dieses eine Mal angezeigt.',
+      copy: 'Schlüssel kopieren',
+      delete: 'Schlüssel {{name}} löschen',
+      confirmDelete: 'Den Schlüssel „{{name}}“ löschen?',
+      deleteWarning: 'Was ihn benutzt, verliert sofort den Zugriff.',
+    },
   },
 };
 

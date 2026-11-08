@@ -92,19 +92,28 @@ struct Prices<'a> {
     historical: &'a HashMap<NaiveDate, PriceMap<HistoricalPrice>>,
 }
 
+/// `account_id` narrows the performance to a single account; `None` is the whole user.
 pub fn compute(
     connection: &mut diesel::PgConnection,
     user_id: i32,
+    account_id: Option<i32>,
     date: DateTime<Utc>,
     timezone: Tz,
 ) -> Result<Vec<PortfolioPerformance>, Box<dyn Error>> {
     let calendar = Calendar::new(timezone, date);
 
     // read all transactions for the user from db
-    let ts = transactions::table
+    let mut query = transactions::table
         .inner_join(accounts::table)
         .filter(accounts::user_id.eq(user_id))
         .filter(transactions::date.le(date))
+        .into_boxed();
+
+    if let Some(account_id) = account_id {
+        query = query.filter(transactions::account_id.eq(account_id));
+    }
+
+    let ts = query
         .order(transactions::date.asc())
         .load::<(Transaction, Account)>(connection)?
         .into_iter()
@@ -123,8 +132,7 @@ pub fn compute(
     let isins = isins;
 
     // find suitable price information
-    let current_prices: PriceMap<RealtimePrice> =
-        price::find(connection, &isins, date, 4 * 24, 4 * 24)?;
+    let current_prices: PriceMap<RealtimePrice> = price::find(connection, &isins, date)?;
 
     // assemble dates for which we need to get HistoricalPrices
     let prev_day = trading_day_before(
@@ -247,8 +255,7 @@ pub fn compute(
         isins.len(),
         dates.len()
     );
-    let historical_prices =
-        Price::find_multiple(connection, &isins, &utc_date_times, 4 * 24, 4 * 24)?;
+    let historical_prices = Price::find_multiple(connection, &isins, &utc_date_times)?;
     let historical_prices = dates.into_iter().zip(historical_prices).collect();
     let prices = Prices {
         current: &current_prices,

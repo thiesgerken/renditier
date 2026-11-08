@@ -100,10 +100,6 @@ pub struct User {
     pub name: String,
     pub full_name: String,
     pub hash: String,
-
-    /// `default` so that an export taken before tokens existed still reads back in.
-    #[serde(default)]
-    pub api_token_hash: Option<String>,
 }
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]

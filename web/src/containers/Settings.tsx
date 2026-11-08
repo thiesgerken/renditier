@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { SECTION_CARD } from '../components/sectionCard';
 import { Button } from '../components/ui/button';
 import {
   Card,
@@ -23,6 +24,7 @@ import { LANGUAGES, chooseLanguage, chosenLanguage } from '../i18n';
 import type { Language } from '../i18n';
 import { installUpdate } from '../serviceWorker';
 import { useAppSelector } from '../store';
+import ApiKeys from './ApiKeys';
 
 // Each language by its own name, so that it can be found in any.
 const LANGUAGE_NAMES: Record<Language, string> = {
@@ -55,9 +57,9 @@ const Settings = () => {
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="px-1 text-lg font-medium">{t('settings.title')}</h1>
+      <h1 className="text-lg font-medium">{t('settings.title')}</h1>
 
-      <Card>
+      <Card className={SECTION_CARD}>
         <CardContent className="flex items-center justify-between gap-4">
           <CardTitle id="settings-language">{t('settings.language')}</CardTitle>
           <Select value={language ?? AUTOMATIC} onValueChange={choose}>
@@ -81,7 +83,9 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <ApiKeys />
+
+      <Card className={SECTION_CARD}>
         <CardHeader>
           <CardTitle>{t('settings.about')}</CardTitle>
         </CardHeader>
