@@ -46,7 +46,9 @@ pub fn list(
         .filter(transactions::account_id.eq_any(owned_account_ids(user_id)))
         .into_boxed();
 
+    // An empty list would claim the account has no transactions.
     if let Some(account_id) = filter.account_id {
+        account_service::get(c, user_id, account_id)?;
         query = query.filter(transactions::account_id.eq(account_id));
     }
     if let Some(isin) = filter.isin {

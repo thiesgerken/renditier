@@ -40,7 +40,7 @@ stocks and funds involved. Money is in euros as decimals everywhere, in argument
 Signs follow the user's pocket: negative means money goes out (a buy, a fee), positive means it \
 comes in (a sale, a dividend). So `invested` is negative while more was bought than sold, and \
 the gain is `value + invested`. IRRs are decimals (0.05 is 5 %): `irr_annual` per year, \
-`irr_period` over the period it belongs to. Dates are `YYYY-MM-DD` days in the user's time zone.";
+`irr_period` over the period it belongs to. Dates are `YYYY-MM-DD` days in the server's time zone.";
 
 /// The `/mcp` endpoint. Stateless: every request stands alone.
 pub type Service = StreamableHttpService<Renditier, NeverSessionManager>;
@@ -118,11 +118,13 @@ pub struct PortfolioArgs {
 
 #[derive(Serialize, JsonSchema)]
 pub struct Portfolio {
-    /// What all positions cost, minus what selling and dividends brought back, fees included.
-    /// Negative while more went in than came out.
+    /// Euros: what selling and dividends brought back, minus what all positions cost, fees
+    /// included. Negative while more money went out than came back.
     invested: f64,
     /// The market value of all positions. Absent when a held position has no price.
     value: Option<f64>,
+    /// Internal rate of return per year, as a decimal (0.05 is 5 %). Absent when it cannot be
+    /// computed.
     irr_annual: Option<f64>,
     positions: Vec<Position>,
 }
@@ -134,6 +136,8 @@ pub struct Position {
     units: f64,
     invested: f64,
     value: Option<f64>,
+    /// Internal rate of return per year, as a decimal (0.05 is 5 %). Absent when it cannot be
+    /// computed.
     irr_annual: Option<f64>,
     /// The price `value` is based on. Absent when there is none recent enough.
     price: Option<Quote>,
@@ -167,7 +171,10 @@ pub struct Performance {
     kind: PerformanceKind,
     start: Snapshot,
     end: Snapshot,
+    /// Internal rate of return per year, as a decimal (0.05 is 5 %). Absent when it cannot be
+    /// computed.
     irr_annual: Option<f64>,
+    /// Internal rate of return over the period itself, as a decimal (0.05 is 5 %).
     irr_period: Option<f64>,
     /// By ISIN.
     positions: BTreeMap<String, PositionPerformance>,
@@ -189,7 +196,10 @@ pub struct Snapshot {
 pub struct PositionPerformance {
     start: Snapshot,
     end: Snapshot,
+    /// Internal rate of return per year, as a decimal (0.05 is 5 %). Absent when it cannot be
+    /// computed.
     irr_annual: Option<f64>,
+    /// Internal rate of return over the period itself, as a decimal (0.05 is 5 %).
     irr_period: Option<f64>,
 }
 
@@ -279,7 +289,7 @@ pub struct Stock {
 pub struct ExchangeOut {
     name: String,
     code: String,
-    /// The newest price on this exchange, however old.
+    /// The newest price on this exchange, however old: per unit, in the exchange's currency.
     price: Option<f64>,
     price_date: Option<DateTime<Utc>>,
 }
@@ -337,8 +347,9 @@ impl Renditier {
 
     #[tool(
         description = "The user's portfolio: what each position cost and is worth, and its \
-        IRR. Now at the latest prices, or as of a past day's market close. Euros as decimals, \
-        negative `invested` means money went in.",
+        IRR. Now at the latest prices, or as of a past day's market close. Euros as decimals. \
+        `invested` counts from the user's pocket: negative means more money went out (buys, \
+        fees) than came back (sales, dividends). The gain is `value + invested`.",
         annotations(read_only_hint = true, open_world_hint = false)
     )]
     async fn portfolio(
@@ -370,7 +381,8 @@ impl Renditier {
         description = "How the user's portfolio performed: in total, today, week, month and \
         year to date, in each of the last 12 calendar months and in each past calendar year. \
         Each period has its start and end snapshot, its IRR per year and over the period, and \
-        the same per position. Euros as decimals.",
+        the same per position. Euros as decimals; `invested` and `fees` are negative when money \
+        went out.",
         annotations(read_only_hint = true, open_world_hint = false)
     )]
     async fn performance(
@@ -448,7 +460,8 @@ impl Renditier {
 
     #[tool(
         description = "A stock or fund by ISIN: what it is, and its latest price on each \
-        exchange it trades on.",
+        exchange it trades on. Prices are per unit, in the exchange's currency (euros on German \
+        exchanges).",
         annotations(read_only_hint = true, open_world_hint = false)
     )]
     async fn get_stock(
@@ -462,8 +475,9 @@ impl Renditier {
     }
 
     #[tool(
-        description = "Daily closing prices of a stock or fund by ISIN, from one exchange. Keep \
-        the range as short as the question allows: a year is about 250 prices.",
+        description = "Daily closing prices of a stock or fund by ISIN, from one exchange, per \
+        unit in the exchange's currency (euros on German exchanges). Keep the range as short as \
+        the question allows: a year is about 250 prices.",
         annotations(read_only_hint = true, open_world_hint = false)
     )]
     async fn price_history(
@@ -584,7 +598,7 @@ async fn run<T: Send + 'static>(
         })
 }
 
-/// Where `date` begins in the user's time zone.
+/// Where `date` begins in the server's time zone.
 fn day_start(date: NaiveDate, timezone: Tz) -> Result<DateTime<Utc>, String> {
     timezone
         .from_local_datetime(&date.and_time(NaiveTime::MIN))
