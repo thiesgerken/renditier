@@ -76,6 +76,19 @@ pub fn get(c: &mut PgConnection, isin: &str) -> Result<Stock, DomainError> {
     Ok(stocks.remove(0))
 }
 
+/// The titles of the stocks among `isins` that Renditier knows, by ISIN.
+pub fn titles(
+    c: &mut PgConnection,
+    isins: &[String],
+) -> Result<HashMap<String, String>, DomainError> {
+    Ok(stock_infos::table
+        .filter(stock_infos::isin.eq_any(isins))
+        .select((stock_infos::isin, stock_infos::title))
+        .load::<(String, String)>(c)?
+        .into_iter()
+        .collect())
+}
+
 /// How many stocks `search` returns at most.
 pub const SEARCH_LIMIT: i64 = 20;
 
