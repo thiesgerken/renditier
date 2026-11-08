@@ -16,6 +16,12 @@ can follow the reason where no rule fits. Colours, type and the logo are in the
   1,23 Mio. €). A full amount with cents does not fit next to other columns at 360px. Below ten
   thousand, whole euros are already short enough, and an abbreviation would lose information for
   nothing.
+- **On phones, interest rates drop "p.a."; the column header carries it instead** ("Zinsfuß" over a
+  small "p.a."). Repeated in every row, it made the column the widest in its table and pushed it
+  past 360px.
+- **A period under a month shows its own rate, not an annualized one.** Annualizing a few days would
+  blow a small move up into an absurd rate. On desktop the missing "p.a." tells it apart; on phones,
+  where no row has "p.a.", it is marked "*" and explained in a footnote under the table.
 - **A rounded or abbreviated amount offers the exact one as its title** (`<abbr title>` without
   underline). The precision is still there for whoever asks for it.
 - **An unknown value is "—", never 0 or empty.** Zero is a statement, an empty cell looks like a
@@ -94,13 +100,6 @@ can follow the reason where no rule fits. Colours, type and the logo are in the
   the history entry. Back then leaves the page instead of stepping through its sections.
 - **A new version announces itself ("Update available") instead of reloading on its own.** A reload
   in the middle of typing a transaction would lose it.
-
-## Known gaps
-
-Places where the app breaks a rule above. They are bugs, not exceptions.
-
-- **The dashboard's positions and periods tables scroll sideways at 360px** (fine from 384px). The
-  interest rate column ("+22,3 % p.a.") is the widest. Fix it when touching those tables.
 
 ## Tried and rejected
 
