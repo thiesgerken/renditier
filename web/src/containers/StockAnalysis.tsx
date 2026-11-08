@@ -21,6 +21,7 @@ import StockPlot from '../components/stockAnalysis/StockPlot';
 import BarList from '../components/BarList';
 import CompanyLogo from '../components/CompanyLogo';
 import { BREAKDOWNS } from '../components/breakdowns';
+import { SECTION_CARD } from '../components/sectionCard';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import {
@@ -166,7 +167,7 @@ const StockAnalysis = ({ isin }: Props) => {
 
   return (
     <div className="mx-auto flex max-w-(--breakpoint-xl) flex-col gap-4">
-      <Card>
+      <Card className={SECTION_CARD}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <CompanyLogo
@@ -210,7 +211,7 @@ const StockAnalysis = ({ isin }: Props) => {
 
       <StockPerformanceTable performance={stockPerformance} />
 
-      <Card>
+      <Card className={SECTION_CARD}>
         <CardHeader>
           <CardTitle>{t('transactions.title')}</CardTitle>
         </CardHeader>
@@ -223,7 +224,7 @@ const StockAnalysis = ({ isin }: Props) => {
       </Card>
 
       {compositions.length > 0 && (
-        <Card>
+        <Card className={SECTION_CARD}>
           <CardContent className="grid gap-6 md:grid-cols-2">
             {compositions.map(({ id, icon, maxRows, items, marker }) => (
               <BarList
