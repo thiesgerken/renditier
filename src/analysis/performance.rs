@@ -132,8 +132,7 @@ pub fn compute(
     let isins = isins;
 
     // find suitable price information
-    let current_prices: PriceMap<RealtimePrice> =
-        price::find(connection, &isins, date, 4 * 24, 4 * 24)?;
+    let current_prices: PriceMap<RealtimePrice> = price::find(connection, &isins, date)?;
 
     // assemble dates for which we need to get HistoricalPrices
     let prev_day = trading_day_before(
@@ -256,8 +255,7 @@ pub fn compute(
         isins.len(),
         dates.len()
     );
-    let historical_prices =
-        Price::find_multiple(connection, &isins, &utc_date_times, 4 * 24, 4 * 24)?;
+    let historical_prices = Price::find_multiple(connection, &isins, &utc_date_times)?;
     let historical_prices = dates.into_iter().zip(historical_prices).collect();
     let prices = Prices {
         current: &current_prices,

@@ -71,8 +71,7 @@ where
     let isins = isins;
 
     // find suitable price information
-    let mut prices: HashMap<String, DataSource<T>> =
-        price::find(connection, &isins, date, 4 * 24, 4 * 24)?;
+    let mut prices: HashMap<String, DataSource<T>> = price::find(connection, &isins, date)?;
 
     let positions = isins
         .into_iter()

@@ -1,3 +1,4 @@
+use crate::analysis::price::{self, DataSource};
 use crate::analysis::returns::{self, StockReturns};
 use crate::models::*;
 use crate::schema::*;
@@ -106,6 +107,17 @@ fn escape_like(query: &str) -> String {
         .replace('\\', "\\\\")
         .replace('%', "\\%")
         .replace('_', "\\_")
+}
+
+/// The price the portfolio values `isin` at, at `now`, found by the same `price::find`.
+pub fn quote(
+    c: &mut PgConnection,
+    isin: &str,
+    now: DateTime<Utc>,
+) -> Result<Option<DataSource<RealtimePrice>>, DomainError> {
+    let isin = isin.to_uppercase();
+
+    Ok(price::find(c, std::slice::from_ref(&isin), now)?.remove(&isin))
 }
 
 /// The returns of every stock, keyed by ISIN.
