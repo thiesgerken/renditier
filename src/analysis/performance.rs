@@ -15,7 +15,7 @@ use std::collections::HashSet;
 use std::error::Error;
 use std::iter::successors;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, schemars::JsonSchema)]
 pub enum PerformanceKind {
     Total,
     Today,

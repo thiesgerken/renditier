@@ -1,6 +1,7 @@
 pub mod analysis;
 pub mod cli;
 pub mod data;
+pub mod mcp;
 pub mod models;
 pub mod onvista;
 pub mod receipts;

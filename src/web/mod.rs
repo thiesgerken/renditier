@@ -1,6 +1,7 @@
 pub mod accounts;
 pub mod analysis;
 pub mod api_keys;
+pub mod mcp;
 pub mod prices;
 pub mod receipts;
 pub mod static_files;
@@ -27,7 +28,8 @@ pub struct Config {
     pub timezone: Tz,
 }
 
-pub async fn handle(config: Config) {
+/// The server, ready to launch.
+pub fn build(config: Config) -> rocket::Rocket<rocket::Build> {
     let database_config = map! {"url" => config.database_url.clone()};
 
     let limits = Limits::new()
@@ -47,6 +49,7 @@ pub async fn handle(config: Config) {
 
     rocket::custom(rocket_config)
         .attach(DbConn::fairing())
+        .manage(crate::mcp::service(config.timezone))
         .manage(config)
         .mount(
             "/api/",
@@ -80,10 +83,12 @@ pub async fn handle(config: Config) {
                 receipts::upload
             ],
         )
+        .mount("/", routes![mcp::post, mcp::get])
         .mount("/", routes![static_files::serve, static_files::index])
-        .launch()
-        .await
-        .expect("server died");
+}
+
+pub async fn handle(config: Config) {
+    build(config).launch().await.expect("server died");
 }
 
 #[database("renditier")]

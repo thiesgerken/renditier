@@ -1,7 +1,8 @@
 # API
 
 The API otherwise expects a browser: a session cookie, or the `Remote-User` header from the
-proxy. A program or an agent gets in with an API key instead.
+proxy. A program or an agent gets in with an API key instead. Agents are better served by the
+[MCP server](mcp.md) at `/mcp`, which takes the same keys.
 
 ## API keys
 
@@ -13,7 +14,8 @@ revokes it immediately.
 A key looks like `rk_<8 hex>.<secret>` and is sent as `Authorization: Bearer rk_...`.
 
 - **Read** keys work on every `GET`. Anything that creates, changes or deletes answers **403**.
-  This is decided before any handler runs, so it covers every route the same way.
+  On `/api`, this is decided before any handler runs, so it covers every route the same way.
+  [MCP](mcp.md) decides per tool instead, since every MCP call is a `POST`.
 - **Write** keys may do everything their user may, except managing keys.
 - A missing, unknown or expired key answers **401**.
 
