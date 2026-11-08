@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 
 import {
   formatCurrency,
+  formatCurrencyCompact,
   formatIrr,
   formatPercent,
   formatUnits,
@@ -11,15 +12,22 @@ import useMediaQuery, { PHONE } from '../useMediaQuery';
 
 export type Tone = 'gain' | 'loss' | null;
 
-// Number formatting for table cells. Phones only have room for whole euros and
-// units and one decimal of percentages; a fraction of a single unit (a crypto
-// position) still shows its first significant digit instead of 0.
+// Number formatting for table cells. Phones only have room for whole euros,
+// abbreviated from ten thousand on (12,3k €), units and one decimal of
+// percentages; a fraction of a single unit (a crypto position) still shows its
+// first significant digit instead of 0.
 const useTableFormat = () => {
   const xsDown = useMediaQuery(PHONE);
   const digits = xsDown ? 0 : 2;
 
   const money: Formatter = (value, options) =>
-    formatCurrency(value, { digits, ...options });
+    xsDown
+      ? formatCurrencyCompact(value, { digits, ...options })
+      : formatCurrency(value, { digits, ...options });
+
+  // the exact amount, for the title of one that `money` rounds or abbreviates
+  const exactMoney = (value: number | null) =>
+    xsDown ? formatCurrency(value) : undefined;
 
   const units: Formatter = (value, options) =>
     formatUnits(value, {
@@ -60,7 +68,16 @@ const useTableFormat = () => {
   const ratioTone = (ratio: number | null) =>
     signTone(ratio, percentDigits + 2);
 
-  return { money, units, percent, irr, signTone, signColor, ratioTone };
+  return {
+    money,
+    exactMoney,
+    units,
+    percent,
+    irr,
+    signTone,
+    signColor,
+    ratioTone,
+  };
 };
 
 export default useTableFormat;
