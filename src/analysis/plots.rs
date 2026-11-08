@@ -45,11 +45,26 @@ pub struct StockPlot {
     exchanges: Vec<StockExchange>,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum DataSourceSelection {
     Realtime,
     Historical,
     Automatic,
+}
+
+impl std::str::FromStr for DataSourceSelection {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "realtime" => Ok(Self::Realtime),
+            "historical" => Ok(Self::Historical),
+            "auto" | "automatic" => Ok(Self::Automatic),
+            _ => Err(format!(
+                "unknown source {s:?}, expected realtime, historical or automatic"
+            )),
+        }
+    }
 }
 
 type MyResult<T> = Result<T, Box<dyn Error>>;

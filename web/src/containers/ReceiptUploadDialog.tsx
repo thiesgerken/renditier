@@ -55,11 +55,17 @@ const ReceiptUploadDialog = ({ open, onClose }: Props) => {
                 <CircleCheck />
                 <AlertTitle>{t('receipts.succeeded')}</AlertTitle>
                 <AlertDescription>
-                  {t('receipts.added', { count: receipts.data.length })}
+                  {t('receipts.added', {
+                    count: receipts.data.transactions.length,
+                  })}
+                  {receipts.data.duplicates.length > 0 &&
+                    ` ${t('receipts.skipped', {
+                      count: receipts.data.duplicates.length,
+                    })}`}
                 </AlertDescription>
               </Alert>
               <ul className="grid gap-1 text-sm">
-                {receipts.data.map(x => {
+                {receipts.data.transactions.map(x => {
                   const found = findStock(stocks, x.isin);
                   const stock = found
                     ? abbreviateTitle(found.title, true)

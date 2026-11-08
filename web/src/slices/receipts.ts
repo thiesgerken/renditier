@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { map } from 'lodash';
 
 import { fetchJson } from '../api';
-import type { ErrString, FileContents, Transaction } from '../types/api';
+import type { FileContents, ReceiptImport } from '../types/api';
 import type { ReceiptsState } from '../types/store';
 import { createAppAsyncThunk } from './createAppAsyncThunk';
 import { invalidateTransactions } from './transactions';
@@ -36,12 +36,10 @@ export const uploadReceipts = createAppAsyncThunk(
   'receipts/upload',
   async (inputFiles: FileList | File[], { dispatch }) => {
     const files = await Promise.all(map(inputFiles, readFile));
-    const response = await fetchJson<Transaction[] | ErrString>(
-      '/api/receipts',
-      { method: 'POST', body: JSON.stringify(files) }
-    );
-    // The endpoint reports a receipt it cannot parse with status 200.
-    if ('error' in response) throw new Error(response.error);
+    const response = await fetchJson<ReceiptImport>('/api/receipts', {
+      method: 'POST',
+      body: JSON.stringify(files),
+    });
 
     dispatch(invalidateTransactions());
     return response;

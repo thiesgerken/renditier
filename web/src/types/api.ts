@@ -294,8 +294,16 @@ export interface FileContents {
   bytes: string;
 }
 
-// Rust: web::receipts::ErrString (no rename_all)
-// Route: POST /api/receipts (error response body)
+// Rust: service::receipts::ReceiptImport (no rename_all)
+// Route: POST /api/receipts (response body)
+export interface ReceiptImport {
+  transactions: Transaction[];
+  // already booked under the same receipt number, and therefore skipped
+  duplicates: NewTransaction[];
+}
+
+// Rust: web::util::ErrString (no rename_all)
+// Body of every 400 response: what was wrong with the request
 export interface ErrString {
   error: string;
 }
