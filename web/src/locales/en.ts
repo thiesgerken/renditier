@@ -213,6 +213,8 @@ const en = {
     succeeded: 'Done',
     added_one: 'Added one transaction.',
     added_other: 'Added {{count}} transactions.',
+    skipped_one: 'Skipped one that is booked already.',
+    skipped_other: 'Skipped {{count}} that are booked already.',
     transaction: '{{date}}: {{units}} of {{stock}} for {{amount}}',
   },
   accounts: {

@@ -1,14 +1,9 @@
 use crate::models::*;
-use crate::schema::*;
+use crate::service::{DomainError, accounts};
 use crate::web::DbConn;
 use crate::web::user::UserId;
-use crate::web::util::log_error_and_500;
 
-use diesel::prelude::*;
-use log::info;
-use rocket::http::Status;
 use rocket::serde::json::Json;
-use rocket_sync_db_pools::diesel;
 
 #[get("/accounts?<offset>&<count>")]
 pub async fn list(
@@ -16,55 +11,22 @@ pub async fn list(
     connection: DbConn,
     offset: Option<i64>,
     count: Option<i64>,
-) -> Option<Json<Vec<Account>>> {
+) -> Result<Json<Vec<Account>>, DomainError> {
     connection
-        .run(move |c| {
-            accounts::table
-                .filter(accounts::user_id.eq(*uid))
-                .order(accounts::id.asc())
-                .limit(count.unwrap_or(i64::MAX))
-                .offset(offset.unwrap_or(0))
-                .load::<Account>(c)
-                .map(Json)
-                .ok()
-        })
+        .run(move |c| accounts::list(c, *uid, offset, count).map(Json))
         .await
 }
 
 #[get("/accounts/<id>")]
-pub async fn get(uid: UserId, connection: DbConn, id: i32) -> Option<Json<Account>> {
+pub async fn get(uid: UserId, connection: DbConn, id: i32) -> Result<Json<Account>, DomainError> {
     connection
-        .run(move |c| {
-            accounts::table
-                .find(id)
-                .filter(accounts::user_id.eq(*uid)) // return a 404 on other accounts
-                .first(c)
-                .map(Json)
-                .ok()
-        })
+        .run(move |c| accounts::get(c, *uid, id).map(Json))
         .await
 }
 
 #[delete("/accounts/<id>")]
-pub async fn delete(uid: UserId, connection: DbConn, id: i32) -> Result<(), Status> {
-    connection
-        .run(move |c| {
-            let row_count = diesel::delete(
-                accounts::table
-                    .filter(accounts::user_id.eq(*uid))
-                    .filter(accounts::id.eq(id)),
-            )
-            .execute(c)
-            .map_err(|e| log_error_and_500(Box::new(e)))?;
-
-            if row_count == 0 {
-                Err(Status::NotFound)
-            } else {
-                info!("Deleted record {} from the account table", id);
-                Ok(())
-            }
-        })
-        .await
+pub async fn delete(uid: UserId, connection: DbConn, id: i32) -> Result<(), DomainError> {
+    connection.run(move |c| accounts::delete(c, *uid, id)).await
 }
 
 #[put("/accounts/<id>", data = "<account>")]
@@ -73,28 +35,9 @@ pub async fn update(
     connection: DbConn,
     id: i32,
     account: Json<Account>,
-) -> Result<(), Status> {
+) -> Result<(), DomainError> {
     connection
-        .run(move |c| {
-            let mut acc = account.0;
-            acc.user_id = *uid;
-
-            let row_count = diesel::update(
-                accounts::table
-                    .filter(accounts::id.eq(id))
-                    .filter(accounts::user_id.eq(*uid)),
-            )
-            .set(acc)
-            .execute(c)
-            .map_err(|e| log_error_and_500(Box::new(e)))?;
-
-            if row_count == 0 {
-                Err(Status::NotFound)
-            } else {
-                info!("updated record {} from the account table", id);
-                Ok(())
-            }
-        })
+        .run(move |c| accounts::update(c, *uid, id, account.0))
         .await
 }
 
@@ -103,18 +46,8 @@ pub async fn create(
     uid: UserId,
     connection: DbConn,
     account: Json<NewAccount>,
-) -> Result<Json<Account>, Status> {
+) -> Result<Json<Account>, DomainError> {
     connection
-        .run(move |c| {
-            let mut acc = account.0;
-            acc.user_id = *uid;
-
-            let t: Account = diesel::insert_into(crate::schema::accounts::table)
-                .values(&acc)
-                .get_result(c)
-                .map_err(|e| log_error_and_500(Box::new(e)))?;
-
-            Ok(Json(t))
-        })
+        .run(move |c| accounts::create(c, *uid, account.0).map(Json))
         .await
 }

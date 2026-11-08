@@ -1,12 +1,14 @@
 use crate::models::*;
-use crate::receipts;
+use crate::service::DomainError;
+use crate::service::receipts::{self, ReceiptImport};
 use crate::web::DbConn;
 use crate::web::user::UserId;
 
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
+use rocket::Either;
 use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct FileContents {
@@ -14,39 +16,36 @@ pub struct FileContents {
     pub bytes: String, // base64 encoded
 }
 
-#[derive(Serialize)]
-pub struct ErrString {
-    pub error: String,
-}
+type Booked = Json<ReceiptImport<Transaction>>;
+type Preview = Json<ReceiptImport<NewTransaction>>;
 
-fn wrap_string(e: String) -> Json<ErrString> {
-    Json(ErrString { error: e })
-}
-
-#[post("/receipts", data = "<receipts>")]
+/// With `preview`, nothing is booked: the response tells what would be.
+#[post("/receipts?<preview>", data = "<receipts>")]
 pub async fn upload(
     uid: UserId,
     connection: DbConn,
     receipts: Json<Vec<FileContents>>,
-) -> Result<Json<Vec<Transaction>>, Json<ErrString>> {
+    preview: bool,
+) -> Result<Either<Booked, Preview>, DomainError> {
+    let files = receipts
+        .0
+        .into_iter()
+        .map(|fc| match BASE64_STANDARD.decode(fc.bytes) {
+            Ok(buf) => Ok((fc.name, buf)),
+            Err(e) => Err(DomainError::Invalid(format!(
+                "{}: error decoding base64: {e}",
+                fc.name
+            ))),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
     connection
         .run(move |c| {
-            let files = receipts
-                .0
-                .into_iter()
-                .map(|fc| {
-                    let name = fc.name;
-                    let buf = BASE64_STANDARD.decode(fc.bytes).map_err(|e| {
-                        wrap_string(format!("{}: error decoding base64: {}", name.clone(), e))
-                    })?;
-
-                    Ok((name, buf))
-                })
-                .collect::<Result<Vec<_>, Json<ErrString>>>()?;
-
-            Ok(Json(
-                receipts::parse_mem(c, *uid, &files).map_err(|e| wrap_string(format!("{}", e)))?,
-            ))
+            if preview {
+                receipts::preview(c, *uid, &files).map(|p| Either::Right(Json(p)))
+            } else {
+                receipts::import(c, *uid, &files).map(|b| Either::Left(Json(b)))
+            }
         })
         .await
 }

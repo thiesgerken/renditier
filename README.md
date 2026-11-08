@@ -163,9 +163,9 @@ renditier -v data --fetch     # prices from onvista, takes a minute
 
 [Screenshots](docs/screenshots/README.md) explains how to log in as Rudolph from the dev server.
 
-The import test against a real database runs with
-`RENDITIER_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (it rolls back
-everything it writes). CI starts a throwaway Postgres for it on every push.
+The tests against a real database run with
+`RENDITIER_TEST_DATABASE=postgres://user@localhost/scratch cargo test -- --ignored` (they roll back
+everything they write). CI starts a throwaway Postgres for it on every push.
 
 To test the receipt parser on local PDFs without a database:
 `cargo run --bin parse_receipt -- [--json] [-v] receipt.pdf…`.

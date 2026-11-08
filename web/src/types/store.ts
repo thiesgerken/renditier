@@ -11,6 +11,7 @@ import type {
   PortfolioPerformance,
   PortfolioPlot,
   PortfolioPlotDataPoint,
+  ReceiptImport,
   Stock,
   StockReturns,
   StockPlot,
@@ -71,10 +72,9 @@ export interface PeriodState {
   selected: string;
 }
 
-// POST /api/receipts returns one entry per uploaded file.
 export interface ReceiptsState {
   isUploading: boolean;
-  data: Transaction[] | null;
+  data: ReceiptImport | null;
   uploadError: StoredError | null;
   lastUpload: Timestamp | null;
 }
