@@ -1,6 +1,6 @@
+use crate::hash_password;
 use crate::models::*;
 use crate::schema::users::dsl::*;
-use crate::{generate_token, hash_password, hash_token};
 
 use clap::ArgAction;
 use clap::ArgMatches;
@@ -32,18 +32,6 @@ pub fn build() -> Command {
                 .help("update user name and password"),
         )
         .arg(
-            Arg::new("token")
-                .long("token")
-                .value_name("name")
-                .help("issue an API token for a user, replacing any existing one"),
-        )
-        .arg(
-            Arg::new("revoke-token")
-                .long("revoke-token")
-                .value_name("name")
-                .help("revoke a user's API token"),
-        )
-        .arg(
             Arg::new("list")
                 .long("list")
                 .action(ArgAction::SetTrue)
@@ -51,7 +39,7 @@ pub fn build() -> Command {
         )
         .group(
             ArgGroup::new("action")
-                .args(["add", "update", "remove", "token", "revoke-token", "list"])
+                .args(["add", "update", "remove", "list"])
                 .required(true),
         )
 }
@@ -118,27 +106,6 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
             .unwrap_or_else(|_| panic!("Unable to find user {}", uname));
 
         info!("Updated user {:?}", u);
-    } else if let Some(uname) = sub_matches.get_one::<String>("token") {
-        let token = generate_token();
-
-        let u = diesel::update(users.filter(name.eq(uname)))
-            .set(api_token_hash.eq(Some(hash_token(&token))))
-            .get_result::<User>(connection)
-            .unwrap_or_else(|_| panic!("Unable to find user {}", uname));
-
-        // The token is stored as a hash, so this line is the only chance anyone has to read it.
-        println!("{}", token);
-        info!(
-            "Issued an API token for user '{}'; it is shown here once and nowhere again. Issuing another one replaces it.",
-            u.name
-        );
-    } else if let Some(uname) = sub_matches.get_one::<String>("revoke-token") {
-        let u = diesel::update(users.filter(name.eq(uname)))
-            .set(api_token_hash.eq(None::<String>))
-            .get_result::<User>(connection)
-            .unwrap_or_else(|_| panic!("Unable to find user {}", uname));
-
-        info!("Revoked the API token of user '{}'", u.name);
     } else if let Some(uname) = sub_matches.get_one::<String>("remove") {
         // check if this user even exists
         assert!(
@@ -187,7 +154,6 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
             "ID",
             "Name",
             "Full Name",
-            "API Token",
             "# Accounts",
             "# Transactions"
         ]);
@@ -208,11 +174,6 @@ pub fn handle(connection: &mut PgConnection, sub_matches: &ArgMatches) {
                 u.id,
                 u.name,
                 u.full_name,
-                if u.api_token_hash.is_some() {
-                    "issued"
-                } else {
-                    "-"
-                },
                 acs.len(),
                 transaction_count
             ]);

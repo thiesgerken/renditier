@@ -130,7 +130,6 @@ impl NativeFormat {
                         users::name.eq(&user.name),
                         users::full_name.eq(&user.full_name),
                         users::hash.eq(&user.hash),
-                        users::api_token_hash.eq(&user.api_token_hash),
                     ))
                     .returning(users::id)
                     .get_result::<i32>(connection)?;
@@ -444,6 +443,17 @@ mod tests {
         for b in cases {
             assert!(b.check_references().is_err(), "{b:?}");
         }
+    }
+
+    #[test]
+    fn reads_a_backup_from_before_api_keys() {
+        // Backups used to carry the user's API token hash. Keys are credentials, not data, so
+        // the field is ignored rather than refused.
+        let mut old_user = user(1, "a");
+        old_user["apiTokenHash"] = json!("ba7816bf8f01cfea414140de5dae2223b00361a3");
+        let b = backup(json!([old_user]), json!([account(10, 1)]), json!([]));
+        assert_eq!(b.check_references(), Ok(()));
+        assert!(!serde_json::to_string(&b).unwrap().contains("apiTokenHash"));
     }
 
     /// Needs a scratch Postgres database (its contents are rolled back):

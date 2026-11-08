@@ -3,6 +3,7 @@
 
 pub mod accounts;
 pub mod analysis;
+pub mod api_keys;
 pub mod prices;
 pub mod receipts;
 pub mod stocks;

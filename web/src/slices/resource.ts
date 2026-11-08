@@ -18,9 +18,10 @@ import { needsFetch } from './freshness';
 
 type ThunkApi = { state: RootState; dispatch: AppDispatch };
 
-// The thunks' argument types differ, and AsyncThunk is invariant in them.
+// The thunks' argument and result types differ, and AsyncThunk is invariant in
+// them.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Change = AsyncThunk<void, any, ThunkApi>;
+type Change = AsyncThunk<any, any, ThunkApi>;
 
 export interface Resource<T> {
   reducer: Reducer<ResourceState<T>>;
@@ -37,7 +38,13 @@ export interface Resource<T> {
 // not depend on it: the return type is spelled out, and the slice is found by
 // its name instead of a selector argument.
 export const createResourceSlice = <T>(
-  name: 'stocks' | 'stockReturns' | 'performance' | 'accounts' | 'transactions',
+  name:
+    | 'stocks'
+    | 'stockReturns'
+    | 'performance'
+    | 'accounts'
+    | 'transactions'
+    | 'apiKeys',
   url: string,
   changes?: [Change, ...Change[]]
 ): Resource<T> => {

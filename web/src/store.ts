@@ -6,6 +6,7 @@ import type { ThunkAction, UnknownAction } from '@reduxjs/toolkit';
 import { useDispatch, useSelector } from 'react-redux';
 
 import accounts from './slices/accounts';
+import apiKeys from './slices/apiKeys';
 import authentication from './slices/authentication';
 import notifications from './slices/notifications';
 import period from './slices/period';
@@ -24,6 +25,7 @@ const rootReducer = combineReducers({
   portfolioPlot,
   stockPlot,
   accounts,
+  apiKeys,
   transactions,
   receipts,
   performance,

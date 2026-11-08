@@ -1,5 +1,6 @@
 pub mod accounts;
 pub mod analysis;
+pub mod api_keys;
 pub mod prices;
 pub mod receipts;
 pub mod static_files;
@@ -53,6 +54,9 @@ pub async fn handle(config: Config) {
                 user::login,
                 user::logout,
                 user::info,
+                api_keys::list,
+                api_keys::create,
+                api_keys::delete,
                 accounts::list,
                 accounts::get,
                 accounts::delete,
