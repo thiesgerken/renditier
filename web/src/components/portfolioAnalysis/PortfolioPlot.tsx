@@ -220,6 +220,10 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
     ...tradeRows(p.trades, false),
   ];
 
+  // tells "nothing yet at all" from "nothing in this period"
+  const hasTransactions =
+    performance.data?.some(p => Object.keys(p.positions).length > 0) ?? false;
+
   const loading =
     plotData === null || plotData.isFetching || performance.isFetching;
   const failure = useLoadFailure(
@@ -230,7 +234,15 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
   return (
     <ProgressCard loading={loading} failure={failure} className="px-2">
       <div>
-        <PlotArea isEmpty={points.length === 0} isLoading={loading}>
+        <PlotArea
+          isEmpty={points.length === 0}
+          emptyText={
+            hasTransactions
+              ? t('plot.empty.period')
+              : t('plot.empty.noTransactions')
+          }
+          isLoading={loading}
+        >
           <ComposedChart data={points} {...zoom.chartProps}>
             {timeXAxis(epochs)}
             <YAxis

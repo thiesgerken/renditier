@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { LoadFailure } from '../useLoadFailure';
 import LoadError from './LoadError';
+import { SECTION_CARD } from './sectionCard';
 import { Card } from './ui/card';
 
 interface Props {
@@ -23,7 +24,10 @@ const ProgressCard = ({ loading, failure, className, children }: Props) => {
   if (failure !== null) return <LoadError failure={failure} />;
 
   return (
-    <Card className={cn('relative min-h-32', className)} aria-busy={loading}>
+    <Card
+      className={cn(SECTION_CARD, 'relative min-h-32', className)}
+      aria-busy={loading}
+    >
       {children}
       {loading && (
         <LoaderCircle

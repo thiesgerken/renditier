@@ -12,7 +12,10 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
+import { cn } from 'cn';
+
 import DataTable, { dataTableFeatures } from '../components/DataTable';
+import { SECTION_CARD } from '../components/sectionCard';
 import { KindIcon, kindOf } from '../components/TransactionKind';
 import useTableFormat from '../components/useTableFormat';
 import { Badge } from '../components/ui/badge';
@@ -157,7 +160,7 @@ const columns = column.columns([
       if (stock === null) return isin;
 
       return (
-        <span className="flex min-w-40 items-center gap-2 whitespace-normal">
+        <span className="flex min-w-32 items-center gap-2 whitespace-normal sm:min-w-40">
           <Link
             to={`/stocks/${isin}`}
             className="line-clamp-2 underline-offset-4 hover:underline"
@@ -171,7 +174,10 @@ const columns = column.columns([
               {abbreviateTitle(stock.title, false)}
             </span>
           </Link>
-          <Badge variant="secondary">{stock.kind}</Badge>
+          {/* no room on a phone */}
+          <Badge variant="secondary" className="hidden shrink-0 sm:inline-flex">
+            {stock.kind}
+          </Badge>
         </span>
       );
     },
@@ -237,7 +243,7 @@ const Transactions = () => {
 
   return (
     <>
-      <Card className="mx-auto max-w-(--breakpoint-xl)">
+      <Card className={cn(SECTION_CARD, 'mx-auto max-w-(--breakpoint-xl)')}>
         <CardHeader>
           <CardTitle>{t('transactions.title')}</CardTitle>
           <CardAction className="flex gap-2">

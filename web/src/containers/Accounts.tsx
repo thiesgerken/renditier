@@ -3,7 +3,10 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Hash, Plus, Tag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { cn } from 'cn';
+
 import DataTable, { dataTableFeatures } from '../components/DataTable';
+import { SECTION_CARD } from '../components/sectionCard';
 import { Button } from '../components/ui/button';
 import {
   Card,
@@ -63,7 +66,7 @@ const Accounts = () => {
 
   return (
     <>
-      <Card className="mx-auto max-w-(--breakpoint-xl)">
+      <Card className={cn(SECTION_CARD, 'mx-auto max-w-(--breakpoint-xl)')}>
         <CardHeader>
           <CardTitle>{t('accounts.title')}</CardTitle>
           <CardAction>

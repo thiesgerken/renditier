@@ -48,7 +48,7 @@ const PerformanceTable = ({ periods, loading, failure, selected }: Props) => {
       <CardHeader className="md:hidden">
         <CardTitle>{t('dashboard.tabs.periods')}</CardTitle>
       </CardHeader>
-      <div className="px-2">
+      <div className="px-2 max-sm:px-0">
         <Table>
           <TableHeader>
             <TableRow>

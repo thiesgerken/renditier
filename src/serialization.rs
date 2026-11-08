@@ -451,9 +451,7 @@ mod tests {
     #[test]
     #[ignore = "needs a database in RENDITIER_TEST_DATABASE"]
     fn import_replaces_only_the_users_in_the_backup() {
-        let url =
-            std::env::var("RENDITIER_TEST_DATABASE").expect("RENDITIER_TEST_DATABASE not set");
-        let mut connection = crate::connect(&url).unwrap();
+        let mut connection = crate::test_connection();
         connection.test_transaction::<_, diesel::result::Error, _>(|c| {
             let count = |c: &mut PgConnection, name: &str| {
                 transactions::table

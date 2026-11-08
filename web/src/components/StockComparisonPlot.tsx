@@ -336,7 +336,15 @@ const StockComparisonPlot = ({
 
   return (
     <ProgressCard loading={loading} failure={failure} className="px-2">
-      <PlotArea isEmpty={chartPoints.length === 0} isLoading={loading}>
+      <PlotArea
+        isEmpty={chartPoints.length === 0}
+        emptyText={
+          currentIsins.length === 0
+            ? t('plot.empty.noneSelected')
+            : t('plot.empty.prices')
+        }
+        isLoading={loading}
+      >
         <ComposedChart data={chartPoints} {...zoom.chartProps}>
           {timeXAxis(epochs)}
           <YAxis
