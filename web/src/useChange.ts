@@ -9,19 +9,17 @@ interface Failure {
 
 // Runs a change from a dialog. The dialog closes once the change went through,
 // and otherwise stays open with the error, so that the input survives.
-const useChange = (onDone: () => void) => {
+const useChange = <R>(onDone: (result: R) => void) => {
   const { t } = useTranslation();
   const [failure, setFailure] = useState<Failure | null>(null);
   const [pending, setPending] = useState(false);
 
-  const run = async (
-    change: { unwrap: () => Promise<unknown> },
-    title: string
-  ) => {
+  const run = async (change: { unwrap: () => Promise<R> }, title: string) => {
     setPending(true);
     setFailure(null);
+    let result: R;
     try {
-      await change.unwrap();
+      result = await change.unwrap();
     } catch (error) {
       // unwrap() rejects with the thunk's serialized error.
       const { message } = error as SerializedError;
@@ -29,7 +27,7 @@ const useChange = (onDone: () => void) => {
       setPending(false);
       return;
     }
-    onDone();
+    onDone(result);
   };
 
   return { failure, pending, run };

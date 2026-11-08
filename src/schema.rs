@@ -8,6 +8,20 @@ table! {
 }
 
 table! {
+    api_keys (id) {
+        id -> Int4,
+        user_id -> Int4,
+        name -> Text,
+        prefix -> Text,
+        secret_hash -> Bytea,
+        access -> Text,
+        expires_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+        last_used_at -> Nullable<Timestamptz>,
+    }
+}
+
+table! {
     historical_prices (date, onvista_record_id) {
         date -> Date,
         opening -> Float8,
@@ -89,11 +103,11 @@ table! {
         name -> Text,
         full_name -> Text,
         hash -> Text,
-        api_token_hash -> Nullable<Text>,
     }
 }
 
 joinable!(accounts -> users (user_id));
+joinable!(api_keys -> users (user_id));
 joinable!(historical_prices -> stock_exchanges (onvista_record_id));
 joinable!(realtime_prices -> stock_exchanges (onvista_record_id));
 joinable!(stock_exchanges -> stock_infos (isin));
@@ -101,6 +115,7 @@ joinable!(transactions -> accounts (account_id));
 
 allow_tables_to_appear_in_same_query!(
     accounts,
+    api_keys,
     historical_prices,
     realtime_prices,
     stock_exchanges,
