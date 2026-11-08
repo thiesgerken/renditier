@@ -46,8 +46,17 @@ The tool descriptions say the same, so an agent does not need this page.
 | `search_stocks` | `query`: ISIN, WKN or part of a name | up to 20 stocks and funds |
 | `get_stock` | `isin` | details, the price on each exchange, and the newest of them |
 | `price_history` | `isin`, `from`, `to` | daily closes from the most preferred exchange that has any |
+| `create_transaction` | `account`, `isin`, `date` (RFC 3339), `units`, `amount`, `fees`; optional `comments`, `exchange`, `receipt_number` | the booked transaction |
+| `update_transaction` | `id`; any of the fields of `create_transaction` | the changed transaction; fields left out keep their value |
+| `delete_transaction` | `id` | `{"deleted": id}` |
 
-All tools read. Receipts are not an MCP tool: a PDF would have to pass through the model as
+The last three write and need a write key. `update_transaction` and `delete_transaction` carry
+`destructiveHint`. They refuse amounts with fractions of a cent and the signs an agent most likely
+gets wrong: positive fees, a buy (positive `units`) with a positive `amount`, a sale with a
+negative one. They execute directly: when to call them ("only on the user's explicit
+instruction") is the agent's to follow.
+
+Receipts are not an MCP tool: a PDF would have to pass through the model as
 base64. Upload them with `POST /api/receipts` and a write key instead, `?preview=true` first.
 
 A tool error (an account of someone else, an unknown ISIN, a bad argument) comes back as a tool

@@ -379,7 +379,7 @@ fn tool_error(result: CallToolResult) -> String {
 #[tokio::test]
 #[ignore = "needs a database in RENDITIER_TEST_DATABASE"]
 async fn a_write_key_books_changes_and_deletes_only_its_users_transactions() {
-    let url = std::env::var("RENDITIER_TEST_DATABASE").expect("RENDITIER_TEST_DATABASE not set");
+    let url = database();
     let fixture = insert_fixture(&mut renditier::connect(&url).unwrap());
     let base = serve(&url).await;
     let client = connect(&base, &fixture.write_key).await;
@@ -465,7 +465,7 @@ async fn a_write_key_books_changes_and_deletes_only_its_users_transactions() {
 #[tokio::test]
 #[ignore = "needs a database in RENDITIER_TEST_DATABASE"]
 async fn a_read_key_cannot_write() {
-    let url = std::env::var("RENDITIER_TEST_DATABASE").expect("RENDITIER_TEST_DATABASE not set");
+    let url = database();
     let fixture = insert_fixture(&mut renditier::connect(&url).unwrap());
     let base = serve(&url).await;
     let client = connect(&base, &fixture.read_key).await;
