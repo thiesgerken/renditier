@@ -214,6 +214,8 @@ const de: typeof en = {
     succeeded: 'Erfolgreich',
     added_one: 'Es wurde eine Transaktion hinzugefügt.',
     added_other: 'Es wurden {{count}} Transaktionen hinzugefügt.',
+    skipped_one: 'Eine war bereits gebucht und wurde übersprungen.',
+    skipped_other: '{{count}} waren bereits gebucht und wurden übersprungen.',
     transaction: '{{date}}: {{units}} von {{stock}} für {{amount}}',
   },
   accounts: {
