@@ -166,3 +166,7 @@ To test the receipt parser on local PDFs without a database:
 - [API](docs/api.md): API keys for scripts and other apps.
 - [MCP](docs/mcp.md): the portfolio, transactions and prices for agents.
 - [Brand](docs/brand/styleguide.md): logo, colours, type.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
