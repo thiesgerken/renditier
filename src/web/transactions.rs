@@ -1,5 +1,6 @@
 use crate::models::*;
-use crate::service::{DomainError, transactions};
+use crate::service::DomainError;
+use crate::service::transactions::{self, TransactionFilter};
 use crate::web::DbConn;
 use crate::web::user::UserId;
 
@@ -13,7 +14,9 @@ pub async fn list(
     count: Option<i64>,
 ) -> Result<Json<Vec<Transaction>>, DomainError> {
     connection
-        .run(move |c| transactions::list(c, *uid, offset, count).map(Json))
+        .run(move |c| {
+            transactions::list(c, *uid, TransactionFilter::default(), offset, count).map(Json)
+        })
         .await
 }
 

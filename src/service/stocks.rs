@@ -75,6 +75,39 @@ pub fn get(c: &mut PgConnection, isin: &str) -> Result<Stock, DomainError> {
     Ok(stocks.remove(0))
 }
 
+/// How many stocks `search` returns at most.
+pub const SEARCH_LIMIT: i64 = 20;
+
+/// Stocks whose ISIN or WKN is `query`, or whose title or company contains it, by title.
+pub fn search(c: &mut PgConnection, query: &str) -> Result<Vec<StockInfo>, DomainError> {
+    let query = query.trim();
+    if query.is_empty() {
+        return Err(DomainError::Invalid("the query is empty".into()));
+    }
+    let code = query.to_uppercase();
+    let pattern = format!("%{}%", escape_like(query));
+
+    Ok(stock_infos::table
+        .filter(
+            stock_infos::isin
+                .eq(&code)
+                .or(stock_infos::wkn.eq(&code))
+                .or(stock_infos::title.ilike(&pattern))
+                .or(stock_infos::company.ilike(&pattern)),
+        )
+        .order(stock_infos::title.asc())
+        .limit(SEARCH_LIMIT)
+        .load(c)?)
+}
+
+/// `query` matched literally by LIKE, whose wildcards it may contain.
+fn escape_like(query: &str) -> String {
+    query
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+
 /// The returns of every stock, keyed by ISIN.
 pub fn returns(
     c: &mut PgConnection,

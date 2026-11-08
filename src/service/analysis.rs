@@ -35,24 +35,39 @@ fn portfolio_at<T: Price>(
     account_id: Option<i32>,
     date: DateTime<Utc>,
 ) -> Result<Portfolio<T>, DomainError> {
+    check_account(c, user_id, account_id)?;
+
+    Ok(portfolio::compute(c, user_id, account_id, date)?)
+}
+
+/// A narrowed analysis only of an account of the caller.
+fn check_account(
+    c: &mut PgConnection,
+    user_id: i32,
+    account_id: Option<i32>,
+) -> Result<(), DomainError> {
     if let Some(id) = account_id {
         accounts::get(c, user_id, id)?;
     }
 
-    Ok(portfolio::compute(c, user_id, account_id, date)?)
+    Ok(())
 }
 
 fn market_close(date: NaiveDate) -> DateTime<Utc> {
     market_time(date.and_time(MARKET_CLOSE))
 }
 
+/// The performance of the whole user or of one of their accounts.
 pub fn performance(
     c: &mut PgConnection,
     user_id: i32,
+    account_id: Option<i32>,
     now: DateTime<Utc>,
     timezone: Tz,
 ) -> Result<Vec<PortfolioPerformance>, DomainError> {
-    Ok(performance::compute(c, user_id, now, timezone)?)
+    check_account(c, user_id, account_id)?;
+
+    Ok(performance::compute(c, user_id, account_id, now, timezone)?)
 }
 
 pub fn portfolio_plot(

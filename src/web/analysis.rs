@@ -60,7 +60,7 @@ pub async fn compute_performance(
     let timezone = config.timezone;
 
     connection
-        .run(move |c| analysis::performance(c, *uid, Utc::now(), timezone).map(Json))
+        .run(move |c| analysis::performance(c, *uid, None, Utc::now(), timezone).map(Json))
         .await
 }
 

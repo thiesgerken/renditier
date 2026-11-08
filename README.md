@@ -41,7 +41,7 @@ reindeer, and the person who lives off their investments.
   units held per security, several securities compared on a log scale, and drag to zoom.
 - 👥 **For the household.** Several users with their own depots. Log in with a password, or behind
   a reverse proxy via its `Remote-User` header; scripts and agents get read or write API keys,
-  managed in the settings.
+  managed in the settings, and agents an MCP server.
 - 📱 **On the phone too.** Installable as a web app on Android, with a layout for small screens,
   German and English, light and dark following the system.
 - 🐳 **Small to run.** One container next to Postgres, built with Nix, running as non-root on a
@@ -173,5 +173,6 @@ To test the receipt parser on local PDFs without a database:
 ## 📚 More
 
 - [Operations](docs/operations.md): running the container hardened, Kubernetes, backups.
-- [API](docs/api.md): read-only tokens for scripts and other apps.
+- [API](docs/api.md): API keys for scripts and other apps.
+- [MCP](docs/mcp.md): the portfolio, transactions and prices for agents.
 - [Brand](docs/brand/styleguide.md): logo, colours, type.
