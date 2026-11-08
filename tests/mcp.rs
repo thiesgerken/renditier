@@ -470,6 +470,13 @@ async fn a_read_key_cannot_write() {
     let base = serve(&url).await;
     let client = connect(&base, &fixture.read_key).await;
 
+    let tools = client.list_all_tools().await.unwrap();
+    assert!(
+        tools
+            .iter()
+            .all(|tool| !tool.name.ends_with("_transaction")),
+        "{tools:?}"
+    );
     let created = call(
         &client,
         "create_transaction",
