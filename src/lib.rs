@@ -52,6 +52,18 @@ pub fn connect(database_url: &str) -> Result<PgConnection, Box<dyn Error>> {
     Ok(conn)
 }
 
+/// A connection to the scratch database in `RENDITIER_TEST_DATABASE`, for tests marked `#[ignore]`.
+#[cfg(test)]
+pub(crate) fn test_connection() -> PgConnection {
+    // Tests run in parallel, and two of them migrating a fresh database at once collide in the
+    // Postgres catalog.
+    static MIGRATING: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    let url = std::env::var("RENDITIER_TEST_DATABASE").expect("RENDITIER_TEST_DATABASE not set");
+    let _guard = MIGRATING.lock().unwrap();
+    connect(&url).unwrap()
+}
+
 /// Verifies with the parameters encoded in `hash`, so hashes created with other parameters (or by
 /// another argon2 implementation) keep working.
 pub fn verify_password(pw: &str, hash: &str) -> bool {
