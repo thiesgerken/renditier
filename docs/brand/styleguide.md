@@ -3,6 +3,9 @@
 **Renditier** is *Rendite* (return) plus *Rentier*: the reindeer, and the person who lives off their
 investments. One word, capital R, never "RendiTier" or "Rendi-Tier".
 
+How the app behaves and lays out its content (tables, states, charts, phones) is in the
+[design rules](../design.md).
+
 ![Logo board](mockups/logo-board.png)
 
 ## Logo
