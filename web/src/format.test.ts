@@ -154,6 +154,15 @@ describe('formatIrr', () => {
       nbsp('+10,00_% p.a.')
     );
   });
+
+  it('leaves "p.a." to the header and marks short periods instead', () => {
+    expect(formatIrr(period('2025-12-31', '2026-11-06'), 1, true)).toBe(
+      nbsp('+10,0_%')
+    );
+    expect(formatIrr(period('2026-11-05', '2026-11-06'), 1, true)).toBe(
+      nbsp('+1,0_%*')
+    );
+  });
 });
 
 const now = Temporal.ZonedDateTime.from(

@@ -13,8 +13,9 @@ import useMediaQuery, { PHONE } from '../useMediaQuery';
 export type Tone = 'gain' | 'loss' | null;
 
 // Number formatting for table cells. Phones only have room for whole euros,
-// abbreviated from ten thousand on (12,3k €), units and one decimal of
-// percentages; a fraction of a single unit (a crypto position) still shows its
+// abbreviated from ten thousand on (12,3k €), units, one decimal of
+// percentages and IRRs without "p.a." (ColumnHead puts it in the header
+// there); a fraction of a single unit (a crypto position) still shows its
 // first significant digit instead of 0.
 const useTableFormat = () => {
   const xsDown = useMediaQuery(PHONE);
@@ -42,7 +43,7 @@ const useTableFormat = () => {
     formatPercent(ratio, { digits: percentDigits, ...options });
 
   const irr = (period: Parameters<typeof formatIrr>[0]) =>
-    formatIrr(period, percentDigits);
+    formatIrr(period, percentDigits, xsDown);
 
   // Whether a value is a gain or a loss; values that are displayed as zero at
   // `shownDigits` fraction digits are neither.

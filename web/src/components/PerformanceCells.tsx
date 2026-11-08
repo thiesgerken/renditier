@@ -16,8 +16,14 @@ import { useTranslation } from 'react-i18next';
 
 import type { PortfolioSnapshot, PositionSnapshot } from '../types/api';
 import { getPrice, profit } from '../selectors/performance';
-import { formatChange, formatPriceSource } from '../format';
+import {
+  SHORT_PERIOD_MARK,
+  formatChange,
+  formatPriceSource,
+  isShortPeriod,
+} from '../format';
 import type { IrrPeriod } from '../format';
+import useMediaQuery, { PHONE } from '../useMediaQuery';
 import useTableFormat from './useTableFormat';
 import type { Tone } from './useTableFormat';
 import { TableCell, TableHead } from './ui/table';
@@ -43,7 +49,9 @@ interface ColumnHeadProps {
   className?: string;
 }
 
-// Phones have no room for the icons.
+// Phones have no room for the icons, and the IRR's "p.a." moves from its
+// values into its header there, on a line of its own so that the header does
+// not become the widest cell.
 export const ColumnHead = ({ column, className }: ColumnHeadProps) => {
   const { t } = useTranslation();
   const Icon = COLUMNS[column];
@@ -54,7 +62,26 @@ export const ColumnHead = ({ column, className }: ColumnHeadProps) => {
         <Icon className="hidden size-4 text-muted-foreground md:block" />
         {t(`performance.columns.${column}`)}
       </span>
+      {column === 'irr' && (
+        <span className="block text-xs leading-none font-normal text-muted-foreground sm:hidden">
+          {t('performance.perAnnum')}
+        </span>
+      )}
     </TableHead>
+  );
+};
+
+// Explains SHORT_PERIOD_MARK below a table with an IRR column, on phones,
+// where the column's values leave "p.a." to the header.
+export const IrrFootnote = ({ periods }: { periods: IrrPeriod[] }) => {
+  const { t } = useTranslation();
+  const phone = useMediaQuery(PHONE);
+
+  if (!phone || !periods.some(isShortPeriod)) return null;
+  return (
+    <p className="px-2 pt-2 text-xs text-muted-foreground">
+      {t('performance.shortPeriodFootnote', { mark: SHORT_PERIOD_MARK })}
+    </p>
   );
 };
 

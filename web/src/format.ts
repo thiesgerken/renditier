@@ -242,18 +242,29 @@ export const isShortPeriod = (period: Pick<IrrPeriod, 'start' | 'end'>) =>
     .since(Temporal.PlainDate.from(period.start.date))
     .total('days') < 32;
 
-// Short periods show the rate of the period itself.
-export const formatIrr = (period: IrrPeriod, digits = 2): string => {
+// Marks the rate of a short period in a column whose header says "p.a.".
+export const SHORT_PERIOD_MARK = '*';
+
+// Short periods show the rate of the period itself. With `perAnnumInHeader`,
+// for a column whose header says "p.a." where there is no room for it in every
+// row, annual rates drop the suffix and the rates of short periods, which are
+// not per annum, carry SHORT_PERIOD_MARK instead.
+export const formatIrr = (
+  period: IrrPeriod,
+  digits = 2,
+  perAnnumInHeader = false
+): string => {
   const options = { digits, signed: true };
 
-  if (isShortPeriod(period))
-    return period.irrPeriod === null
-      ? ''
-      : formatPercent(period.irrPeriod, options);
+  if (isShortPeriod(period)) {
+    if (period.irrPeriod === null) return '';
+    const rate = formatPercent(period.irrPeriod, options);
+    return perAnnumInHeader ? `${rate}${SHORT_PERIOD_MARK}` : rate;
+  }
 
-  return period.irrAnnual === null
-    ? ''
-    : `${formatPercent(period.irrAnnual, options)} p.a.`;
+  if (period.irrAnnual === null) return '';
+  const rate = formatPercent(period.irrAnnual, options);
+  return perAnnumInHeader ? rate : `${rate} p.a.`;
 };
 
 // "127,00 € am 06.11.2026, 20:40 (Xetra)"; historical prices are daily, so
