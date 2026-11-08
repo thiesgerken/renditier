@@ -107,3 +107,71 @@ fn book(
         duplicates: plan.duplicates,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    fn parsed(receipt_number: i64) -> ParsedReceiptTransaction {
+        ParsedReceiptTransaction {
+            content: NewTransaction {
+                account_id: -1,
+                isin: "DE0007164600".into(),
+                date: Utc::now(),
+                units: 10.0,
+                amount: -100000,
+                fees: -990,
+                onvista_exchange_id: None,
+                comments: String::new(),
+                exchange: None,
+                receipt_number: Some(receipt_number),
+            },
+            account_number: "1234567".into(),
+            over_the_counter: true,
+        }
+    }
+
+    /// Needs a scratch Postgres database (its contents are rolled back):
+    /// `RENDITIER_TEST_DATABASE=postgres://... cargo test -- --ignored`
+    #[test]
+    #[ignore = "needs a database in RENDITIER_TEST_DATABASE"]
+    fn booked_receipts_are_reported_as_duplicates() {
+        let mut connection = crate::test_connection();
+        connection.test_transaction::<_, diesel::result::Error, _>(|c| {
+            let user: User = diesel::insert_into(users::table)
+                .values(NewUser {
+                    name: "rudolph".into(),
+                    full_name: "Rudolph".into(),
+                    hash: String::new(),
+                })
+                .get_result(c)?;
+            let account: Account = diesel::insert_into(accounts::table)
+                .values(NewAccount {
+                    user_id: user.id,
+                    name: "Depot".into(),
+                    iban: Some("DE00 1234567".into()),
+                })
+                .get_result(c)?;
+
+            let first = plan(c, user.id, vec![parsed(1)]).unwrap();
+            let first = book(c, first).unwrap();
+            assert_eq!(first.transactions.len(), 1);
+            assert_eq!(first.transactions[0].account_id, account.id);
+
+            let preview = plan(c, user.id, vec![parsed(1), parsed(2)]).unwrap();
+            let numbers =
+                |ts: &[NewTransaction]| ts.iter().map(|t| t.receipt_number).collect::<Vec<_>>();
+            assert_eq!(numbers(&preview.transactions), [Some(2)]);
+            assert_eq!(numbers(&preview.duplicates), [Some(1)]);
+
+            assert_eq!(
+                plan(c, -1, vec![parsed(3)]).map(|_| ()),
+                Err(DomainError::Invalid(
+                    "no account matches the account number 1234567".into()
+                ))
+            );
+            Ok(())
+        });
+    }
+}
