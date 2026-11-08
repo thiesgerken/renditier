@@ -172,6 +172,18 @@ fn insert_fixture(c: &mut PgConnection) -> Fixture {
     }
 }
 
+/// The scratch database's URL, migrated once: two tests migrating a fresh database at once
+/// collide in the Postgres catalog.
+fn database() -> String {
+    static MIGRATED: std::sync::Once = std::sync::Once::new();
+
+    let url = std::env::var("RENDITIER_TEST_DATABASE").expect("RENDITIER_TEST_DATABASE not set");
+    MIGRATED.call_once(|| {
+        renditier::connect(&url).unwrap();
+    });
+    url
+}
+
 /// Launches the server on a free port and returns its base URL once it answers.
 async fn serve(database_url: &str) -> String {
     let port = std::net::TcpListener::bind("127.0.0.1:0")
@@ -243,7 +255,7 @@ async fn structured(
 #[tokio::test]
 #[ignore = "needs a database in RENDITIER_TEST_DATABASE"]
 async fn an_agent_reads_the_portfolio_with_a_read_key() {
-    let url = std::env::var("RENDITIER_TEST_DATABASE").expect("RENDITIER_TEST_DATABASE not set");
+    let url = database();
     let fixture = insert_fixture(&mut renditier::connect(&url).unwrap());
     let base = serve(&url).await;
     let client = connect(&base, &fixture.read_key).await;
@@ -283,14 +295,11 @@ async fn an_agent_reads_the_portfolio_with_a_read_key() {
     assert_eq!(position["price"]["exchange"], "Xetra");
     let historic = structured(&client, "portfolio", json!({"date": "2026-03-03"})).await;
     assert_eq!(historic["value"], 995.0, "{historic}");
-    let foreign = call(
-        &client,
-        "portfolio",
-        json!({"account": fixture.foreign_account}),
-    )
-    .await;
-    assert_eq!(foreign.is_error, Some(true));
-    assert!(format!("{foreign:?}").contains("not found"));
+    for tool in ["portfolio", "performance", "list_transactions"] {
+        let foreign = call(&client, tool, json!({"account": fixture.foreign_account})).await;
+        assert_eq!(foreign.is_error, Some(true), "{tool}");
+        assert!(format!("{foreign:?}").contains("not found"), "{tool}");
+    }
 
     let performance = structured(&client, "performance", json!({})).await;
     assert_eq!(performance["periods"][0]["kind"], "Total", "{performance}");
@@ -331,7 +340,7 @@ async fn an_agent_reads_the_portfolio_with_a_read_key() {
 #[tokio::test]
 #[ignore = "needs a database in RENDITIER_TEST_DATABASE"]
 async fn mcp_takes_api_keys_only_and_post_only() {
-    let url = std::env::var("RENDITIER_TEST_DATABASE").expect("RENDITIER_TEST_DATABASE not set");
+    let url = database();
     let base = serve(&url).await;
     let http = reqwest::Client::new();
     let initialize = json!({
