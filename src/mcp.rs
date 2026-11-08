@@ -174,7 +174,9 @@ pub struct Performances {
 pub struct Performance {
     /// `Total` since the first transaction, `Today`, `WeekToDate`, `MonthToDate`,
     /// `YearToDate`, one of the last 12 whole calendar months as `YYYY-MM`, or a whole past
-    /// calendar year as `YYYY`.
+    /// calendar year as `YYYY`. `Today` is the move of the newest price's trading day, from the
+    /// previous trading day's close; on weekends, holidays and before the morning's first trade
+    /// that is not today.
     period: String,
     start: Snapshot,
     end: Snapshot,
