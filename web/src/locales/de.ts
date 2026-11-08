@@ -90,6 +90,9 @@ const de: typeof en = {
       profit: 'Gewinn',
       irr: 'Zinsfuß',
     },
+    perAnnum: 'p.a.',
+    shortPeriodFootnote:
+      '{{mark}} Rate des Zeitraums selbst, unter einem Monat nicht p.a.',
     feesIncluded: 'davon Gebühren',
     feesExcluded: 'ohne Gebühren',
     priceSource: '{{price}} am {{date}} ({{exchange}})',

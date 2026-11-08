@@ -90,6 +90,9 @@ const en = {
       profit: 'Gain',
       irr: 'IRR',
     },
+    perAnnum: 'p.a.',
+    shortPeriodFootnote:
+      '{{mark}} rate of the period itself, not p.a. under a month',
     feesIncluded: 'of which fees',
     feesExcluded: 'excluding fees',
     priceSource: '{{price}} on {{date}} ({{exchange}})',

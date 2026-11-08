@@ -9,6 +9,7 @@ import {
   ColumnHead,
   InvestedCell,
   IrrCell,
+  IrrFootnote,
   PriceCell,
   ProfitCell,
   UnitsCell,
@@ -112,6 +113,7 @@ const PositionsTable = ({ period, loading, failure, stocks }: Props) => {
             })}
           </TableBody>
         </Table>
+        <IrrFootnote periods={positions} />
       </div>
     </ProgressCard>
   );

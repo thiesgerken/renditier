@@ -13,6 +13,7 @@ import {
   ColumnHead,
   InvestedCell,
   IrrCell,
+  IrrFootnote,
   ProfitCell,
   ValueCell,
 } from '../PerformanceCells';
@@ -93,6 +94,7 @@ const PerformanceTable = ({ periods, loading, failure, selected }: Props) => {
             ))}
           </TableBody>
         </Table>
+        <IrrFootnote periods={periods} />
       </div>
     </ProgressCard>
   );
