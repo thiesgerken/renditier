@@ -307,6 +307,56 @@ pub struct Close {
     close: f64,
 }
 
+#[derive(Deserialize, JsonSchema)]
+pub struct NewTransactionArgs {
+    /// An `id` from `list_accounts`.
+    account: i32,
+    isin: String,
+    /// When it was traded or paid, RFC 3339 with an offset, e.g. `2026-03-02T09:00:00+01:00`.
+    date: DateTime<Utc>,
+    /// Positive for a buy, negative for a sale, zero for a dividend or a fee.
+    units: f64,
+    /// Euros, without fees: negative for a buy (money goes out), positive for a sale or a
+    /// dividend. At most two decimals.
+    amount: f64,
+    /// Euros, zero or negative. At most two decimals.
+    fees: f64,
+    #[serde(default)]
+    comments: String,
+    /// Where it was traded, when not over the counter.
+    exchange: Option<String>,
+    /// The number on the bank's receipt, which lets a receipt upload skip it as a duplicate.
+    receipt_number: Option<i64>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct UpdateTransactionArgs {
+    /// The transaction's `id`.
+    id: i32,
+    /// Fields left out keep their value. The same units and signs as for
+    /// `create_transaction`.
+    account: Option<i32>,
+    isin: Option<String>,
+    date: Option<DateTime<Utc>>,
+    units: Option<f64>,
+    amount: Option<f64>,
+    fees: Option<f64>,
+    comments: Option<String>,
+    exchange: Option<String>,
+    receipt_number: Option<i64>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct IdArg {
+    /// The transaction's `id`.
+    id: i32,
+}
+
+#[derive(Serialize, JsonSchema)]
+pub struct Deleted {
+    deleted: i32,
+}
+
 #[tool_router]
 impl Renditier {
     #[tool(
@@ -493,6 +543,112 @@ impl Renditier {
             },
         }))
     }
+
+    #[tool(
+        description = "Book a transaction (buy, sell, dividend or fee) into one of the user's \
+        accounts. Only on the user's explicit instruction. Euros as decimals, negative when \
+        money goes out: a buy has positive `units` and a negative `amount`, a sale the other way \
+        round, and `fees` are never positive.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = false,
+            open_world_hint = false
+        )
+    )]
+    async fn create_transaction(
+        &self,
+        Extension(parts): Extension<Parts>,
+        Parameters(args): Parameters<NewTransactionArgs>,
+    ) -> Result<Json<TransactionOut>, String> {
+        let transaction = NewTransaction {
+            account_id: args.account,
+            isin: args.isin.to_uppercase(),
+            date: args.date,
+            units: args.units,
+            amount: cents(args.amount)?,
+            fees: cents(args.fees)?,
+            onvista_exchange_id: None,
+            comments: args.comments,
+            exchange: args.exchange,
+            receipt_number: args.receipt_number,
+        };
+        check_signs(transaction.units, transaction.amount, transaction.fees)?;
+
+        let created = run(&parts, move |c, user| {
+            service::transactions::create(c, user, transaction)
+        })
+        .await?;
+
+        Ok(Json(transaction_out(created)))
+    }
+
+    #[tool(
+        description = "Change a transaction of the user. Only the fields given change. Only on \
+        the user's explicit instruction. Euros as decimals, with the signs of \
+        create_transaction.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = true,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn update_transaction(
+        &self,
+        Extension(parts): Extension<Parts>,
+        Parameters(args): Parameters<UpdateTransactionArgs>,
+    ) -> Result<Json<TransactionOut>, String> {
+        let amount = args.amount.map(cents).transpose()?;
+        let fees = args.fees.map(cents).transpose()?;
+
+        let updated = run(&parts, move |c, user| {
+            let stored = service::transactions::get(c, user, args.id)?;
+            let transaction = Transaction {
+                account_id: args.account.unwrap_or(stored.account_id),
+                isin: args.isin.map_or(stored.isin, |i| i.to_uppercase()),
+                date: args.date.unwrap_or(stored.date),
+                units: args.units.unwrap_or(stored.units),
+                amount: amount.unwrap_or(stored.amount),
+                fees: fees.unwrap_or(stored.fees),
+                comments: args.comments.unwrap_or(stored.comments),
+                exchange: args.exchange.or(stored.exchange),
+                receipt_number: args.receipt_number.or(stored.receipt_number),
+                ..stored
+            };
+            check_signs(transaction.units, transaction.amount, transaction.fees)
+                .map_err(DomainError::Invalid)?;
+
+            service::transactions::update(c, user, args.id, transaction.clone())?;
+            Ok(transaction)
+        })
+        .await?;
+
+        Ok(Json(transaction_out(updated)))
+    }
+
+    #[tool(
+        description = "Delete a transaction of the user for good. Only on the user's explicit \
+        instruction.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = true,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn delete_transaction(
+        &self,
+        Extension(parts): Extension<Parts>,
+        Parameters(args): Parameters<IdArg>,
+    ) -> Result<Json<Deleted>, String> {
+        run(&parts, move |c, user| {
+            service::transactions::delete(c, user, args.id)
+        })
+        .await?;
+
+        Ok(Json(Deleted { deleted: args.id }))
+    }
 }
 
 impl ServerHandler for Renditier {
@@ -595,6 +751,33 @@ fn day_start(date: NaiveDate, timezone: Tz) -> Result<DateTime<Utc>, String> {
 
 fn euros(cents: i64) -> f64 {
     cents as f64 / 100.0
+}
+
+/// Refuses fractions of a cent rather than rounding them away unnoticed.
+fn cents(euros: f64) -> Result<i64, String> {
+    let cents = (euros * 100.0).round();
+    if !euros.is_finite() || (euros * 100.0 - cents).abs() > 1e-6 {
+        return Err(format!(
+            "{euros} is not an amount of euros with at most two decimals"
+        ));
+    }
+
+    Ok(cents as i64)
+}
+
+/// The signs an agent is most likely to get wrong, checked before they end up in the books.
+fn check_signs(units: f64, amount: i64, fees: i64) -> Result<(), String> {
+    if fees > 0 {
+        return Err("fees are money going out, so they are zero or negative".into());
+    }
+    if units > 0.0 && amount > 0 {
+        return Err("a buy (positive units) has a negative amount: the money goes out".into());
+    }
+    if units < 0.0 && amount < 0 {
+        return Err("a sale (negative units) has a positive amount: the money comes in".into());
+    }
+
+    Ok(())
 }
 
 fn portfolio_out<T: Price>(p: DomainPortfolio<T>) -> Portfolio {
@@ -742,5 +925,24 @@ mod tests {
         assert!(!read.may_use(&tool(None)));
         assert!(write.may_use(&tool(Some(false))));
         assert!(write.may_use(&tool(None)));
+    }
+
+    #[test]
+    fn euros_become_cents_without_losing_a_fraction() {
+        assert_eq!(cents(-1000.0), Ok(-100_000));
+        assert_eq!(cents(-9.9), Ok(-990));
+        assert_eq!(cents(0.07), Ok(7));
+        assert!(cents(1.234).is_err());
+        assert!(cents(f64::NAN).is_err());
+    }
+
+    #[test]
+    fn buys_cost_sales_earn_and_fees_cost() {
+        assert_eq!(check_signs(10.0, -100_000, -990), Ok(()));
+        assert_eq!(check_signs(-10.0, 100_000, -990), Ok(()));
+        assert_eq!(check_signs(0.0, 1_500, 0), Ok(()));
+        assert!(check_signs(10.0, 100_000, 0).is_err());
+        assert!(check_signs(-10.0, -100_000, 0).is_err());
+        assert!(check_signs(10.0, -100_000, 990).is_err());
     }
 }
