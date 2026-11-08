@@ -50,15 +50,18 @@ pub fn trading_day_before(newest_price: DateTime<Utc>) -> NaiveDate {
     last_trading_day_until(current.pred_opt().unwrap())
 }
 
+/// How long before the requested time a price still counts. One window for every lookup, so
+/// that the tools showing a stock's price and the portfolio valuing it agree.
+const MAX_PRICE_AGE: Duration = Duration::days(4);
+
+/// Prices at most this old rank their exchanges by preference alone, not by age.
+const PREFERENCE_WINDOW: Duration = Duration::days(4);
+
 pub trait Price {
-    // hard_threshold: amount of hours the price may be off
-    // soft_threshold: amount of hours that are considered irrelevant to scoring of exchanges
     fn find_multiple(
         connection: &mut diesel::PgConnection,
         isins: &[String],
         dates: &[DateTime<Utc>],
-        hard_threshold: i64,
-        soft_threshold: i64,
     ) -> Result<Vec<PriceMap<Self>>, Box<dyn Error>>
     where
         Self: Sized;
@@ -72,17 +75,13 @@ pub fn find<T>(
     connection: &mut diesel::PgConnection,
     isins: &[String],
     date: DateTime<Utc>,
-    hard_threshold: i64,
-    soft_threshold: i64,
 ) -> Result<PriceMap<T>, Box<dyn Error>>
 where
     T: Price + Sized,
 {
-    Ok(
-        Price::find_multiple(connection, isins, &[date], hard_threshold, soft_threshold)?
-            .pop()
-            .ok_or("find_multiple returned empty list")?,
-    )
+    Ok(Price::find_multiple(connection, isins, &[date])?
+        .pop()
+        .ok_or("find_multiple returned empty list")?)
 }
 
 impl Price for RealtimePrice {
@@ -102,21 +101,15 @@ impl Price for RealtimePrice {
         connection: &mut diesel::PgConnection,
         isins: &[String],
         dates: &[DateTime<Utc>],
-        hard_threshold: i64,
-        soft_threshold: i64,
     ) -> Result<Vec<PriceMap<Self>>, Box<dyn Error>> {
         let hard_lbs = dates
             .iter()
-            .map(|d| {
-                d.checked_sub_signed(Duration::hours(hard_threshold))
-                    .unwrap()
-            })
+            .map(|d| d.checked_sub_signed(MAX_PRICE_AGE).unwrap())
             .collect::<Vec<_>>();
 
-        let soft_lbs = dates.iter().map(|d| {
-            d.checked_sub_signed(Duration::hours(soft_threshold))
-                .unwrap()
-        });
+        let soft_lbs = dates
+            .iter()
+            .map(|d| d.checked_sub_signed(PREFERENCE_WINDOW).unwrap());
 
         let always_false = Box::new(realtime_prices::date.ne(realtime_prices::date));
         let fs: Box<
@@ -199,27 +192,15 @@ impl Price for HistoricalPrice {
         connection: &mut diesel::PgConnection,
         isins: &[String],
         dates: &[DateTime<Utc>],
-        hard_threshold: i64,
-        soft_threshold: i64,
     ) -> Result<Vec<PriceMap<Self>>, Box<dyn Error>> {
         let hard_lbs = dates
             .iter()
-            .map(|d| {
-                to_market_time(
-                    d.checked_sub_signed(Duration::hours(hard_threshold))
-                        .unwrap(),
-                )
-                .date()
-            })
+            .map(|d| to_market_time(d.checked_sub_signed(MAX_PRICE_AGE).unwrap()).date())
             .collect::<Vec<_>>();
 
-        let soft_lbs = dates.iter().map(|d| {
-            to_market_time(
-                d.checked_sub_signed(Duration::hours(soft_threshold))
-                    .unwrap(),
-            )
-            .date()
-        });
+        let soft_lbs = dates
+            .iter()
+            .map(|d| to_market_time(d.checked_sub_signed(PREFERENCE_WINDOW).unwrap()).date());
 
         let days = dates
             .iter()

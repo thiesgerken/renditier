@@ -44,11 +44,11 @@ pub fn compute(
         .select(stock_infos::isin)
         .load::<String>(connection)?;
 
-    let current: PriceMap<RealtimePrice> = price::find(connection, &isins, now, 4 * 24, 4 * 24)?;
+    let current: PriceMap<RealtimePrice> = price::find(connection, &isins, now)?;
     let newest = current.values().map(|d| d.price.date).max().unwrap_or(now);
     let closes = reference_days(newest).map(|d| market_time(d.and_time(MARKET_CLOSE)));
     let [previous, month_ago, year_ago]: [PriceMap<HistoricalPrice>; 3] =
-        HistoricalPrice::find_multiple(connection, &isins, &closes, 4 * 24, 4 * 24)?
+        HistoricalPrice::find_multiple(connection, &isins, &closes)?
             .try_into()
             .map_err(|_| "find_multiple returned a map per date")?;
 

@@ -109,8 +109,7 @@ fn escape_like(query: &str) -> String {
         .replace('_', "\\_")
 }
 
-/// The price the portfolio values `isin` at, at `now`: the newest on the most preferred exchange
-/// that has one at most four days old.
+/// The price the portfolio values `isin` at, at `now`, found by the same `price::find`.
 pub fn quote(
     c: &mut PgConnection,
     isin: &str,
@@ -118,7 +117,7 @@ pub fn quote(
 ) -> Result<Option<DataSource<RealtimePrice>>, DomainError> {
     let isin = isin.to_uppercase();
 
-    Ok(price::find(c, std::slice::from_ref(&isin), now, 4 * 24, 4 * 24)?.remove(&isin))
+    Ok(price::find(c, std::slice::from_ref(&isin), now)?.remove(&isin))
 }
 
 /// The returns of every stock, keyed by ISIN.
