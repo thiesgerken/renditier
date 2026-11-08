@@ -1,11 +1,13 @@
+use crate::api_keys::{self, Access};
 use crate::models::*;
 use crate::schema::*;
+use crate::verify_password;
 use crate::web::{Config, DbConn};
-use crate::{hash_token, verify_password};
 
 use diesel::prelude::*;
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use rocket::http::{Cookie, CookieJar, Method, Status};
+use rocket::outcome::try_outcome;
 use rocket::request::{FromRequest, Outcome};
 use rocket::serde::json::Json;
 use rocket::{Request, State};
@@ -21,6 +23,8 @@ impl Deref for UserId {
     }
 }
 
+/// The user behind a session or an API key. A read key only gets this far on a request that
+/// cannot change anything, so the handlers need not care how the caller authenticated.
 pub struct UserId(i32);
 
 #[rocket::async_trait]
@@ -28,36 +32,83 @@ impl<'r> FromRequest<'r> for UserId {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let id = request
-            .cookies()
-            .get_private("user_id")
-            .and_then(|c| c.value().parse().ok());
+        let (id, access) = try_outcome!(caller(request).await);
 
-        if let Some(id) = id {
-            return Outcome::Success(UserId(id));
+        if access == Access::Read && !matches!(request.method(), Method::Get | Method::Head) {
+            warn!(
+                "Attempt to use a read-only API key of user {} on a {} request",
+                id,
+                request.method()
+            );
+
+            return Outcome::Error((Status::Forbidden, ()));
         }
 
-        // A bearer token is the way in for something that is not a browser, so it is only looked
-        // at when no session cookie answered first. It reads and never writes: a token carries no
-        // second factor and cannot be asked to confirm anything, so a leaked one must not be able
-        // to delete an account. Widening this later is easy; narrowing it after tokens are in use
-        // is not.
-        let id = match bearer_token(request) {
-            Some(_) if request.method() != Method::Get => {
-                warn!(
-                    "Attempt to use an API token on a {} request; tokens authenticate GET only",
-                    request.method()
-                );
+        Outcome::Success(UserId(id))
+    }
+}
 
-                None
-            }
-            Some(token) => resolve_token(request, token).await,
-            None => None,
-        };
+/// The user behind a session (password login or Remote-User SSO), never an API key. For what
+/// must not be in reach of a leaked key, like managing keys.
+pub struct SessionUserId(i32);
 
-        match id {
-            Some(id) => Outcome::Success(UserId(id)),
+impl Deref for SessionUserId {
+    type Target = i32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for SessionUserId {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        match session_user_id(request) {
+            Some(id) => Outcome::Success(SessionUserId(id)),
             None => Outcome::Error((Status::Unauthorized, ())),
+        }
+    }
+}
+
+fn session_user_id(request: &Request<'_>) -> Option<i32> {
+    request
+        .cookies()
+        .get_private("user_id")
+        .and_then(|c| c.value().parse().ok())
+}
+
+/// Who is calling, and with which access. A session may do everything its user may.
+async fn caller(request: &Request<'_>) -> Outcome<(i32, Access), ()> {
+    if let Some(id) = session_user_id(request) {
+        return Outcome::Success((id, Access::Write));
+    }
+
+    let Some(token) = bearer_token(request) else {
+        return Outcome::Error((Status::Unauthorized, ()));
+    };
+    let Some(connection) = request.guard::<DbConn>().await.succeeded() else {
+        return Outcome::Error((Status::ServiceUnavailable, ()));
+    };
+
+    match connection
+        .run(move |c| api_keys::authenticate(c, &token))
+        .await
+    {
+        Ok(Some((id, access))) => {
+            // One line per API request at info would drown the log; the failure is the
+            // interesting one.
+            debug!("Successful authentication with an API key of user {}", id);
+            Outcome::Success((id, access))
+        }
+        Ok(None) => {
+            warn!("Attempt to authenticate with an unknown or expired API key");
+            Outcome::Error((Status::Unauthorized, ()))
+        }
+        Err(e) => {
+            error!("Unable to look up an API key: {}", e);
+            Outcome::Error((Status::InternalServerError, ()))
         }
     }
 }
@@ -75,29 +126,6 @@ fn bearer_token(request: &Request<'_>) -> Option<String> {
     }
 
     Some(token.trim().to_owned()).filter(|t| !t.is_empty())
-}
-
-async fn resolve_token(request: &Request<'_>, token: String) -> Option<i32> {
-    let connection = request.guard::<DbConn>().await.succeeded()?;
-    let presented = hash_token(&token);
-
-    let id = connection
-        .run(move |c| {
-            users::table
-                .filter(users::api_token_hash.eq(presented))
-                .select(users::id)
-                .first::<i32>(c)
-                .ok()
-        })
-        .await;
-
-    match id {
-        // One line per API request at info would drown the log; the failure is the interesting one.
-        Some(id) => debug!("Successful authentication with an API token of user {}", id),
-        None => warn!("Attempt to authenticate with an unknown API token"),
-    }
-
-    id
 }
 
 pub struct OptionalUserId(Option<UserId>);
