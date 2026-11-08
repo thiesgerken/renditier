@@ -2,6 +2,7 @@ use crate::models::*;
 use crate::schema::*;
 use crate::service::{DomainError, accounts as account_service};
 
+use chrono::{DateTime, Utc};
 use diesel::pg::Pg;
 use diesel::prelude::*;
 use diesel::sql_types::Integer;
@@ -23,14 +24,42 @@ fn check_target_account(c: &mut PgConnection, user_id: i32, id: i32) -> Result<(
     }
 }
 
+/// Narrows `list`; every field left `None` matches all transactions.
+#[derive(Debug, Default)]
+pub struct TransactionFilter {
+    pub account_id: Option<i32>,
+    pub isin: Option<String>,
+    /// Inclusive.
+    pub from: Option<DateTime<Utc>>,
+    /// Exclusive.
+    pub until: Option<DateTime<Utc>>,
+}
+
 pub fn list(
     c: &mut PgConnection,
     user_id: i32,
+    filter: TransactionFilter,
     offset: Option<i64>,
     count: Option<i64>,
 ) -> Result<Vec<Transaction>, DomainError> {
-    Ok(transactions::table
+    let mut query = transactions::table
         .filter(transactions::account_id.eq_any(owned_account_ids(user_id)))
+        .into_boxed();
+
+    if let Some(account_id) = filter.account_id {
+        query = query.filter(transactions::account_id.eq(account_id));
+    }
+    if let Some(isin) = filter.isin {
+        query = query.filter(transactions::isin.eq(isin.to_uppercase()));
+    }
+    if let Some(from) = filter.from {
+        query = query.filter(transactions::date.ge(from));
+    }
+    if let Some(until) = filter.until {
+        query = query.filter(transactions::date.lt(until));
+    }
+
+    Ok(query
         .order(transactions::id.asc())
         .limit(count.unwrap_or(i64::MAX))
         .offset(offset.unwrap_or(0))

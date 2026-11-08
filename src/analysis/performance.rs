@@ -92,19 +92,28 @@ struct Prices<'a> {
     historical: &'a HashMap<NaiveDate, PriceMap<HistoricalPrice>>,
 }
 
+/// `account_id` narrows the performance to a single account; `None` is the whole user.
 pub fn compute(
     connection: &mut diesel::PgConnection,
     user_id: i32,
+    account_id: Option<i32>,
     date: DateTime<Utc>,
     timezone: Tz,
 ) -> Result<Vec<PortfolioPerformance>, Box<dyn Error>> {
     let calendar = Calendar::new(timezone, date);
 
     // read all transactions for the user from db
-    let ts = transactions::table
+    let mut query = transactions::table
         .inner_join(accounts::table)
         .filter(accounts::user_id.eq(user_id))
         .filter(transactions::date.le(date))
+        .into_boxed();
+
+    if let Some(account_id) = account_id {
+        query = query.filter(transactions::account_id.eq(account_id));
+    }
+
+    let ts = query
         .order(transactions::date.asc())
         .load::<(Transaction, Account)>(connection)?
         .into_iter()
