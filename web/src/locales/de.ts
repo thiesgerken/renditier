@@ -135,7 +135,7 @@ const de: typeof en = {
     },
     noneHeld:
       'Derzeit keine gehalten. Ohne „Nur gehaltene“ erscheinen alle Wertpapiere.',
-    none: 'Noch keine Wertpapiere. Sie erscheinen mit der ersten Transaktion darin.',
+    none: 'Noch keine Wertpapiere. Wertpapiere erscheinen mit ihrer ersten Transaktion.',
   },
   stockComparison: {
     securities: 'Wertpapiere',
@@ -172,7 +172,7 @@ const de: typeof en = {
     receipts: 'Abrechnungen',
     new: 'Neue Transaktion',
     none: 'Noch keine Transaktionen. Neue anlegen oder Abrechnungen hochladen.',
-    noneForStock: 'Keine Transaktionen in diesem Wertpapier.',
+    noneForStock: 'Keine Transaktionen zu diesem Wertpapier.',
     includesFees: 'enthält Gebühren von {{amount}}',
     kinds: {
       buy: 'Kauf',

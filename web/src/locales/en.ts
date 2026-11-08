@@ -134,7 +134,7 @@ const en = {
     },
     noneHeld:
       'None held right now. Without “Held only”, all securities are listed.',
-    none: 'No securities yet. They appear with the first transaction in them.',
+    none: 'No securities yet. Securities appear with their first transaction.',
   },
   stockComparison: {
     securities: 'Securities',
@@ -171,7 +171,7 @@ const en = {
     receipts: 'Receipts',
     new: 'New transaction',
     none: 'No transactions yet. Add one, or upload receipts.',
-    noneForStock: 'No transactions in this security.',
+    noneForStock: 'No transactions for this security.',
     includesFees: 'includes {{amount}} in fees',
     kinds: {
       buy: 'Buy',
