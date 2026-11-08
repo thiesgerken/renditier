@@ -6,7 +6,7 @@
 
 use crate::analysis::performance::{PerformanceKind, PortfolioPerformance};
 use crate::analysis::portfolio::Portfolio as DomainPortfolio;
-use crate::analysis::price::Price;
+use crate::analysis::price::{DataSource, Price};
 use crate::models::*;
 use crate::service::api_keys::Access;
 use crate::service::transactions::TransactionFilter;
@@ -22,8 +22,8 @@ use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::tool::{Extension, ToolCallContext};
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{
-    CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, ListToolsResult,
-    PaginatedRequestParams, ServerCapabilities, ServerConfig, Tool,
+    CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, Implementation,
+    ListToolsResult, PaginatedRequestParams, ServerCapabilities, ServerConfig, Tool,
 };
 use rmcp::service::RequestContext;
 use rmcp::transport::streamable_http_server::session::never::NeverSessionManager;
@@ -258,7 +258,7 @@ pub struct StockSummary {
     isin: String,
     wkn: String,
     title: String,
-    /// E.g. `STOCK` or `FUND`.
+    /// onvista's category: `Aktie`, `ETF`, `ETC` or `Krypto`.
     kind: String,
     company: Option<String>,
 }
@@ -273,6 +273,7 @@ pub struct Stock {
     isin: String,
     wkn: String,
     title: String,
+    /// onvista's category: `Aktie`, `ETF`, `ETC` or `Krypto`.
     kind: String,
     company: Option<String>,
     currency: Option<String>,
@@ -280,7 +281,8 @@ pub struct Stock {
     ter: Option<f64>,
     benchmark_index: Option<String>,
     description: Option<String>,
-    /// The newest price over all exchanges, however old.
+    /// The price `portfolio` values it at: the newest on the most preferred exchange that has
+    /// one at most four days old. Absent when there is none.
     latest_price: Option<Quote>,
     exchanges: Vec<ExchangeOut>,
 }
@@ -520,9 +522,14 @@ impl Renditier {
         Extension(parts): Extension<Parts>,
         Parameters(args): Parameters<IsinArg>,
     ) -> Result<Json<Stock>, String> {
-        let stock = run(&parts, move |c, _| service::stocks::get(c, &args.isin)).await?;
+        let (stock, quote) = run(&parts, move |c, _| {
+            let stock = service::stocks::get(c, &args.isin)?;
+            let quote = service::stocks::quote(c, &stock.info.isin, Utc::now())?;
+            Ok((stock, quote))
+        })
+        .await?;
 
-        Ok(Json(stock_out(stock)))
+        Ok(Json(stock_out(stock, quote)))
     }
 
     #[tool(
@@ -680,6 +687,7 @@ impl Renditier {
 impl ServerHandler for Renditier {
     fn get_info(&self) -> ServerConfig {
         ServerConfig::new(ServerCapabilities::builder().enable_tools().build())
+            .with_server_info(Implementation::new("renditier", env!("CARGO_PKG_VERSION")))
             .with_instructions(INSTRUCTIONS)
     }
 
@@ -779,6 +787,12 @@ fn euros(cents: i64) -> f64 {
     cents as f64 / 100.0
 }
 
+/// Sums of euros in binary floating point pick up noise like `-11972.849999999999`, which an
+/// agent would repeat verbatim.
+fn money(euros: f64) -> f64 {
+    (euros * 100.0).round() / 100.0
+}
+
 /// Refuses fractions of a cent rather than rounding them away unnoticed, and amounts too large to
 /// be meant (or to fit) rather than saturating them.
 fn cents(euros: f64) -> Result<i64, String> {
@@ -809,8 +823,8 @@ fn check_signs(units: f64, amount: i64, fees: i64) -> Result<(), String> {
 
 fn portfolio_out<T: Price>(p: DomainPortfolio<T>) -> Portfolio {
     Portfolio {
-        invested: p.invested,
-        value: p.value,
+        invested: money(p.invested),
+        value: p.value.map(money),
         irr_annual: p.irr,
         positions: p
             .stocks
@@ -818,14 +832,10 @@ fn portfolio_out<T: Price>(p: DomainPortfolio<T>) -> Portfolio {
             .map(|s| Position {
                 isin: s.isin,
                 units: s.units,
-                invested: s.invested,
-                value: s.value,
+                invested: money(s.invested),
+                value: s.value.map(money),
                 irr_annual: s.irr,
-                price: s.data_source.map(|d| Quote {
-                    price: d.price.value(),
-                    date: d.price.date(),
-                    exchange: d.exchange.name,
-                }),
+                price: s.data_source.map(quote_out),
             })
             .collect(),
     }
@@ -837,16 +847,16 @@ fn performance_out(p: PortfolioPerformance) -> Performance {
         start: Snapshot {
             date: p.start.date,
             units: None,
-            invested: p.start.invested,
-            fees: p.start.fees,
-            value: p.start.value,
+            invested: money(p.start.invested),
+            fees: money(p.start.fees),
+            value: p.start.value.map(money),
         },
         end: Snapshot {
             date: p.end.date,
             units: None,
-            invested: p.end.invested,
-            fees: p.end.fees,
-            value: p.end.value,
+            invested: money(p.end.invested),
+            fees: money(p.end.fees),
+            value: p.end.value.map(money),
         },
         irr_annual: p.irr_annual,
         irr_period: p.irr_period,
@@ -857,9 +867,9 @@ fn performance_out(p: PortfolioPerformance) -> Performance {
                 let snapshot = |s: crate::analysis::performance::PositionSnapshot| Snapshot {
                     date: s.date,
                     units: Some(s.units),
-                    invested: s.invested,
-                    fees: s.fees,
-                    value: s.value,
+                    invested: money(s.invested),
+                    fees: money(s.fees),
+                    value: s.value.map(money),
                 };
                 let position = PositionPerformance {
                     start: snapshot(p.start),
@@ -888,18 +898,15 @@ fn transaction_out(t: Transaction) -> TransactionOut {
     }
 }
 
-fn stock_out(s: service::stocks::Stock) -> Stock {
-    let latest_price = s
-        .exchanges
-        .iter()
-        .filter_map(|e| e.current_price.as_ref().map(|p| (e, p)))
-        .max_by_key(|(_, p)| p.date)
-        .map(|(e, p)| Quote {
-            price: p.price,
-            date: p.date,
-            exchange: e.name.clone(),
-        });
+fn quote_out<T: Price>(d: DataSource<T>) -> Quote {
+    Quote {
+        price: d.price.value(),
+        date: d.price.date(),
+        exchange: d.exchange.name,
+    }
+}
 
+fn stock_out(s: service::stocks::Stock, quote: Option<DataSource<RealtimePrice>>) -> Stock {
     Stock {
         isin: s.info.isin,
         wkn: s.info.wkn,
@@ -910,7 +917,7 @@ fn stock_out(s: service::stocks::Stock) -> Stock {
         ter: s.info.ter,
         benchmark_index: s.info.benchmark_index,
         description: s.info.description,
-        latest_price,
+        latest_price: quote.map(quote_out),
         exchanges: s
             .exchanges
             .into_iter()
@@ -952,6 +959,12 @@ mod tests {
         assert!(!read.may_use(&tool(None)));
         assert!(write.may_use(&tool(Some(false))));
         assert!(write.may_use(&tool(None)));
+    }
+
+    #[test]
+    fn money_is_rounded_to_cents() {
+        assert_eq!(money(-11972.849999999999), -11972.85);
+        assert_eq!(money(10981.903222500001), 10981.9);
     }
 
     #[test]

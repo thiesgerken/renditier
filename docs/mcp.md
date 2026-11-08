@@ -44,7 +44,7 @@ The tool descriptions say the same, so an agent does not need this page.
 | `performance` | optional `account` | total, today, week/month/year to date, each of the last 12 months and each past year: start and end snapshots, `irr_annual`, `irr_period`, per position too |
 | `list_transactions` | optional `account`, `isin`, `from`, `to` (inclusive) | transactions, oldest first |
 | `search_stocks` | `query`: ISIN, WKN or part of a name | up to 20 stocks and funds |
-| `get_stock` | `isin` | details, the price on each exchange, and the newest of them |
+| `get_stock` | `isin` | details, the newest price on each exchange, and the price `portfolio` values it at |
 | `price_history` | `isin`, `from`, `to` | daily closes from the most preferred exchange that has any |
 | `create_transaction` | `account`, `isin`, `date` (RFC 3339), `units`, `amount`, `fees`; optional `comments`, `exchange`, `receipt_number` | the booked transaction |
 | `update_transaction` | `id`; any of the fields of `create_transaction` | the changed transaction; fields left out keep their value |
