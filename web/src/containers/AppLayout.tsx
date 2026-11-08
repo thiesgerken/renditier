@@ -168,21 +168,17 @@ const TabBarLink = ({ destination, active }: LinkProps) => (
 );
 
 interface UserAvatarProps {
-  initials: string;
+  text: string;
   size?: 'sm' | 'default';
   className?: string;
 }
 
 // Decoration: the trigger is named by the full name next to it, or by its
 // label on phones.
-const UserAvatar = ({
-  initials,
-  size = 'default',
-  className,
-}: UserAvatarProps) => (
+const UserAvatar = ({ text, size = 'default', className }: UserAvatarProps) => (
   <Avatar size={size} aria-hidden="true" className={className}>
-    <AvatarFallback className="bg-brand/15 font-medium text-brand">
-      {initials}
+    <AvatarFallback className="bg-secondary font-medium text-secondary-foreground">
+      {text}
     </AvatarFallback>
   </Avatar>
 );
@@ -314,11 +310,7 @@ const AppLayout = ({ children }: Props) => {
               >
                 {/* Centred on the sidebar's icon column, with the name in line
                     with the labels above. */}
-                <UserAvatar
-                  initials={userInitials}
-                  size="sm"
-                  className="-ml-1"
-                />
+                <UserAvatar text={userInitials} size="sm" className="-ml-1" />
                 <span className="truncate">{name}</span>
               </Button>
             }
@@ -337,7 +329,7 @@ const AppLayout = ({ children }: Props) => {
               size="icon-lg"
               aria-label={t('layout.userMenu')}
             >
-              <UserAvatar initials={userInitials} />
+              <UserAvatar text={userInitials} />
             </Button>
           }
         />
