@@ -58,6 +58,62 @@ export const formatCurrency = (
 ): string =>
   value === null ? MISSING : numberFormat('currency', options).format(value);
 
+// From here on, compact amounts have fewer digits than the whole euros.
+const COMPACT_FROM = 10_000;
+
+const compactFormats = new Map<string, Intl.NumberFormat>();
+
+const compactFormat = (signed: boolean): Intl.NumberFormat => {
+  const locale = formatLocale();
+  const key = `${locale}/${signed}`;
+  let format = compactFormats.get(key);
+
+  if (format === undefined) {
+    format = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: 'EUR',
+      notation: 'compact',
+      maximumSignificantDigits: 3,
+      signDisplay: signed ? 'exceptZero' : 'auto',
+    });
+    compactFormats.set(key, format);
+  }
+
+  return format;
+};
+
+// Amounts for where a full one does not fit (phones): below ten thousand as
+// formatCurrency has them, from there with three significant digits, 12,3k €
+// and 1,23 Mio. € (€12.3K and €1.23M in English). German compact notation
+// leaves thousands as they are (12.346 €), so for such a locale the "k" is
+// set by hand, behind the number and before the currency.
+export const formatCurrencyCompact = (
+  value: number | null,
+  options: NumberOptions = {}
+): string => {
+  if (value === null || Math.abs(value) < COMPACT_FROM)
+    return formatCurrency(value, options);
+
+  const signed = options.signed ?? false;
+  const compact = compactFormat(signed);
+  // up to 999,5k; above, the number would round to "1000k"
+  const thousandsByHand =
+    Math.abs(value) < 999_500 &&
+    !compact.formatToParts(COMPACT_FROM).some(p => p.type === 'compact');
+  if (!thousandsByHand) return compact.format(value);
+
+  const parts = numberFormat('currency', {
+    digits: 0,
+    significantDigits: 3,
+    signed,
+  }).formatToParts(value / 1000);
+  const end =
+    parts.findLastIndex(p => p.type === 'integer' || p.type === 'fraction') + 1;
+  return [...parts.slice(0, end), { value: 'k' }, ...parts.slice(end)]
+    .map(p => p.value)
+    .join('');
+};
+
 // 0.1234 -> 12,34 %
 export const formatPercent = (
   ratio: number | null,

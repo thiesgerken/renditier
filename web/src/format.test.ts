@@ -1,6 +1,8 @@
+import i18n from './i18n';
 import {
   formatChange,
   formatCurrency,
+  formatCurrencyCompact,
   formatDate,
   formatDateTime,
   formatTime,
@@ -20,6 +22,30 @@ describe('number formatting', () => {
     expect(formatCurrency(-3, { digits: 0 })).toBe(nbsp('-3_€'));
     expect(formatCurrency(5, { signed: true })).toBe(nbsp('+5,00_€'));
     expect(formatCurrency(null)).toBe('—');
+  });
+
+  it('abbreviates large euro amounts', () => {
+    expect(formatCurrencyCompact(9876.54, { digits: 0 })).toBe(nbsp('9.877_€'));
+    expect(formatCurrencyCompact(12345.67)).toBe(nbsp('12,3k_€'));
+    expect(formatCurrencyCompact(-123456, { signed: true })).toBe(
+      nbsp('-123k_€')
+    );
+    expect(formatCurrencyCompact(12000, { signed: true })).toBe(nbsp('+12k_€'));
+    expect(formatCurrencyCompact(999_700)).toBe(nbsp('1_Mio._€'));
+    expect(formatCurrencyCompact(1_234_567)).toBe(nbsp('1,23_Mio._€'));
+    expect(formatCurrencyCompact(null)).toBe('—');
+  });
+
+  it('abbreviates large euro amounts in English', async () => {
+    await i18n.changeLanguage('en');
+    try {
+      expect(formatCurrencyCompact(12345.67)).toBe('€12.3K');
+      expect(formatCurrencyCompact(1_234_567, { signed: true })).toBe(
+        '+€1.23M'
+      );
+    } finally {
+      await i18n.changeLanguage('de');
+    }
   });
 
   it('formats ratios as percentages', () => {

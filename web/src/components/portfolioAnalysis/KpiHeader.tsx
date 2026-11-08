@@ -13,20 +13,11 @@ import { useTranslation } from 'react-i18next';
 
 import type { PortfolioPerformance } from '../../types/api';
 import { periodGain } from '../../selectors/performance';
-import {
-  formatChange,
-  formatCurrency,
-  formatPercent,
-  isShortPeriod,
-} from '../../format';
+import { formatChange, formatPercent, isShortPeriod } from '../../format';
 import type { Formatter } from '../../format';
 import useTableFormat from '../useTableFormat';
 import type { Tone } from '../useTableFormat';
 import { Card } from '../ui/card';
-
-// Headline numbers have no room for cents.
-const euros: Formatter = (value, options) =>
-  formatCurrency(value, { digits: 0, ...options });
 
 const TONES = {
   neutral: { circle: 'bg-primary/10 text-primary', value: '' },
@@ -38,11 +29,20 @@ interface TileProps {
   icon: LucideIcon;
   label: string;
   value: string;
+  // the exact value where `value` is rounded or abbreviated
+  title?: string;
   detail: string | null;
   tone?: Tone;
 }
 
-const KpiTile = ({ icon: Icon, label, value, detail, tone }: TileProps) => {
+const KpiTile = ({
+  icon: Icon,
+  label,
+  value,
+  title,
+  detail,
+  tone,
+}: TileProps) => {
   const styles = TONES[tone ?? 'neutral'];
 
   return (
@@ -64,7 +64,13 @@ const KpiTile = ({ icon: Icon, label, value, detail, tone }: TileProps) => {
           styles.value
         )}
       >
-        {value}
+        {title === undefined ? (
+          value
+        ) : (
+          <abbr title={title} className="no-underline">
+            {value}
+          </abbr>
+        )}
       </div>
       {/* keeps the tiles of a row equally high when one has no detail */}
       <div className="min-h-4 text-xs text-muted-foreground">{detail}</div>
@@ -81,8 +87,12 @@ interface Props {
 // during it.
 const KpiHeader = ({ period }: Props) => {
   const { t } = useTranslation();
-  const { signTone } = useTableFormat();
+  const { money, exactMoney, signTone } = useTableFormat();
   const { start, end } = period;
+
+  // headline numbers have no room for cents
+  const euros: Formatter = (value, options) =>
+    money(value, { ...options, digits: 0 });
 
   const gain = periodGain(period);
   const gainTone = signTone(gain, 0);
@@ -99,18 +109,21 @@ const KpiHeader = ({ period }: Props) => {
         icon={Wallet}
         label={t('kpi.portfolioValue')}
         value={euros(end.value)}
+        title={exactMoney(end.value)}
         detail={formatChange(start.value, end.value, euros)}
       />
       <KpiTile
         icon={PiggyBank}
         label={t('kpi.invested')}
         value={euros(-end.invested)}
+        title={exactMoney(-end.invested)}
         detail={formatChange(-start.invested, -end.invested, euros)}
       />
       <KpiTile
         icon={gainTone === 'loss' ? TrendingDown : TrendingUp}
         label={t('kpi.gain')}
         value={euros(gain, { signed: true })}
+        title={exactMoney(gain)}
         detail={null}
         tone={gainTone}
       />
