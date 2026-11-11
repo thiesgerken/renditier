@@ -31,8 +31,7 @@ The server is stateless: no session id, JSON responses, no server-sent events. `
   gain is `value + invested`.
 - IRRs are decimals (0.05 is 5 %): `irr_annual` per year, `irr_period` over the period.
 - Dates are `YYYY-MM-DD` days in the server's time zone (`timezone` in the configuration).
-- Prices are per unit in the exchange's currency, which is euros on the German exchanges
-  Renditier prefers.
+- Prices are per unit, in euros: Renditier only tracks listings quoted in euros.
 
 The tool descriptions say the same, so an agent does not need this page.
 

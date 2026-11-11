@@ -1,7 +1,8 @@
 use crate::add_missing_stocks;
+use crate::data::refresh_infos;
 use crate::models::*;
 use crate::onvista;
-use crate::schema::stock_infos::dsl::{isin, persistent, stock_infos};
+use crate::schema::stock_infos::dsl::{persistent, stock_infos};
 
 use chrono::{DateTime, NaiveDate, Utc};
 use clap::ArgAction;
@@ -109,37 +110,9 @@ pub async fn handle(pool: Pool<ConnectionManager<PgConnection>>, sub_matches: &A
             .load::<StockInfo>(&mut connection)
             .expect("error querying infos");
 
-        let mut failed_isins = Vec::new();
-        for info in infos.iter() {
-            debug!("updating stock info for {}", &info.isin);
-
-            let new_info = match onvista::get_info(&info.isin).await {
-                Ok((new_info, _)) => new_info,
-                Err(e) => {
-                    error!("error obtaining stock info for {}: {}", info.isin, e);
-                    failed_isins.push(info.isin.as_str());
-                    continue;
-                }
-            };
-            // onvista only provides the instrument data, the rest is our own bookkeeping
-            let new_info = StockInfo {
-                persistent: info.persistent,
-                last_historical_update: info.last_historical_update,
-                last_realtime_update: info.last_realtime_update,
-                ..new_info
-            };
-            if let Err(e) = diesel::update(stock_infos.filter(isin.eq(info.isin.clone())))
-                .set(new_info.clone())
-                .execute(&mut connection)
-            {
-                error!("error saving stock info for {}: {}", info.isin, e);
-                failed_isins.push(info.isin.as_str());
-                continue;
-            }
-
-            info!("updated stock info for {}", info.isin);
-            debug!("new info: {:?}", &new_info);
-        }
+        let failed_isins = refresh_infos(pool.clone(), &infos)
+            .await
+            .expect("error saving stock infos");
 
         if !failed_isins.is_empty() {
             error!(
