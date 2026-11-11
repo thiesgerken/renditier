@@ -125,6 +125,9 @@ pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), B
         .filter(|q| is_euro_quote(q))
         .map(|q| parse_exchange(&info.isin, q).ok_or_else(|| format!("error parsing quote {q}")))
         .collect::<Result<Vec<_>, _>>()?;
+    if exchanges.is_empty() {
+        return Err(format!("onvista has no euro listing for {isin}").into());
+    }
 
     Ok((info, exchanges))
 }
