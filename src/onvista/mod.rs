@@ -122,8 +122,12 @@ pub async fn get_info(needle: &str) -> Result<(StockInfo, Vec<StockExchange>), B
     };
     let exchanges = quotes
         .iter()
+        .filter(|q| is_euro_quote(q))
         .map(|q| parse_exchange(&info.isin, q).ok_or_else(|| format!("error parsing quote {q}")))
         .collect::<Result<Vec<_>, _>>()?;
+    if exchanges.is_empty() {
+        return Err(format!("onvista has no euro listing for {isin}").into());
+    }
 
     Ok((info, exchanges))
 }
@@ -140,6 +144,7 @@ pub async fn get_data_realtime(stock: &StockInfo) -> Result<Vec<RealtimePrice>, 
 
     Ok(quotes
         .iter()
+        .filter(|q| is_euro_quote(q))
         .map(|q| parse_price(q).ok_or_else(|| format!("error parsing quote {q}")))
         .collect::<Result<Vec<_>, _>>()?)
 }
@@ -300,6 +305,12 @@ fn snapshot_quotes(snapshot: &Value) -> Result<&Vec<Value>, &'static str> {
     get_array(&snapshot["quoteList"]["list"]).ok_or("error parsing quote list")
 }
 
+/// Renditier values everything in euros, so a listing in another currency (Nasdaq in USD, SIX in
+/// CHF) would pass its foreign prices off as euros.
+fn is_euro_quote(quote: &Value) -> bool {
+    get_string(&quote["isoCurrency"]).as_deref() == Some("EUR")
+}
+
 fn parse_exchange(isin: &str, quote: &Value) -> Option<StockExchange> {
     Some(StockExchange {
         isin: isin.to_string(),
@@ -349,6 +360,20 @@ mod tests {
     #[test]
     fn test_snapshot_quotes() {
         assert_eq!(snapshot_quotes(&fixture("etf_snapshot")).unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_only_euro_quotes_count() {
+        let snapshot = fixture("etf_snapshot");
+        let euro = snapshot_quotes(&snapshot)
+            .unwrap()
+            .iter()
+            .filter(|q| is_euro_quote(q))
+            .count();
+
+        // the fixture's third quote is in USD
+        assert_eq!(euro, 2);
+        assert!(is_euro_quote(&fixture("crypto_quote")));
     }
 
     #[test]

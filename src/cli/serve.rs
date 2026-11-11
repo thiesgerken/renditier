@@ -14,6 +14,7 @@ use log::{error, info};
 use rocket::config::LogLevel;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use std::time::Instant;
 use tokio;
 
 pub fn build() -> Command {
@@ -64,6 +65,23 @@ impl Default for Config {
             trusted_header_authentication: false,
         }
     }
+}
+
+const INFO_REFRESH_INTERVAL: std::time::Duration = std::time::Duration::from_secs(24 * 60 * 60);
+
+async fn refresh_all_infos(
+    pool: Pool<ConnectionManager<PgConnection>>,
+) -> Result<(), Box<dyn Error>> {
+    let stocks = stock_infos.load::<StockInfo>(&mut pool.get()?)?;
+    let failed_isins = refresh_infos(pool, &stocks).await?;
+    if !failed_isins.is_empty() {
+        error!(
+            "Could not refresh {} stock info(s): {}",
+            failed_isins.len(),
+            failed_isins.join(", ")
+        );
+    }
+    Ok(())
 }
 
 async fn fetch_data(pool: Pool<ConnectionManager<PgConnection>>) -> Result<(), Box<dyn Error>> {
@@ -159,11 +177,20 @@ pub async fn handle(
     tokio::spawn(async move {
         tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
+        let mut last_info_refresh: Option<Instant> = None;
 
         loop {
             interval.tick().await;
 
             add_missing_stocks(pool.clone()).await;
+
+            // ponytail: kept in memory, so every restart refreshes too; that is cheap enough
+            if last_info_refresh.is_none_or(|t| t.elapsed() >= INFO_REFRESH_INTERVAL) {
+                last_info_refresh = Some(Instant::now());
+                refresh_all_infos(pool.clone())
+                    .await
+                    .unwrap_or_else(|e| error!("Error refreshing stock infos: {}", e));
+            }
 
             fetch_data(pool.clone())
                 .await

@@ -15,6 +15,48 @@ use log::{error, info, warn};
 use std::error::Error;
 use std::iter::successors;
 
+/// Re-reads the instruments' master data from onvista and returns the ISINs that failed. onvista
+/// reclassifies instruments over time (e.g. a fund that becomes an ETC), and the stored kind
+/// picks the endpoints its prices come from, so a stale kind cuts an instrument off from prices.
+pub async fn refresh_infos(
+    pool: Pool<ConnectionManager<PgConnection>>,
+    stocks: &[StockInfo],
+) -> Result<Vec<String>, Box<dyn Error>> {
+    let mut connection = pool.get()?;
+    let mut failed_isins = Vec::new();
+
+    for stock in stocks {
+        let new_info = match onvista::get_info(&stock.isin).await {
+            Ok((new_info, _)) => new_info,
+            Err(e) => {
+                error!("Error obtaining stock info for {}: {}", stock.isin, e);
+                failed_isins.push(stock.isin.clone());
+                continue;
+            }
+        };
+        // onvista only provides the instrument data, the rest is our own bookkeeping
+        let new_info = StockInfo {
+            persistent: stock.persistent,
+            last_historical_update: stock.last_historical_update,
+            last_realtime_update: stock.last_realtime_update,
+            ..new_info
+        };
+        if new_info.kind != stock.kind {
+            warn!(
+                "onvista reclassified {} from {} to {}",
+                stock.isin, stock.kind, new_info.kind
+            );
+        }
+
+        diesel::update(stock_infos.filter(crate::schema::stock_infos::isin.eq(&stock.isin)))
+            .set(new_info)
+            .execute(&mut connection)?;
+        info!("Updated stock info for {}", stock.isin);
+    }
+
+    Ok(failed_isins)
+}
+
 pub async fn fetch_realtime(
     pool: Pool<ConnectionManager<PgConnection>>,
     stocks: &[&StockInfo],

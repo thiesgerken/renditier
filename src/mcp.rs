@@ -148,7 +148,7 @@ pub struct Position {
 
 #[derive(Serialize, JsonSchema)]
 pub struct Quote {
-    /// Per unit, in the exchange's currency: euros on the German exchanges preferred here.
+    /// Per unit, in euros.
     price: f64,
     date: DateTime<Utc>,
     exchange: String,
@@ -306,7 +306,7 @@ pub struct Stock {
 pub struct ExchangeOut {
     name: String,
     code: String,
-    /// The newest price on this exchange, however old: per unit, in the exchange's currency.
+    /// The newest price on this exchange, however old: per unit, in euros.
     price: Option<f64>,
     price_date: Option<DateTime<Utc>>,
 }
@@ -324,7 +324,7 @@ pub struct History {
     /// Where the prices are from: the most preferred exchange that has any in the range.
     /// Absent, like the prices, when none has.
     exchange: Option<String>,
-    /// One per trading day, oldest first, in the exchange's currency.
+    /// One per trading day, oldest first, in euros.
     prices: Vec<Close>,
 }
 
@@ -551,8 +551,7 @@ impl Renditier {
 
     #[tool(
         description = "A stock or fund by ISIN: what it is, and its latest price on each \
-        exchange it trades on. Prices are per unit, in the exchange's currency (euros on German \
-        exchanges).",
+        exchange it trades on. Prices are per unit, in euros.",
         annotations(read_only_hint = true, open_world_hint = false)
     )]
     async fn get_stock(
@@ -572,7 +571,7 @@ impl Renditier {
 
     #[tool(
         description = "Daily closing prices of a stock or fund by ISIN, from one exchange, per \
-        unit in the exchange's currency (euros on German exchanges). Keep the range as short as \
+        unit in euros. Keep the range as short as \
         the question allows: a year is about 250 prices.",
         annotations(read_only_hint = true, open_world_hint = false)
     )]
