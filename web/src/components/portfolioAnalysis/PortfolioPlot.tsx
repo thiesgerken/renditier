@@ -29,13 +29,19 @@ import {
   percentTick,
 } from '../plot/axes';
 import { assignTrades } from '../plot/trades';
+import { findGaps, holdOverGaps } from '../plot/gaps';
 import {
   TRADES_AXIS,
   TradeLegend,
   tradeMarkers,
   tradeRows,
 } from '../plot/tradeMarkers';
-import { pointTooltip, signedArea, timeXAxis } from '../plot/elements';
+import {
+  gapAreas,
+  pointTooltip,
+  signedArea,
+  timeXAxis,
+} from '../plot/elements';
 import useMediaQuery, { PHONE } from '../../useMediaQuery';
 import {
   DateRangeFields,
@@ -199,6 +205,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
 
   const epochs = points.map(p => p.epoch);
   const intraday = hasIntradayPoints(epochs);
+  const gaps = intraday ? findGaps(epochs) : [];
   const { tick, signed }: ModeSpec = MODES[mode];
   const modeLabel = t(`plot.modes.${mode}`);
 
@@ -243,7 +250,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
           }
           isLoading={loading}
         >
-          <ComposedChart data={points} {...zoom.chartProps}>
+          <ComposedChart data={holdOverGaps(points, gaps)} {...zoom.chartProps}>
             {timeXAxis(epochs)}
             <YAxis
               tickFormatter={tick}
@@ -253,6 +260,7 @@ const PortfolioPlot = ({ performance, period, data, updateData }: Props) => {
             />
             <YAxis yAxisId={TRADES_AXIS} domain={[0, 1]} hide />
             <CartesianGrid vertical={false} stroke="var(--border)" />
+            {gapAreas(gaps)}
 
             {signed !== undefined &&
               signedArea(

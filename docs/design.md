@@ -86,6 +86,10 @@ can follow the reason where no rule fits. Colours, type and the logo are in the
   keep the coarse points and the old scale.
 - **Axis ticks fall on calendar boundaries** (midnight, first of the month, quarters), spaced by the
   finest step that stays readable. Ticks on arbitrary days cannot be read off.
+- **Intraday charts hold the line flat while the exchanges are closed and shade that span.** A
+  diagonal across a night or weekend would suggest trading that never happened. The closed spans
+  come from the data (every step from one day's points to the next day's), not from exchange
+  hours, because a portfolio mixes exchanges.
 - **Log scale ticks are round growth factors**, so that +100 % and -50 % lie equally far from 0 %.
 - **A comparison line whose hue is taken by an earlier one is dashed.** There are six hues; a
   seventh line must still be told apart.

@@ -27,13 +27,19 @@ import {
   percentTick,
 } from '../plot/axes';
 import { assignTrades } from '../plot/trades';
+import { findGaps, holdOverGaps } from '../plot/gaps';
 import {
   TRADES_AXIS,
   TradeLegend,
   tradeMarkers,
   tradeRows,
 } from '../plot/tradeMarkers';
-import { pointTooltip, signedArea, timeXAxis } from '../plot/elements';
+import {
+  gapAreas,
+  pointTooltip,
+  signedArea,
+  timeXAxis,
+} from '../plot/elements';
 import type {
   DataSourceSelection,
   IsoDate,
@@ -220,6 +226,7 @@ const StockPlot = ({
 
   const epochs = points.map(p => p.epoch);
   const intraday = hasIntradayPoints(epochs);
+  const gaps = intraday ? findGaps(epochs) : [];
   const { tick, signed }: ModeSpec = MODES[mode];
   const modeLabel = t(`plot.modes.${mode}`);
 
@@ -286,7 +293,7 @@ const StockPlot = ({
         emptyText={t('plot.empty.prices')}
         isLoading={loading}
       >
-        <ComposedChart data={points} {...zoom.chartProps}>
+        <ComposedChart data={holdOverGaps(points, gaps)} {...zoom.chartProps}>
           {timeXAxis(epochs)}
           <YAxis
             tickFormatter={tick}
@@ -311,6 +318,7 @@ const StockPlot = ({
             />
           )}
           <CartesianGrid vertical={false} stroke="var(--border)" />
+          {gapAreas(gaps)}
 
           {signed !== undefined &&
             signedArea(

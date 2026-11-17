@@ -1,9 +1,10 @@
 // Chart elements shared by all time series plots. These are functions rather
 // than components because recharts only recognizes its own elements as direct
 // children of a chart.
-import { Area, Tooltip, XAxis } from 'recharts';
+import { Area, DefaultZIndexes, ReferenceArea, Tooltip, XAxis } from 'recharts';
 
 import { formatPointDate, timeAxis } from './axes';
+import type { Gap, Held } from './gaps';
 import PlotTooltip from './PlotTooltip';
 import type { TooltipRow } from './PlotTooltip';
 
@@ -24,14 +25,16 @@ export const timeXAxis = (epochs: number[]) => {
   );
 };
 
-// Tooltip listing `rows` of the hovered point, titled with its date.
+// Tooltip listing `rows` of the hovered point, titled with its date. A point
+// held over a gap shows the real point it holds.
 export const pointTooltip = <P extends { epoch: number }>(
   intraday: boolean,
   rows: (point: P) => TooltipRow[]
 ) => (
   <Tooltip
     content={({ active, payload }) => {
-      const point = payload[0]?.payload as P | undefined;
+      const hovered = payload[0]?.payload as Held<P> | undefined;
+      const point = hovered?.heldFrom ?? hovered;
       if (!active || point === undefined) return null;
 
       return (
@@ -43,6 +46,19 @@ export const pointTooltip = <P extends { epoch: number }>(
     }}
   />
 );
+
+// Shades the gaps, below the grid so that its lines run through.
+export const gapAreas = (gaps: Gap[]) =>
+  gaps.map(({ start, end }) => (
+    <ReferenceArea
+      key={`gap${start}`}
+      x1={start}
+      x2={end}
+      fill="var(--muted)"
+      fillOpacity={1}
+      zIndex={DefaultZIndexes.grid - 1}
+    />
+  ));
 
 // Where a series crosses zero, as a fraction of the plot height from the top.
 const zeroOffset = (values: (number | null)[]): number => {
