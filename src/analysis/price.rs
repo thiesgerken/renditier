@@ -57,6 +57,12 @@ const MAX_PRICE_AGE: Duration = Duration::days(4);
 /// Prices at most this old rank their exchanges by preference alone, not by age.
 const PREFERENCE_WINDOW: Duration = Duration::days(4);
 
+/// One date window of a price lookup. The windows are joined by reducing, not by folding onto
+/// an always-false seed: such a seed keeps Postgres from using the date index, so it would scan
+/// and filter the whole table.
+type PricePredicate<QS> =
+    Box<dyn diesel::BoxableExpression<QS, diesel::pg::Pg, SqlType = diesel::sql_types::Bool>>;
+
 pub trait Price {
     fn find_multiple(
         connection: &mut diesel::PgConnection,
@@ -111,18 +117,18 @@ impl Price for RealtimePrice {
             .iter()
             .map(|d| d.checked_sub_signed(PREFERENCE_WINDOW).unwrap());
 
-        let always_false = Box::new(realtime_prices::date.ne(realtime_prices::date));
-        let fs: Box<
-            dyn diesel::BoxableExpression<_, diesel::pg::Pg, SqlType = diesel::sql_types::Bool>,
-        > = hard_lbs
+        let fs = hard_lbs
             .iter()
             .zip(dates.iter())
-            .map(|(hard_lb, date)| {
-                realtime_prices::date
-                    .le(date)
-                    .and(realtime_prices::date.ge(hard_lb))
+            .map(|(hard_lb, date)| -> PricePredicate<_> {
+                Box::new(
+                    realtime_prices::date
+                        .le(*date)
+                        .and(realtime_prices::date.ge(*hard_lb)),
+                )
             })
-            .fold(always_false, |accum, x| Box::new(accum.or(x)));
+            .reduce(|accum, x| Box::new(accum.or(x)))
+            .ok_or("no dates to find prices for")?;
 
         use std::time::Instant;
         let t_sql = Instant::now();
@@ -207,18 +213,18 @@ impl Price for HistoricalPrice {
             .map(|d| to_market_time(*d).date())
             .collect::<Vec<_>>();
 
-        let always_false = Box::new(historical_prices::date.ne(historical_prices::date));
-        let fs: Box<
-            dyn diesel::BoxableExpression<_, diesel::pg::Pg, SqlType = diesel::sql_types::Bool>,
-        > = hard_lbs
+        let fs = hard_lbs
             .iter()
             .zip(days.iter())
-            .map(|(hard_lb, day)| {
-                historical_prices::date
-                    .le(day)
-                    .and(historical_prices::date.ge(hard_lb))
+            .map(|(hard_lb, day)| -> PricePredicate<_> {
+                Box::new(
+                    historical_prices::date
+                        .le(*day)
+                        .and(historical_prices::date.ge(*hard_lb)),
+                )
             })
-            .fold(always_false, |accum, x| Box::new(accum.or(x)));
+            .reduce(|accum, x| Box::new(accum.or(x)))
+            .ok_or("no dates to find prices for")?;
 
         use std::time::Instant;
         let t_sql = Instant::now();
