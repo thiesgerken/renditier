@@ -1,5 +1,4 @@
-import { sortBy } from 'lodash';
-
+import { sameDay } from './axes';
 import type { Trades } from './trades';
 
 // A stretch of intraday data without points, i.e. while the exchanges were
@@ -10,27 +9,15 @@ export interface Gap {
   end: number;
 }
 
-// Intraday points are sampled on a regular grid during trading hours, so the
-// median spacing is the grid's. A missing sample or two stays below this
-// factor, while a night spans ten or more grid steps. Data with only an
-// opening and a closing price per day has a trading day as its median
-// spacing; then only weekends and holidays are gaps.
-const GAP_FACTOR = 4;
-
-// Spacings between consecutive points that are much longer than the typical
-// one. Exchange hours are deliberately not hardcoded: the data tells when
-// the exchanges it comes from were open.
-export const findGaps = (epochs: number[]): Gap[] => {
-  const spacings = epochs.flatMap((end, i) => {
+// Intraday points are only sampled during trading hours, as a grid or as the
+// opening and closing price of each day, so any step from one day to another
+// spans a closure. Missing samples within a day are not one. Exchange hours
+// are deliberately not hardcoded: a portfolio mixes exchanges.
+export const findGaps = (epochs: number[]): Gap[] =>
+  epochs.flatMap((end, i) => {
     const start = epochs[i - 1];
-    return start === undefined ? [] : [{ start, end }];
+    return start === undefined || sameDay(start, end) ? [] : [{ start, end }];
   });
-  const lengths = sortBy(spacings.map(s => s.end - s.start));
-  const typical = lengths[Math.floor(lengths.length / 2)];
-  if (typical === undefined) return [];
-
-  return spacings.filter(s => s.end - s.start > GAP_FACTOR * typical);
-};
 
 // A point, or a copy of one that holds its values over a gap.
 export type Held<P> = P & { heldFrom?: P };

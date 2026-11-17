@@ -21,13 +21,13 @@ describe('findGaps', () => {
     ]);
   });
 
-  it('ignores a few missing samples', () => {
-    const epochs = tradingDay('2026-11-06').filter((_, i) => i < 10 || i > 12);
+  it('ignores missing samples within a day', () => {
+    const epochs = tradingDay('2026-11-06').filter((_, i) => i < 10 || i > 20);
 
     expect(findGaps(epochs)).toEqual([]);
   });
 
-  it('finds only weekends when there are just openings and closes', () => {
+  it('finds nights and weekends when there are just openings and closes', () => {
     const epochs = [
       '2026-11-05T09:00',
       '2026-11-05T17:30',
@@ -38,6 +38,7 @@ describe('findGaps', () => {
     ].map(at);
 
     expect(findGaps(epochs)).toEqual([
+      { start: at('2026-11-05T17:30'), end: at('2026-11-06T09:00') },
       { start: at('2026-11-06T17:30'), end: at('2026-11-09T09:00') },
     ]);
   });

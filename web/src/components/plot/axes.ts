@@ -109,7 +109,7 @@ const tickFormat = (
 const formatEpoch = (epoch: number, options: Intl.DateTimeFormatOptions) =>
   formatTemporal(Temporal.Instant.fromEpochMilliseconds(epoch), options);
 
-const sameDay = (a: number, b: number): boolean =>
+export const sameDay = (a: number, b: number): boolean =>
   zoned(a).toPlainDate().equals(zoned(b).toPlainDate());
 
 export interface TimeAxis {
