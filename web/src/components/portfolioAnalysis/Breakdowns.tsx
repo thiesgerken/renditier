@@ -1,4 +1,4 @@
-import { map, partition, sumBy } from 'lodash';
+import { groupBy, map, partition, sumBy } from 'lodash';
 import { useTranslation } from 'react-i18next';
 
 import type { PortfolioPerformance, Stock } from '../../types/api';
@@ -31,22 +31,27 @@ const heldPositions = (
   }).flat();
 
 // Splits the invested amount of every position along the shares of its fund,
-// and adds up equal names across funds.
-const breakdown = (
+// and adds up the same share across funds. A holding is the same by its ISIN,
+// since funds and the stock itself spell a company's name differently (case,
+// suffixes). The largest part names the item, so that its label does not
+// depend on the order of the positions, which the API leaves open.
+export const breakdown = (
   positions: HeldPosition[],
   shares: (stock: Stock) => FundShare[]
 ): BarItem[] => {
-  const items = new Map<string, BarItem>();
-  positions.forEach(({ stock, invested }) => {
-    shares(stock).forEach(share => {
-      const amount = (invested * share.value) / 100;
-      items.set(share.label, {
-        ...share,
-        value: (items.get(share.label)?.value ?? 0) + amount,
-      });
-    });
-  });
-  return [...items.values()];
+  const parts = positions.flatMap(({ stock, invested }) =>
+    shares(stock).map(share => ({
+      ...share,
+      value: (invested * share.value) / 100,
+    }))
+  );
+  return map(
+    groupBy(parts, p => p.isin ?? p.label),
+    group => ({
+      ...group.reduce((a, b) => (b.value > a.value ? b : a)),
+      value: sumBy(group, 'value'),
+    })
+  );
 };
 
 interface Props {

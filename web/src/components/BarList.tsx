@@ -133,7 +133,7 @@ const BarList = ({
         )}
       >
         {rows.map(r => (
-          <div key={r.label} className="contents">
+          <div key={r.isin ?? r.label} className="contents">
             <span
               title={r.title}
               className={cn(
