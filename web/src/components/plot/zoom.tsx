@@ -3,9 +3,11 @@ import type { MouseEvent, RefObject, TouchEvent } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
+  DefaultZIndexes,
   usePlotArea,
   useXAxisInverseDataSnapScale,
   useXAxisScale,
+  ZIndexLayer,
 } from 'recharts';
 import type { InverseScaleFunction } from 'recharts';
 
@@ -59,16 +61,19 @@ const Selection = ({ store }: { store: DragStore }) => {
   const [from, to] = drag.map(epoch => scale(epoch));
   if (from === undefined || to === undefined) return null;
 
+  // above the veil over closed hours, so that a drag across days shows whole
   return (
-    <rect
-      x={Math.min(from, to)}
-      y={area.y}
-      width={Math.abs(to - from)}
-      height={area.height}
-      fill="var(--primary)"
-      fillOpacity={0.15}
-      pointerEvents="none"
-    />
+    <ZIndexLayer zIndex={DefaultZIndexes.axis}>
+      <rect
+        x={Math.min(from, to)}
+        y={area.y}
+        width={Math.abs(to - from)}
+        height={area.height}
+        fill="var(--primary)"
+        fillOpacity={0.15}
+        pointerEvents="none"
+      />
+    </ZIndexLayer>
   );
 };
 

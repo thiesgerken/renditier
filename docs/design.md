@@ -86,8 +86,10 @@ can follow the reason where no rule fits. Colours, type and the logo are in the
   keep the coarse points and the old scale.
 - **Axis ticks fall on calendar boundaries** (midnight, first of the month, quarters), spaced by the
   finest step that stays readable. Ticks on arbitrary days cannot be read off.
-- **Intraday charts hold the line flat while the exchanges are closed and shade that span.** A
-  diagonal across a night or weekend would suggest trading that never happened. The closed spans
+- **Intraday charts hold the line flat while the exchanges are closed and veil that span.** A
+  diagonal across a night or weekend would suggest trading that never happened. The veil lies over
+  the held line, its area and the grid, so that the flat stretch recedes behind the traded hours
+  instead of dominating a chart that is mostly nights. The closed spans
   come from the data (every step from one day's points to the next day's), not from exchange
   hours, because a portfolio mixes exchanges.
 - **Log scale ticks are round growth factors**, so that +100 % and -50 % lie equally far from 0 %.
