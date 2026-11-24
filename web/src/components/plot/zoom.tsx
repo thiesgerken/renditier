@@ -61,7 +61,7 @@ const Selection = ({ store }: { store: DragStore }) => {
   const [from, to] = drag.map(epoch => scale(epoch));
   if (from === undefined || to === undefined) return null;
 
-  // above the veil over closed hours, so that a drag across days shows whole
+  // above the veil over closed hours, which would hide the selection there
   return (
     <ZIndexLayer zIndex={DefaultZIndexes.axis}>
       <rect
