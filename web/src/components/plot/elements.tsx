@@ -47,7 +47,9 @@ export const pointTooltip = <P extends { epoch: number }>(
   />
 );
 
-// Shades the gaps, below the grid so that its lines run through.
+// Veils the gaps above the series, so that their held flat lines recede
+// behind the ones the exchanges actually traded. It stays below the axes and
+// the hover cursor.
 export const gapAreas = (gaps: Gap[]) =>
   gaps.map(({ start, end }) => (
     <ReferenceArea
@@ -55,8 +57,8 @@ export const gapAreas = (gaps: Gap[]) =>
       x1={start}
       x2={end}
       fill="var(--muted)"
-      fillOpacity={1}
-      zIndex={DefaultZIndexes.grid - 1}
+      fillOpacity={0.7}
+      zIndex={DefaultZIndexes.line + 1}
     />
   ));
 
