@@ -14,7 +14,7 @@ import type { FundShare } from '../../selectors/stocks';
 import useTableFormat from '../useTableFormat';
 import type { LoadFailure } from '../../useLoadFailure';
 
-interface HeldPosition {
+export interface HeldPosition {
   stock: Stock;
   invested: number;
 }
@@ -31,18 +31,23 @@ const heldPositions = (
   }).flat();
 
 // Splits the invested amount of every position along the shares of its fund,
-// and adds up equal names across funds.
-const breakdown = (
+// and adds up the same share across funds. A holding is the same by its ISIN,
+// since funds and the stock itself spell a company's name differently (case,
+// suffixes); it keeps the name it first came with.
+export const breakdown = (
   positions: HeldPosition[],
   shares: (stock: Stock) => FundShare[]
 ): BarItem[] => {
   const items = new Map<string, BarItem>();
   positions.forEach(({ stock, invested }) => {
     shares(stock).forEach(share => {
+      const key = share.isin ?? share.label;
       const amount = (invested * share.value) / 100;
-      items.set(share.label, {
+      const seen = items.get(key);
+      items.set(key, {
         ...share,
-        value: (items.get(share.label)?.value ?? 0) + amount,
+        ...seen,
+        value: (seen?.value ?? 0) + amount,
       });
     });
   });
